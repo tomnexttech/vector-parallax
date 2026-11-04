@@ -1,0 +1,21 @@
+{
+  "schema": "parallax-traps/1",
+  "how": "One table of reading traps, read by the place words (places.py), the concept words (cluster.py) and the flag words (watch.py). A phrase is rewritten to its true reading before any word is looked up. A bare word is not enough to put an event in a place or in 'domestic' (CONTRACT 20.4).",
+  "phrases": [
+    {
+      "text": "米中間選",
+      "as": "米国中間選",
+      "reads": "US",
+      "reads_key": "米国",
+      "not": ["CN"],
+      "note": "米国の中間選挙。「米中」は米国と中国の意味ではない（「米中間の対話」のように間の意味で使う時は「米中間」の後に選が続かない）"
+    }
+  ],
+  "bare": {
+    "JP": {
+      "keys": ["日本", "Japan"],
+      "needs": "政府|首相|総理|国会|与党|野党|内閣|官邸|日銀|日本銀行|自民|立憲|維新|公明|国民民主|共産|衆院|参院|防衛省|財務省|外務省|経産省|国交省|厚労省|警察庁|気象庁|国内|全国|(?i:\\b(?:Japanese government|prime minister|Diet|BOJ|Bank of Japan|Tokyo)\\b)",
+      "note": "「日本」「Japan」の一語だけでは日本（国内）に置かない。日本固有の手掛かりがもう一つ要る（場所の印 in・で を除く）"
+    }
+  }
+}

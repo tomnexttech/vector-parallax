@@ -1,0 +1,6144 @@
+[
+ {
+  "name": "ok_basic",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [{\"item_id\": \"n1\", \"focus_ja\": \"\\u7126\\u70b91\"}, {\"item_id\": \"n2\", \"focus_ja\": \"\\u7126\\u70b92\"}], \"contrast_ja\": \"\\u8a66\\u9a13\\u306e\\u5bfe\\u6bd4\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}, {\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [\"primary_only\"], \"flag_note_ja\": \"\\u5168\\u3066\\u653f\\u5e9c\\u4e00\\u6b21\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [
+        {
+         "item_id": "i1",
+         "focus_ja": "焦点1"
+        },
+        {
+         "item_id": "i2",
+         "focus_ja": "焦点2"
+        }
+       ],
+       "contrast_ja": "試験の対比",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ],
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [
+        "primary_only"
+       ],
+       "flags_dropped": [],
+       "flag_note_ja": "全て政府一次"
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "fabricated_ids",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n99\", \"n4\", 5, null, \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"zzz\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}, {\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ],
+    "b02": [
+     {
+      "member_ids": [
+       "i4"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i5"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 6,
+    "dup_ids": 0,
+    "unassigned_ids": 2,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "duplicate_ids",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n2\", \"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n1\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}, {\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ],
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 3,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "unassigned_ids",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}, {\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i2"
+      ],
+      "origin": "rule",
+      "ai": null
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ],
+    "b02": [
+     {
+      "member_ids": [
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i4"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 3,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "unassigned_group_stays_together",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}, {\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ],
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 2,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "json_broken",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [ {\"bid\": \"b01\", \"stories\": [",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {},
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": [
+    "json"
+   ]
+  }
+ },
+ {
+  "name": "json_empty",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {},
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": [
+    "json"
+   ]
+  }
+ },
+ {
+  "name": "shape_no_blocks",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"foo\": 1}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {},
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": [
+    "shape"
+   ]
+  }
+ },
+ {
+  "name": "shape_array",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "[]",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {},
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": [
+    "shape"
+   ]
+  }
+ },
+ {
+  "name": "shape_blocks_not_list",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": {\"bid\": \"b01\"}}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {},
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": [
+    "shape"
+   ]
+  }
+ },
+ {
+  "name": "fence_stripped",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "```json\n{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}\n```",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "unknown_bid_ignored_and_missing_falls_back",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b99\", \"stories\": [{\"member_ids\": [\"n1\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}, {\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "duplicate_bid_first_wins",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u4e00\\u3064\\u76ee\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}, {\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u4e8c\\u3064\\u76ee\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 一つ目",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "flag_vetoes",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\", \"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [\"overseas_only\", \"jp_main_not_found\", \"primary_only\"], \"flag_note_ja\": \"\\u8a66\\u9a13\\u306e\\u6ce8\\u8a18\"}]}, {\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [\"primary_only\", \"primary_only\", \"bogus\"], \"flag_note_ja\": \"\\u653f\\u5e9c\\u4e00\\u6b21\\u306e\\u307f\"}, {\"member_ids\": [\"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2",
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [
+        {
+         "flag": "overseas_only",
+         "why": "has_jp_outlet"
+        },
+        {
+         "flag": "jp_main_not_found",
+         "why": "has_jp_mainstream"
+        },
+        {
+         "flag": "primary_only",
+         "why": "has_non_primary"
+        }
+       ],
+       "flag_note_ja": ""
+      }
+     }
+    ],
+    "b02": [
+     {
+      "member_ids": [
+       "i4"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [
+        "primary_only"
+       ],
+       "flags_dropped": [],
+       "flag_note_ja": "政府一次のみ"
+      }
+     },
+     {
+      "member_ids": [
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 3,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "flag_overseas_only_and_silent_kept",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i7"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\",\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"Al Jazeera\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"国家メディア\",\"title\":\"Test Event A: test committee approves the test plan, Al Jazeera\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\", \"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [\"overseas_only\", \"jp_main_not_found\"], \"flag_note_ja\": \"\\u6d77\\u5916\\u306e\\u4e09\\u5a92\\u4f53\\u306e\\u307f\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2",
+       "i7"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [
+        "overseas_only",
+        "jp_main_not_found"
+       ],
+       "flags_dropped": [],
+       "flag_note_ja": "海外の三媒体のみ"
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "flag_jp_main_not_found_single_outlet",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i7"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\",\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"Al Jazeera\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"国家メディア\",\"title\":\"Test Event A: test committee approves the test plan, Al Jazeera\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [\"jp_main_not_found\"], \"flag_note_ja\": \"\\u8a66\\u9a13\"}, {\"member_ids\": [\"n2\", \"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [
+        {
+         "flag": "jp_main_not_found",
+         "why": "single_outlet"
+        }
+       ],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i2",
+       "i7"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 1,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "flag_primary_only_mixed_home",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01"
+   ],
+   "alias": {
+    "n1": "i4",
+    "n2": "i6"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\"],[\"n2\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n2\",\"outlet\":\"Federal Reserve\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"政府一次\",\"title\":\"Test Event C: Federal Reserve test statement released\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [\"primary_only\", \"overseas_only\"], \"flag_note_ja\": \"\\u8a66\\u9a13\\u306e\\u6ce8\\u8a18\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i4",
+       "i6"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [
+        "primary_only"
+       ],
+       "flags_dropped": [
+        {
+         "flag": "overseas_only",
+         "why": "has_jp_outlet"
+        }
+       ],
+       "flag_note_ja": "試験の注記"
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 1,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "headline_ja_empty_keeps_english",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"  \", \"headline_en\": \"Test event line only\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "",
+       "headline_en": "Test event line only",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "headline_both_empty_goes_to_rules",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\", \"headline_en\": \"\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}, {\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": null, \"headline_en\": 7, \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ],
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 4,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "strings_cleaned_and_cut",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\\u3042\", \"headline_en\": \"eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee\", \"angles\": [{\"item_id\": \"n4\", \"focus_ja\": \"\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\\u7126\"}, {\"item_id\": \"n5\", \"focus_ja\": \"\\u8a66\\u9a13\\u0000\\u898b\\u51fa\\u3057\\u200b\\u202e  \\u672b\\u5c3e\\n\\t\\u7d9a\\u304d\"}], \"contrast_ja\": \"\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\\u5bfe\", \"flags\": [\"primary_only\"], \"flag_note_ja\": \"\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\\u6ce8\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ…",
+       "headline_en": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee…",
+       "angles": [
+        {
+         "item_id": "i4",
+         "focus_ja": "焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦焦…"
+        },
+        {
+         "item_id": "i5",
+         "focus_ja": "試験見出し 末尾 続き"
+        }
+       ],
+       "contrast_ja": "対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対対…",
+       "flags": [
+        "primary_only"
+       ],
+       "flags_dropped": [],
+       "flag_note_ja": "注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注注…"
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "strings_non_bmp_counted_in_code_points",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\\ud842\\udfb7\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷𠮷…",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "strings_not_strings_become_empty",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": 5, \"headline_en\": \"Test event line\", \"angles\": [{\"item_id\": \"n4\", \"focus_ja\": null}, {\"item_id\": \"n5\", \"focus_ja\": [\"x\"]}], \"contrast_ja\": {\"a\": 1}, \"flags\": \"primary_only\", \"flag_note_ja\": 3}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "strings_space_around_removed_chars",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u200b \\u984c \\ud800 \\u672b\\u5c3e\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題 末尾",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "angles_rules",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [{\"item_id\": \"n3\", \"focus_ja\": \"\\u5225\\u306e\\u8a71\\u306e\\u7126\\u70b9\"}, {\"item_id\": \"n1\", \"focus_ja\": \"\\u7126\\u70b9A\"}, {\"item_id\": \"n1\", \"focus_ja\": \"\\u7126\\u70b9B\"}, {\"item_id\": \"n2\", \"focus_ja\": \"   \"}], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [{\"item_id\": \"n2\", \"focus_ja\": \"\\u4ed6\\u306e\\u8a71\\u306e\\u7126\\u70b9\"}], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [
+        {
+         "item_id": "i1",
+         "focus_ja": "焦点A"
+        }
+       ],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "empty_first_angle_still_counts_as_first",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [{\"item_id\": \"n4\", \"focus_ja\": \"\"}, {\"item_id\": \"n4\", \"focus_ja\": \"\\u4e8c\\u3064\\u76ee\\u306f\\u63a1\\u3089\\u306a\\u3044\"}, {\"item_id\": \"n5\", \"focus_ja\": \"\\u7126\\u70b95\"}], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [
+        {
+         "item_id": "i5",
+         "focus_ja": "焦点5"
+        }
+       ],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "garbage_entries_survive",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [1, null, \"x\", {\"bid\": 5}, {\"bid\": \"b02\", \"stories\": \"no\"}, {\"bid\": \"b01\", \"stories\": [7, {\"member_ids\": \"n1\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ],
+    "b01": [
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 4,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_headline_blanked",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u51fa\\u6765\\u4e8bC \\u8ca1\\u52d9\\u7701\\u304c\\u8a66\\u9a13\\u306e\\u516c\\u8868\\u3092\\u884c\\u3063\\u305f\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 1,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_both_headlines_goes_to_rules",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u51fa\\u6765\\u4e8bC \\u8ca1\\u52d9\\u7701\\u304c\\u8a66\\u9a13\\u306e\\u516c\\u8868\\u3092\\u884c\\u3063\\u305f\", \"headline_en\": \"\\u8a66\\u9a13 \\u51fa\\u6765\\u4e8bC \\u7dcf\\u52d9\\u7701\\u304c\\u8a66\\u9a13\\u306e\\u516c\\u8868\\u3092\\u884c\\u3063\\u305f\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 2,
+    "flags_vetoed": 0,
+    "quoted_fields": 2,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_inside_longer_text",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\\u5831\\u9053: Test Event A: the test committee decides the test plan \\u3068\\u4f1d\\u3048\\u305f\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 1,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_truncated_copy",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test Event A: the test committ\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 1,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_case_width_and_punctuation_folded",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"TEST EVENT A - THE TEST COMMITTEE DECIDES THE TEST PLAN\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 1,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_only_the_block_is_checked",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u51fa\\u6765\\u4e8bC \\u8ca1\\u52d9\\u7701\\u304c\\u8a66\\u9a13\\u306e\\u516c\\u8868\\u3092\\u884c\\u3063\\u305f\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 出来事C 財務省が試験の公表を行った",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_angle_dropped",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [{\"item_id\": \"n4\", \"focus_ja\": \"\\u8a66\\u9a13 \\u51fa\\u6765\\u4e8bC \\u8ca1\\u52d9\\u7701\\u304c\\u8a66\\u9a13\\u306e\\u516c\\u8868\\u3092\\u884c\\u3063\\u305f\"}, {\"item_id\": \"n5\", \"focus_ja\": \"\\u7126\\u70b95\"}], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [
+        {
+         "item_id": "i5",
+         "focus_ja": "焦点5"
+        }
+       ],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 1,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_flag_note_blanked",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [\"primary_only\"], \"flag_note_ja\": \"\\u8a66\\u9a13 \\u51fa\\u6765\\u4e8bC \\u7dcf\\u52d9\\u7701\\u304c\\u8a66\\u9a13\\u306e\\u516c\\u8868\\u3092\\u884c\\u3063\\u305f\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [
+        "primary_only"
+       ],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 1,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_paraphrase_passes",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13\\u59d4\\u54e1\\u4f1a\\u304c\\u8a66\\u9a13\\u6848\\u3092\\u6c7a\\u3081\\u305f\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験委員会が試験案を決めた",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_null_titles_are_skipped",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u51fa\\u6765\\u4e8bC \\u8ca1\\u52d9\\u7701\\u304c\\u8a66\\u9a13\\u306e\\u516c\\u8868\\u3092\\u884c\\u3063\\u305f\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": null,
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 出来事C 財務省が試験の公表を行った",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_short_fields_are_not_copies",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\\u8a66\\u9a13\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_short_titles_are_skipped",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13\\u901f\\u5831\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験速報",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験速報",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_boundary_ten_characters_is_a_copy",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13\\u901f\\u5831\\u4e00\\u4e8c\\u4e09\\u56db\\u4e94\\u516d\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験速報一二三四五六",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 1,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "quote_boundary_nine_characters_is_not",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b02\", \"stories\": [{\"member_ids\": [\"n4\", \"n5\"], \"headline_ja\": \"\\u8a66\\u9a13\\u901f\\u5831\\u4e00\\u4e8c\\u4e09\\u56db\\u4e94\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験速報一二三四五",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b02": [
+     {
+      "member_ids": [
+       "i4",
+       "i5"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験速報一二三四五",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "report_word_ja_blanks_the_japanese_headline",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13\\u59d4\\u54e1\\u4f1a\\u306e\\u6c7a\\u5b9a\\u304c\\u5831\\u9053\\u3055\\u308c\\u305f\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 1,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "report_word_en_blanks_the_english_headline",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Some reports cite only the test plan\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 1,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "report_words_in_both_headlines_go_to_rules",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u898b\\u51fa\\u3057\\u306f\\u8a66\\u9a13\\u6848\\u306b\\u89e6\\u308c\\u3066\\u3044\\u308b\", \"headline_en\": \"Headlines stress the plan\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 2,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 2,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "report_allowed_form_is_kept",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13\\u6848\\u304c\\u53ef\\u6c7a\\u3055\\u308c\\u305f\\u3068\\u5831\\u3058\\u3089\\u308c\\u3066\\u3044\\u308b\", \"headline_en\": \"The test plan was reportedly approved\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験案が可決されたと報じられている",
+       "headline_en": "The test plan was reportedly approved",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "report_allowed_form_does_not_excuse_another_word",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13\\u6848\\u304c\\u53ef\\u6c7a\\u3055\\u308c\\u305f\\u3068\\u5831\\u3058\\u3089\\u308c\\u3066\\u3044\\u308b\\u3002\\u5f37\\u8abf\\u3055\\u308c\\u305f\\u70b9\\u306f\\u4e88\\u7b97\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 1,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "report_word_is_found_after_nfkc_and_case_folding",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"\\uff32\\uff25\\uff30\\uff2f\\uff32\\uff34\\uff33 say the plan passed\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Headliner wins a test prize\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Headliner wins a test prize",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 1,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "report_words_are_not_checked_in_other_fields",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [{\"item_id\": \"n1\", \"focus_ja\": \"\\u898b\\u51fa\\u3057\\u306e\\u9806\\u5e8f\\u3092\\u91cd\\u8996\"}], \"contrast_ja\": \"\\u4e00\\u65b9\\u306f\\u5831\\u9053\\u306e\\u91cf\\u3092\\u3001\\u4ed6\\u65b9\\u306f\\u6570\\u3092\\u524d\\u306b\\u51fa\\u3057\\u3066\\u3044\\u308b\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [
+        {
+         "item_id": "i1",
+         "focus_ja": "見出しの順序を重視"
+        }
+       ],
+       "contrast_ja": "一方は報道の量を、他方は数を前に出している",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "silence_word_blanks_the_contrast",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\\u4e00\\u65b9\\u306f\\u5831\\u3058\\u306a\\u304b\\u3063\\u305f\\u70b9\\u3092\\u6319\\u3052\\u3066\\u3044\\u308b\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 1
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "silence_word_blanks_the_english_headline",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"The paper did not report the test plan\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 1
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "silence_words_in_both_headlines_go_to_rules",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13\\u6848\\u306f\\u5831\\u3058\\u3089\\u308c\\u306a\\u304b\\u3063\\u305f\", \"headline_en\": \"Failed to report the plan\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "rule",
+      "ai": null
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 2,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 2
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "silence_word_drops_the_angle_and_the_flag_note",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [{\"item_id\": \"n1\", \"focus_ja\": \"\\u5831\\u3058\\u3066\\u3044\\u306a\\u3044\\u70b9\\u304c\\u7126\\u70b9\"}, {\"item_id\": \"n2\", \"focus_ja\": \"\\u7126\\u70b9B\"}], \"contrast_ja\": \"\", \"flags\": [\"overseas_only\"], \"flag_note_ja\": \"\\u5831\\u9053\\u305b\\u305a\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [
+        {
+         "item_id": "i2",
+         "focus_ja": "焦点B"
+        }
+       ],
+       "contrast_ja": "",
+       "flags": [
+        "overseas_only"
+       ],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 2
+   },
+   "errors": []
+  }
+ },
+ {
+  "name": "silence_words_are_not_matched_inside_other_words",
+  "request": {
+   "rid": "r1",
+   "bids": [
+    "b01",
+    "b02"
+   ],
+   "alias": {
+    "n1": "i1",
+    "n2": "i2",
+    "n3": "i3",
+    "n4": "i4",
+    "n5": "i5"
+   },
+   "doc": "{\"blocks\":[{\"bid\":\"b01\",\"rule_groups\":[[\"n1\",\"n2\"],[\"n3\"]],\"items\":[{\"id\":\"n1\",\"outlet\":\"BBC\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外公共\",\"title\":\"Test Event A: the test committee decides the test plan\"},{\"id\":\"n2\",\"outlet\":\"The Guardian\",\"home\":\"intl\",\"lang\":\"en\",\"type\":\"海外主流\",\"title\":\"The test committee has decided a test plan for Test Event A\"},{\"id\":\"n3\",\"outlet\":\"NHK\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"公共放送\",\"title\":\"試験 出来事A 試験委員会が試験案を決定した\"}]},{\"bid\":\"b02\",\"rule_groups\":[[\"n4\",\"n5\"]],\"items\":[{\"id\":\"n4\",\"outlet\":\"財務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 財務省が試験の公表を行った\"},{\"id\":\"n5\",\"outlet\":\"総務省\",\"home\":\"jp\",\"lang\":\"ja\",\"type\":\"政府一次\",\"title\":\"試験 出来事C 総務省が試験の公表を行った\"}]}]}"
+  },
+  "raw": "{\"blocks\": [{\"bid\": \"b01\", \"stories\": [{\"member_ids\": [\"n1\", \"n2\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"Speech was silenced; the report said no coverages were found\", \"flags\": [], \"flag_note_ja\": \"\"}, {\"member_ids\": [\"n3\"], \"headline_ja\": \"\\u8a66\\u9a13 \\u984cJA\", \"headline_en\": \"Test event line\", \"angles\": [], \"contrast_ja\": \"\", \"flags\": [], \"flag_note_ja\": \"\"}]}]}",
+  "items": {
+   "i1": {
+    "id": "i1",
+    "title": "Test Event A: the test committee decides the test plan",
+    "outlet": "BBC",
+    "home": "intl",
+    "type": "海外公共",
+    "lang": "en"
+   },
+   "i2": {
+    "id": "i2",
+    "title": "The test committee has decided a test plan for Test Event A",
+    "outlet": "The Guardian",
+    "home": "intl",
+    "type": "海外主流",
+    "lang": "en"
+   },
+   "i3": {
+    "id": "i3",
+    "title": "試験 出来事A 試験委員会が試験案を決定した",
+    "outlet": "NHK",
+    "home": "jp",
+    "type": "公共放送",
+    "lang": "ja"
+   },
+   "i4": {
+    "id": "i4",
+    "title": "試験 出来事C 財務省が試験の公表を行った",
+    "outlet": "財務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i5": {
+    "id": "i5",
+    "title": "試験 出来事C 総務省が試験の公表を行った",
+    "outlet": "総務省",
+    "home": "jp",
+    "type": "政府一次",
+    "lang": "ja"
+   },
+   "i6": {
+    "id": "i6",
+    "title": "Test Event C: Federal Reserve test statement released",
+    "outlet": "Federal Reserve",
+    "home": "intl",
+    "type": "政府一次",
+    "lang": "en"
+   },
+   "i7": {
+    "id": "i7",
+    "title": "Test Event A: test committee approves the test plan, Al Jazeera",
+    "outlet": "Al Jazeera",
+    "home": "intl",
+    "type": "国家メディア",
+    "lang": "en"
+   }
+  },
+  "expect": {
+   "blocks": {
+    "b01": [
+     {
+      "member_ids": [
+       "i1",
+       "i2"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "Speech was silenced; the report said no coverages were found",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     },
+     {
+      "member_ids": [
+       "i3"
+      ],
+      "origin": "ai",
+      "ai": {
+       "headline_ja": "試験 題JA",
+       "headline_en": "Test event line",
+       "angles": [],
+       "contrast_ja": "",
+       "flags": [],
+       "flags_dropped": [],
+       "flag_note_ja": ""
+      }
+     }
+    ]
+   },
+   "counts": {
+    "dropped_ids": 0,
+    "dup_ids": 0,
+    "unassigned_ids": 0,
+    "flags_vetoed": 0,
+    "quoted_fields": 0,
+    "report_words": 0,
+    "silence_words": 0
+   },
+   "errors": []
+  }
+ }
+]

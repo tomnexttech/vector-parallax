@@ -1,0 +1,16 @@
+{
+  "name": "VECTOR PARALLAX",
+  "short_name": "Parallax",
+  "description": "同じ出来事を、日本と海外の源・官公庁の資料・地図・災害・市場と一画面で並べる盤。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1c1d1f",
+  "theme_color": "#26272a",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

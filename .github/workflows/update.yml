@@ -1,0 +1,97 @@
+name: update-data
+
+# Builds the public edition every 3 hours and DEPLOYS it as a GitHub Pages artifact (page + data in one package).
+# Nothing that holds a headline is committed (CONTRACT 20.1): data/latest.json, board.json, history.json, stats.json, politics.json, hazards.json,
+# markets.json, summary_cache.json, recorded.json, eval.json are build products. The repository keeps code, rules, contract, tests and the settings
+# that hold no headline (data/prompt.json, labels.json, watchwords.json, places.json, traps.json, withheld.json).
+# One-time setting by the owner: Settings -> Pages -> Source: "GitHub Actions" (not "Deploy from a branch").
+#
+# A manual run ("Run workflow") rebuilds and redeploys at once. Use it after changing data/withheld.json (CONTRACT 20.9): do not wait 3 hours.
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"      # minute 17 avoids the top of the hour, when scheduled runs are most delayed
+  workflow_dispatch:
+
+permissions:
+  contents: read                # the build never pushes; the deploy job asks for pages: write and id-token: write on its own
+
+# One build at a time, also when "Run workflow" is pressed while a scheduled run is going: the per-build call limits (bundling 2, summary 15; a retry counts)
+# only keep the day within the free-tier limits if builds do not overlap. A second run waits for the first instead of cutting it off.
+concurrency:
+  group: update-data
+  cancel-in-progress: false      # never cut a build off half way
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # What the next run needs from the last one is passed on here, not through git (CONTRACT 20.1): latest.json (the kept previous AI view),
+      # summary_cache.json (one-line summaries), history.json (lineage), og_robots.json (robots.txt of the hosts asked for og:image) and the last
+      # hazards / markets / politics / board files ("the previous file stays" when a fetch fails). A rolling key: the newest cache is restored, a new one is saved.
+      - name: Restore the previous run's data
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/latest.json
+            data/stats.json
+            data/board.json
+            data/history.json
+            data/politics.json
+            data/hazards.json
+            data/markets.json
+            data/summary_cache.json
+            data/og_robots.json
+          key: parallax-data-${{ github.run_id }}
+          restore-keys: |
+            parallax-data-
+
+      # --min-stories: build.check_output refuses to write when the number of STORIES is below this value (exit status 2). It counts every story,
+      # not only those with two or more outlets. A refused run fails the job and deploys nothing, so the previous deployment stays online.
+      # The AI part: with GEMINI_API_KEY the merge and summary calls run; without it there is NO AI view (the rules view only), and the previous Gemini view,
+      # if the cache has one, is kept as kept_previous (the page shows the time of its own answers, red after 6 h). Recorded answers (data/recorded.json) are
+      # not in the repository and are never used here. Read the last lines of this step's log ("ai status=... reason=... ai_calls_failed=...") or stats.json -> "ai".
+      # Two models, named in data/prompt.json (merge_model, summary_model); both were accepted when calls_failed is 0 and provider is "gemini" in both.
+      - name: Build public edition
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}   # empty or unset -> no AI call
+        # --og: for events that may carry a photo (two or more outlets, not an incident, not a wire photo) whose feed items have no image, read the
+        # article's og:image URL, obeying robots.txt (CONTRACT 15, 20.5, 20.6). Only the URL is kept; the page loads the image from the outlet.
+        # --extras (CONTRACT 18/19): also reads the pages that have no feed and writes board.json, history.json, politics.json. data/withheld.json is applied first (20.9) and the log prints counts and ids, never a headline.
+        run: python -m parallax.build --public --og --extras --min-stories 300
+
+      # Map and market data (CONTRACT 18.7, 18.8). Independent of the news build; a source that cannot be read becomes a row with the reason, and when nothing could be fetched the previous file stays.
+      - name: Map and market data
+        if: always()
+        continue-on-error: true
+        run: python -m parallax.extras
+
+      - name: Assemble the site (page + data)
+        run: python tools/assemble_site.py --out _site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write              # deploy to Pages
+      id-token: write           # verify the deployment comes from this workflow
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

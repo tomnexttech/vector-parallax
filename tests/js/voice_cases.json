@@ -1,0 +1,406 @@
+{
+ "about": "声の当たりの試験。want は js/actions.js の id（none＝どの操作にも当てない）。arg は当たった時の引数。alt は意味が二通りに取れる言い方だけ。main は規則を書きながら見た組（楽観値）、holdout は規則を書いた後に別に書き、規則の直しには使わない組。",
+ "main": [
+  {
+   "say": "次",
+   "want": "case_next"
+  },
+  {
+   "say": "次の出来事を見せてくれる？",
+   "want": "case_next"
+  },
+  {
+   "say": "次へ進んで",
+   "want": "case_next"
+  },
+  {
+   "say": "ねえ、次のニュース",
+   "want": "case_next"
+  },
+  {
+   "say": "つぎ",
+   "want": "case_next"
+  },
+  {
+   "say": "前に戻って",
+   "want": "case_prev"
+  },
+  {
+   "say": "一つ前の出来事",
+   "want": "case_prev"
+  },
+  {
+   "say": "さっきの件を出して",
+   "want": "case_prev"
+  },
+  {
+   "say": "防衛費のニュースを探して",
+   "want": "case_find",
+   "arg": "防衛費"
+  },
+  {
+   "say": "北朝鮮について検索して",
+   "want": "case_find",
+   "arg": "北朝鮮"
+  },
+  {
+   "say": "能登の地震の記事を探して",
+   "want": "case_find",
+   "arg": "能登の地震",
+   "alt": [
+    "quakes"
+   ]
+  },
+  {
+   "say": "トランプ関連のニュースある？",
+   "want": "case_find",
+   "arg": "トランプ"
+  },
+  {
+   "say": "AIの束で見せて",
+   "want": "view_ai"
+  },
+  {
+   "say": "AIに切り替えて",
+   "want": "view_ai"
+  },
+  {
+   "say": "規則で見せて",
+   "want": "view_rules"
+  },
+  {
+   "say": "ルールの表示にして",
+   "want": "view_rules"
+  },
+  {
+   "say": "AIを使わないで",
+   "want": "view_rules"
+  },
+  {
+   "say": "公金で絞って",
+   "want": "topic",
+   "arg": "money"
+  },
+  {
+   "say": "災害だけ見せて",
+   "want": "topic",
+   "arg": "disaster"
+  },
+  {
+   "say": "安保の論点に絞り込んで",
+   "want": "topic",
+   "arg": "security"
+  },
+  {
+   "say": "説明責任で絞って",
+   "want": "topic",
+   "arg": "power"
+  },
+  {
+   "say": "見張る語だけにして",
+   "want": "topic",
+   "arg": "watch",
+   "alt": [
+    "watch_add"
+   ]
+  },
+  {
+   "say": "絞りを外して",
+   "want": "topic_all"
+  },
+  {
+   "say": "フィルターを解除して",
+   "want": "topic_all"
+  },
+  {
+   "say": "全部見せて",
+   "want": "topic_all"
+  },
+  {
+   "say": "国際の分野を見せて",
+   "want": "field",
+   "arg": "国際"
+  },
+  {
+   "say": "経済の欄に切り替えて",
+   "want": "field",
+   "arg": "経済"
+  },
+  {
+   "say": "分野を技術に",
+   "want": "field",
+   "arg": "技術"
+  },
+  {
+   "say": "地図を戻して",
+   "want": "map_case"
+  },
+  {
+   "say": "出来事の場所を見せて",
+   "want": "map_case"
+  },
+  {
+   "say": "地図を世界全体にして",
+   "want": "map_world"
+  },
+  {
+   "say": "世界地図を見せて",
+   "want": "map_world"
+  },
+  {
+   "say": "地図を拡大して",
+   "want": "map_in"
+  },
+  {
+   "say": "もっと寄って",
+   "want": "map_in",
+   "alt": [
+    "none"
+   ]
+  },
+  {
+   "say": "地図を縮小して",
+   "want": "map_out"
+  },
+  {
+   "say": "台風の層を消して",
+   "want": "layer",
+   "arg": "typhoons:off"
+  },
+  {
+   "say": "地図から地震を隠して",
+   "want": "layer",
+   "arg": "quakes:off"
+  },
+  {
+   "say": "地図に災害を出して",
+   "want": "layer",
+   "arg": "disasters:on"
+  },
+  {
+   "say": "地震あった？",
+   "want": "quakes"
+  },
+  {
+   "say": "最近の地震を教えて",
+   "want": "quakes"
+  },
+  {
+   "say": "揺れはあった？",
+   "want": "quakes"
+  },
+  {
+   "say": "台風どうなってる",
+   "want": "typhoons"
+  },
+  {
+   "say": "台風の情報をお願い",
+   "want": "typhoons"
+  },
+  {
+   "say": "北朝鮮を見張って",
+   "want": "watch_add",
+   "arg": "北朝鮮"
+  },
+  {
+   "say": "日銀を見張りに足して",
+   "want": "watch_add",
+   "arg": "日銀"
+  },
+  {
+   "say": "北朝鮮を見張るのをやめて",
+   "want": "watch_remove",
+   "arg": "北朝鮮"
+  },
+  {
+   "say": "最初の記事を開いて",
+   "want": "open_article"
+  },
+  {
+   "say": "元の記事を見せて",
+   "want": "open_article"
+  },
+  {
+   "say": "データとAIについて開いて",
+   "want": "about"
+  },
+  {
+   "say": "閉じて",
+   "want": "close"
+  },
+  {
+   "say": "その板を閉じて",
+   "want": "close"
+  },
+  {
+   "say": "送りを止めて",
+   "want": "auto_stop"
+  },
+  {
+   "say": "ちょっと待って",
+   "want": "auto_stop"
+  },
+  {
+   "say": "自動の送りを再開して",
+   "want": "auto_start"
+  },
+  {
+   "say": "市場を開いて",
+   "want": "sheet",
+   "arg": "mkt"
+  },
+  {
+   "say": "源の詳細",
+   "want": "sheet",
+   "arg": "src"
+  },
+  {
+   "say": "政治の一覧を見せて",
+   "want": "sheet",
+   "arg": "pol"
+  },
+  {
+   "say": "非対称を詳しく",
+   "want": "sheet",
+   "arg": "anom"
+  },
+  {
+   "say": "時間ごとの見出しを開いて",
+   "want": "sheet",
+   "arg": "hours"
+  },
+  {
+   "say": "これを調べるタスクに足して",
+   "want": "task_add"
+  },
+  {
+   "say": "この出来事を後で調べる",
+   "want": "task_add"
+  },
+  {
+   "say": "タスクの一覧を見せて",
+   "want": "tasks"
+  },
+  {
+   "say": "今日はいい天気だね",
+   "want": "none"
+  },
+  {
+   "say": "ありがとう",
+   "want": "none"
+  },
+  {
+   "say": "うーん",
+   "want": "none"
+  }
+ ],
+ "holdout": [
+  {
+   "say": "次のやつ",
+   "want": "case_next"
+  },
+  {
+   "say": "ひとつ前に戻して",
+   "want": "case_prev"
+  },
+  {
+   "say": "ウクライナの話を探して",
+   "want": "case_find",
+   "arg": "ウクライナ"
+  },
+  {
+   "say": "規則に変えて",
+   "want": "view_rules"
+  },
+  {
+   "say": "エーアイで見る",
+   "want": "view_ai"
+  },
+  {
+   "say": "予算で絞って",
+   "want": "topic",
+   "arg": "money"
+  },
+  {
+   "say": "人事の話だけ",
+   "want": "topic",
+   "arg": "law"
+  },
+  {
+   "say": "絞り込みを取って",
+   "want": "topic_all"
+  },
+  {
+   "say": "安全保障の分野を開いて",
+   "want": "field",
+   "arg": "安全保障"
+  },
+  {
+   "say": "地図をズームアウト",
+   "want": "map_out"
+  },
+  {
+   "say": "半径の印を消して",
+   "want": "layer",
+   "arg": "radius:off"
+  },
+  {
+   "say": "地震の情報ください",
+   "want": "quakes"
+  },
+  {
+   "say": "台風は今どこ",
+   "want": "typhoons"
+  },
+  {
+   "say": "中国を監視して",
+   "want": "watch_add",
+   "arg": "中国"
+  },
+  {
+   "say": "出典を開いて",
+   "want": "open_article"
+  },
+  {
+   "say": "使い方を見せて",
+   "want": "about"
+  },
+  {
+   "say": "戻って",
+   "want": "close",
+   "alt": [
+    "case_prev"
+   ]
+  },
+  {
+   "say": "ストップ",
+   "want": "auto_stop"
+  },
+  {
+   "say": "続けて",
+   "want": "auto_start"
+  },
+  {
+   "say": "マーケットを見せて",
+   "want": "sheet",
+   "arg": "mkt"
+  },
+  {
+   "say": "国会の状況を教えて",
+   "want": "sheet",
+   "arg": "pol"
+  },
+  {
+   "say": "この件をタスクに追加して",
+   "want": "task_add"
+  },
+  {
+   "say": "やることリストを開いて",
+   "want": "tasks"
+  },
+  {
+   "say": "お腹すいた",
+   "want": "none"
+  }
+ ]
+}

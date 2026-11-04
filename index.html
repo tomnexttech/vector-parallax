@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; connect-src 'self' https://generativelanguage.googleapis.com https://earthquake.usgs.gov https://www.jma.go.jp https://www.gdacs.org; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="同じ出来事を、日本と海外の源・官公庁の資料・地図・災害・市場と一画面で並べる盤。">
+<meta name="theme-color" content="#26272a">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Parallax">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Parallax</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/icons/icon-180.png">
+<link rel="stylesheet" href="css/app.css">
+<script type="module" src="js/app.js"></script>
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="tb" id="tb">
+    <div class="tb-app">
+      <svg class="mark" viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7.5h10M7.5 12.5h10"/></svg>
+      <span class="app-name">Parallax</span>
+    </div>
+    <div class="seg" role="group" aria-label="束ね方">
+      <button type="button" id="v-ai" aria-pressed="true">AI</button>
+      <button type="button" id="v-rules" aria-pressed="false">規則</button>
+    </div>
+    <div class="state" id="state" role="status" aria-live="polite">読込中</div>
+    <div class="meters">
+      <span class="meter" id="m-src" data-host><span class="k">源</span><b class="num" id="src-live">—</b><span class="sl">/</span><span id="src-total">—</span></span>
+      <span class="meter" id="m-gen" data-host><span class="k">取得</span><b id="gen-at">—</b><time id="gen-age"></time></span>
+      <span class="meter" id="m-ai" data-host><span class="k">AI</span><b id="ai-who">—</b><time id="ai-age"></time></span>
+      <span class="meter" id="m-new" hidden><span class="k">前回から</span><b class="num" id="new-n">—</b></span>
+    </div>
+    <div class="tb-r">
+      <label class="search">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg>
+        <input id="q" type="search" placeholder="検索" aria-label="出来事・語・地名・媒体で検索" autocomplete="off" spellcheck="false">
+      </label>
+      <button type="button" class="tbb icon" id="voice-btn" hidden aria-label="声で操作" title="声で操作（v）"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.5" y="2.5" width="5" height="9.5" rx="2.5"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>
+      <button type="button" class="tbb" id="task-btn" aria-expanded="false" aria-controls="task-pop">タスク<span class="n" id="task-n"></span></button>
+      <button type="button" class="tbb" id="watch-btn" aria-expanded="false" aria-controls="watch-pop">見張る<span class="n" id="watch-n"></span></button>
+      <button type="button" class="tbb" id="about-btn">データと AI</button>
+    </div>
+  </header>
+  <p class="note-bar" id="snap-note" role="status" hidden></p>
+
+  <nav class="jump" aria-label="欄へ移る">
+    <a href="#p-case">出来事</a><a href="#p-pri">注目</a><a href="#p-map">地図</a><a href="#p-anom">非対称</a><a href="#p-haz">災害</a><a href="#p-src">源</a>
+  </nav>
+
+  <main class="board" id="board">
+    <div class="col c1">
+      <section class="pane" id="p-src" aria-labelledby="src-h">
+        <header class="ph"><h2 id="src-h">源</h2><span class="pc" id="src-c"></span></header>
+        <div class="pb" id="src-b"></div>
+      </section>
+      <section class="pane" id="p-hours" aria-labelledby="hours-h">
+        <header class="ph"><h2 id="hours-h">時間ごとの見出し</h2><span class="pc" id="hours-c"></span></header>
+        <div class="pb" id="hours-b"></div>
+      </section>
+      <section class="pane" id="p-fields" aria-labelledby="fields-h">
+        <header class="ph"><h2 id="fields-h">分野</h2><span class="pc" id="fields-c"></span></header>
+        <div class="tabs" id="field-tabs" role="group" aria-label="分野"></div>
+        <div class="pb" id="fields-b"></div>
+      </section>
+    </div>
+
+    <div class="col c2">
+      <section class="pane" id="p-pri" aria-labelledby="pri-h">
+        <header class="ph"><h2 id="pri-h">注目</h2><b class="pc num" id="pri-c">—</b></header>
+        <div class="chips" id="pri-chips" role="group" aria-label="論点で絞る"></div>
+        <div class="pb" id="pri-b"></div>
+      </section>
+      <section class="pane" id="p-anom" aria-labelledby="anom-h">
+        <header class="ph"><h2 id="anom-h">非対称</h2><b class="pc num" id="anom-c">—</b></header>
+        <div class="asum" id="anom-sum" role="group" aria-label="非対称の種類で絞る"></div>
+        <div class="pb" id="anom-b"></div>
+      </section>
+    </div>
+
+    <div class="col c3">
+      <section class="pane case" id="p-case" aria-label="出来事">
+        <div class="pb" id="case"></div>
+      </section>
+      <section class="pane map" id="p-map" aria-labelledby="map-h">
+        <header class="ph"><h2 id="map-h">地図</h2><div class="layers" id="layers" role="group" aria-label="地図の層"></div></header>
+        <div class="mapbox">
+          <canvas id="map" aria-label="出来事・地震・台風・災害の地図" role="img"></canvas>
+          <p class="map-read" id="map-read"></p>
+          <p class="map-credit">Natural Earth · 気象庁 · USGS · GDACS</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="col c4">
+      <section class="pane count" id="p-count" aria-labelledby="count-h">
+        <header class="ph"><h2 id="count-h">取得した見出し</h2></header>
+        <div class="pb"><b class="big num" id="count-n">—</b><dl class="kv tight" id="count-f"></dl></div>
+      </section>
+      <section class="pane" id="p-haz" aria-labelledby="haz-h">
+        <header class="ph"><h2 id="haz-h">災害</h2><span class="pc" id="haz-c"></span></header>
+        <div class="pb" id="haz-b"></div>
+      </section>
+      <section class="pane" id="p-mkt" aria-labelledby="mkt-h">
+        <header class="ph"><h2 id="mkt-h">市場</h2><span class="pc" id="mkt-c"></span></header>
+        <div class="pb" id="mkt-b"></div>
+      </section>
+      <section class="pane" id="p-pol" aria-labelledby="pol-h">
+        <header class="ph"><h2 id="pol-h">政治</h2><span class="pc" id="pol-c"></span></header>
+        <div class="pb" id="pol-b"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="sb" id="sb">
+    <a class="sb-src" id="sb-src" target="_blank" rel="noopener noreferrer"></a>
+    <div class="sb-tick" id="sb-tick" aria-live="polite"></div>
+    <div class="sb-r">
+      <span>AI の文は誤りうる。元の記事で確かめてください</span>
+      <a href="https://github.com/tomnexttech/vector-parallax/issues" target="_blank" rel="noopener noreferrer">掲載の停止の依頼</a>
+    </div>
+  </footer>
+
+  <div class="pop" id="watch-pop" hidden>
+    <ul class="watch" id="watch-list"></ul>
+    <form class="watch-add" id="watch-form" autocomplete="off">
+      <input id="watch-in" type="text" maxlength="40" placeholder="語・地名" aria-label="見張る語・地名">
+      <button type="submit" class="tbb">足す</button>
+    </form>
+    <div class="suggest" id="watch-suggest" aria-label="この取得に多い地名"></div>
+  </div>
+  <div class="pop tpop" id="task-pop" hidden>
+    <ul class="tasks" id="task-list"></ul>
+    <p class="pop-f">このブラウザだけに保存</p>
+  </div>
+  <div class="pop vpop" id="voice-pop" hidden role="status" aria-live="polite"></div>
+  <div class="sheet-layer" id="sheet" hidden><section class="dsheet" role="dialog" aria-modal="true" aria-labelledby="ds-title"></section></div>
+  <div class="sheet-wrap" id="about-wrap" hidden></div>
+  <p class="fatal" id="fatal" role="alert" hidden></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,76 @@
+{
+  "schema": "parallax-labels/1",
+  "note_ja": "真偽は判定していない",
+  "flags": {
+    "overseas_only": {
+      "ja": "海外の源だけ",
+      "en": "OVERSEAS SOURCES ONLY",
+      "tip_ja": "取得した源のうち、海外の媒体だけに出ていて、日本に関わる出来事"
+    },
+    "jp_main_not_found": {
+      "ja": "取得した国内の主要 {n} 配信に見当たらない",
+      "en": "NOT FOUND IN {n} JP MAJOR FEEDS",
+      "n_from": "scope.jp_main.fetched",
+      "tip_ja": "二つ以上の媒体に出ていて、取得した国内の主要配信（公共放送・通信社・全国紙・民放）には見当たらない。取得した配信の中で見当たらないという意味であり、各社の対応を判定するものではない"
+    },
+    "primary_only": {
+      "ja": "官公庁の資料だけ",
+      "en": "GOVERNMENT DOCUMENTS ONLY",
+      "tip_ja": "政府・中央銀行などの一次の資料だけに出ている"
+    }
+  },
+  "places_ja": {
+    "US": "米国",
+    "CN": "中国",
+    "JP": "日本",
+    "KR": "韓国",
+    "NK": "北朝鮮",
+    "RU": "ロシア",
+    "UA": "ウクライナ",
+    "IR": "イラン",
+    "IL": "イスラエル",
+    "TW": "台湾",
+    "FR": "フランス",
+    "UK": "英国",
+    "DE": "ドイツ",
+    "IN": "インド",
+    "EU": "欧州連合",
+    "OKINAWA": "沖縄"
+  },
+  "stale": {
+    "ja": "更新なし",
+    "tip_ja": "72 時間以上、新しい見出しが取れていない源（id は stale_72h のまま）"
+  },
+  "asym": {
+    "primary_only": "官公庁の資料だけ",
+    "periphery_only": "周辺の型だけ（型の名は types の short）",
+    "overseas_only": "海外の源だけ",
+    "mainstream_only": "国内主流の型だけ"
+  },
+  "types": {
+    "週刊誌・タブロイド": {
+      "short": "週刊誌",
+      "lead": true
+    },
+    "政党機関紙": {
+      "short": "政党機関紙",
+      "lead": true
+    },
+    "国家メディア": {
+      "short": "国家メディア",
+      "lead": true
+    },
+    "シンクタンク": {
+      "short": "シンクタンク",
+      "lead": true
+    },
+    "専門": {
+      "short": "専門",
+      "lead": true
+    },
+    "地方紙": {
+      "short": "地方紙",
+      "lead": false
+    }
+  }
+}

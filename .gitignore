@@ -1,0 +1,21 @@
+# build products and anything that holds a headline, an image URL or the contents of a fetch (CONTRACT 20.1).
+# They are made by the workflow and shipped as the Pages artifact; they are never committed.
+work/
+__pycache__/
+*.pyc
+data/latest.json
+data/board.json
+data/history.json
+data/stats.json
+data/eval.json
+data/politics.json
+data/hazards.json
+data/markets.json
+data/summary_cache.json
+data/recorded.json
+data/og_robots.json
+data/*.tmp
+_site/
+# working notes: not part of the public repository
+HANDOFF.md
+CONTRACT.md
