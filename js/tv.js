@@ -1,7 +1,8 @@
 /* tv — broadcasters' own YouTube channels, embedded from youtube-nocookie.
  * No search and no reading of YouTube's pages: a fixed list of official news channels (each id checked against the channel's public
  * feed on 2026-11-05). A channel that runs a 24-hour stream is shown live; the others show their latest uploads.
- * Never autoplays; muted until the viewer turns the sound on in the player. */
+ * Plays by itself without sound (a browser stops a player that starts with sound); the sound is the viewer's press in the player.
+ * The uploads of a channel loop as a list. */
 
 export const STATIONS = [
   { id: 'ann', short: 'ANN', name: 'ANNnewsCH', ch: 'UCGCZAYq5Xxojl_tSXcVJhiQ', mode: 'uploads', home: 'jp', match: /テレビ朝日|テレ朝|ANN/ },
@@ -24,7 +25,7 @@ export function stationFor(outlets, cover) {
 }
 
 export function embedSrc(st) {
-  const q = 'autoplay=0&mute=1&playsinline=1&rel=0';
+  const q = 'autoplay=1&mute=1&playsinline=1&rel=0&loop=1';
   return st.mode === 'live'
     ? `https://www.youtube-nocookie.com/embed/live_stream?channel=${st.ch}&${q}`
     : `https://www.youtube-nocookie.com/embed/videoseries?list=UU${st.ch.slice(2)}&${q}`;

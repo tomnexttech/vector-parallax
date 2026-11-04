@@ -1,11 +1,16 @@
 /* map — the world under the board, on one canvas.
  *
- *   createMap(canvas, { base, onPick, hi }) -> { show(scene, animate), resize(), pick(x, y), reset(), zoom(k), view() }
+ *   createMap(canvas, { base, onPick, hi, local, onPaint, wheel }) -> { show(scene, animate), resize(), pick(x, y), reset(), zoom(k), view(),
+ *                                                                   xy(lat, lon), wheel(ev) }
+ *     local(clientX, clientY) -> [x, y] on the canvas, for a canvas that is turned in 3D (js/floor.js); onPaint({ view, w, h, marks, moving })
+ *     after every frame; wheel: false leaves the wheel to the caller (api.wheel)
  *
  * scene = { focus: null | { lat, lon, radiusKm: null | number, label },
  *           points: [{ lat, lon, n, pri, country, name, ref }],          events with a place (pri = on the priority list)
  *           quakes, typhoons, disasters (js/hazards.js), fresh: Set of quake ids that arrived since the last look,
- *           layers: { events, pri, radius, quakes, typhoons, disasters } }   a layer that is false is not drawn
+ *           layers: { events, pri, radius, quakes, typhoons, disasters },   a layer that is false is not drawn
+ *           span: degrees of longitude around the focus (default SPAN), pillars: true when the names of the priority list and of the
+ *           focus stand on pillars above the map (js/floor.js) instead of lying on it }
  *
  * The ground, detailed (js/basemap.js): relief, water and coast, rivers, railways, roads, borders, built in a Worker from open
  * tiles (OpenFreeMap vector tiles of OpenStreetMap, AWS Terrain Tiles) as equirectangular sheets; while the hand moves the sheets
@@ -260,13 +265,14 @@ export function createMap(canvas, opts = {}) {
   function size() {
     const r = canvas.getBoundingClientRect();
     dpr = Math.min(2, window.devicePixelRatio || 1);
-    W = Math.max(1, Math.round(r.width)); H = Math.max(1, Math.round(r.height));
+    // the layout size: a canvas turned in 3D has a different box on the screen
+    W = Math.max(1, Math.round(canvas.clientWidth || r.width)); H = Math.max(1, Math.round(canvas.clientHeight || r.height));
     if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); }
   }
   const minS = () => Math.max(W / 360, H / 170);
   function target(sc) {
     if (sc && sc.focus) {
-      const s = Math.max(W / SPAN, minS());
+      const s = Math.max(W / (sc.span || SPAN), minS());
       return clampV({ lon0: sc.focus.lon - W / 2 / s, lat0: sc.focus.lat + H / 2 / s, s });
     }
     const s = minS() * 1.15;
@@ -414,7 +420,7 @@ export function createMap(canvas, opts = {}) {
     for (let lat = -80; lat <= 80; lat += step) { const y = px(Y(v, lat)); if (y > 0 && y < H) { g.moveTo(0, y); g.lineTo(W, y); } }
     g.stroke();
 
-    const hits = [], labels = [], storms = [];
+    const hits = [], labels = [], storms = [], marks = [];
     const tier = {
       focus: { px: 12.5, wt: 600, color: C.cyan, sub: C.cyan },
       hazard: { px: 11.5, wt: 600, color: C.red, sub: C.red },
@@ -509,7 +515,7 @@ export function createMap(canvas, opts = {}) {
     // events with a place: one mark per name; inside Japan folded by the scale. A country's representative point is a dashed ring.
     const f = sc.focus;
     let fbox = null;
-    if (f && f.label) fbox = { x: X(v, f.lon), y: Y(v, f.lat), r: 10, text: f.label, rank: 100, t: tier.focus };
+    if (f && f.label && !sc.pillars) fbox = { x: X(v, f.lon), y: Y(v, f.lat), r: 10, text: f.label, rank: 100, t: tier.focus };
     if (L.events !== false) {
       const ms = marksAt(sc.points || [], v.s).sort((a, b) => (a.pri - b.pri) || (a.n - b.n));
       const fk = f && f.label ? nameKey(f.label) : null;
@@ -527,10 +533,11 @@ export function createMap(canvas, opts = {}) {
           if (pri) { g.fillStyle = C.ink; g.beginPath(); g.arc(x, y, 1.6, 0, Math.PI * 2); g.fill(); }
         }
         hits.push(cl ? { x, y, r: r + 5, kind: 'cluster', m } : { x, y, r: r + 5, kind: 'event', p: m.best });
+        marks.push({ x, y, name: m.name, n: m.n, pri: !!pri, cluster: cl });
         if (fbox && fk && m.name === fk && Math.hypot(x - fbox.x, y - fbox.y) < 40) { fbox.sub = ` ${m.n}`; continue; }
         if (!m.name || !(cl || m.pri || m.n >= 2 || v.s >= 40)) continue;
         const t = m.country && !cl ? tier.faint : (m.pri && m.n >= 3) || (cl && m.n >= 10) ? tier.big : m.n >= 3 || m.pri || cl ? tier.mid : tier.small;
-        labels.push({ x, y, r: r + (cl ? 3 : 1), text: m.name, sub: ` ${m.n}`, rank: (m.pri ? 3 : m.country && !cl ? 1 : 2) + Math.min(m.n, 999) / 1000, t, name: true });
+        if (!(sc.pillars && pri)) labels.push({ x, y, r: r + (cl ? 3 : 1), text: m.name, sub: ` ${m.n}`, rank: (m.pri ? 3 : m.country && !cl ? 1 : 2) + Math.min(m.n, 999) / 1000, t, name: true });
       }
     }
     // focus
@@ -587,6 +594,7 @@ export function createMap(canvas, opts = {}) {
       if (place(l)) { drawn++; if (l.name) names.add(l.text); }
     }
     picks = hits;
+    if (opts.onPaint) opts.onPaint({ view: v, w: W, h: H, marks, moving: !!quick });
   }
 
   /** a folded mark opens: zoom so its members stand apart (or, when they cannot, the heaviest event is chosen) */
@@ -665,7 +673,7 @@ export function createMap(canvas, opts = {}) {
 
   const finite = (v) => v && Number.isFinite(v.lon0) && Number.isFinite(v.lat0) && Number.isFinite(v.s) && v.s > 0;
   function show(sc, animate) {
-    const moved = !scene || JSON.stringify(scene.focus) !== JSON.stringify(sc.focus);
+    const moved = !scene || JSON.stringify(scene.focus) !== JSON.stringify(sc.focus) || scene.span !== sc.span;
     scene = sc;
     size();
     if (!moved && view) { paint(view, false); ringNew(freshQuakes()); return; }
@@ -675,39 +683,47 @@ export function createMap(canvas, opts = {}) {
     else { anim = null; view = to; paint(view, false); ringNew(freshQuakes()); }
   }
 
-  canvas.addEventListener('pointerdown', (ev) => { if (!view) return; drag = { x: ev.clientX, y: ev.clientY, v: view, moved: false }; try { canvas.setPointerCapture(ev.pointerId); } catch { /* */ } });
+  // the point under the pointer on the canvas (through the turn of the floor when the caller knows it)
+  const local = (ev) => {
+    const p = opts.local ? opts.local(ev.clientX, ev.clientY) : null;
+    if (p && Number.isFinite(p[0]) && Number.isFinite(p[1])) return p;
+    const r = canvas.getBoundingClientRect();
+    return [ev.clientX - r.left, ev.clientY - r.top];
+  };
+  canvas.addEventListener('pointerdown', (ev) => { if (!view) return; const [x, y] = local(ev); drag = { x, y, v: view, moved: false }; try { canvas.setPointerCapture(ev.pointerId); } catch { /* */ } });
   canvas.addEventListener('pointermove', (ev) => {
+    const [lx, ly] = local(ev);
     if (drag) {
-      const dx = ev.clientX - drag.x, dy = ev.clientY - drag.y;
+      const dx = lx - drag.x, dy = ly - drag.y;
       if (!drag.moved && Math.hypot(dx, dy) < 4) return;
       drag.moved = true; held = true; anim = null; pulse = null;
       view = clampV({ lon0: drag.v.lon0 - dx / drag.v.s, lat0: drag.v.lat0 + dy / drag.v.s, s: drag.v.s });
       paint(view, true); later();
       return;
     }
-    const r = canvas.getBoundingClientRect();
-    canvas.style.cursor = api.pick(ev.clientX - r.left, ev.clientY - r.top) ? 'pointer' : 'grab';
+    canvas.style.cursor = api.pick(lx, ly) ? 'pointer' : 'grab';
   });
   canvas.addEventListener('pointerup', (ev) => {
     const d = drag; drag = null;
     if (!d || d.moved) return;
-    const r = canvas.getBoundingClientRect();
-    const hit = api.pick(ev.clientX - r.left, ev.clientY - r.top);
+    const [x, y] = local(ev);
+    const hit = api.pick(x, y);
     if (!hit) return;
     if (hit.kind === 'cluster') zoomInto(hit.m, hit.x, hit.y);
     else if (opts.onPick) opts.onPick(hit);
   });
-  canvas.addEventListener('wheel', (ev) => {
+  function onWheel(ev) {
     if (!view) return;
     ev.preventDefault();
-    const r = canvas.getBoundingClientRect(), mx = ev.clientX - r.left, my = ev.clientY - r.top;
+    const [lx, ly] = local(ev), mx = Math.max(0, Math.min(W, lx)), my = Math.max(0, Math.min(H, ly));
     const k = Math.pow(1.0018, -ev.deltaY);
     const lon = view.lon0 + mx / view.s, lat = view.lat0 - my / view.s;
     const s = Math.max(minS(), Math.min(W / 6, view.s * k));
     held = true; anim = null; pulse = null;
     view = clampV({ lon0: lon - mx / s, lat0: lat + my / s, s });
     paint(view, true); later();
-  }, { passive: false });
+  }
+  if (opts.wheel !== false) canvas.addEventListener('wheel', onWheel, { passive: false });
   canvas.addEventListener('dblclick', () => api.reset());
 
   const api = {
@@ -721,6 +737,8 @@ export function createMap(canvas, opts = {}) {
       return best;
     },
     view: () => view && { ...view, w: W, h: H },
+    xy: (lat, lon) => (view ? [X(view, lon), Y(view, lat)] : null),
+    wheel: onWheel,
   };
   hiListeners.add(() => { closeSharp(sharp); sharp = null; if (scene && view && !anim) paint(view, false); });
   loadGround(base, hiSrc).then((gr) => { world = gr.world; coast = gr.coast; render = gr.render; if (scene && !anim && view) paint(view, false); });

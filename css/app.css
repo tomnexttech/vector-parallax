@@ -663,3 +663,101 @@ body.sheet-open .board { filter: blur(1.5px) brightness(.72); }
 .map-credit { left: 8px; text-align: right; line-height: 1.35; font-size: 9.5px; text-shadow: 0 0 3px #000, 0 0 2px #000; }
 .map-read { bottom: 21px; }
 @media (max-width: 760px) { .map-read { bottom: 33px; } }
+
+/* ------------------------------------------------------------ the map floor (js/floor.js)
+   One map, three ways: laid back under the event (case), raised to fill the column (map), flat in the page (1280 px and less).
+   Inside it the map has its own ground: a dark sea, a faintly lit land, a bright coast and borders, three colours for the marks
+   (white, cyan, red). The page around it stays as it is. */
+#theater {
+  --f-bg: #03080c; --f-line: rgba(176, 224, 246, .45); --f-line-d: rgba(176, 224, 246, .18); --f-cyan: #8fd8f2;
+  --f-ink: #eef7fc; --f-ink2: #a9c4d2; --f-ink3: #67818f; --f-red: #e0392e;
+  background: var(--f-bg); overflow: hidden;
+}
+#map {
+  --map-sea: #050d14; --map-land: #08141d; --map-coast: rgba(214, 240, 252, .82); --map-grid: rgba(143, 216, 242, .07);
+  --map-label: #d6eef8; --map-dot: rgba(143, 216, 242, .22); --map-halo: rgba(3, 9, 14, .9); --map-plate: rgba(4, 14, 22, .82);
+  --ink: #eef7fc; --ink-2: #a9c4d2; --ink-3: #67818f; --ink-4: #4a5f6b; --cyan: #8fd8f2; --red: #f0685c;
+}
+.floor { position: absolute; inset: 0; }
+.fcn { position: absolute; width: 1px; height: 1px; margin: -.5px 0 0 -.5px; pointer-events: none; }
+.fcn.tl { left: 0; top: 0; } .fcn.tr { left: 100%; top: 0; } .fcn.br { left: 100%; top: 100%; } .fcn.bl { left: 0; top: 100%; }
+.pillars { position: absolute; inset: 0; pointer-events: none; transform-style: preserve-3d; }
+.pl { position: absolute; width: 3px; margin-left: -1.5px; transform-origin: 50% 100%; transform: rotateX(-90deg); transform-style: preserve-3d;
+  background: linear-gradient(0deg, rgba(240, 72, 60, .95), rgba(240, 72, 60, .08)); }
+.pl.case { width: 4px; margin-left: -2px; background: linear-gradient(0deg, #ff4a3a, rgba(255, 74, 58, .15)); }
+.pl b { position: absolute; left: 50%; top: -2px; transform-origin: 50% 100%; transform: translate(-50%, -100%) rotateX(var(--bb, 32deg));
+  white-space: nowrap; padding: 2px 5px 1px; font: 600 11px/1.15 var(--font); color: #fff; background: rgba(224, 57, 46, .86); }
+.pl.case b { font-size: 13px; padding: 3px 7px 2px; background: var(--f-red); }
+.ftrk { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 1.5px solid rgba(255, 106, 94, .9); pointer-events: none; }
+.mpanel, .mhud, .flegend, .modebar { display: none; }
+.mpanel { position: absolute; left: 10px; right: 10px; top: 6px; z-index: 2; flex-wrap: wrap; align-items: center; gap: 2px 3px;
+  padding: 4px 8px; background: rgba(4, 14, 22, .86); box-shadow: inset 0 0 0 1px var(--f-line); }
+.mp-h { display: inline-flex; align-items: baseline; gap: 7px; margin-right: 6px; }
+.mp-h b { font: 600 11px/1 var(--font); letter-spacing: .14em; color: var(--f-ink); }
+.mp-h small { font-size: 10.5px; color: var(--f-ink3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mpanel .layers { display: flex; flex-wrap: wrap; gap: 2px 3px; margin: 0; overflow: visible; }
+.mpanel .lyr { height: 18px; gap: 4px; padding: 0 6px 0 4px; border: 1px solid var(--f-line-d); border-radius: 0; font-size: 10.5px; color: var(--f-ink); }
+.mpanel .lyr svg { width: 10px; height: 10px; flex: none; }
+.mpanel .lyr .n { color: var(--f-ink3); font-size: 10px; }
+.mpanel .lyr[aria-pressed="false"] { opacity: .36; }
+.mpanel .lyr:hover { border-color: var(--f-line); background: rgba(143, 216, 242, .08); }
+#theater .map-read { color: var(--f-cyan); background: rgba(4, 14, 22, .82); border-radius: 0; z-index: 2; }
+#theater .map-credit { color: var(--f-ink3); z-index: 2; }
+.mhud { position: absolute; inset: 42px 14px 30px 12px; pointer-events: none; z-index: 1; }
+.mhud .c { position: absolute; width: 22px; height: 22px; border: 1.5px solid rgba(176, 224, 246, .8); }
+.mhud .tl { left: 0; top: 0; border-right: 0; border-bottom: 0; } .mhud .tr { right: 0; top: 0; border-left: 0; border-bottom: 0; }
+.mhud .bl { left: 0; bottom: 0; border-right: 0; border-top: 0; } .mhud .br { right: 0; bottom: 0; border-left: 0; border-top: 0; }
+.mhud .ret { position: absolute; left: 50%; top: 52%; width: 46px; height: 46px; margin: -23px 0 0 -23px; border: 1px solid rgba(176, 224, 246, .3); border-radius: 50%; }
+.mhud .ret::before, .mhud .ret::after { content: ""; position: absolute; background: rgba(176, 224, 246, .4); }
+.mhud .ret::before { left: -14px; right: -14px; top: 50%; height: 1px; } .mhud .ret::after { top: -14px; bottom: -14px; left: 50%; width: 1px; }
+.mhud .rd { position: absolute; right: 30px; top: 6px; text-align: right; font: 600 11px/1.45 var(--font); letter-spacing: .06em; color: var(--f-ink2); white-space: pre; font-variant-numeric: tabular-nums; }
+.mhud .trk { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 4px 9px 3px; font: 600 12px/1 var(--font); letter-spacing: .04em; color: #fff; background: rgba(224, 57, 46, .88); }
+.mhud .trk::before { content: "TRACKING  "; opacity: .8; letter-spacing: .1em; }
+/* the scan line: runs once when what the layers hold was replaced; its strength (--swa) is the share replaced */
+.mhud .sw { position: absolute; top: 0; bottom: 0; left: 2%; right: 2%; overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 50%, transparent); mask-image: linear-gradient(180deg, transparent, #000 50%, transparent); }
+.mhud .sw::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent calc(100% - 1px), rgba(143, 216, 242, .45) calc(100% - 1px));
+  transform: translateX(-100%); opacity: 0; }
+.mhud .sw.go::before { animation: mapSweep 1.6s linear 1; }
+@keyframes mapSweep { 0% { transform: translateX(-100%); opacity: var(--swa, 1); } 90% { opacity: var(--swa, 1); } 100% { transform: translateX(0); opacity: 0; } }
+.flegend { position: absolute; right: 12px; bottom: 24px; z-index: 2; pointer-events: none; font-size: 10.5px; line-height: 1.5; color: var(--f-ink2); }
+.flegend i { display: inline-block; vertical-align: middle; margin: 0 4px 0 10px; }
+.flegend .p { width: 3px; height: 12px; background: #f0685c; }
+.flegend .n { width: 5px; height: 5px; border-radius: 50%; background: #eef7fc; }
+.flegend .q { width: 9px; height: 9px; border: 1px solid #f0685c; border-radius: 50%; }
+.flegend .r { width: 11px; height: 11px; border: 1px dashed #8fd8f2; border-radius: 50%; }
+.modebar { position: absolute; left: 10px; bottom: 6px; z-index: 3; align-items: center; gap: 8px; }
+.mtag { padding: 3px 6px 2px; font: 600 11px/1 var(--font); letter-spacing: .12em; color: #fff; background: var(--f-red); }
+.mtabs { display: inline-flex; gap: 2px; }
+.mtabs button { padding: 3px 8px 2px; border: 1px solid var(--f-line-d); background: rgba(6, 18, 28, .35); color: var(--f-ink3); font: 600 11px/1 var(--font); letter-spacing: .12em; cursor: pointer; }
+.mtabs button[aria-pressed="true"] { color: #fff; border-color: var(--f-line); background: rgba(143, 216, 242, .16); }
+.board[data-floor="flat"] .mpanel { display: flex; }
+
+@media (min-width: 1281px) {
+  .c3 > #p-case { grid-row: 1; grid-column: 1; position: relative; z-index: 1; }
+  .c3 > #p-map { grid-row: 1 / -1; grid-column: 1; z-index: 0; }
+  #p-map > .ph { display: none; }
+  .board[data-floor="map"] #p-case { display: none; }
+  #theater { perspective: 1000px; perspective-origin: 50% 35%; }
+  .floor { inset: auto; left: -6%; width: 112%; bottom: 0; height: 63%; transform-style: preserve-3d; transform-origin: 50% 100%;
+    transform: rotateX(58deg); pointer-events: none; --bb: 32deg;
+    transition: transform 1.1s var(--ease), height 1.1s var(--ease), left 1.1s var(--ease), width 1.1s var(--ease); }
+  .board[data-floor="map"] .floor { left: 0; width: 100%; height: 106.2%; transform: rotateX(14deg); pointer-events: auto; --bb: 76deg; }
+  .board[data-floor="map"] .pillars { pointer-events: none; }
+  .modebar { display: flex; }
+  .board[data-floor="case"] .flegend { display: block; }
+  .board[data-floor="case"] .map-read { bottom: 36px; left: 10px; }
+  .board[data-floor="case"] .flegend { bottom: 36px; }
+  .board[data-floor="map"] .mpanel { display: flex; }
+  .board[data-floor="map"] .mhud { display: block; }
+  .board[data-floor="map"] .map-read { display: none; }
+  #theater .map-credit { left: 150px; right: 12px; bottom: 5px; text-align: right; font-size: 9.5px; line-height: 1.3; }
+}
+@media (max-width: 760px) {
+  .mpanel { left: 6px; right: 6px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .mp-h small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .floor { transition: none !important; } .mhud .sw.go::before { animation: none; } }
+/* the lists that send themselves move on the compositor (js/autoscroll.js writes scrollTop only) */
+#src-b, #fields-b, #pri-b, #anom-b, #haz-b, #mkt-b, #pol-b { will-change: scroll-position; }

@@ -16,6 +16,8 @@ import { PLACES, placeJa, placesOf, placesIn } from './places.js';
 import { loadWatch, saveWatch, addWatch, removeWatch, hitsOf } from './prefs.js';
 import { TOPICS, FIELDS, topicsOf, fieldOf, topicJa } from './topics.js';
 import { createMap } from './map.js';
+import { createFloor } from './floor.js';
+import { startAutoScroll } from './autoscroll.js';
 import { loadHazards, nearby, dir8, shindoJa, disasterJa } from './hazards.js';
 import { createActions } from './actions.js';
 import { loadTasks, saveTasks, addTask, toggleTask, removeTask, hasTask } from './tasks.js';
@@ -797,19 +799,60 @@ function scene() {
   return {
     focus: e && e.geo ? { lat: e.geo.lat, lon: e.geo.lon, radiusKm: e.geo.country ? null : RADIUS_KM, label: e.geo.name } : null,
     points, quakes: hz.quakes, typhoons: hz.typhoons, disasters: hz.disasters, layers: state.layers, fresh: state.hazFresh,
+    span: state.floor ? state.floor.span() : null, pillars: state.floor ? state.floor.pillars() : false,
   };
+}
+// the layer bar: one shape for each layer, in the three colours of the map (red = hazards and the priority list)
+const GLYPH = {
+  events: '<circle cx="7" cy="7" r="2.6" fill="#eef7fc"/>',
+  pri: '<rect x="5.5" y="1" width="3" height="12" fill="#f0685c"/>',
+  radius: '<circle cx="7" cy="7" r="4.8" fill="none" stroke="#8fd8f2" stroke-width="1.2" stroke-dasharray="2 1.6"/>',
+  quakes: '<circle cx="7" cy="7" r="4.5" fill="none" stroke="#f0685c" stroke-width="1.3"/>',
+  typhoons: '<path d="M7 7 m0 -1.5 a1.5 1.5 0 1 1 -1.5 1.5 M7 7 m-4.5 0 a4.5 4.5 0 0 1 4.5 -4.5 M7 7 m4.5 0 a4.5 4.5 0 0 1 -4.5 4.5" fill="none" stroke="#f0685c" stroke-width="1.3"/>',
+  disasters: '<path d="M7 1.5 L12.5 7 L7 12.5 L1.5 7 Z" fill="none" stroke="#f0685c" stroke-width="1.3"/>',
+};
+const glyph = (id) => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('viewBox', '0 0 14 14'); s.setAttribute('aria-hidden', 'true'); s.innerHTML = GLYPH[id] || GLYPH.events; return s; };
+const r2 = (x) => (Number.isFinite(x) ? x.toFixed(2) : '-');
+/** what the layers hold, as keys (kind, place, value); the scan line runs when these are replaced, not when a layer is turned off */
+function layerKeys(sc) {
+  const K = new Set(), seen = new Map();
+  const add = (k) => { const n = (seen.get(k) || 0) + 1; seen.set(k, n); K.add(`${k}#${n}`); };
+  for (const p of sc.points) add(`n|${r2(p.lat)},${r2(p.lon)}|${p.n}|${p.pri}`);
+  for (const q of sc.quakes || []) add(`q|${r2(q.lat)},${r2(q.lon)}|${q.mag}`);
+  for (const t of sc.typhoons || []) add(`t|${t.id}|${Array.isArray(t.center) ? t.center.map(r2).join(',') : ''}|${t.pressure || ''}`);
+  for (const d of sc.disasters || []) add(`d|${r2(d.lat)},${r2(d.lon)}|${d.alert || ''}`);
+  return K;
+}
+/** the things TRACKING may hold: storms, quakes of M5 and more, red and orange alerts, the head of the priority list */
+function trackList() {
+  const hz = state.haz || {}, L = [];
+  for (const t of hz.typhoons || []) if (Array.isArray(t.center) && isNum(t.center[0])) L.push({ lat: t.center[0], lon: t.center[1], label: [t.name || t.nameEn, t.pressure ? `${t.pressure} hPa` : ''].filter(Boolean).join('・') });
+  for (const q of hz.quakes || []) if (isNum(q.mag) && q.mag >= 5 && isNum(q.lat)) L.push({ lat: q.lat, lon: q.lon, label: `M${q.mag.toFixed(1)}・${q.place || ''}` });
+  for (const d of hz.disasters || []) if (/red|orange/i.test(d.alert || '') && isNum(d.lat)) L.push({ lat: d.lat, lon: d.lon, label: d.name || d.type || '' });
+  for (const e of state.pri.slice(0, 12)) if (e.geo) L.push({ lat: e.geo.lat, lon: e.geo.lon, label: `${e.geo.name}・${String(e.heading ? e.heading.text : '').slice(0, 28)}` });
+  return L;
 }
 function renderMap(animate) {
   if (!state.map) return;
   const sc = scene();
-  state.map.show(sc, animate);
   const hz = state.haz;
+  const on = (id) => state.layers[id] !== false;
+  const n = { events: state.es.filter((x) => x.geo).length, pri: state.pri.filter((x) => x.geo).length, quakes: hz ? hz.quakes.length : null, typhoons: hz ? hz.typhoons.length : null, disasters: hz ? hz.disasters.length : null };
+  if (state.floor) {
+    state.floor.data({
+      focus: sc.focus ? { lat: sc.focus.lat, lon: sc.focus.lon, label: sc.focus.label } : null,
+      counts: Object.fromEntries(Object.entries(n).filter(([k]) => on(k) && k !== 'pri')), track: trackList(), keys: layerKeys(sc),
+    });
+  }
+  state.map.show(sc, animate);
   const cnt = {
     events: `${state.es.filter((x) => x.geo).length}`, pri: `${state.pri.filter((x) => x.geo).length}`, radius: sc.focus && sc.focus.radiusKm ? `${RADIUS_KM} km` : '—',
     quakes: hz ? String(hz.quakes.length) : '—', typhoons: hz ? String(hz.typhoons.length) : '—', disasters: hz ? String(hz.disasters.length) : '—',
   };
-  $('layers').replaceChildren(...LAYERS.map(([id, ja]) => h('button', { type: 'button', class: `lyr l-${id}`, 'aria-pressed': String(state.layers[id] !== false), on: { click: () => toggleLayer(id) } },
-    h('i', { 'aria-hidden': 'true' }), ja, h('span', { class: 'n', text: cnt[id] }))));
+  $('layers').replaceChildren(...LAYERS.map(([id, ja]) => h('button', { type: 'button', class: `lyr l-${id}`, 'aria-pressed': String(on(id)), on: { click: () => toggleLayer(id) } },
+    glyph(id), ja, h('span', { class: 'n', text: cnt[id] }))));
+  const lit = LAYERS.filter(([id]) => on(id));
+  $('layer-sum').textContent = `${lit.length} 層・印 ${lit.reduce((a, [id]) => a + (isNum(n[id]) && id !== 'pri' ? n[id] : 0), 0).toLocaleString('en-US')}`;
   const e = cur();
   $('map-read').textContent = e && e.geo ? `${e.geo.name} ${Math.abs(e.geo.lat).toFixed(1)}°${e.geo.lat >= 0 ? 'N' : 'S'} ${Math.abs(e.geo.lon).toFixed(1)}°${e.geo.lon >= 0 ? 'E' : 'W'} · ${e.geo.prec}` : e ? '地名なし' : '';
 }
@@ -955,7 +998,7 @@ function renderTv() {
   if (!f) { f = h('div', { class: 'tv-f' }); box.replaceChildren(f, h('div', { class: 'tv-ch', role: 'group', 'aria-label': '局' }), h('p', { class: 'pfoot tv-n' })); }
   const src = embedSrc(st);
   const fr = f.querySelector('iframe');
-  if (!fr || fr.dataset.src !== src) f.replaceChildren(h('iframe', { src, title: `${st.name}（YouTube）`, loading: 'lazy', allow: 'encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, referrerpolicy: 'strict-origin-when-cross-origin', data: { src } }));
+  if (!fr || fr.dataset.src !== src) f.replaceChildren(h('iframe', { src, title: `${st.name}（YouTube）`, loading: 'lazy', allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, referrerpolicy: 'strict-origin-when-cross-origin', data: { src } }));
   box.querySelector('.tv-ch').replaceChildren(...STATIONS.map((x) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(x.id === st.id), on: { click: () => { state.tv = x.id; renderTv(); } } }, x.short)));
   box.querySelector('.tv-n').textContent = `${st.mode === 'live' ? 'ライブ' : '最新の動画'} · 公式チャンネル · 音は押すまで出ない`;
 }
@@ -1293,6 +1336,7 @@ function syncAutoLine() {
 }
 function autoStep() {
   if (narrow() || state.about || state.sheet || state.stopped || document.hidden) return;
+  if (state.floor && state.floor.mode() === 'map') return;     // the whole map is being read: the event in focus stays
   const now = Date.now();
   if (now < state.pausedUntil) return;
   const line = document.querySelector('#pri-b .r.sel .autoline');
@@ -1644,6 +1688,7 @@ function startVoice() {
 const api = {
   step, find, setView, setTopic, setField: (f) => setField(f, true), toggleLayer,
   mapCase: () => { if (state.map) state.map.reset(); return true; },
+  mapMode: () => (state.floor ? state.floor.toggle() : false),
   mapWorld: () => { if (!state.map) return false; state.map.show({ ...scene(), focus: null }, true); return true; },
   mapZoom: (k) => !!(state.map && state.map.zoom(k)),
   sayQuakes: () => { const q = state.haz && state.haz.quakes; if (!q) return '地震のデータは読込中'; const top = [...q].sort((a, b) => b.mag - a.mag)[0]; return top ? `24 時間で ${q.length} 件。最大は ${top.place} の M${top.mag.toFixed(1)}` : '24 時間で 0 件'; },
@@ -1695,14 +1740,21 @@ async function main() {
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) { if (ev.key === 'Escape') t.blur(); return; }
     if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
     const k = ev.key;
-    const map = { ArrowDown: ['case_next'], ArrowUp: ['case_prev'], j: ['case_next'], k: ['case_prev'], Escape: ['close'], a: ['view_ai'], r: ['view_rules'], m: ['map_case'], w: ['map_world'], o: ['open_article'], i: ['about'], t: ['task_add'], '+': ['map_in'], '-': ['map_out'], v: ['__voice'] };
+    const map = { ArrowDown: ['case_next'], ArrowUp: ['case_prev'], j: ['case_next'], k: ['case_prev'], Escape: ['close'], a: ['view_ai'], r: ['view_rules'], m: ['map_mode'], w: ['map_world'], o: ['open_article'], i: ['about'], t: ['task_add'], '+': ['map_in'], '-': ['map_out'], v: ['__voice'] };
     if (map[k] && map[k][0] === '__voice') { if (!$('voice-btn').hidden) startVoice(); return; }
     if (k === '/') { ev.preventDefault(); $('q').focus(); return; }
     const gi = Number(k);
     if (gi >= 1 && gi <= TOPICS.length + 1) { actions.run('topic', gi === 1 ? 'all' : TOPICS[gi - 2].id); return; }
     if (map[k]) { ev.preventDefault(); actions.run(...map[k]); }
   });
-  state.map = createMap($('map'), { onPick: onMapPick });
+  state.map = createMap($('map'), {
+    onPick: onMapPick, wheel: false,
+    local: (x, y) => (state.floor ? state.floor.local(x, y) : null),
+    onPaint: (info) => { if (state.floor) state.floor.paint(info); },
+  });
+  state.floor = createFloor({ map: state.map, board: $('board'), onMode: () => { state.map.resize(); renderMap(true); } });
+  // a list that does not fit scrolls itself (the event list follows the event in focus, so its own move takes over there)
+  startAutoScroll('#src-b, #fields-b, #pri-b, #anom-b, #haz-b, #mkt-b, #pol-b', { held: () => !!(state.about || state.sheet) || !$('task-pop').hidden || !$('watch-pop').hidden });
   let rt = 0;
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => state.map && state.map.resize(), 160); });
 

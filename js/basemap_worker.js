@@ -232,26 +232,27 @@ async function hillshade(dem, dx0, dy0, nx, ny, z, ck) {
       const xl = x > 0 ? i - 1 : i, xr = x < Wm - 1 ? i + 1 : i;
       const fe = (E[xr] - E[xl]) * inv, fs = (E[dn + x] - E[up + x]) * inv;
       if (!Number.isFinite(fe) || !Number.isFinite(fs)) continue;
-      const s = (cA * (fe + fs) + sA) / Math.sqrt(1 + fe * fe + fs * fs), d = s - sA;
-      let lit = (d > 0 ? d * 0.3 : 0) + 0.03 * Math.min(1, Math.max(0, e) / 3000);
-      const dark = d < 0 ? -d * 0.6 : 0;
-      if (e > 0) { const b = Math.floor(e / ci); if (Math.floor(E[xr] / ci) !== b || Math.floor(E[dn + x] / ci) !== b) lit += 0.025; }
-      const a = lit - dark, k = i * 4;
-      if (a >= 0) { o[k] = 255; o[k + 1] = 255; o[k + 2] = 255; o[k + 3] = Math.min(0.14, a) * 255; }
-      else { o[k] = 0; o[k + 1] = 0; o[k + 2] = 0; o[k + 3] = Math.min(0.34, -a) * 255; }
+      const s = (cA * (fe + fs) + sA) / Math.sqrt(1 + fe * fe + fs * fs);
+      // light only, in the cyan of the map: the land is a faint lit field over the dark ground, the slopes that face the light
+      // turn toward white, contour steps add a trace. No dark shading (the ground under it is already dark)
+      let a = 0.085 + 0.5 * (s - sA) + 0.05 * Math.min(1, Math.max(0, e) / 3000);
+      if (e > 0) { const b = Math.floor(e / ci); if (Math.floor(E[xr] / ci) !== b || Math.floor(E[dn + x] / ci) !== b) a += 0.06; }
+      a = a < 0 ? 0 : a > 0.46 ? 0.46 : a;
+      const hi = s > sA + 0.1 ? Math.min(1, (s - sA - 0.1) * 4) : 0, k = i * 4;
+      o[k] = 143 + 83 * hi; o[k + 1] = 216 + 28 * hi; o[k + 2] = 242 + 10 * hi; o[k + 3] = a * 255;
     }
   }
   cg.putImageData(out, 0, 0);
   return c;
 }
 
-// [class, width (css px), colour, from zoom] — grey only, brighter for the larger road
+// [class, width (css px), colour, from zoom] — cyan, brighter and whiter for the larger road
 const ROADS = [
-  ['tertiary', 0.4, 'rgba(255,255,255,.075)', 10],
-  ['secondary', 0.5, 'rgba(255,255,255,.10)', 9],
-  ['primary', 0.6, 'rgba(255,255,255,.14)', 8],
-  ['trunk', 0.75, 'rgba(255,255,255,.19)', 7],        // in Japan every national route is a trunk: dense, so not before z7
-  ['motorway', 0.9, 'rgba(255,255,255,.24)', 5],
+  ['tertiary', 0.4, 'rgba(143,216,242,.17)', 10],
+  ['secondary', 0.5, 'rgba(143,216,242,.24)', 9],
+  ['primary', 0.6, 'rgba(143,216,242,.34)', 8],
+  ['trunk', 0.75, 'rgba(200,236,252,.42)', 7],        // in Japan every national route is a trunk: dense, so not before z7
+  ['motorway', 0.9, 'rgba(226,244,252,.52)', 5],
 ];
 function lines(g, t, P, z, px, col) {
   const stroke = (L, test, w, colour, dash) => {
@@ -265,17 +266,17 @@ function lines(g, t, P, z, px, col) {
     g.stroke();
   };
   if (z >= 5) stroke(t.waterway, (p) => !p.intermittent && p.brunnel !== 'tunnel', 0.6, col.sea);
-  if (z >= 6) stroke(t.transportation, (p) => p.class === 'rail' && p.brunnel !== 'tunnel', 0.45, 'rgba(255,255,255,.13)', [3, 2.5]);
+  if (z >= 6) stroke(t.transportation, (p) => p.class === 'rail' && p.brunnel !== 'tunnel', 0.45, 'rgba(143,216,242,.22)', [3, 2.5]);
   // roads are quieter while they are many and far (a whole country's motorways at once)
   const quiet = z <= 6 ? 0.5 : z <= 8 ? 0.65 : 0.85;
   g.globalAlpha = quiet;
   for (const [cls, w, colour, zmin] of ROADS) if (z >= zmin) stroke(t.transportation, (p) => p.class === cls, w, colour);
   g.globalAlpha = 1;
-  if (z >= 4) stroke(t.boundary, (p) => p.admin_level >= 3 && p.admin_level <= 4 && !p.maritime, 0.6, 'rgba(255,255,255,.16)', [4, 3]);
+  if (z >= 4) stroke(t.boundary, (p) => p.admin_level >= 3 && p.admin_level <= 4 && !p.maritime, 0.6, 'rgba(143,216,242,.34)', [4, 3]);
   const nat = (p) => p.admin_level === 2 && !p.maritime;
-  stroke(t.boundary, nat, 2.4, 'rgba(0,0,0,.30)');
-  stroke(t.boundary, (p) => nat(p) && !p.disputed, 0.9, 'rgba(226,228,232,.50)');
-  stroke(t.boundary, (p) => nat(p) && p.disputed, 0.9, 'rgba(226,228,232,.40)', [4, 3]);
+  stroke(t.boundary, nat, 2.8, 'rgba(96,170,206,.16)');
+  stroke(t.boundary, (p) => nat(p) && !p.disputed, 1.0, 'rgba(238,247,252,.88)');
+  stroke(t.boundary, (p) => nat(p) && p.disputed, 1.0, 'rgba(238,247,252,.7)', [4, 3]);
 }
 const WATER_SKIP = new Set(['swimming_pool', 'pond']);
 const COAST = new Set(['ocean', 'lake']);

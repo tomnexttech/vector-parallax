@@ -91,11 +91,20 @@
         <div class="pb" id="case"></div>
       </section>
       <section class="pane map" id="p-map" aria-labelledby="map-h">
-        <header class="ph"><h2 id="map-h">地図</h2><div class="layers" id="layers" role="group" aria-label="地図の層"></div></header>
-        <div class="mapbox">
-          <canvas id="map" aria-label="出来事・地震・台風・災害の地図" role="img"></canvas>
+        <header class="ph"><h2 id="map-h">地図</h2></header>
+        <div class="mapbox theater" id="theater">
+          <div class="floor" id="floor">
+            <canvas id="map" aria-label="出来事・地震・台風・災害の地図" role="img"></canvas>
+            <div class="pillars" id="pillars" aria-hidden="true"></div>
+            <i class="ftrk" id="ftrk" hidden></i>
+            <i class="fcn tl"></i><i class="fcn tr"></i><i class="fcn br"></i><i class="fcn bl"></i>
+          </div>
+          <div class="mpanel" id="mpanel"><span class="mp-h"><b>LAYERS</b><small id="layer-sum"></small></span><div class="layers" id="layers" role="group" aria-label="地図の層"></div></div>
+          <div class="mhud" aria-hidden="true"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i><i class="ret"></i><i class="sw"></i><span class="rd" id="mread"></span><span class="trk" id="mtrack" hidden></span></div>
+          <p class="flegend" aria-hidden="true"><i class="p"></i>注目<i class="n"></i>出来事<i class="q"></i>地震<i class="r"></i>半径 500 km</p>
           <p class="map-read" id="map-read"></p>
           <p class="map-credit">© OpenStreetMap contributors · OpenMapTiles · OpenFreeMap · 標高 AWS Terrain Tiles · Natural Earth · 気象庁 · USGS · GDACS</p>
+          <div class="modebar" id="modebar"><b class="mtag" id="mtag">CASE</b><span class="mtabs" role="group" aria-label="地図の表示（m）"><button type="button" data-m="case" aria-pressed="true">CASE</button><button type="button" data-m="map" aria-pressed="false">MAP</button></span></div>
         </div>
       </section>
     </div>
