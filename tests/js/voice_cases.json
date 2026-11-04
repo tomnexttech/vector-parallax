@@ -1,5 +1,5 @@
 {
- "about": "声の当たりの試験。want は js/actions.js の id（none＝どの操作にも当てない）。arg は当たった時の引数。alt は意味が二通りに取れる言い方だけ。main は規則を書きながら見た組（楽観値）、holdout は規則を書いた後に別に書き、規則の直しには使わない組。",
+ "about": "声の当たりの試験。want は js/actions.js の id（none＝どの操作にも当てない）。arg は当たった時の引数（argHas は引数がその語を含めばよい）。alt は意味が二通りに取れる言い方だけ。main は規則を書きながら見た組（楽観値）、holdout は規則を書いた後に別に書き、規則の直しには使わない組。borrowed_ow / borrowed_ow_holdout は 別の卓の声の試験の言い方（記録の口調）から、PARALLAX の一覧に当てはまる物だけを写した組（kind: map＝同じ意味の操作が一覧にある／remap＝OW では none だが PARALLAX では操作／chat＝OW でも雑談／offlist＝OW の操作だが一覧に無いので何もしない。ow に元の want）。写す前に規則へ手を入れていない値が借りた組の素の精度。follow は見張る→追うの言い換えの組で、規則と同時に書いた（楽観値）。全て本物の聞き取りの記録ではない。",
  "main": [
   {
    "say": "次",
@@ -400,6 +400,991 @@
   },
   {
    "say": "お腹すいた",
+   "want": "none"
+  }
+ ],
+ "borrowed_ow": [
+  {
+   "say": "ユー、オーバーウォッチ、オーバー。",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "重要ニュースは",
+   "want": "none",
+   "alt": [
+    "case_next"
+   ],
+   "kind": "offlist",
+   "ow": {
+    "want": "world"
+   },
+   "note": "OW: world（世界の要約）。PARALLAX に要約の操作は無い"
+  },
+  {
+   "say": "イスラエルの選挙についてニュース教えてくれるか。",
+   "want": "case_find",
+   "argHas": "イスラエル",
+   "kind": "remap",
+   "ow": {
+    "want": "none"
+   },
+   "note": "OW では none。PARALLAX には語で出来事を探す操作がある"
+  },
+  {
+   "say": "株の画面開いて",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "stocks"
+   },
+   "note": "OW: stocks"
+  },
+  {
+   "say": "株見せて",
+   "want": "none",
+   "alt": [
+    "case_find"
+   ],
+   "kind": "offlist",
+   "ow": {
+    "want": "stocks"
+   },
+   "note": "OW: stocks。語としての検索なら許す"
+  },
+  {
+   "say": "株価の画面出してくれ",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "stocks"
+   },
+   "note": "OW: stocks"
+  },
+  {
+   "say": "持ち株の画面見せて。",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "stocks"
+   },
+   "note": "OW: stocks"
+  },
+  {
+   "say": "世界の状況は",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "world"
+   },
+   "note": "OW: world"
+  },
+  {
+   "say": "今の世界どうなってる？",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "world"
+   },
+   "note": "OW: world"
+  },
+  {
+   "say": "世界情勢教えてくれ。",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "world"
+   },
+   "note": "OW: world"
+  },
+  {
+   "say": "世界で何か起きてる？",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "world"
+   },
+   "note": "OW: world"
+  },
+  {
+   "say": "今日の世界のニュースは",
+   "want": "none",
+   "alt": [
+    "case_next"
+   ],
+   "kind": "offlist",
+   "ow": {
+    "want": "world"
+   },
+   "note": "OW: world"
+  },
+  {
+   "say": "危機指数の上位は",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "world"
+   },
+   "note": "OW: world"
+  },
+  {
+   "say": "地震あった？",
+   "want": "quakes",
+   "kind": "map",
+   "ow": {
+    "want": "quakes"
+   }
+  },
+  {
+   "say": "最近の地震は",
+   "want": "quakes",
+   "kind": "map",
+   "ow": {
+    "want": "quakes"
+   }
+  },
+  {
+   "say": "日本の地震は",
+   "want": "quakes",
+   "alt": [
+    "case_find"
+   ],
+   "kind": "map",
+   "ow": {
+    "want": "quakes"
+   },
+   "note": "地域は PARALLAX の引数に無い"
+  },
+  {
+   "say": "台湾で地震あった？",
+   "want": "quakes",
+   "alt": [
+    "case_find"
+   ],
+   "kind": "map",
+   "ow": {
+    "want": "quakes"
+   },
+   "note": "地域は PARALLAX の引数に無い"
+  },
+  {
+   "say": "さっき揺れたよな。地震の情報教えて",
+   "want": "quakes",
+   "kind": "map",
+   "ow": {
+    "want": "quakes"
+   }
+  },
+  {
+   "say": "アメリカの地震どう",
+   "want": "quakes",
+   "alt": [
+    "case_find"
+   ],
+   "kind": "map",
+   "ow": {
+    "want": "quakes"
+   },
+   "note": "地域は PARALLAX の引数に無い"
+  },
+  {
+   "say": "地図の層の一覧",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "layers"
+   },
+   "note": "OW: layers。PARALLAX は層を出す・消すだけで、一覧を答える操作は無い"
+  },
+  {
+   "say": "地図のレイヤー何がある？",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "layers"
+   },
+   "note": "OW: layers"
+  },
+  {
+   "say": "ニュースの動画流して",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "video"
+   },
+   "note": "OW: video"
+  },
+  {
+   "say": "ウクライナのニュース動画流して",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "video"
+   },
+   "note": "OW: video"
+  },
+  {
+   "say": "ガザのニュースの動画見せてくれ",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "video"
+   },
+   "note": "OW: video"
+  },
+  {
+   "say": "選挙の動画流してくれるか、ニュースの",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "video"
+   },
+   "note": "OW: video"
+  },
+  {
+   "say": "円安の影響を調べて",
+   "want": "case_find",
+   "argHas": "円安",
+   "kind": "map",
+   "ow": {
+    "want": "research",
+    "original": "オーバーウォッチで円安の影響を調べて"
+   },
+   "note": "卓名の前置きを外した。調査→語での出来事の検索"
+  },
+  {
+   "say": "中東情勢を調査してくれ",
+   "want": "case_find",
+   "argHas": "中東",
+   "kind": "map",
+   "ow": {
+    "want": "research",
+    "original": "オーバーウォッチで中東情勢を調査してくれ"
+   },
+   "note": "卓名の前置きを外した。調査→語での出来事の検索"
+  },
+  {
+   "say": "地震って怖いよね",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "株って今買うべき？",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "YouTubeで米津玄師流して",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "音楽流して",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "世界一高い山は？",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "オーバーウォッチってゲーム知ってる？",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "エアコン消して",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "スピーカーの音量上げて",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "ニュースって最近見てないな",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  }
+ ],
+ "borrowed_ow_holdout": [
+  {
+   "say": "ストックス開いて",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "stocks"
+   },
+   "note": "OW: stocks"
+  },
+  {
+   "say": "株の卓見せてくれ",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "stocks"
+   },
+   "note": "OW: stocks"
+  },
+  {
+   "say": "国際情勢はどうなってる",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "world"
+   },
+   "note": "OW: world"
+  },
+  {
+   "say": "世界の様子教えて",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "world"
+   },
+   "note": "OW: world"
+  },
+  {
+   "say": "今日のニュースある？",
+   "want": "none",
+   "alt": [
+    "case_next"
+   ],
+   "kind": "offlist",
+   "ow": {
+    "want": "world"
+   },
+   "note": "OW: world"
+  },
+  {
+   "say": "最近日本で地震あった？",
+   "want": "quakes",
+   "alt": [
+    "case_find"
+   ],
+   "kind": "map",
+   "ow": {
+    "want": "quakes"
+   },
+   "note": "地域は PARALLAX の引数に無い"
+  },
+  {
+   "say": "トルコの地震情報",
+   "want": "quakes",
+   "alt": [
+    "case_find"
+   ],
+   "kind": "map",
+   "ow": {
+    "want": "quakes"
+   },
+   "note": "地域は PARALLAX の引数に無い"
+  },
+  {
+   "say": "地震の状況教えてくれ",
+   "want": "quakes",
+   "kind": "map",
+   "ow": {
+    "want": "quakes"
+   }
+  },
+  {
+   "say": "ロシアのニュースの動画見せて",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "video"
+   },
+   "note": "OW: video"
+  },
+  {
+   "say": "ニュース動画つけてくれ",
+   "want": "none",
+   "kind": "offlist",
+   "ow": {
+    "want": "video"
+   },
+   "note": "OW: video"
+  },
+  {
+   "say": "半導体の輸出規制について調べてくれ",
+   "want": "case_find",
+   "argHas": "半導体",
+   "kind": "map",
+   "ow": {
+    "want": "research",
+    "original": "オーバーウォッチで半導体の輸出規制について調べてくれ"
+   },
+   "note": "卓名の前置きを外した。調査→語での出来事の検索"
+  },
+  {
+   "say": "世界って広いよな",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "地震の備えって何がいる？",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "デッキの掃除しないとな",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "株の勉強したい",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  },
+  {
+   "say": "ニュースの動画って面白いよね",
+   "want": "none",
+   "kind": "chat",
+   "ow": {
+    "want": "none"
+   }
+  }
+ ],
+ "follow": [
+  {
+   "say": "北朝鮮を追って",
+   "want": "watch_add",
+   "arg": "北朝鮮"
+  },
+  {
+   "say": "日銀を追いかけて",
+   "want": "watch_add",
+   "arg": "日銀"
+  },
+  {
+   "say": "中国を追う",
+   "want": "watch_add",
+   "arg": "中国"
+  },
+  {
+   "say": "台湾を追跡して",
+   "want": "watch_add",
+   "arg": "台湾"
+  },
+  {
+   "say": "ねえ、ウクライナを追ってくれる？",
+   "want": "watch_add",
+   "arg": "ウクライナ"
+  },
+  {
+   "say": "半導体を追う語に足して",
+   "want": "watch_add",
+   "arg": "半導体"
+  },
+  {
+   "say": "ロシアを追いかけたい",
+   "want": "watch_add",
+   "arg": "ロシア"
+  },
+  {
+   "say": "円安を見張って",
+   "want": "watch_add",
+   "arg": "円安"
+  },
+  {
+   "say": "北朝鮮を追うのをやめて",
+   "want": "watch_remove",
+   "arg": "北朝鮮"
+  },
+  {
+   "say": "日銀の追跡をやめて",
+   "want": "watch_remove",
+   "arg": "日銀"
+  },
+  {
+   "say": "中国はもう追わなくていいよ",
+   "want": "watch_remove",
+   "arg": "中国"
+  },
+  {
+   "say": "追う語から台湾を外して",
+   "want": "watch_remove",
+   "arg": "台湾"
+  },
+  {
+   "say": "見張る語から円安を外して",
+   "want": "watch_remove",
+   "arg": "円安"
+  },
+  {
+   "say": "追うものだけ見せて",
+   "want": "topic",
+   "arg": "watch"
+  },
+  {
+   "say": "追う語に絞って",
+   "want": "topic",
+   "arg": "watch"
+  },
+  {
+   "say": "追っているニュースだけにして",
+   "want": "topic",
+   "arg": "watch"
+  },
+  {
+   "say": "見張る語に絞って",
+   "want": "topic",
+   "arg": "watch"
+  },
+  {
+   "say": "タスクに追加して",
+   "want": "task_add"
+  },
+  {
+   "say": "追って連絡します",
+   "want": "none"
+  },
+  {
+   "say": "犯人を追う話",
+   "want": "none"
+  },
+  {
+   "say": "追加して",
+   "want": "none"
+  },
+  {
+   "say": "これを追って",
+   "want": "none"
+  }
+ ],
+ "fresh": [
+  {
+   "say": "次のやつ見せてくれ",
+   "want": "case_next"
+  },
+  {
+   "say": "次、頼む",
+   "want": "case_next"
+  },
+  {
+   "say": "前のに戻してくれるか",
+   "want": "case_prev"
+  },
+  {
+   "say": "戻してくれ",
+   "want": "case_prev"
+  },
+  {
+   "say": "トランプのニュース探してくれ",
+   "want": "case_find",
+   "arg": "トランプ"
+  },
+  {
+   "say": "台湾について調べてくれるか",
+   "want": "case_find",
+   "arg": "台湾"
+  },
+  {
+   "say": "関税の記事、探してくれ",
+   "want": "case_find",
+   "arg": "関税"
+  },
+  {
+   "say": "AIの束にしてくれ",
+   "want": "view_ai"
+  },
+  {
+   "say": "規則のほうで見せてくれ",
+   "want": "view_rules"
+  },
+  {
+   "say": "公金に絞ってくれ",
+   "want": "topic",
+   "arg": "money"
+  },
+  {
+   "say": "災害のやつだけ頼む",
+   "want": "topic",
+   "arg": "disaster"
+  },
+  {
+   "say": "経済の欄を見せてくれ",
+   "want": "field",
+   "arg": "経済"
+  },
+  {
+   "say": "国際にしてくれ",
+   "want": "field",
+   "arg": "国際"
+  },
+  {
+   "say": "地図を大きくしてくれ",
+   "want": "map_in"
+  },
+  {
+   "say": "もう少し引いてくれるか",
+   "want": "map_out"
+  },
+  {
+   "say": "世界を見せてくれ",
+   "want": "map_world"
+  },
+  {
+   "say": "台風の層、消してくれ",
+   "want": "layer",
+   "arg": "typhoons:off"
+  },
+  {
+   "say": "地震の印を出してくれ",
+   "want": "layer",
+   "arg": "quakes:on"
+  },
+  {
+   "say": "地震どうだった？",
+   "want": "quakes"
+  },
+  {
+   "say": "台風どこにいるか教えてくれ",
+   "want": "typhoons"
+  },
+  {
+   "say": "今年の台風の位置を教えてくれ",
+   "want": "typhoons"
+  },
+  {
+   "say": "日銀を追ってくれるか",
+   "want": "watch_add",
+   "arg": "日銀"
+  },
+  {
+   "say": "日銀は外してくれ",
+   "want": "watch_remove",
+   "arg": "日銀"
+  },
+  {
+   "say": "最初の記事、開いてくれ",
+   "want": "open_article"
+  },
+  {
+   "say": "使い方が知りたい",
+   "want": "about"
+  },
+  {
+   "say": "閉じてくれるか",
+   "want": "close"
+  },
+  {
+   "say": "自動で進むのを止めてくれ",
+   "want": "auto_stop"
+  },
+  {
+   "say": "送り、止めてくれ",
+   "want": "auto_stop"
+  },
+  {
+   "say": "また動かしてくれ",
+   "want": "auto_start"
+  },
+  {
+   "say": "市場の板、開いてくれるか",
+   "want": "sheet",
+   "arg": "mkt"
+  },
+  {
+   "say": "国会の様子、見せてくれ",
+   "want": "sheet",
+   "arg": "pol"
+  },
+  {
+   "say": "情報源の一覧を出してくれ",
+   "want": "sheet",
+   "arg": "src"
+  },
+  {
+   "say": "災害の一覧",
+   "want": "sheet",
+   "arg": "haz"
+  },
+  {
+   "say": "これ、タスクに入れてくれ",
+   "want": "task_add"
+  },
+  {
+   "say": "タスク見せてくれるか",
+   "want": "tasks"
+  },
+  {
+   "say": "台風が来るから外に出たくないな",
+   "want": "none"
+  },
+  {
+   "say": "地震保険って入るべきかな",
+   "want": "none"
+  },
+  {
+   "say": "昨日の揺れ、すごかったよね",
+   "want": "none"
+  },
+  {
+   "say": "犯人を追う刑事のドラマ見た",
+   "want": "none"
+  },
+  {
+   "say": "見張りの交代の時間だ",
+   "want": "none"
+  },
+  {
+   "say": "追いかけっこしてたら転んだ",
+   "want": "none"
+  },
+  {
+   "say": "次の電車は何時",
+   "want": "none"
+  },
+  {
+   "say": "戻ってきたよ",
+   "want": "none"
+  },
+  {
+   "say": "世界地図って面白いよね",
+   "want": "none"
+  },
+  {
+   "say": "地図ってどうやって見るの",
+   "want": "none"
+  },
+  {
+   "say": "AIを使わない人って多いよね",
+   "want": "none"
+  },
+  {
+   "say": "規則を守るのは大事だよね",
+   "want": "none"
+  },
+  {
+   "say": "開いてるよ",
+   "want": "none"
+  },
+  {
+   "say": "止めてって言ったのに",
+   "want": "none"
+  }
+ ],
+ "chat_traps": [
+  {
+   "say": "今日は台風みたいな天気だね",
+   "want": "none"
+  },
+  {
+   "say": "地震が来たらどうしよう",
+   "want": "none"
+  },
+  {
+   "say": "地震があるたびに不安になる",
+   "want": "none"
+  },
+  {
+   "say": "台風の日はコンビニが混む",
+   "want": "none"
+  },
+  {
+   "say": "追いかけっこ楽しいね",
+   "want": "none"
+  },
+  {
+   "say": "見張ってて",
+   "want": "none"
+  },
+  {
+   "say": "戻ってこないかな",
+   "want": "none"
+  },
+  {
+   "say": "前に進みたいな",
+   "want": "none"
+  },
+  {
+   "say": "次の駅で降りるよ",
+   "want": "none"
+  },
+  {
+   "say": "次はいつ会えるかな",
+   "want": "none"
+  },
+  {
+   "say": "包丁の使い方を教えて",
+   "want": "none"
+  },
+  {
+   "say": "世界は広いなあ",
+   "want": "none"
+  },
+  {
+   "say": "世界中の人に会いたい",
+   "want": "none"
+  },
+  {
+   "say": "世界を変えたい",
+   "want": "none"
+  },
+  {
+   "say": "地図は苦手なんだ",
+   "want": "none"
+  },
+  {
+   "say": "地図を見るのが好き",
+   "want": "none"
+  },
+  {
+   "say": "拡大解釈だね",
+   "want": "none"
+  },
+  {
+   "say": "縮小されたニュースだった",
+   "want": "none"
+  },
+  {
+   "say": "規則正しい生活がしたい",
+   "want": "none"
+  },
+  {
+   "say": "ルールを守ろう",
+   "want": "none"
+  },
+  {
+   "say": "AIは怖い？",
+   "want": "none"
+  },
+  {
+   "say": "AIについて語って",
+   "want": "none"
+  },
+  {
+   "say": "市場はにぎやかだったよ",
+   "want": "none"
+  },
+  {
+   "say": "源氏物語を読んだ",
+   "want": "none"
+  },
+  {
+   "say": "政治の話はやめよう",
+   "want": "none"
+  },
+  {
+   "say": "経済が心配だ",
+   "want": "none"
+  },
+  {
+   "say": "災害に備えたい",
+   "want": "none"
+  },
+  {
+   "say": "技術の進歩はすごい",
+   "want": "none"
+  },
+  {
+   "say": "国際線に乗りたい",
+   "want": "none"
+  },
+  {
+   "say": "安全保障って難しいよね",
+   "want": "none"
+  },
+  {
+   "say": "時間ごとに天気が変わる",
+   "want": "none"
+  },
+  {
+   "say": "これは何",
+   "want": "none"
+  },
+  {
+   "say": "それ消して",
+   "want": "none"
+  },
+  {
+   "say": "消して",
+   "want": "none"
+  },
+  {
+   "say": "タスクが多すぎる",
+   "want": "none"
+  },
+  {
+   "say": "やることがたくさんある",
+   "want": "none"
+  },
+  {
+   "say": "全部食べた",
+   "want": "none"
+  },
+  {
+   "say": "絞り込みはよくわからない",
+   "want": "none"
+  },
+  {
+   "say": "探して",
+   "want": "none"
+  },
+  {
+   "say": "調べて",
+   "want": "none"
+  },
+  {
+   "say": "世界地図って面白いよね",
+   "want": "none"
+  },
+  {
+   "say": "AIを使わない人って多いよね",
+   "want": "none"
+  },
+  {
+   "say": "追って連絡します",
+   "want": "none"
+  },
+  {
+   "say": "地震保険って入るべきかな",
    "want": "none"
   }
  ]

@@ -1584,6 +1584,8 @@ def main(argv=None):
         write_json(cache_path, cache)
     for code in dict.fromkeys(data["ai_run"]["errors"]):
         print("ai error %s: %s" % (code, ai_mod.error_message(code, "en", prompt)))
+    for model, status, detail in ai_mod.HTTP_DETAILS:
+        print("ai http model=%s status=%d detail=%s" % (model, status, detail))
     n_null = sum(1 for it in data["items"].values() if it["title"] is None)
     run = data["ai_run"]
     print("edition=%s items=%d rule_clusters=%d blocks=%d calls=%d stories=%d null_title=%d ai=%s"

@@ -93,6 +93,21 @@ def _default_transport(url, headers, body, timeout):
         return e.code, text
 
 
+HTTP_DETAILS = []   # 2xx でない返答の (型, 番号, 理由)。build が記録に出す（公開の記録に載るので鍵と長い数字は伏せる）
+
+
+def _error_detail(text, key):
+    """Gemini の誤りの本文から status と message の頭だけを取る。"""
+    try:
+        e = json.loads(text).get("error") or {}
+        s = "%s %s" % (e.get("status") or "", e.get("message") or "")
+    except Exception:
+        s = text or ""
+    if key:
+        s = s.replace(key, "***")
+    return re.sub(r"\d{6,}", "#", s).strip()[:200]
+
+
 def _reply_text(outer):
     """Gemini の返答（JSON を読んだ物）から本文を取る。-> (text | None, err)"""
     if not isinstance(outer, dict):
@@ -191,6 +206,8 @@ class GeminiProvider:
             return None, "network"
         except Exception:
             return None, "network"
+        if not (200 <= status < 300):
+            HTTP_DETAILS.append((self.model, status, _error_detail(text, self._key)))
         if status in (401, 403):
             return None, "auth"
         if status == 429:
