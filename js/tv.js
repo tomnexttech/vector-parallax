@@ -1,8 +1,11 @@
 /* tv — broadcasters' own YouTube channels, embedded from youtube-nocookie.
  * No search and no reading of YouTube's pages: a fixed list of official news channels (each id checked against the channel's public
  * feed on 2026-11-05). A channel that runs a 24-hour stream is shown live; the others show their latest uploads.
- * Plays by itself without sound (a browser stops a player that starts with sound); the sound is the viewer's press in the player.
- * The uploads of a channel loop as a list. */
+ * By default it plays by itself without sound (a browser stops a player that starts with sound); the settings may turn the playing
+ * by itself off, start with sound, and choose and order the channels. The uploads of a channel loop as a list.
+ *
+ *   stationFor(outlets, cover, list) -> station   the channel of an outlet that reported the event, among the list shown
+ *   embedSrc(station, { auto, sound }) -> url     */
 
 export const STATIONS = [
   { id: 'ann', short: 'ANN', name: 'ANNnewsCH', ch: 'UCGCZAYq5Xxojl_tSXcVJhiQ', mode: 'uploads', home: 'jp', match: /テレビ朝日|テレ朝|ANN/ },
@@ -19,13 +22,15 @@ export const STATIONS = [
 ];
 
 /** the channel of an outlet that reported the event; otherwise a domestic or an international default by where it was reported */
-export function stationFor(outlets, cover) {
-  for (const o of outlets || []) for (const st of STATIONS) if (st.match.test(String(o || ''))) return st;
-  return STATIONS.find((x) => x.id === (cover === 'intl' ? 'aje' : 'ann'));
+export function stationFor(outlets, cover, list = STATIONS) {
+  const ls = Array.isArray(list) && list.length ? list : STATIONS;
+  for (const o of outlets || []) for (const st of ls) if (st.match.test(String(o || ''))) return st;
+  const home = cover === 'intl' ? 'intl' : 'jp';
+  return ls.find((x) => x.id === (home === 'intl' ? 'aje' : 'ann')) || ls.find((x) => x.home === home) || ls[0];
 }
 
-export function embedSrc(st) {
-  const q = 'autoplay=1&mute=1&playsinline=1&rel=0&loop=1';
+export function embedSrc(st, { auto = true, sound = false } = {}) {
+  const q = `autoplay=${auto ? 1 : 0}&mute=${sound ? 0 : 1}&playsinline=1&rel=0&loop=1`;
   return st.mode === 'live'
     ? `https://www.youtube-nocookie.com/embed/live_stream?channel=${st.ch}&${q}`
     : `https://www.youtube-nocookie.com/embed/videoseries?list=UU${st.ch.slice(2)}&${q}`;

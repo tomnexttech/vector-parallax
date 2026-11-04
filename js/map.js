@@ -260,7 +260,7 @@ export function createMap(canvas, opts = {}) {
   const basemap = opts.basemap === false ? null : createBasemap({ onReady: () => { if (scene && view && !anim && !drag) paint(view, false); } });
   // for inspection only (the state of the detailed ground: sheets, requests, failures)
   try { Object.defineProperty(canvas, 'groundStats', { value: () => (basemap ? basemap.stats() : null), configurable: true }); } catch { /* */ }
-  const reduce = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduce = () => document.documentElement.hasAttribute('data-calm') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function size() {
     const r = canvas.getBoundingClientRect();

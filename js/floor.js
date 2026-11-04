@@ -49,7 +49,7 @@ export function createFloor({ map, board, onMode }) {
   const $ = (id) => document.getElementById(id);
   const theater = $('theater'), floor = $('floor'), canvas = $('map'), host = $('pillars'), trk = $('ftrk');
   const flatQ = window.matchMedia('(max-width: 1280px)');
-  const reduce = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduce = () => document.documentElement.hasAttribute('data-calm') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let want = 'case', last = null, data = { counts: {}, track: [], keys: new Set() }, keysWas = null;
   let trackItem = null, trackSeen = null, trackQ = [], trackTimer = 0, clock = 0;
 

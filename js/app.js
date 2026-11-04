@@ -23,6 +23,8 @@ import { createActions } from './actions.js';
 import { loadTasks, saveTasks, addTask, toggleTask, removeTask, hasTask } from './tasks.js';
 import { speechSupported, listen, route as voiceRoute } from './voice.js';
 import { STATIONS, stationFor, embedSrc } from './tv.js';
+import { loadSettings, saveSettings, cleanSettings, hiddenBy, reasonJa, KIND_JA } from './settings.js';
+import { createSettingsPanel } from './settings_panel.js';
 
 const DEFAULT_DATA = 'data/latest.json';
 const POLL_MS = 5 * 60 * 1000;
@@ -62,6 +64,7 @@ const state = {
   pending: null, evalData: null, dataPath: DEFAULT_DATA, labels: null, es: [], byKey: new Map(), pri: [], topic: 'all', field: null, fieldAt: 0,
   newKeys: new Set(), flashed: new Set(), prevSeen: null, autoNext: 0, pausedUntil: 0, stopped: false, haz: null, mkt: undefined, pol: undefined,
   layers: null, tickQ: [], tickI: 0, tickAt: 0, map: null, board: null, hist: null, fieldTabs: [], hazFresh: new Set(), hazSeen: null, leadOf: new Map(), anomKind: null, sheet: null, tasks: [],
+  set: cleanSettings(null), setSaved: true, showHid: false, unfold: new Set(), panel: null,
 };
 
 // ---------------------------------------------------------------- small tools
@@ -74,7 +77,7 @@ const nowS = () => Math.floor(Date.now() / 1000);
 const uniq = (xs) => [...new Set(xs)];
 const store = (() => { try { return window.localStorage; } catch { return null; } })();
 const explain = (codes) => uniq(arr(codes).filter((c) => typeof c === 'string')).map((c) => ERR_TEXT[c] || c).join(' ');
-const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduced = () => state.set.motion.calm === 'on' || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const narrow = () => window.matchMedia('(max-width: 760px)').matches;
 const dataDir = () => state.dataPath.replace(/[^/]*$/, '');
 
@@ -290,8 +293,10 @@ function buildEntries() {
     e.geo = geoOf(e.places, c);
     const ja = e.ai ? str(e.ai.headline_ja).trim() : '', en = e.ai ? str(e.ai.headline_en).trim() : '';
     const rep = c && items[c.rep_id] && str(items[c.rep_id].title).trim() ? items[c.rep_id] : null;
-    if (ja) e.heading = { text: ja, ai: true, en };
-    else if (en) e.heading = { text: en, ai: true, lang: 'en' };
+    const lang = state.set.news.lang;
+    if (lang === 'en' && en) e.heading = { text: en, ai: true, lang: 'en' };
+    else if (lang !== 'orig' && ja) e.heading = { text: ja, ai: true, en };
+    else if (lang !== 'orig' && en) e.heading = { text: en, ai: true, lang: 'en' };
     else if (rep) e.heading = { text: rep.title, lang: rep.lang === 'en' ? 'en' : null, outlet: outletOf(rep), type: str(rep.type) };
     else if (e.titled.length) e.heading = { text: e.titled[0].title, lang: e.titled[0].lang === 'en' ? 'en' : null, outlet: outletOf(e.titled[0]), type: str(e.titled[0].type) };
     else e.heading = { text: uniq(e.members.map((it) => it.outlet)).join('・') || '—', none: true };
@@ -301,6 +306,8 @@ function buildEntries() {
     if (!c && e.allGov) e.ruleFlags.push('primary_only');
     e.hay = [text, e.summary && e.summary.text_ja, e.ai && e.ai.contrast_ja, ...e.members.map((it) => it.outlet), ...e.places.map(pj), c && c.place && c.place.name].filter(Boolean).join(' \n ');
     e.hits = hitsOf(state.watch, e.hay);
+    // the visitor's settings: why this event is hidden (null = shown). Every headline counts, whatever language is shown
+    e.hid = hiddenBy(state.set, { titles: [ja, en, ...e.titled.map((it) => it.title)], members: e.members.map((it) => ({ names: [str(it.outlet), str(it.media)], type: str(it.type) })), field: e.field, cover: e.cover });
   }
   return out;
 }
@@ -318,6 +325,9 @@ function priorityOf(es) {
   return uniq([...watched, ...es.filter((e) => e.topics.length && e.n >= 2).sort((a, b2) => b2.n - a.n || (b2.last || 0) - (a.last || 0))]).slice(0, PRI_CAP);
 }
 const matchesQ = (e) => !state.q || e.hay.toLowerCase().includes(state.q.toLowerCase());
+/** hidden by the settings: off every list and the map, except a priority row, which stays as a folded tag. One press shows all for this visit */
+const vis = (e) => !e.hid || state.showHid;
+const folded = (e) => !!e.hid && !state.showHid && !state.unfold.has(e.key);
 function shownPri() {
   if (state.q) return state.es.filter((e) => !e.foldedInto && matchesQ(e)).sort((a, b) => b.n - a.n || (b.last || 0) - (a.last || 0)).slice(0, 200);
   const t = state.topic;
@@ -498,18 +508,20 @@ function renderHours() {
   $('hours-b').replaceChildren(svg, h('p', { class: 'pfoot' }, `${label} · 直近 1 時間 ${bins[hours - 1]} · 最多 ${max}/時 · 注目の初報 ${priAgo.size} 時間帯`));
 }
 function renderFields() {
-  const es = state.es.filter((e) => !e.foldedInto && matchesQ(e));
+  const es = state.es.filter((e) => !e.foldedInto && matchesQ(e) && vis(e));
+  const fOff = new Set(state.showHid ? [] : state.set.news.fields_off);
   const b = state.board;
   const byCase = new Map();
   for (const e of es) if (e.case && !e.foldedInto && !byCase.has(e.case.sid)) byCase.set(e.case.sid, e);
   let tabs;
   if (b && isObj(b.outline)) {
-    tabs = Object.keys(b.outline).map((f) => [f, uniq(arr(b.outline[f]).map((sid) => byCase.get(sid)).filter(Boolean))]);
+    tabs = Object.keys(b.outline).filter((f) => !fOff.has(f)).map((f) => [f, uniq(arr(b.outline[f]).map((sid) => byCase.get(sid)).filter(Boolean))]);
     tabs.push(['分野の外', uniq(arr(b.outside).map((sid) => byCase.get(sid)).filter(Boolean))]);
     if (!tabs.some(([, l]) => l.length)) tabs = null;
   }
-  if (!tabs) tabs = [...FIELDS, OTHER_FIELD].map((f) => [f, es.filter((e) => e.field === f).sort((a, b2) => b2.n - a.n || (b2.last || 0) - (a.last || 0)).slice(0, 60)]);
+  if (!tabs) tabs = [...FIELDS, OTHER_FIELD].filter((f) => !fOff.has(f)).map((f) => [f, es.filter((e) => e.field === f).sort((a, b2) => b2.n - a.n || (b2.last || 0) - (a.last || 0)).slice(0, 60)]);
   state.fieldTabs = tabs.map(([f]) => f);
+  if (!tabs.length) tabs = [['分野の外', []]];
   if (!state.field || !state.fieldTabs.includes(state.field)) state.field = tabs[0][0];
   $('fields-c').textContent = b ? `各 ${isObj(b.rules) && isNum(b.rules.outline_per_cat) ? b.rules.outline_per_cat : 6} 件まで` : String(es.length);
   $('field-tabs').replaceChildren(...tabs.map(([f, l]) => h('button', {
@@ -519,6 +531,12 @@ function renderFields() {
 }
 // ---------------------------------------------------------------- second column: the judgement lists
 function row(e, opt = {}) {
+  if (folded(e)) {
+    return h('li', { class: 'r folded', data: { key: e.key }, tabindex: '-1', title: '押すとこの行だけ開く',
+      on: { click: () => { state.unfold.add(e.key); renderPri(); select(e.key, true); } } },
+      h('span', { class: 'flag fold', text: '隠した' }), h('span', { class: 'rt', text: `${reasonJa(e.hid)}に当たる` }),
+      h('span', { class: 'rm' }, h('span', { class: 'rn', text: `${e.n}媒体` }), h('span', { text: fmtAge(e.last) })));
+  }
   const fresh = state.newKeys.has(e.mk) && !state.flashed.has(e.key + (opt.compact ? 'c' : ''));
   if (fresh) state.flashed.add(e.key + (opt.compact ? 'c' : ''));
   const first = e.members[0];
@@ -561,7 +579,7 @@ function renderPri() {
   syncAutoLine();
 }
 function anomRows() {
-  const es = state.es.filter((e) => !e.foldedInto && matchesQ(e));
+  const es = state.es.filter((e) => !e.foldedInto && matchesQ(e) && vis(e));
   const b = state.board;
   const rows = [];
   const labels = b && isObj(b.asym_labels) ? b.asym_labels : {};
@@ -786,7 +804,7 @@ function scene() {
   const pri = new Set(state.pri.map((x) => x.key));
   const at = new Map();
   for (const x of state.es) {
-    if (!x.geo) continue;
+    if (!x.geo || !vis(x)) continue;
     const k = `${x.geo.lat.toFixed(1)},${x.geo.lon.toFixed(1)}`;
     const a = at.get(k) || { lat: x.geo.lat, lon: x.geo.lon, n: 0, pri: false, name: x.geo.name, ref: x.key, best: 0, country: !!x.geo.country };
     a.n++; if (pri.has(x.key)) a.pri = true;
@@ -829,7 +847,7 @@ function trackList() {
   for (const t of hz.typhoons || []) if (Array.isArray(t.center) && isNum(t.center[0])) L.push({ lat: t.center[0], lon: t.center[1], label: [t.name || t.nameEn, t.pressure ? `${t.pressure} hPa` : ''].filter(Boolean).join('・') });
   for (const q of hz.quakes || []) if (isNum(q.mag) && q.mag >= 5 && isNum(q.lat)) L.push({ lat: q.lat, lon: q.lon, label: `M${q.mag.toFixed(1)}・${q.place || ''}` });
   for (const d of hz.disasters || []) if (/red|orange/i.test(d.alert || '') && isNum(d.lat)) L.push({ lat: d.lat, lon: d.lon, label: d.name || d.type || '' });
-  for (const e of state.pri.slice(0, 12)) if (e.geo) L.push({ lat: e.geo.lat, lon: e.geo.lon, label: `${e.geo.name}・${String(e.heading ? e.heading.text : '').slice(0, 28)}` });
+  for (const e of state.pri.filter(vis).slice(0, 12)) if (e.geo) L.push({ lat: e.geo.lat, lon: e.geo.lon, label: `${e.geo.name}・${String(e.heading ? e.heading.text : '').slice(0, 28)}` });
   return L;
 }
 function renderMap(animate) {
@@ -989,20 +1007,24 @@ function renderPol() {
   b.replaceChildren(...sec, h('p', { class: 'pfoot', text: str(p.order_rule) ? '並びは官邸が先、各党は名前の順。色・順位なし' : '' }));
 }
 // ---------------------------------------------------------------- broadcast: the broadcasters' own channels (js/tv.js)
+function tvList() { const off = new Set(state.set.tv.off); return state.set.tv.order.map((id) => STATIONS.find((x) => x.id === id)).filter((x) => x && !off.has(x.id)); }
 function renderTv() {
   const box = $('tv-b');
   if (!box) return;
-  const st = STATIONS.find((x) => x.id === state.tv) || state.tvAuto || STATIONS[0];
+  const ls = tvList();
+  // the pane turned off, or no channel left: no player at all (nothing loads, nothing plays)
+  if (state.set.panes.off.includes('tv') || !ls.length) { box.replaceChildren(h('p', { class: 'empty', text: ls.length ? '' : '表示する局がない（設定の映像）' })); $('tv-c').textContent = ''; return; }
+  const st = ls.find((x) => x.id === state.tv) || (state.tvAuto && ls.includes(state.tvAuto) ? state.tvAuto : null) || ls[0];
   $('tv-c').textContent = st.name;
   let f = box.querySelector('.tv-f');
   if (!f) { f = h('div', { class: 'tv-f' }); box.replaceChildren(f, h('div', { class: 'tv-ch', role: 'group', 'aria-label': '局' }), h('p', { class: 'pfoot tv-n' })); }
-  const src = embedSrc(st);
+  const src = embedSrc(st, { auto: state.set.tv.auto, sound: state.set.tv.sound });
   const fr = f.querySelector('iframe');
   if (!fr || fr.dataset.src !== src) f.replaceChildren(h('iframe', { src, title: `${st.name}（YouTube）`, loading: 'lazy', allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, referrerpolicy: 'strict-origin-when-cross-origin', data: { src } }));
-  box.querySelector('.tv-ch').replaceChildren(...STATIONS.map((x) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(x.id === st.id), on: { click: () => { state.tv = x.id; renderTv(); } } }, x.short)));
-  box.querySelector('.tv-n').textContent = `${st.mode === 'live' ? 'ライブ' : '最新の動画'} · 公式チャンネル · 音は押すまで出ない`;
+  box.querySelector('.tv-ch').replaceChildren(...ls.map((x) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(x.id === st.id), on: { click: () => { state.tv = x.id; renderTv(); } } }, x.short)));
+  box.querySelector('.tv-n').textContent = `${st.mode === 'live' ? 'ライブ' : '最新の動画'} · 公式チャンネル · ${state.set.tv.sound ? '音あり' : '音は押すまで出ない'}${state.set.tv.auto ? '' : ' · 押すと再生'}`;
 }
-function followTv(e) { if (!e) return; state.tvAuto = stationFor(e.members.map(outletOf), e.cover); if (!state.tv) renderTv(); }
+function followTv(e) { if (!e) return; const ls = tvList(); if (!ls.length) return; state.tvAuto = stationFor(e.members.map(outletOf), e.cover, ls); if (!state.tv) renderTv(); }
 
 // ---------------------------------------------------------------- bottom: the source on screen and the next event
 function renderStatus() {
@@ -1015,12 +1037,13 @@ function renderStatus() {
 }
 function renderTicker(force) {
   const box = $('sb-tick');
-  const q = state.tickQ.length ? state.tickQ : state.pri.slice(0, 1);
+  const tq = state.tickQ.filter(vis);
+  const q = tq.length ? tq : state.pri.filter(vis).slice(0, 1);
   if (!q.length) { box.replaceChildren(h('span', { class: 'k', text: '注目' }), '0 件'); return; }
   const i = state.tickI % q.length;
   const e = q[i];
   const line = h('span', { class: 'tk' + (force && !reduced() ? ' in' : '') },
-    h('span', { class: 'k', text: state.tickQ.length ? `新着 ${i + 1}/${q.length}` : `注目 1/${state.pri.length}` }),
+    h('span', { class: 'k', text: tq.length ? `新着 ${i + 1}/${q.length}` : `注目 1/${state.pri.length}` }),
     headNode(e, 'tt'),
     h('span', { class: 'tm', text: ` ${e.n}媒体${e.topics.length ? ' · ' + e.topics.map(flagJa).join('・') : ''}` }));
   line.addEventListener('click', () => select(e.key, true));
@@ -1247,7 +1270,7 @@ function setView(v) {
   try { history.replaceState(history.state, '', location.pathname + location.search + '#' + v); } catch { /* */ }
   const keep = state.sel;
   renderAll();
-  if (!state.byKey.has(keep)) { state.sel = null; const f = shownPri()[0] || state.es[0]; if (f) select(f.key, false); }
+  if (!state.byKey.has(keep)) { state.sel = null; const f = firstShown(); if (f) select(f.key, false); }
   return true;
 }
 function setTopic(id) {
@@ -1268,7 +1291,7 @@ function followField() {
   if (best && (!state.fieldTabs.length || state.fieldTabs.includes(best[0]))) state.field = best[0];
 }
 function step(dir) {
-  const list = shownPri();
+  const list = shownPri().filter((e) => !folded(e));
   if (!list.length) return false;
   const i = list.findIndex((e) => e.key === state.sel);
   const n = list[(i + dir + list.length) % list.length];
@@ -1309,7 +1332,8 @@ function renderAll() {
     renderPri(); renderAnom();
     renderCase(); renderMap(false);
     renderCount(); renderHaz(); renderMkt(); renderPol(); renderTv();
-    renderTicker(false); renderWatch();
+    renderTicker(false); renderWatch(); renderHid();
+    if (state.panel) state.panel.render();
     if (state.about) renderAbout();
     if (state.sheet) renderSheet();
     tick();
@@ -1329,13 +1353,13 @@ function syncAutoLine() {
   const line = document.querySelector('#pri-b .r.sel .autoline');
   if (!line) return;
   const now = Date.now();
-  const held = state.stopped || now < state.pausedUntil || state.about || !!state.sheet;
+  const held = state.stopped || !state.set.motion.cases || now < state.pausedUntil || state.about || !!state.sheet || setOpen();
   line.classList.toggle('held', held);
   line.classList.remove('run');
   if (!held) { line.style.setProperty('--auto-ms', `${Math.max(0, state.autoNext - now)}ms`); void line.offsetWidth; line.classList.add('run'); }
 }
 function autoStep() {
-  if (narrow() || state.about || state.sheet || state.stopped || document.hidden) return;
+  if (narrow() || state.about || state.sheet || state.stopped || !state.set.motion.cases || setOpen() || document.hidden) return;
   if (state.floor && state.floor.mode() === 'map') return;     // the whole map is being read: the event in focus stays
   const now = Date.now();
   if (now < state.pausedUntil) return;
@@ -1476,7 +1500,7 @@ const SHEET_BODY = {
   pri() {
     const list = shownPri();
     const rows = list.map((e, i) => h('tr', { class: 'go' + (e.key === state.sel ? ' sel' : ''), on: { click: () => { closeSheet(); select(e.key, true); } } },
-      td(String(i + 1), 'r dim'), td(e.topics.map(flagJa).join('・') || '—', 'flagc'), td(e.heading.text, 'tt'), td(`${e.n}`, 'r'), td(e.field, 'dim opt'),
+      td(String(i + 1), 'r dim'), td(e.topics.map(flagJa).join('・') || '—', 'flagc'), folded(e) ? td(`隠した・${reasonJa(e.hid)}に当たる`, 'dim') : td(e.heading.text, 'tt'), td(`${e.n}`, 'r'), td(e.field, 'dim opt'),
       td(e.case ? arr(e.case.hits).slice(0, 4).join('・') : '', 'dim opt'), td(fmtAge(e.last), 'r dim')));
     return { big: fmtN(list.length), unit: state.q ? `「${state.q}」の一致` : state.topic === 'all' ? '注目の出来事' : `注目・${state.topic === 'watch' ? '追う' : state.topic === 'cross' ? '国内と海外' : flagJa(state.topic)}`,
       facts: TOPICS.map((t) => [flagJa(t.id), fmtN(state.pri.filter((e) => e.topics.includes(t.id)).length)]),
@@ -1684,6 +1708,85 @@ function startVoice() {
   return true;
 }
 
+// ---------------------------------------------------------------- the visitor's settings (this browser only; js/settings.js)
+const setOpen = () => !!(state.panel && state.panel.isOpen());
+/** the first event to show: the first priority event the settings do not hide */
+function firstShown() { return state.pri.find((e) => !e.hid) || state.es.find((e) => !e.hid && !e.foldedInto) || state.pri[0] || state.es[0] || null; }
+function hidCount() {
+  const hid = state.es.filter((e) => !e.foldedInto && e.hid);
+  const by = {};
+  for (const e of hid) by[e.hid.k] = (by[e.hid.k] || 0) + 1;
+  return { n: hid.length, by };
+}
+/** what the settings hide, always in sight: the count, the reasons, and one press to see everything for this visit */
+function renderHid() {
+  const bar = $('hid-bar');
+  const { n, by } = hidCount();
+  if (!n) { bar.hidden = true; bar.replaceChildren(); return; }
+  const parts = Object.entries(by).map(([k, c]) => `${KIND_JA[k] || k} ${c}`).join(' · ');
+  bar.hidden = false;
+  bar.replaceChildren(
+    h('span', { class: 'hb-t' }, '設定で隠した ', h('b', { class: 'num', text: fmtN(n) }), state.showHid ? ' 件を一時的に表示中' : ' 件'),
+    h('span', { class: 'hb-k', text: parts }),
+    h('button', { type: 'button', class: 'hb-b', id: 'hid-toggle', 'aria-pressed': String(state.showHid), on: { click: () => { state.showHid = !state.showHid; renderAll(); } } }, state.showHid ? '隠す' : '全部見る'),
+    h('button', { type: 'button', class: 'hb-s', on: { click: () => openSettings('mute') } }, '設定'));
+}
+const PANE_EL = { src: 'p-src', hours: 'p-hours', fields: 'p-fields', anom: 'p-anom', map: 'p-map', count: 'p-count', tv: 'p-tv', haz: 'p-haz', mkt: 'p-mkt', pol: 'p-pol' };
+const PANE_ROWS = { 'p-src': 'auto', 'p-hours': 'auto', 'p-fields': 'minmax(0, 1fr)', 'p-pri': 'minmax(0, 60fr)', 'p-anom': 'minmax(0, 40fr)', 'p-case': 'minmax(0, 1fr)',
+  'p-map': 'minmax(0, 1fr)', 'p-count': 'auto', 'p-tv': 'auto', 'p-haz': 'minmax(0, 1.2fr)', 'p-mkt': 'auto', 'p-pol': 'minmax(0, 1fr)' };
+/** panes turned off leave the board; a column with one off is laid out again from the panes left (the stylesheet keeps the rest) */
+function applyPanes() {
+  const off = new Set(state.set.panes.off);
+  for (const [k, id] of Object.entries(PANE_EL)) { const el = $(id); if (el) el.hidden = off.has(k); }
+  for (const a of document.querySelectorAll('.jump a')) { const el = $(a.getAttribute('href').slice(1)); a.hidden = !!(el && el.hidden); }
+  for (const col of document.querySelectorAll('.board > .col')) {
+    const ps = [...col.children].filter((x) => x.classList.contains('pane'));
+    const shown = ps.filter((x) => !x.hidden);
+    if (shown.length === ps.length) { col.style.gridTemplateRows = ''; continue; }
+    const rows = shown.map((x) => PANE_ROWS[x.id] || 'auto');
+    if (rows.length && !rows.some((r) => r.includes('fr'))) rows[rows.length - 1] = 'minmax(0, 1fr)';
+    col.style.gridTemplateRows = rows.join(' ') || 'minmax(0, 1fr)';
+  }
+  $('board').classList.toggle('nomap', off.has('map'));
+  if (off.has('map') && state.floor && state.floor.mode() === 'map') state.floor.setMode('case');
+}
+/** a change from the settings window: kept in this browser, then applied to the board at once (no reload) */
+function applySettings(next) {
+  const prev = state.set;
+  state.set = cleanSettings(next);
+  state.setSaved = saveSettings(store, state.set);
+  document.documentElement.toggleAttribute('data-calm', state.set.motion.calm === 'on');
+  if (state.set.motion.cases && !prev.motion.cases) state.autoNext = Date.now() + AUTO_MS;
+  const panesChanged = prev.panes.off.join() !== state.set.panes.off.join();
+  if (panesChanged) applyPanes();
+  if (!state.data) return state.setSaved;
+  const v = state.set.news.view;
+  if (!(v !== prev.news.view && (v === 'ai' || v === 'rules') && v !== state.view && setView(v))) renderAll();
+  const c = cur();
+  if (c && c.hid && !state.showHid) { const f = firstShown(); if (f && f.key !== c.key) select(f.key, false); }
+  if (panesChanged && state.map) { state.map.resize(); renderMap(false); }
+  return state.setSaved;
+}
+function openSettings(section) {
+  if (!state.panel) return false;
+  if (state.sheet) closeSheet();
+  if (state.about) closeAbout();
+  pause();
+  state.panel.open(section);
+  syncAutoLine();
+  return true;
+}
+function settingsInfo() {
+  const d = state.data;
+  const srcs = d ? arr(d.sources).filter(isObj) : [];
+  const tn = new Map();
+  for (const r of srcs) { const t = str(r.type); if (t) tn.set(t, (tn.get(t) || 0) + 1); }
+  const types = uniq([...TYPE_ORDER.filter((t) => tn.has(t)), ...tn.keys(), ...state.set.news.types_off]).map((t) => [t, tn.get(t) || 0]);
+  const outlets = uniq(srcs.map((r) => str(r.outlet) || str(r.name)).filter(Boolean)).sort((a, b) => a.localeCompare(b, 'ja'));
+  return { types, fields: uniq([...FIELDS, OTHER_FIELD, ...state.set.news.fields_off]), outlets, hidden: hidCount(), saved: state.setSaved,
+    calmSystem: window.matchMedia('(prefers-reduced-motion: reduce)').matches };
+}
+
 // ---------------------------------------------------------------- start
 const api = {
   step, find, setView, setTopic, setField: (f) => setField(f, true), toggleLayer,
@@ -1696,7 +1799,8 @@ const api = {
   watchAdd: (t) => setWatch(addWatch(state.watch, t)), watchRemove: (t) => setWatch(removeWatch(state.watch, t)),
   openArticle: () => { const e = cur(); const l = e && e.members.map((it) => safeUrl(it.link)).find(Boolean); if (!l) return false; openUrl(l); return true; },
   openSheet: (k) => openSheet(k), taskAdd, openTasks,
-  openAbout, close: () => { if (state.sheet) return closeSheet(); if (!$('task-pop').hidden) { $('task-pop').hidden = true; $('task-btn').setAttribute('aria-expanded', 'false'); return true; } if (!$('voice-pop').hidden) { $('voice-pop').hidden = true; return true; } if (state.about) return closeAbout(); if (!$('watch-pop').hidden) { $('watch-pop').hidden = true; $('watch-btn').setAttribute('aria-expanded', 'false'); return true; } return false; },
+  openAbout, openSettings: (k) => openSettings(k),
+  close: () => { if (setOpen()) return state.panel.close(); if (state.sheet) return closeSheet(); if (!$('task-pop').hidden) { $('task-pop').hidden = true; $('task-btn').setAttribute('aria-expanded', 'false'); return true; } if (!$('voice-pop').hidden) { $('voice-pop').hidden = true; return true; } if (state.about) return closeAbout(); if (!$('watch-pop').hidden) { $('watch-pop').hidden = true; $('watch-btn').setAttribute('aria-expanded', 'false'); return true; } return false; },
   autoStop: () => { state.stopped = true; syncAutoLine(); return true; }, autoStart: () => { state.stopped = false; state.autoNext = Date.now() + AUTO_MS; syncAutoLine(); return true; },
 };
 export const actions = createActions(api);
@@ -1707,6 +1811,12 @@ async function main() {
   if (hashView) state.view = hashView;
   state.watch = loadWatch(store);
   state.tasks = loadTasks(store);
+  state.set = loadSettings(store);
+  document.documentElement.toggleAttribute('data-calm', state.set.motion.calm === 'on');
+  if (!hashView && state.set.news.view !== 'auto') state.view = state.set.news.view;
+  state.panel = createSettingsPanel({ root: $('set-layer'), get: () => state.set, set: (n) => applySettings(n), info: settingsInfo,
+    watch: { get: () => state.watch, set: (l) => setWatch(l) } });
+  applyPanes();
   try { const l = store ? JSON.parse(store.getItem(LAYER_KEY) || 'null') : null; state.layers = isObj(l) ? l : {}; } catch { state.layers = {}; }
   window.parallaxActions = actions;   // the voice layer (later) reads the same list
 
@@ -1717,6 +1827,7 @@ async function main() {
   $('watch-btn').addEventListener('click', () => { const p = $('watch-pop'); p.hidden = !p.hidden; $('watch-btn').setAttribute('aria-expanded', String(!p.hidden)); if (!p.hidden) { renderWatch(); $('watch-in').focus(); } });
   $('watch-form').addEventListener('submit', (ev) => { ev.preventDefault(); const v = $('watch-in').value; $('watch-in').value = ''; if (v.trim()) setWatch(addWatch(state.watch, v)); });
   $('about-btn').addEventListener('click', () => actions.run('about'));
+  $('set-btn').addEventListener('click', () => actions.run('settings'));
   $('task-btn').addEventListener('click', () => { const p = $('task-pop'); if (p.hidden) openTasks(); else { p.hidden = true; $('task-btn').setAttribute('aria-expanded', 'false'); } });
   if (speechSupported()) { $('voice-btn').hidden = false; $('voice-btn').addEventListener('click', startVoice); }
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
@@ -1737,9 +1848,12 @@ async function main() {
   window.addEventListener('pointermove', (ev) => { if (ev.pointerType === 'touch') return; const n = Date.now(); if (n - pmAt > 400) { pmAt = n; pause(); } }, { capture: true, passive: true });
   document.addEventListener('keydown', (ev) => {
     const t = ev.target;
+    // the settings window is modal: it takes every key, and Esc closes it even from a field
+    if (setOpen()) { if (ev.key === 'Escape') { ev.preventDefault(); state.panel.close(); } return; }
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) { if (ev.key === 'Escape') t.blur(); return; }
     if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
     const k = ev.key;
+    if (k === ',') { ev.preventDefault(); actions.run('settings'); return; }
     const map = { ArrowDown: ['case_next'], ArrowUp: ['case_prev'], j: ['case_next'], k: ['case_prev'], Escape: ['close'], a: ['view_ai'], r: ['view_rules'], m: ['map_mode'], w: ['map_world'], o: ['open_article'], i: ['about'], t: ['task_add'], '+': ['map_in'], '-': ['map_out'], v: ['__voice'] };
     if (map[k] && map[k][0] === '__voice') { if (!$('voice-btn').hidden) startVoice(); return; }
     if (k === '/') { ev.preventDefault(); $('q').focus(); return; }
@@ -1754,7 +1868,7 @@ async function main() {
   });
   state.floor = createFloor({ map: state.map, board: $('board'), onMode: () => { state.map.resize(); renderMap(true); } });
   // a list that does not fit scrolls itself (the event list follows the event in focus, so its own move takes over there)
-  startAutoScroll('#src-b, #fields-b, #pri-b, #anom-b, #haz-b, #mkt-b, #pol-b', { held: () => !!(state.about || state.sheet) || !$('task-pop').hidden || !$('watch-pop').hidden });
+  startAutoScroll('#src-b, #fields-b, #pri-b, #anom-b, #haz-b, #mkt-b, #pol-b', { held: () => !!(state.about || state.sheet) || setOpen() || !state.set.motion.scroll || !$('task-pop').hidden || !$('watch-pop').hidden });
   let rt = 0;
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => state.map && state.map.resize(), 160); });
 
@@ -1774,14 +1888,14 @@ async function main() {
   state.labels = labels;
   state.board = isObj(board) && board.schema === 'parallax-board/1' ? board : null;
   if (!(isObj(state.labels) && isObj(state.labels.flags))) state.labels = null;
-  if (!hashView) state.view = defaultView(data);
+  if (!hashView) state.view = state.set.news.view === 'auto' ? defaultView(data) : state.set.news.view;
   state.prevSeen = loadSeen();
   if (state.prevSeen && state.prevSeen.gen !== data.generated_at) markNew(state.prevSeen.keys);
   saveSeen(data);
   renderAll();
   state.tickQ = state.pri.filter((e) => state.newKeys.has(e.mk));
   renderTicker(false);
-  const first = state.pri[0] || state.es[0];
+  const first = firstShown();
   if (first) { select(first.key, false); followTv(first); }
   const askSid = new URLSearchParams(location.search).get('sid');   // a link to a story; a folded one opens its event
   if (askSid) find(askSid);

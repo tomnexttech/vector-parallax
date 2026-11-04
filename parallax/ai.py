@@ -161,7 +161,7 @@ class GeminiProvider:
         self.budget = budget                 # CallBudget | None。やり直しも 1 呼びに数える（CONTRACT §13）
         if fallback_model is not None and not _MODEL_RE.match(fallback_model):
             raise ValueError("badmodel")
-        self.fallback_model = fallback_model  # 混雑（500・503）の時のやり直しだけ、この型へ移る。model は答えた型を指す
+        self.fallback_model = fallback_model  # 混雑・枠切れ（429・500・503）の時のやり直しだけ、この型へ移る（枠は型ごと）。model は答えた型を指す
         self._last_status = None
 
     def __repr__(self):
@@ -190,7 +190,7 @@ class GeminiProvider:
             if self.budget is not None and self.budget.used >= self.budget.limit:
                 break
             self._sleep(BACKOFF_BASE_S * (2 ** n))
-            if self.fallback_model and self._last_status in (500, 503):
+            if self.fallback_model and self._last_status in (429, 500, 503):
                 self.model = self.fallback_model
             raw2, err2 = self._call_once(system, user_text, schema)
             if err2 == "budget":

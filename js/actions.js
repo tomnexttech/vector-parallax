@@ -26,6 +26,7 @@ export const CATALOG = [
   { id: 'watch_remove', ja: '追う語・地名を外す', param: 'term' },
   { id: 'open_article', ja: '表示中の出来事の最初の記事を開く', param: '' },
   { id: 'about', ja: 'データと AI についての板を開く', param: '' },
+  { id: 'settings', ja: '設定の画面を開く（映像・ニュース・ミュート・動き・盤の欄）', param: '' },
   { id: 'close', ja: '開いている板を閉じる', param: '' },
   { id: 'sheet', ja: '欄の詳細の板を開く（源・時間ごと・注目・非対称・市場・政治・災害）', param: 'kind' },
   { id: 'task_add', ja: '表示中の出来事を調べるタスクに足す', param: '' },
@@ -42,7 +43,7 @@ export function createActions(api) {
     map_case: () => api.mapCase(), map_world: () => api.mapWorld(), map_mode: () => api.mapMode(), map_in: () => api.mapZoom(1.6), map_out: () => api.mapZoom(1 / 1.6), layer: (l) => api.toggleLayer(l),
     quakes: () => api.sayQuakes(), typhoons: () => api.sayTyphoons(),
     watch_add: (t) => api.watchAdd(t), watch_remove: (t) => api.watchRemove(t),
-    open_article: () => api.openArticle(), about: () => api.openAbout(), close: () => api.close(),
+    open_article: () => api.openArticle(), about: () => api.openAbout(), settings: () => api.openSettings(), close: () => api.close(),
     sheet: (k) => api.openSheet(k), task_add: () => api.taskAdd(), tasks: () => api.openTasks(),
     auto_stop: () => api.autoStop(), auto_start: () => api.autoStart(),
   };

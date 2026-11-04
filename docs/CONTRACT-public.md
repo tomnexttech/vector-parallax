@@ -337,6 +337,24 @@ validator. The result is written to `data/recorded.json` with `ai_run.status = "
 - The one-line summary of an event (13) is shown under the heading with the AI mark, the model that wrote it (`provider · model`) and the time it was made. It is
   never shown without those. A BYOK re-run puts the original line back on a story that stayed a rule story.
 
+### 6.1 The visitor's settings (decided 2026-11-05)
+
+- One window (`,` or the 設定 button; Esc closes), sections on the left: 映像, ニュース, ミュート, 動き, 盤の欄, 保存と復元. Every change takes
+  effect at once. `js/settings.js` keeps the rules (no DOM), `js/settings_panel.js` draws the window.
+- Kept only in the visitor's browser (`localStorage` `parallax.settings.v1`), never sent anywhere; the window says so in its first line.
+  Storage that cannot be read or written (a private window) leaves the board on the defaults; a change then works until the page closes,
+  and the window says it was not kept. A damaged value falls back field by field.
+- Defaults: everything shown; video plays by itself without sound; the start view follows the data; the system's reduced-motion setting
+  decides motion (the visitor may also ask for less motion always).
+- Hiding is the visitor's choice and is never silent: muted words (in any headline, NFKC and case folded, at most 20 of 40 characters),
+  muted outlets (at most 60), source types and fields turned off, home or abroad only. An outlet or a type hides an event only when every
+  report of it is from a muted outlet or a type turned off; an event reported at home and abroad is never hidden by the home/abroad choice.
+  The count of hidden events and its reasons stay in a bar under the top bar while any is hidden, and one press shows them all for this
+  visit. A priority row that is hidden stays in the list as a folded tag (reason, outlets, time); a press opens that row. Other lists,
+  the map and the ticker leave hidden events out.
+- No true/false and no left/right labels are added by the settings, and nothing is called unreported.
+- Export and import: one JSON file (`parallax-settings/1`: `settings` and the watched words); reset to the defaults keeps the watched words.
+
 ## 7. Editions
 
 **Since the rights decision of 2026-11-04 the default `rights_mode` is `quote` (section 14): everything below that withholds a title, a focus or a sentence applies in `strict` only.**

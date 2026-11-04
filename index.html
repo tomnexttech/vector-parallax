@@ -47,10 +47,12 @@
       <button type="button" class="tbb" id="task-btn" aria-expanded="false" aria-controls="task-pop">タスク<span class="n" id="task-n"></span></button>
       <button type="button" class="tbb" id="watch-btn" aria-expanded="false" aria-controls="watch-pop">追う<span class="n" id="watch-n"></span></button>
       <button type="button" class="tbb" id="about-btn">データと AI</button>
+      <button type="button" class="tbb" id="set-btn" aria-haspopup="dialog" title="設定（,）">設定</button>
     </div>
   </header>
   <p class="ailine" id="ai-line" role="status"></p>
   <p class="note-bar" id="snap-note" role="status" hidden></p>
+  <div class="note-bar hid-bar" id="hid-bar" aria-live="polite" hidden></div>
 
   <nav class="jump" aria-label="欄へ移る">
     <a href="#p-case">出来事</a><a href="#p-pri">注目</a><a href="#p-map">地図</a><a href="#p-anom">非対称</a><a href="#p-tv">映像</a><a href="#p-haz">災害</a><a href="#p-src">源</a>
@@ -156,6 +158,7 @@
   <div class="pop vpop" id="voice-pop" hidden role="status" aria-live="polite"></div>
   <div class="sheet-layer" id="sheet" hidden><section class="dsheet" role="dialog" aria-modal="true" aria-labelledby="ds-title"></section></div>
   <div class="sheet-wrap" id="about-wrap" hidden></div>
+  <div class="set-layer" id="set-layer" hidden><section class="setwin" role="dialog" aria-modal="true" aria-labelledby="set-title"></section></div>
   <p class="fatal" id="fatal" role="alert" hidden></p>
 </div>
 </body>

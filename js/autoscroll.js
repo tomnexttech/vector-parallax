@@ -7,7 +7,8 @@
  * SCROLL.rest ms before it starts again. It stops while the pointer is within SCROLL.near px of the list or touching it, and
  * for SCROLL.wheel ms after the wheel moved that list; then it goes on from where the list is (the hand and this move the same
  * scrollTop, so the position is always read back from the list). It writes only when the position moves by one device pixel,
- * and only at the head of a frame. Nothing moves when the visitor asked for reduced motion. */
+ * and only at the head of a frame. Nothing moves when the visitor asked for reduced motion (the system's setting, or html[data-calm]
+ * from the board's own settings). */
 
 export const SCROLL = { pxs: 16, tau: 0.8, ease: 48, hold: 3000, rest: 2600, back: 1100, near: 40, wheel: 8000, touch: 4000 };
 
@@ -48,7 +49,7 @@ export function startAutoScroll(selector, { held } = {}) {
   function tick() {
     const now = performance.now();
     const dt = Math.min(0.25, Math.max(0, (now - (lastT || now)) / 1000)); lastT = now;
-    if (reduce.matches || document.hidden) { at(1000); return; }
+    if (reduce.matches || document.documentElement.hasAttribute('data-calm') || document.hidden) { at(1000); return; }
     if (now - elsAt > 5000) { els = [...document.querySelectorAll(selector)]; elsAt = now; }
     const idle = !(held && held());
     const px = 1 / (window.devicePixelRatio || 1);
