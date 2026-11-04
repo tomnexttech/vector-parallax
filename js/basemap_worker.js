@@ -233,13 +233,13 @@ async function hillshade(dem, dx0, dy0, nx, ny, z, ck) {
       const fe = (E[xr] - E[xl]) * inv, fs = (E[dn + x] - E[up + x]) * inv;
       if (!Number.isFinite(fe) || !Number.isFinite(fs)) continue;
       const s = (cA * (fe + fs) + sA) / Math.sqrt(1 + fe * fe + fs * fs);
-      // light only, in the cyan of the map: the land is a faint lit field over the dark ground, the slopes that face the light
+      // light only, in the grey of the page: the land is a faint lit field over the dark ground, the slopes that face the light
       // turn toward white, contour steps add a trace. No dark shading (the ground under it is already dark)
       let a = 0.085 + 0.5 * (s - sA) + 0.05 * Math.min(1, Math.max(0, e) / 3000);
       if (e > 0) { const b = Math.floor(e / ci); if (Math.floor(E[xr] / ci) !== b || Math.floor(E[dn + x] / ci) !== b) a += 0.06; }
       a = a < 0 ? 0 : a > 0.46 ? 0.46 : a;
       const hi = s > sA + 0.1 ? Math.min(1, (s - sA - 0.1) * 4) : 0, k = i * 4;
-      o[k] = 143 + 83 * hi; o[k + 1] = 216 + 28 * hi; o[k + 2] = 242 + 10 * hi; o[k + 3] = a * 255;
+      o[k] = 206 + 40 * hi; o[k + 1] = 208 + 39 * hi; o[k + 2] = 213 + 37 * hi; o[k + 3] = a * 255;
     }
   }
   cg.putImageData(out, 0, 0);
