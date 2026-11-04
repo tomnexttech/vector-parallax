@@ -636,7 +636,8 @@ def choose_provider(args, env, model=None, prompt=None):
     if not name:
         raise ValueError("data/prompt.json has no merge_model")
     return ai_mod.GeminiProvider(key, name, max_output_tokens=pr.get("max_output_tokens") or ai_mod.DEFAULT_MAX_OUTPUT_TOKENS,
-                                 budget=ai_mod.CallBudget(MERGE_CALL_LIMIT)), ""
+                                 budget=ai_mod.CallBudget(MERGE_CALL_LIMIT),
+                                 fallback_model=None if model else pr.get("merge_fallback_model")), ""
 
 
 def summary_enabled(prompt):

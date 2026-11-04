@@ -3,6 +3,7 @@
   "rights_mode": "quote",
   "max_output_tokens": 16384,
   "merge_model": "gemini-3.6-flash",
+  "merge_fallback_model": "gemini-3.5-flash-lite",
   "summary_model": "gemini-3.5-flash-lite",
   "limits": {
     "headline_ja": 60,

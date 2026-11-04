@@ -187,6 +187,25 @@ class Retry(unittest.TestCase):
             self.assertEqual(gem(tr).call("s", "u", {}), (None, err))
             self.assertEqual(len(calls), 1, err)
 
+    def test_busy_model_falls_back_on_the_retry(self):
+        seen = []
+
+        def tr(url, headers, body, timeout):
+            seen.append(url.split("/models/")[1].split(":")[0])
+            return (503, "{}") if len(seen) == 1 else (200, ok_body('{"blocks":[]}'))
+        p = gem(tr, fallback_model="lite-model")
+        self.assertEqual(p.call("s", "u", {}), ('{"blocks":[]}', ""))
+        self.assertEqual((seen, p.model), (["gemini-test-model", "lite-model"], "lite-model"))
+
+    def test_no_fallback_for_quota(self):
+        seen = []
+
+        def tr(url, headers, body, timeout):
+            seen.append(url.split("/models/")[1].split(":")[0])
+            return 429, "{}"
+        gem(tr, fallback_model="lite-model").call("s", "u", {})
+        self.assertEqual(set(seen), {"gemini-test-model"})
+
     def test_retries_can_be_turned_off(self):
         tr, calls = self.counting([429])
         self.assertEqual(gem(tr, retries=0).call("s", "u", {}), (None, "quota"))

@@ -145,7 +145,7 @@ class GeminiProvider:
     budget = None
 
     def __init__(self, key, model, timeout=90, transport=None, max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
-                 retries=RETRIES, sleep=time.sleep, budget=None):
+                 retries=RETRIES, sleep=time.sleep, budget=None, fallback_model=None):
         key = (key or "").strip()
         if not key:
             raise ValueError("nokey")
@@ -159,6 +159,10 @@ class GeminiProvider:
         self.retries = max(0, int(retries))
         self._sleep = sleep
         self.budget = budget                 # CallBudget | None。やり直しも 1 呼びに数える（CONTRACT §13）
+        if fallback_model is not None and not _MODEL_RE.match(fallback_model):
+            raise ValueError("badmodel")
+        self.fallback_model = fallback_model  # 混雑（500・503）の時のやり直しだけ、この型へ移る。model は答えた型を指す
+        self._last_status = None
 
     def __repr__(self):
         return "GeminiProvider(model=%r)" % self.model
@@ -186,6 +190,8 @@ class GeminiProvider:
             if self.budget is not None and self.budget.used >= self.budget.limit:
                 break
             self._sleep(BACKOFF_BASE_S * (2 ** n))
+            if self.fallback_model and self._last_status in (500, 503):
+                self.model = self.fallback_model
             raw2, err2 = self._call_once(system, user_text, schema)
             if err2 == "budget":
                 break
@@ -196,6 +202,7 @@ class GeminiProvider:
         if not gate(self):
             return None, "budget"
         url, headers, body = self.build_request(system, user_text, schema)
+        self._last_status = None
         try:
             status, text = self._transport(url, headers, body, self.timeout)
         except (socket.timeout, TimeoutError):
@@ -206,6 +213,7 @@ class GeminiProvider:
             return None, "network"
         except Exception:
             return None, "network"
+        self._last_status = status
         if not (200 <= status < 300):
             HTTP_DETAILS.append((self.model, status, _error_detail(text, self._key)))
         if status in (401, 403):
