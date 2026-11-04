@@ -43,12 +43,12 @@ test('the earlier AI bundles are not in the current data, and the view is not bu
 
 test('the notice says which fetch the AI bundles come from, and why this build has none of its own', () => {
   const nokey = noticeParts(keptView(clone(CASE.nokey)), fmt, explain, []);
-  assert.equal(nokey.lead, `AI の束ねは T${CASE.previous.generated_at} の取得による。`);
-  assert.match(nokey.why, /鍵が無く AI を回していません/);
-  assert.match(nokey.why, /RULES の束は今回の取得/);
+  assert.deepStrictEqual(nokey.lead, ['AI の束ね', `T${CASE.previous.generated_at} の取得`]);
+  assert.deepStrictEqual(nokey.why, ['今回', '鍵なし']);
+  assert.deepStrictEqual(nokey.rules, ['規則の束', '今回の取得']);
   const error = noticeParts(keptView(clone(CASE.error)), fmt, explain, ['quota']);
-  assert.match(error.why, /AI の呼びは失敗しました。EXPLAIN\(quota\)/);
-  assert.equal(error.lead, nokey.lead, 'the AI time is the same however often it was kept');
+  assert.deepStrictEqual(error.why, ['今回', '失敗・EXPLAIN(quota)']);
+  assert.deepStrictEqual(error.lead, nokey.lead, 'the AI time is the same however often it was kept');
 });
 
 test('ai_at is its own clock: red after 6 hours whatever generated_at says', () => {

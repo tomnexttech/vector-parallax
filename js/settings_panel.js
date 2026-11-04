@@ -14,6 +14,7 @@ const SECTIONS = [
   ['news', 'ニュース', '<rect x="3" y="3.5" width="14" height="13" rx="2"/><path d="M6 7.5h8M6 10.5h8M6 13.5h5"/>'],
   ['mute', 'ミュート', '<path d="M2.8 10s2.6-4.8 7.2-4.8 7.2 4.8 7.2 4.8-2.6 4.8-7.2 4.8S2.8 10 2.8 10z"/><circle cx="10" cy="10" r="2.1"/><path d="M4.2 15.8L15.8 4.2"/>'],
   ['motion', '動き', '<path d="M3 10h9.5M9.5 6.5L13 10l-3.5 3.5M16.5 4.5v11"/>'],
+  ['look', '外観', '<circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" stroke="none"/>'],
   ['panes', '盤の欄', '<rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M7.5 3.5v13M12.5 3.5v6.5h5"/>'],
   ['data', '保存と復元', '<path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M3.5 13.5v3h13v-3"/>'],
 ];
@@ -143,6 +144,9 @@ export function createSettingsPanel({ root, get, set, info, watch }) {
         ], '動きを減らすと、自動の送りと切替の動き、地図の移動の動きを止める'),
       ];
     },
+    look(s) {
+      return [group('', [row('外観', null, seg('look-theme', '外観', s.look.theme, [['system', '自動'], ['light', 'ライト'], ['dark', 'ダーク']], (n, v) => { n.look.theme = v; }))], '自動はこの端末の設定に従う')];
+    },
     panes(s) {
       const off = new Set(s.panes.off);
       return [group('', PANES.map(([id, ja]) => row(ja, id === 'tv' ? '隠している間は読み込まない' : null,
@@ -199,7 +203,7 @@ export function createSettingsPanel({ root, get, set, info, watch }) {
     const title = (SECTIONS.find(([k]) => k === sec) || SECTIONS[0])[1];
     win.replaceChildren(
       h('header', { class: 'set-top' }, h('h2', { id: 'set-title', text: '設定' }),
-        h('p', { class: 'set-priv', text: 'このブラウザの中だけに保存し、どこへも送らない' }),
+        h('p', { class: 'set-priv', text: 'このブラウザだけに保存・送信しない' }),
         h('button', { type: 'button', class: 'ds-x', data: { f: 'close' }, on: { click: close } }, '閉じる')),
       inf.saved === false ? h('p', { class: 'set-warn', role: 'status', text: 'このブラウザに保存できない（プライベートウィンドウなど）。この窓を閉じるまでは効く' }) : null,
       h('div', { class: 'set-cols' },

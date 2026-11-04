@@ -9,6 +9,7 @@ data/history.json
 data/stats.json
 data/eval.json
 data/politics.json
+data/critical.json
 data/hazards.json
 data/markets.json
 data/summary_cache.json

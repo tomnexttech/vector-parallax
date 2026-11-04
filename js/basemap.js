@@ -186,7 +186,10 @@ export function createBasemap(opts = {}) {
       return true;
     },
     /** the colours of the ground, from the page (set before the first request) */
-    colours(c) { col = c; },
+    colours(c) {
+      if (col && !!col.light !== !!(c && c.light)) { for (const s of sheets) release(s); sheets.length = 0; }   // the appearance changed: draw again
+      col = c;
+    },
     stats: () => ({ dead, jobs: [...jobs.values()].map((j) => j.key), ...tally,
       sheets: sheets.map((s) => ({ key: s.key, ok: s.ok, holes: s.holes, res: +s.res.toFixed(2), w: s.cv && s.cv.width, h: s.cv && s.cv.height, ms: s.ms })) }),
   };

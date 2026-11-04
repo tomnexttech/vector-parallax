@@ -1,0 +1,139 @@
+{
+  "schema": "parallax-scenes/1",
+  "note_ja": "場面の型の設定。型・閾値・語彙だけで、見出しは含まない。場面は配置の強弱だけを替え、順位・絞り・見出しは替えない。閾値は仮置きで、実測が増えたらここだけを直す（provisional）",
+  "provisional": true,
+  "rules": {
+    "priority": ["disaster", "election", "world", "live", "calm"],
+    "arrangement_only": true,
+    "fold": {
+      "means": "the pane is folded (head and count stay); it is never removed",
+      "visitor_off_wins": true,
+      "settings_key": "panes.off"
+    },
+    "layers_default_only_if_untouched": true,
+    "never_silent": true,
+    "banner": {
+      "template_ja": "場面 {label}（{mode}）{reason} {time}",
+      "mode_ja": {"auto": "自動", "pinned": "固定", "manual": "手動"},
+      "controls": ["calm", "auto", "pin"]
+    },
+    "promote": "at once",
+    "demote_after_min": 30,
+    "demote_after_min_by_scene": {"disaster": 180},
+    "hold_while": ["sheet_open", "settings_open"],
+    "hold_after_input_s": 25,
+    "mode_keys": ["auto", "calm", "election", "disaster", "world", "live"],
+    "key": "s"
+  },
+  "quake_scale": {
+    "note": "the order of the agency's maximum intensity as hazards.json writes it (quakes_jp[].maxint)",
+    "rank": {"1": 1, "2": 2, "3": 3, "4": 4, "5-": 5, "5+": 6, "6-": 7, "6+": 8, "7": 9}
+  },
+  "scenes": [
+    {
+      "id": "calm",
+      "label_ja": "平時",
+      "tier": 0,
+      "big": ["pri", "case"],
+      "fold": [],
+      "map": {"mode": "case", "focus": "event", "layers": {}},
+      "video": {"pick": "station_of_event", "fallback": "by_home"},
+      "auto": {"when": "no other scene applies"},
+      "banner_ja": null
+    },
+    {
+      "id": "election",
+      "label_ja": "選挙",
+      "tier": 3,
+      "big": ["case", "pol", "tv"],
+      "fold": ["mkt", "src", "hours"],
+      "map": {"mode": "case", "focus": "event", "layers": {}, "span_deg": {"domestic": 24, "abroad": "country_of_event"}, "center_domestic": {"lat": 36.0, "lon": 138.0}},
+      "video": {"pick": "by_home", "domestic": ["ann", "tbs", "ntv"], "abroad": ["bbg", "aje", "sky"]},
+      "auto": {
+        "any": [
+          {"id": "vocab_burst", "vocab": "election", "window_h": 6, "min_headlines": 20, "min_outlets": 8, "measured_headlines": 83, "measured_outlets": 23, "measured_on": "2026-11-04"},
+          {"id": "polling_day", "source": "politics.elections.upcoming", "date": "today"}
+        ]
+      },
+      "banner_ja": "選挙 {name}・見出し{n}本・{m}媒体。当確は各社の見出し原文のみ",
+      "rule_ja": "当確は出典の旗だけ。接続していない結果の数は出さない"
+    },
+    {
+      "id": "disaster",
+      "label_ja": "災害",
+      "tier": 4,
+      "big": ["map", "haz", "case"],
+      "fold": ["pol", "mkt", "fields", "tv"],
+      "map": {"mode": "map", "fill": true, "focus": "epicenter", "span_deg": 12, "layers": {"on": ["quakes", "typhoons", "disasters", "radius"]}},
+      "video": {"pick": "keep"},
+      "auto": {
+        "switch": [
+          {"id": "quake_jp", "source": "hazards.quakes_jp", "field": "maxint", "min": "5-", "within_h": 6},
+          {"id": "tsunami", "source": "hazards.tsunami", "field": "level", "in": ["major_warning", "warning"]},
+          {"id": "typhoon_gale_on_pref", "source": "hazards.typhoons", "test": "gale circle contains a prefecture's representative point"},
+          {"id": "quake_world", "source": "hazards.quakes_world", "field": "mag", "min": 7.0}
+        ],
+        "banner_only": [
+          {"id": "quake_jp_4", "source": "hazards.quakes_jp", "field": "maxint", "min": "4", "within_h": 6},
+          {"id": "tsunami_advisory", "source": "hazards.tsunami", "field": "level", "in": ["advisory"]},
+          {"id": "gdacs_red", "source": "hazards.disasters", "field": "alert", "in": ["Red"]},
+          {"id": "typhoon_far", "source": "hazards.typhoons", "test": "a typhoon exists and no gale circle reaches a prefecture"},
+          {"id": "vocab_burst", "vocab": "disaster", "window_h": 6, "min_headlines": 15, "min_outlets": 8, "measured_headlines": 7, "measured_outlets": 5, "measured_on": "2026-11-04"}
+        ]
+      },
+      "banner_ja": "災害 {what} {place} {time}"
+    },
+    {
+      "id": "world",
+      "label_ja": "国際",
+      "tier": 2,
+      "big": ["case", "map", "tv"],
+      "fold": ["pol", "mkt"],
+      "map": {"mode": "world", "focus": "event", "span_deg": 64, "layers": {}},
+      "video": {"pick": "live_first", "order": ["aje", "dw", "f24", "sky"]},
+      "auto": {
+        "all": [
+          {"id": "outlets", "field": "n_outlets", "min": 8},
+          {"id": "home_intl_outlets", "field": "outlets with home == intl", "min": 3},
+          {"id": "place_not_japan", "field": "place.country", "not": "JP"},
+          {"id": "fresh", "field": "since_first_h", "max": 24}
+        ],
+        "or_flag": "security",
+        "measured_top_n_outlets": [11, 7, 7, 7], "measured_median_n_outlets": 2, "measured_on": "2026-11-04"
+      },
+      "banner_ja": "国際 {place}・{m}媒体"
+    },
+    {
+      "id": "live",
+      "label_ja": "ライブ",
+      "tier": 1,
+      "big": ["case", "tv", "count"],
+      "fold": ["src", "fields", "hours", "mkt"],
+      "map": {"mode": "case", "focus": "event", "layers": {}},
+      "video": {"pick": "live_first", "domestic": "latest_upload"},
+      "auto": {
+        "all": [
+          {"id": "new6h", "field": "n_new6h", "min": 5},
+          {"id": "fresh", "field": "since_first_h", "max": 12},
+          {"id": "outlets", "field": "n_outlets", "min": 5}
+        ],
+        "only": "the first event of the list",
+        "measured_first_event": {"n_new6h": 6, "since_first_h": 11.5, "n_outlets": 11}, "measured_on": "2026-11-04"
+      },
+      "banner_ja": "速報 新着{n}件・取得{hh:mm}（3時間ごと・リアルタイムではない）"
+    }
+  ],
+  "vocab": {
+    "note_ja": "見出しの語の数え方に使う語。意味を判じる語ではなく、数えるための網。『世論調査』『poll』は選挙の語に入れない",
+    "election": {
+      "ja": ["選挙", "投票", "開票", "投開票", "当選", "当確", "出口調査", "期日前投票", "選挙戦", "立候補", "告示", "公示", "候補者", "小選挙区", "比例代表", "衆院選", "参院選", "総選挙", "知事選", "市長選", "補選", "決選投票"],
+      "en": ["election", "elections", "ballot", "ballots", "polling station", "vote count", "runoff", "run-off", "by-election", "midterm"],
+      "exclude": ["世論調査", "選手", "選抜", "opinion poll", "poll of polls"]
+    },
+    "disaster": {
+      "ja": ["地震", "震度", "津波", "台風", "豪雨", "大雨", "洪水", "噴火", "土砂崩れ", "土砂災害", "暴風", "高潮", "避難指示", "特別警報", "被災", "停電", "断水"],
+      "en": ["earthquake", "tsunami", "typhoon", "hurricane", "flood", "flooding", "eruption", "wildfire", "landslide", "cyclone"],
+      "exclude": ["防災訓練", "disaster recovery"]
+    }
+  }
+}

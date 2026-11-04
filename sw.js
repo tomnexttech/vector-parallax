@@ -1,8 +1,8 @@
 /* Parallax service worker. Network first for everything of this site, so data and code are never shown old
  * while the network works; the cache is only a fallback when offline (the app then shows the data's own time in red
  * once it is older than 6 hours). Images from other sites are not touched. */
-const CACHE = 'parallax-v5';
-const SHELL = ['./', 'index.html', 'css/app.css', 'js/app.js', 'js/tv.js', 'js/basemap.js', 'js/basemap_worker.js', 'js/snapshot.js', 'js/summary.js', 'js/places.js', 'js/prefs.js', 'js/settings.js', 'js/settings_panel.js',
+const CACHE = 'parallax-v6';
+const SHELL = ['./', 'index.html', 'css/app.css', 'js/theme_boot.js', 'js/app.js', 'js/tv.js', 'js/basemap.js', 'js/basemap_worker.js', 'js/snapshot.js', 'js/summary.js', 'js/places.js', 'js/prefs.js', 'js/settings.js', 'js/settings_panel.js',
   'js/topics.js', 'js/map.js', 'js/map_worker.js', 'js/hazards.js', 'js/actions.js', 'js/voice.js', 'js/floor.js', 'js/autoscroll.js', 'js/tasks.js', 'manifest.webmanifest', 'assets/icons/icon-192.png'];
 
 self.addEventListener('install', (ev) => {

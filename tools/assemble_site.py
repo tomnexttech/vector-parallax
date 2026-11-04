@@ -14,8 +14,8 @@ from pathlib import Path
 
 PAGE_FILES = ("index.html", "sw.js", "manifest.webmanifest", ".nojekyll")
 PAGE_DIRS = ("css", "js", "assets")
-DATA_FILES = ("latest.json", "stats.json", "board.json", "politics.json", "hazards.json", "markets.json",   # generated
-              "prompt.json", "labels.json", "watchwords.json", "places.json", "traps.json")                                # tracked settings
+DATA_FILES = ("latest.json", "stats.json", "board.json", "politics.json", "critical.json", "hazards.json", "markets.json",   # generated
+              "prompt.json", "labels.json", "watchwords.json", "places.json", "traps.json", "scenes.json")                    # tracked settings
 NEVER = ("recorded.json", "eval.json", "history.json", "summary_cache.json", "og_robots.json", "withheld.json")
 DROP_FROM_LATEST = ("name_gate",)           # internal counts the page does not show
 

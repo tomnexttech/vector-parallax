@@ -22,10 +22,12 @@ data/prompt.json                              the one prompt + schema + word tab
 data/labels.json                              flag labels, the label note, Japanese names of places (16)
 data/board.json history.json politics.json    the board, lineage keys, Diet / gazette / parties (18.1, 18.9, 18.10)
 data/hazards.json markets.json                 map hazards and public market data (18.7, 18.8)
+data/critical.json scenes.json                 the scrutiny file (18.12); the scene types of the page (18.13)
 data/watchwords.json places.json               the six-flag vocabulary and the place table (18.2, 18.6)
 parallax/sources.py feeds.py cluster.py       fetch and rule clustering (stdlib only)
 parallax/og.py                                og:image of an article, with limits (15)
 parallax/gnews.py keyterms.py                Google News rows (19.2); the big words of a headline (18.5, 18.11)
+parallax/politics.py critical.py             Diet, elections, approval series (18.9); scrutiny (18.12)
 parallax/build.py ai.py validate.py           pipeline, Gemini caller, validator (stdlib only)
 tests/                                        python -m unittest; node tests/js/*.test.js
 .github/workflows/update.yml                  schedule + commit data/latest.json
@@ -876,10 +878,46 @@ Not included: stock indices and crypto (no publisher terms that allow display we
 ### 18.9 data/politics.json
 
 `{ "schema", "generated_at", "failed": {section: reason}, "order_rule": "...", "bills": { "counts": {"shugiin": {"〔成立〕": 3}, "sangiin": {}}, "recent": {"shugiin": [Row + "status"], "sangiin": []} },
-"gazette": [Row], "audit": [Row], "office": [Row], "parties": [ {"outlet": "...", "n": 3, "items": [Row]} ], "kokkai": { "total": 0, "meetings": [ {"date", "house", "meeting", "issue", "session", "url"} ] } | null, "session": {...} | null }`
+"gazette": [Row], "audit": [Row], "office": [Row], "parties": [ {"outlet": "...", "n": 3, "items": [Row]} ], "kokkai": { "total": 0, "meetings": [ {"date", "house", "meeting", "issue", "session", "url"} ] } | null, "session": {...} | null, "elections": {...}, "polls": {...} }`
 with `Row = { "id", "outlet", "title", "link", "ts" }` (an `id` is an item id of `latest.json`). The bill status is the bracket the house's page put in front of
 the bill name, as written. The Diet-record data are meeting metadata and links only. The Prime Minister's Office comes first and the parties follow alphabetically by
-name; no colour, no ranking, and no sentence about what a bill means. Not in this version: election schedules and results, approval-rating series, the budget-document GAP, press-freedom indicators (see HANDOFF).
+name; no colour, no ranking, and no sentence about what a bill means. Not in this version: the budget-document GAP, press-freedom indicators, party seats by group, the check of the approval figures against headlines.
+
+**elections** (`politics.elections`; the Ministry of Internal Affairs and Communications' pages only - private election-information sites are not read, their terms were not confirmed).
+
+```jsonc
+{ "status": "ok" | "zero" | "fail", "fetched_at": 0, "today": "2026-11-05", "window_days": 60,
+  "source": { "name": "総務省", "pages": [ { "kind": "governor" | "mayor_designated", "label_ja": "都道府県知事選挙", "url": "https://...", "ok": true, "n": 161, "err": "" } ],
+              "covers_ja": "...", "note_ja": "..." },
+  "upcoming": [ { "date": "2026-11-15", "name": "...", "kind": "governor", "url": "https://...", "source": "総務省" } ],
+  "recent":   [ { "date": "2026-10-25", "name": "...", "kind": "governor", "url": "https://...pdf", "source": "総務省" } ],      // newest first, at most 40
+  "counts": { "upcoming": 0, "recent": 3, "rows_on_pages": 221 } }
+```
+
+The two pages are the ministry's lists of results for governors' and designated-city mayors' elections (a row is a link such as 「令和8年10月25日執行　福島県知事選挙」 to the
+results sheet). `date` is the Japanese calendar date of the vote converted to ISO, `url` the ministry's own link, `name` as the page wrote it. `recent` = rows dated in the last
+60 days before `today` (the JST date of `fetched_at`); `upcoming` = rows dated `today` or later. **The ministry publishes no calendar of coming votes**, so `upcoming` has a row only
+when a list carries a date of today or later (a vote is listed on its own day once the sheet is out) and is usually `[]`: nothing is added from any other source and no date is
+computed. Not covered: national elections, other mayors, assemblies. `status`: `ok` = rows read and at least one in the window; `zero` = pages read, none in the window; `fail` = no page
+could be read or parsed (a page with no readable row is a failure, not an empty answer; one page failing leaves the other, its `err` says which). A failure also adds `failed.elections`.
+
+**polls** (`politics.polls`; the series of cabinet approval).
+
+```jsonc
+{ "status": "ok" | "fail", "fetched_at": 0, "err": "...",                                    // err only on fail; series is [] then
+  "source": { "name": "Wikipedia (English)", "title": "...", "revid": 1383347005, "url": "https://en.wikipedia.org/w/index.php?title=...&oldid=1383347005",
+              "license": "CC BY-SA 4.0", "license_url": "https://creativecommons.org/licenses/by-sa/4.0/", "note_ja": "..." },
+  "series": [ { "pollster": "NHK", "pollster_ja": "NHK", "points": [ { "start": "2026-10-09", "end": "2026-10-12", "approve": 50.8, "disapprove": 32, "undecided": 17.1,
+                 "sample": 1184, "cabinet": "...", "cite_url": "https://..." | null, "cite_urls": [] } ] } ],                // oldest first, the newest 24 points
+  "counts": { "pollsters": 12, "points": 101, "skipped": 1 } }
+```
+
+Read once per run from the wikitext of one page of the English Wikipedia through its API (`action=parse`, the revision id kept, this project's identifying User-Agent, one request).
+The wiki's `robots.txt` keeps crawlers out of `/w/`; the action API is the route it documents for programs, so `robots.txt` is not asked for this one host (every other host in 18.9 and
+18.12 is). The figures are the pollsters' own numbers as the page prints them (a dash or a note is not a number: that row is left out and counted in `skipped`, never read as 0);
+`cite_url` is the first source the page cites for that pollster's row. The page is licensed CC BY-SA 4.0: the file says so, links the exact revision and says what was changed (numbers
+taken from the table); a page that shows these series shows the same credit. The page's name changes after the next general election: a missing section is `fail`, not an empty series.
+Pollster names are shown as the page writes them; `pollster_ja` only translates the names in a fixed table. The check of the figures against headlines is not done.
 
 ### 18.10 data/history.json
 
@@ -909,6 +947,56 @@ sids appear nowhere else on the board**, so a page that is given one of them (a 
 the leading date and ordinal, counts with a unit and boilerplate words (速報・告示・掲載 ...) are not words; English names are read from capitalised runs (Title Case headlines are cut at verbs).
 Longer words first. An empty list is a valid answer (a fragment of the head of the headline is never used instead). `board.key_terms` returns the first 4, as before; the history file keeps them, so the
 lineage of the first run after this change matches old entries only by words both rules produce.
+
+
+### 18.12 data/critical.json (`parallax-critical/1`, decided 2026-11-05)
+
+A weight added beside the main reports, not a replacement: investigative reporting, the Diet's questions and the government's answers, academic and NGO texts, each read from its own
+site. It says nothing about who is right: no true/false, left/right or good/bad label, and nothing is called unreported. Headline, outlet, date and link only (no body text and no
+quotation of a speech).
+
+```jsonc
+{ "schema": "parallax-critical/1", "generated_at": 0, "status": "ok" | "zero" | "fail", "note_ja": "...",
+  "kinds": { "investigative": {"ja": "調査報道", "tag": "調査"}, "primary": {"ja": "一次資料", "tag": "一次"}, "academic": {"ja": "学術", "tag": "学術"}, "ngo": {"ja": "NGO・国際団体", "tag": "NGO"} },
+  "sources": [ { "id": "ourplanet", "name": "...", "kind": "investigative", "scope": "JP" | "INT", "url": "https://...", "ok": true, "n": 8, "fetched_at": 0,
+                 "err": "", "terms_status": "unknown", "carried": 0, "carried_from": 0 } ],                       // carried_from only when items were carried over
+  "themes": { "kokkai": [ {"theme": "...", "query": "..."} ], "jstage": ["..."], "note_ja": "..." },
+  "credit": { "jstage": "J-STAGE", "kokkai": "国立国会図書館 国会会議録検索システム" },
+  "featured": { "investigative": "<id>" | null, "diet_question": null, "diet_answer": null, "academic": null, "ngo": null },
+  "items": [ { "id": "<12 hex>", "src": "ourplanet", "kind": "investigative", "tag": "調査", "source": "OurPlanet-TV", "title": "...", "url": "https://...",
+               "date": "2026-11-04" | "2024", "ts": 0 | null, "scope": "JP" | "INT", "carried": true,
+               "theme": "防衛費", "side": "member" | "gov", "who": "name（group or position）",                    // Diet-record items
+               "journal": "...", "country": "..." } ],                                                           // J-STAGE / Amnesty items
+  "counts": { "sources": 10, "ok": 10, "items": 93, "carried": 0 } }
+```
+
+- Sources (ten, each read from the body's own site): OurPlanet-TV, Independent Web Journal (RSS); ProPublica, The Intercept, ICIJ (RSS, abroad, at most 5 each); the Diet-record search API
+  of the National Diet Library (speeches on the themes in `themes.kokkai`, 200 days back, 3 per theme); the Science Council of Japan (new items on its top page); the J-STAGE search API
+  (themes in `themes.jstage`); the Japan Federation of Bar Associations (statements of the year); Amnesty International Japan (news list). Not read: anything that only a news aggregator
+  could give, the Ministry of Finance budget documents (PDF), the press-freedom index (re-use terms not confirmed). `terms_status` is `unknown` on every row (the terms pages were not read);
+  headline, outlet, date and link are shown as a quotation, as for every feed (14).
+- `kind` is a structural fact about the source (what sort of body publishes it), never a view of its content. `side` of a Diet-record item is `gov` when the speaker's position is a government
+  one (minister, vice-minister, parliamentary secretary, government witness, director-general and the like), else `member`; both sides get the same weight (3 per theme, a side absent from the
+  hits stays absent). The themes are a fixed list written into the file: a choice of what to look for, not a measure.
+- `date` is the date the source printed (a J-STAGE item has the year only and stays a year); `ts` is set only when the feed gave a time. Items are ordered newest first by `ts` or, lacking it, the
+  date at noon (JST); at most 240; the same link appears once. `featured` is the newest item of each class by that order (a rule, not a ranking of importance).
+- Reading rules: only where the host's `robots.txt` allows the agent (20.6), at most one request per host per 1.2 s, this project's own User-Agent, one source failing never stops the others.
+  A source that fails is a row with `ok: false` and the reason in `err`; its items from the previous file (carried over by the cache, 20.1) are kept for at most 3 days, marked `carried: true`,
+  and `carried_from` keeps the time of the last real fetch (a carried item does not renew its own age). `status`: `ok` items exist; `zero` all sources read but no item; `fail` nothing read and nothing carried.
+
+### 18.13 data/scenes.json (`parallax-scenes/1`, decided 2026-11-05)
+
+A tracked setting (no headline): the scene types of the page, their thresholds and the words used for counting. `js/scenes.js` reads it; nothing else writes it. The thresholds are provisional
+(`"provisional": true`; the measured values they were set from are in the file with their date) and change here only.
+
+- `rules`: the priority `disaster > election > world > live > calm`; a scene changes **arrangement only** (what is large, what is folded, the map, the video), never the order, the filtering or the
+  wording of the headlines; "fold" means the pane is folded with its head and count kept, and the visitor's `panes.off` always wins; map layers get a scene's default only if the visitor has not touched
+  that layer; a change is never silent (a band under the top bar says the scene, auto or pinned, the reason and the time, with controls for calm, auto and pin); promotion at once, demotion after
+  30 minutes from the last trigger (180 for `disaster`); held while the sheet or the settings window is open and for 25 s after an input; key `s`.
+- `quake_scale.rank`: the order of `hazards.quakes_jp[].maxint`. `scenes[]`: `id`, `label_ja`, `tier`, `big` / `fold` (pane ids of the page), `map`, `video` (station ids of `js/tv.js`), `auto`
+  (the conditions, written over fields that exist in the data files: `switch` / `banner_only` for `disaster`, `any` for `election` - a burst of election words in the headlines of 6 h, or a vote dated
+  today in `politics.elections.upcoming` - and `all` for `world` and `live`), `banner_ja`. `vocab` holds the words for counting headlines (they only count; they never judge; an opinion poll is not an
+  election word).
 
 ## 19. Sources added and pages without a feed (decided 2026-11-04 night)
 
@@ -942,14 +1030,14 @@ contents of a fetch is a **build product**: it is made by the workflow, shipped 
 
 | tracked (settings, no headline) | build products (ignored, removed from the index with `git rm --cached`) |
 |---|---|
-| `prompt.json`, `labels.json`, `watchwords.json`, `places.json`, `traps.json`, `withheld.json` | `latest.json`, `board.json`, `history.json`, `stats.json`, `eval.json`, `politics.json`, `hazards.json`, `markets.json`, `summary_cache.json`, `recorded.json`, `og_robots.json` |
+| `prompt.json`, `labels.json`, `watchwords.json`, `places.json`, `traps.json`, `withheld.json`, `scenes.json` | `latest.json`, `board.json`, `history.json`, `stats.json`, `eval.json`, `politics.json`, `critical.json`, `hazards.json`, `markets.json`, `summary_cache.json`, `recorded.json`, `og_robots.json` |
 
 - `recorded.json` (the answers an AI role-played by Claude wrote for the author's own fetch) quotes headline strings in its fields, so it is not published. The public
   edition's AI view is: **Gemini when `GEMINI_API_KEY` is set, otherwise no AI view and the rules view only** (`ai_run.status` is `nokey`; the previous Gemini view is
   kept as `kept_previous` when the cache has one). The recorded answers stay on the author's machine for screens and the A4 sheet
   (`python -m parallax.build --responses data/recorded.json` still works there).
 - What the next run needs from the last one (`latest.json` for `kept_previous`, `summary_cache.json`, `history.json` for the lineage, `og_robots.json`, and the last
-  `hazards.json` / `markets.json` for "the previous file stays") is passed on through **`actions/cache`** (rolling key), not through git.
+  `hazards.json` / `markets.json` / `critical.json` for "the previous file stays") is passed on through **`actions/cache`** (rolling key), not through git.
 - The site artifact is assembled by `tools/assemble_site.py` from a whitelist (page files + the generated data + the tracked settings). `recorded.json`, `eval.json`
   (no recorded run exists in Actions, so the page shows "not measured"), `summary_cache.json`, `og_robots.json` and `withheld.json` are not in it.
 - Pages must be set to **Source: GitHub Actions**. A manual run (`workflow_dispatch`) rebuilds and redeploys at once; this is how a withheld item (20.9) is applied without waiting for the next 3 hours.

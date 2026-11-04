@@ -37,6 +37,7 @@ export const SCOPES = ['all', 'jp', 'intl'];
 export const VIEWS = ['auto', 'ai', 'rules'];
 export const LANGS = ['ja', 'en', 'orig'];
 export const CALM = ['system', 'on'];
+export const THEMES = ['system', 'light', 'dark'];   // the appearance; js/theme_boot.js reads look.theme before the first paint
 
 export function defaults() {
   return {
@@ -45,6 +46,7 @@ export function defaults() {
     mute: { words: [], outlets: [] },
     motion: { cases: true, scroll: true, calm: 'system' },
     panes: { off: [] },
+    look: { theme: 'system' },
   };
 }
 
@@ -57,7 +59,7 @@ export function cleanSettings(x) {
   const d = defaults();
   const o = isObj(x) ? x : {};
   const tv = isObj(o.tv) ? o.tv : {}, news = isObj(o.news) ? o.news : {}, mute = isObj(o.mute) ? o.mute : {};
-  const motion = isObj(o.motion) ? o.motion : {}, panes = isObj(o.panes) ? o.panes : {};
+  const motion = isObj(o.motion) ? o.motion : {}, panes = isObj(o.panes) ? o.panes : {}, look = isObj(o.look) ? o.look : {};
   const order = [...new Set((Array.isArray(tv.order) ? tv.order : []).filter((id) => STATION_IDS.includes(id)))];
   for (const id of STATION_IDS) if (!order.includes(id)) order.push(id);
   return {
@@ -69,6 +71,7 @@ export function cleanSettings(x) {
     mute: { words: terms(mute.words, MUTE_WORDS, WORD_LEN), outlets: terms(mute.outlets, MUTE_OUTLETS, NAME_LEN) },
     motion: { cases: bool(motion.cases, d.motion.cases), scroll: bool(motion.scroll, d.motion.scroll), calm: pick(motion.calm, CALM, d.motion.calm) },
     panes: { off: subset(panes.off, PANE_IDS) },
+    look: { theme: pick(look.theme, THEMES, d.look.theme) },
   };
 }
 

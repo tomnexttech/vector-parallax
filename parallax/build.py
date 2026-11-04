@@ -1468,9 +1468,10 @@ def write_json(path, obj):
     os.replace(tmp, p)
 
 
-def write_extras(data, items, now, out_dir, removed=()):
-    """CONTRACT 18: board.json (+ history.json) and politics.json. Each is written only if it was computed; an exception is
-    printed and the previous file stays. This never changes latest.json and never raises."""
+def write_extras(data, items, now, out_dir, removed=(), get=None):
+    """CONTRACT 18: board.json (+ history.json), politics.json (elections and polls inside) and critical.json. Each is written only if it was
+    computed; an exception is printed and the previous file stays. This never changes latest.json and never raises. `get` replaces the
+    network in tests (get(url) -> text)."""
     out_dir = Path(out_dir)
     counts = None
     try:
@@ -1494,13 +1495,28 @@ def write_extras(data, items, now, out_dir, removed=()):
         print("board FAILED (previous board.json kept): %s: %s" % (type(e).__name__, e), file=sys.stderr)
     try:
         from parallax import politics as politics_mod
-        pol = politics_mod.compose(items, now)
+        pol = politics_mod.compose(items, now, get)
         write_json(out_dir / "politics.json", pol)
-        print("politics bills=%s parties=%d kokkai=%s failed=%s"
+        el, po = pol.get("elections") or {}, pol.get("polls") or {}
+        print("politics bills=%s parties=%d kokkai=%s elections=%s(recent=%s upcoming=%s) polls=%s(pollsters=%s) failed=%s"
               % ({h: sum(c.values()) for h, c in pol["bills"]["counts"].items()}, len(pol["parties"]),
-                 "ok" if pol.get("kokkai") else "none", list(pol["failed"])))
+                 "ok" if pol.get("kokkai") else "none", el.get("status"), len(el.get("recent") or []), len(el.get("upcoming") or []),
+                 po.get("status"), len(po.get("series") or []), list(pol["failed"])))
     except Exception as e:
         print("politics FAILED (previous politics.json kept): %s: %s" % (type(e).__name__, e), file=sys.stderr)
+    try:
+        from parallax import critical as critical_mod
+        prev_c = None
+        try:
+            prev_c = json.loads((out_dir / "critical.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            prev_c = None
+        cr = critical_mod.compose(now, prev_c, get)
+        write_json(out_dir / "critical.json", cr)
+        print("critical status=%s sources_ok=%d/%d items=%d carried=%d"
+              % (cr["status"], cr["counts"]["ok"], cr["counts"]["sources"], cr["counts"]["items"], cr["counts"]["carried"]))
+    except Exception as e:
+        print("critical FAILED (previous critical.json kept): %s: %s" % (type(e).__name__, e), file=sys.stderr)
     return counts
 
 
@@ -1527,7 +1543,7 @@ def main(argv=None):
                     help="stories がこれ未満なら --out を上書きしない（前の良い版を残す）。Actions では実数を渡す")
     ap.add_argument("--stats", help="stats.json の置き場（既定は --out と同じ場所の stats.json）")
     ap.add_argument("--extras", action="store_true",
-                    help="CONTRACT 18: also read the pages that have no feed (audit board, gazette, bills) and write board.json, history.json, politics.json next to --out. A failure here never stops latest.json")
+                    help="CONTRACT 18: also read the pages that have no feed (audit board, gazette, bills) and write board.json, history.json, politics.json, critical.json next to --out. A failure here never stops latest.json")
     a = ap.parse_args(argv)
     try:
         sys.stdout.reconfigure(encoding="utf-8")

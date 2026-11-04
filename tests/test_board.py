@@ -150,8 +150,14 @@ class Board(unittest.TestCase):
     def test_write_extras_never_raises(self):
         from parallax import build
         with tempfile.TemporaryDirectory() as td:
-            build.write_extras(self.d, list(self.d["items"].values()), NOW, td)      # politics hits a fake-less network: must not raise
+            def down(url, timeout=0):
+                raise OSError("down")
+            build.write_extras(self.d, list(self.d["items"].values()), NOW, td, get=down)      # politics and critical on a dead network: must not raise
             self.assertTrue(os.path.exists(os.path.join(td, "board.json")))
+            for name in ("politics.json", "critical.json"):
+                self.assertTrue(os.path.exists(os.path.join(td, name)), name)
+            with open(os.path.join(td, "critical.json"), encoding="utf-8") as f:
+                self.assertEqual(json.load(f)["status"], "fail")
 
 
 class Hazards(unittest.TestCase):

@@ -77,6 +77,8 @@ const nowS = () => Math.floor(Date.now() / 1000);
 const uniq = (xs) => [...new Set(xs)];
 const store = (() => { try { return window.localStorage; } catch { return null; } })();
 const explain = (codes) => uniq(arr(codes).filter((c) => typeof c === 'string')).map((c) => ERR_TEXT[c] || c).join(' ');
+const ERR_SHORT = { quota: '上限（429）', auth: '鍵が通らない', blocked: '応答停止', truncated: '応答切れ', http: '誤りの応答', timeout: '時間切れ', network: '通信不可', json: '応答不正', shape: '応答不正', nokey: '鍵なし', missing: '記録なし', budget: '呼び数の上限' };
+const explainShort = (codes) => uniq(arr(codes).filter((c) => typeof c === 'string')).map((c) => ERR_SHORT[c] || c).join('・');
 const reduced = () => state.set.motion.calm === 'on' || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const narrow = () => window.matchMedia('(max-width: 760px)').matches;
 const dataDir = () => state.dataPath.replace(/[^/]*$/, '');
@@ -205,7 +207,7 @@ function flagText(id) {
   const fill = (x) => str(x).replace(/\{n\}/g, String(n));
   return { ja: fill(def.ja), tip: fill(def.tip_ja) };
 }
-const noteJa = () => (state.labels && str(state.labels.note_ja)) || '真偽は判定していない';
+const noteJa = () => (state.labels && str(state.labels.note_ja)) || '真偽は判定しない';
 const pj = (k) => (state.labels && isObj(state.labels.places_ja) && str(state.labels.places_ja[k])) || placeJa(k);
 function imageOf(it) {
   if (!isObj(it)) return null;
@@ -340,7 +342,7 @@ const typeLead = (type) => { const t = state.labels && isObj(state.labels.types)
 const outletOf = (it) => (isObj(it) ? str(it.media) || str(it.outlet) : '');
 const viaGN = (it) => isObj(it) && it.via === 'gnews';
 const counts = () => (state.board && isObj(state.board.counts) ? state.board.counts : null);
-const AI_NOTE = 'AI の文は誤りうる。元の記事で確かめてください';
+const AI_NOTE = 'AI の文は誤りうる・元の記事で確かめる';
 const ISSUES = 'https://github.com/tomnexttech/vector-parallax/issues';
 const STOP_NOTE = '掲載の停止の依頼は GitHub の Issues へ。本人・遺族の依頼は記事の URL だけで足りる。第三者の複製・キャッシュには及ばない';
 const FLAG_LEGEND = '話題の分類で、重要度・不正の有無・責任を示さない';
@@ -379,11 +381,13 @@ function renderBar() {
   const who = $('ai-who');
   const recorded = st === 'recorded' || str(src.provider) === 'claude-recorded';
   $('v-ai').disabled = state.hasAI === false;
-  $('v-ai').title = state.hasAI === false ? 'AI の束ね直しは今は止まっている' : '';
-  who.textContent = state.live ? `閲覧者の鍵 ${str(run.model)}` : recorded ? 'AI は記録版・Gemini 未実行' : kept ? `前回を保持 ${str(src.model)}`
-    : st === 'recorded' ? `Claude 記録済み・Gemini ではない` : st === 'ok' || st === 'partial' ? [str(run.provider), str(run.model)].filter(Boolean).join(' ')
-    : st === 'error' ? '失敗・規則のみ' : '止まっている・規則のみ';
-  who.title = st === 'recorded' ? `${str(run.model)} ${str(run.note_ja)}` : '';
+  $('v-ai').title = state.hasAI === false ? 'AI 停止中' : '';
+  // the AI's state in two or three words; the model and the note go to the tooltip
+  const prov = /claude/i.test(str(run.provider)) && !recorded ? 'Claude' : 'Gemini';
+  who.textContent = state.live ? 'Gemini 使用中' : recorded ? 'Gemini 未実行' : kept ? `${prov} 前回分`
+    : st === 'ok' ? `${prov} 使用中` : st === 'partial' ? `${prov} 一部` : st === 'error' ? `${prov} 失敗` : 'Gemini 未接続';
+  who.title = [state.live ? '閲覧者の鍵' : '', state.live || st === 'ok' || st === 'partial' ? str(run.model) : kept ? str(src.model) : '',
+    recorded ? `${str(src.model || run.model)} ${str(run.note_ja)}`.trim() : ''].filter(Boolean).join('・');
   const ma = $('m-ai');
   ma.dataset.bad = st === 'error' ? '1' : '0';
   const age = ageEl(isNum(at) && st !== 'nokey' && st !== 'off' ? at : null, SIX_H);
@@ -401,15 +405,17 @@ function renderSnapNote() {
   const el = $('snap-note');
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
   el.replaceChildren();
-  if (state.hasAI === false && !state.live) { el.hidden = false; el.className = 'note-bar'; el.append('AI の束ね直しは今は止まっている・規則の束を表示'); return; }
+  if (state.hasAI === false && !state.live) { el.hidden = false; el.className = 'note-bar'; el.append('AI 停止中・規則の束を表示'); return; }
   const unreadable = !state.live && str(run.status) === 'kept_previous' && !state.snap;
   if (state.view !== 'ai' || (!state.snap && !unreadable)) { el.hidden = true; return; }
   el.hidden = false;
   el.className = 'note-bar';
-  if (unreadable) { el.classList.add('err'); el.append('前回の AI の結果を読めなかったため、規則の束だけを表示'); return; }
+  if (unreadable) { el.classList.add('err'); el.append('AI の前回分を読めない・規則の束を表示'); return; }
   const kept = state.snap.kept;
-  const p = noticeParts(kept, fmtFull, explain, run.errors);
-  el.append(h('b', { text: p.lead }), ' ', p.ai, h('span', { text: fmtFull(kept.aiAt) }), ' ', ageEl(kept.aiAt, SIX_H), ' ', p.why);
+  const p = noticeParts(kept, fmtShort, explainShort, run.errors);
+  const tag = (k, v, extra, bad) => h('span', { class: 'tg' + (bad ? ' bad' : '') }, h('span', { class: 'k', text: k }), h('span', { class: 'v', text: v }), extra || '');
+  el.classList.add('tags');
+  el.append(tag(p.lead[0], p.lead[1]), tag(p.ai, fmtShort(kept.aiAt), ageEl(kept.aiAt, SIX_H)), ...(p.why ? [tag(p.why[0], p.why[1], null, true)] : []), tag(p.rules[0], p.rules[1]));
   el.classList.toggle('err', isOld(kept.aiAt, nowS()));
 }
 
@@ -424,10 +430,10 @@ function renderAiLine() {
   const flash = state.alView != null && state.alView !== state.view;
   state.alView = state.view;
   const n = (v, on) => h('b', { class: 'num' + (on ? ' on' : '') + (on && flash && !reduced() ? ' flash' : ''), text: fmtN(v) });
-  const parts = [];
-  if (state.hasAI && ai != null) parts.push(h('span', { class: 'al-k', text: 'AI が国内外を一つにした出来事' }), n(ai, state.view === 'ai'), h('span', { class: 'al-u', text: ch.of === 'snapshot' ? '件・前回の取得' : '件' }));
-  else parts.push(h('span', { class: 'al-k off', text: 'AI の束ね直しは今は止まっている' }));
-  if (both != null) parts.push(h('i', { class: 'al-sep', 'aria-hidden': 'true' }), h('span', { class: 'al-k', text: '規則で国内と海外の両方' }), n(both, state.view === 'rules'), h('span', { class: 'al-u', text: '件' }));
+  const parts = [h('span', { class: 'al-h', text: '国内と海外の両方' })];
+  if (state.hasAI && ai != null) { parts.push(h('span', { class: 'al-k', text: 'AI' }), n(ai, state.view === 'ai')); if (ch.of === 'snapshot') parts.push(h('span', { class: 'al-u', text: '前回の取得' })); }
+  else parts.push(h('span', { class: 'al-k off', text: 'AI 停止中' }));
+  if (both != null) parts.push(h('i', { class: 'al-sep', 'aria-hidden': 'true' }), h('span', { class: 'al-k', text: '規則' }), n(both, state.view === 'rules'));
   parts.push(h('button', { type: 'button', class: 'al-go', on: { click: () => { if (state.hasAI && ai != null && state.view !== 'ai') setView('ai'); setTopic('cross'); if (narrow()) $('p-pri').scrollIntoView({ block: 'start' }); } } }, '一覧'));
   el.replaceChildren(...parts);
 }
@@ -471,10 +477,10 @@ function renderSources() {
     const hit = rs.filter((r) => inCase.has(r.id)).length;
     return h('li', { class: down ? 'bad' : null, title: bt && isNum(bt.age_h) ? `最新 ${bt.age_h} 時間前` : null },
       h('span', { class: 'tn', text: t }), h('span', { class: 'tc', text: down ? `${rs.length - down}/${rs.length}` : String(rs.length) }),
-      h('span', { class: 'ti', text: String(h48) }), h('span', { class: 'th', text: hit ? `表示中 ${hit}` : '' }));
+      h('span', { class: 'ti', text: String(h48) }), h('span', { class: 'th', text: hit ? String(hit) : '' }));
   }));
   const down = rows.filter(bad);
-  $('src-b').replaceChildren(svg, h('p', { class: 'src-k' }, h('span', { text: '型' }), h('span', { text: '源' }), h('span', { text: '48時間' }), h('span')), list,
+  $('src-b').replaceChildren(svg, h('p', { class: 'src-k' }, h('span', { text: '型' }), h('span', { text: '源' }), h('span', { text: '48時間' }), h('span', { text: '表示' })), list,
     h('p', { class: 'pfoot' + (down.length ? ' bad' : '') }, down.length ? `届かない・${staleJa} ${down.length}` : '届かない源 0'));
 }
 function renderHours() {
@@ -505,7 +511,7 @@ function renderHours() {
   if (e) for (const it of e.members) if (isNum(it.ts) && it.ts >= from && it.ts <= to) svg.append(s('circle', { cx: (((it.ts - from) / 3600) * bw).toFixed(1), cy: H + 6, r: 2, class: 'case' }));
   svg.append(s('text', { x: 0, y: H + 17, class: 'ax' }, document.createTextNode(`-${hours}時間`)), s('text', { x: W, y: H + 17, class: 'ax end' }, document.createTextNode(fmtClock(to))));
   $('hours-c').textContent = `${hours}時間`;
-  $('hours-b').replaceChildren(svg, h('p', { class: 'pfoot' }, `${label} · 直近 1 時間 ${bins[hours - 1]} · 最多 ${max}/時 · 注目の初報 ${priAgo.size} 時間帯`));
+  $('hours-b').replaceChildren(svg, h('p', { class: 'pfoot', title: label }, ...[['直近 1 時間', bins[hours - 1]], ['最多', `${max}/時`], ['注目の初報', priAgo.size]].map(([k, v]) => h('span', { class: 'pf' }, `${k} `, h('b', { text: String(v) })))));
 }
 function renderFields() {
   const es = state.es.filter((e) => !e.foldedInto && matchesQ(e) && vis(e));
@@ -610,7 +616,7 @@ function renderAnom() {
   const shown = state.anomKind ? rows.filter((r) => r.ja === state.anomKind) : rows;
   $('anom-b').replaceChildren(shown.length
     ? h('ul', { class: 'rows' }, shown.slice(0, 80).map((r) => row(r.e, { flag: { ja: r.ja, tip: `規則・${r.tip}${r.tip ? '。' : ''}${noteJa()}` } })))
-    : h('p', { class: 'empty', text: ast && ast.complete === false ? '主流の配信に欠けがあり、この取得では札を付けない' : '0 件' }), h('p', { class: 'pfoot', text: `規則で付けた札・${noteJa()}` }));
+    : h('p', { class: 'empty', text: ast && ast.complete === false ? '主流の配信に欠けがあり、この取得では札を付けない' : '0 件' }), h('p', { class: 'pfoot', text: `規則の札・${noteJa()}` }));
 }
 // ---------------------------------------------------------------- the event taken apart
 function lanes(e) {
@@ -690,7 +696,7 @@ function renderCase() {
   const kept = state.snap ? state.snap.kept : null;
   const aiBy = kept ? [str(kept.snapRun.provider), str(kept.snapRun.model)] : [str(run.provider), str(run.model)];
   const aiAt = kept ? kept.aiAt : run.at;
-  const aiTag = (by, at) => h('span', { class: 'by' }, h('span', { class: 'aimk', text: 'AI' }), by.filter(Boolean).join(' · ') || '—', isNum(at) ? ` · ${fmtShort(at)}` : '');
+  const aiTag = (by, at) => { const b = by.filter(Boolean); return h('span', { class: 'by', title: b.join(' ') || null }, h('span', { class: 'aimk', text: 'AI' }), b[b.length - 1] || '—', isNum(at) ? `・${fmtShort(at)}` : ''); };
 
   // head: where, what, one big number and the facts
   const place = h('div', { class: 'ch-place' },
@@ -1022,7 +1028,7 @@ function renderTv() {
   const fr = f.querySelector('iframe');
   if (!fr || fr.dataset.src !== src) f.replaceChildren(h('iframe', { src, title: `${st.name}（YouTube）`, loading: 'lazy', allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, referrerpolicy: 'strict-origin-when-cross-origin', data: { src } }));
   box.querySelector('.tv-ch').replaceChildren(...ls.map((x) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(x.id === st.id), on: { click: () => { state.tv = x.id; renderTv(); } } }, x.short)));
-  box.querySelector('.tv-n').textContent = `${st.mode === 'live' ? 'ライブ' : '最新の動画'} · 公式チャンネル · ${state.set.tv.sound ? '音あり' : '音は押すまで出ない'}${state.set.tv.auto ? '' : ' · 押すと再生'}`;
+  box.querySelector('.tv-n').textContent = `${st.mode === 'live' ? 'ライブ' : '最新'}・公式・${state.set.tv.sound ? '音あり' : '消音'}${state.set.tv.auto ? '' : '・押して再生'}`;
 }
 function followTv(e) { if (!e) return; const ls = tvList(); if (!ls.length) return; state.tvAuto = stationFor(e.members.map(outletOf), e.cover, ls); if (!state.tv) renderTv(); }
 
@@ -1434,7 +1440,15 @@ const td = (v, c) => h('td', { class: c || null }, v == null ? '—' : v);
 const tbl = (cols, rows, cls) => h('table', { class: 'dt' + (cls ? ' ' + cls : '') },
   h('thead', null, h('tr', null, cols.map(([t, c]) => h('th', { class: c || null, text: t })))), h('tbody', null, rows));
 const sec = (title, n) => h('h3', { class: 'ds-sec' }, title, n != null ? h('span', { class: 'n', text: n }) : null);
-const chev = () => s('svg', { viewBox: '0 0 12 12', 'aria-hidden': 'true' }, s('path', { d: 'M3.5 8.5l5-5M4.5 3.5h4v4' }));
+const chev = () => s('svg', { viewBox: '0 0 12 12', 'aria-hidden': 'true' }, s('path', { d: 'M7 1.5h3.5V5M10.5 1.5L7 5M5 10.5H1.5V7M1.5 10.5L5 7' }));
+/** a pane head that opens its pane at full size: the whole head is the control, with the expand mark at its end for the keyboard */
+function canOpen(ph, name, open) {
+  ph.classList.add('can-open');
+  ph.title = `${name}を拡大`;
+  ph.append(h('button', { type: 'button', class: 'ph-open', 'aria-label': `${name}を拡大`, on: { click: (ev) => { ev.stopPropagation(); open(); } } }, chev()));
+  ph.addEventListener('click', (ev) => { if (ev.target.closest && ev.target.closest('a, input, button:not(.ph-open)')) return; open(); });
+}
+
 
 function heatSvg(rows, n, label) {
   const max = Math.max(1, ...rows.flatMap(([, v]) => v.filter(isNum)));
@@ -1504,7 +1518,7 @@ const SHEET_BODY = {
       td(e.case ? arr(e.case.hits).slice(0, 4).join('・') : '', 'dim opt'), td(fmtAge(e.last), 'r dim')));
     return { big: fmtN(list.length), unit: state.q ? `「${state.q}」の一致` : state.topic === 'all' ? '注目の出来事' : `注目・${state.topic === 'watch' ? '追う' : state.topic === 'cross' ? '国内と海外' : flagJa(state.topic)}`,
       facts: TOPICS.map((t) => [flagJa(t.id), fmtN(state.pri.filter((e) => e.topics.includes(t.id)).length)]),
-      body: [tbl([['', 'r'], ['旗'], ['見出し'], ['媒体', 'r'], ['分野', 'opt'], ['当たった語', 'opt'], ['最新', 'r']], rows)], foot: '旗は公開した規則で付けた札' };
+      body: [tbl([['', 'r'], ['旗'], ['見出し'], ['媒体', 'r'], ['分野', 'opt'], ['当たった語', 'opt'], ['最新', 'r']], rows)], foot: '旗は公開した規則の札' };
   },
   anom() {
     const rows = anomRows();
@@ -1515,7 +1529,7 @@ const SHEET_BODY = {
       body.push(sec(k, rs.length), tbl([['見出し'], ['媒体', 'r'], ['型', 'opt'], ['最新', 'r']], rs.map((r) => h('tr', { class: 'go', on: { click: () => { closeSheet(); select(r.e.key, true); } } },
         td(r.e.heading.text, 'tt'), td(`${r.e.n}`, 'r'), td(uniq(r.e.members.map((it) => it.type)).join('・'), 'dim opt'), td(fmtAge(r.e.last), 'r dim')))));
     }
-    return { big: fmtN(rows.length), unit: '非対称の出来事', facts: kinds.map((k) => [k, fmtN(rows.filter((r) => r.ja === k).length)]), body: body.length ? body : [h('p', { class: 'empty', text: '0 件' })], foot: `規則で付けた札・${noteJa()}` };
+    return { big: fmtN(rows.length), unit: '非対称の出来事', facts: kinds.map((k) => [k, fmtN(rows.filter((r) => r.ja === k).length)]), body: body.length ? body : [h('p', { class: 'empty', text: '0 件' })], foot: `規則の札・${noteJa()}` };
   },
   mkt() {
     const m = state.mkt;
@@ -1591,7 +1605,7 @@ function renderSheet() {
   const keep = box.querySelector('.ds-b') ? box.querySelector('.ds-b').scrollTop : 0;
   box.replaceChildren(
     h('header', { class: 'ds-h' },
-      h('div', { class: 'ds-t' }, h('h2', { id: 'ds-title', text: SHEETS[k] }), h('button', { type: 'button', class: 'ds-x', on: { click: closeSheet } }, '閉じる')),
+      h('div', { class: 'ds-t' }, h('h2', { id: 'ds-title', text: SHEETS[k] }), h('button', { type: 'button', class: 'ds-x', on: { click: closeSheet } }, '閉じる', h('kbd', { text: 'esc' }))),
       h('div', { class: 'ds-head' },
         h('div', { class: 'ds-big' + (r.bad ? ' stale' : '') }, h('b', { class: 'num', text: r.big }), h('span', { class: 'u', text: r.unit })),
         h('dl', { class: 'ds-facts' }, (r.facts || []).filter(Boolean).flatMap(([dt, dd, cls]) => [h('dt', { text: dt }), h('dd', { class: cls || null, text: dd })])))),
@@ -1756,6 +1770,7 @@ function applySettings(next) {
   state.set = cleanSettings(next);
   state.setSaved = saveSettings(store, state.set);
   document.documentElement.toggleAttribute('data-calm', state.set.motion.calm === 'on');
+  if (window.parallaxTheme) window.parallaxTheme.apply(state.set.look.theme);
   if (state.set.motion.cases && !prev.motion.cases) state.autoNext = Date.now() + AUTO_MS;
   const panesChanged = prev.panes.off.join() !== state.set.panes.off.join();
   if (panesChanged) applyPanes();
@@ -1813,6 +1828,7 @@ async function main() {
   state.tasks = loadTasks(store);
   state.set = loadSettings(store);
   document.documentElement.toggleAttribute('data-calm', state.set.motion.calm === 'on');
+  if (window.parallaxTheme) window.parallaxTheme.apply(state.set.look.theme);
   if (!hashView && state.set.news.view !== 'auto') state.view = state.set.news.view;
   state.panel = createSettingsPanel({ root: $('set-layer'), get: () => state.set, set: (n) => applySettings(n), info: settingsInfo,
     watch: { get: () => state.watch, set: (l) => setWatch(l) } });
@@ -1835,12 +1851,9 @@ async function main() {
   for (const [k, id] of Object.entries(SHEET_PANE)) {
     const ph = $(id) && $(id).querySelector('.ph');
     if (!ph) continue;
-    ph.classList.add('can-open');
-    ph.append(h('button', { type: 'button', class: 'ph-open', 'aria-label': `${SHEETS[k]}の詳細を開く`, title: '詳細', on: { click: () => openSheet(k, $(id)) } }, chev()));
-    ph.querySelector('h2').addEventListener('click', () => openSheet(k, $(id)));
+    canOpen(ph, SHEETS[k], () => openSheet(k, $(id)));
   }
-  $('p-count').querySelector('.ph').addEventListener('click', () => openSheet('src', $('p-count')));
-  $('p-count').querySelector('.ph').classList.add('can-open');
+  canOpen($('p-count').querySelector('.ph'), SHEETS.src, () => openSheet('src', $('p-count')));
   $('about-wrap').addEventListener('click', (ev) => { if (ev.target === $('about-wrap')) closeAbout(); });
   window.addEventListener('hashchange', () => { const x = location.hash.replace('#', ''); if (state.ix && (x === 'ai' || x === 'rules') && x !== state.view) setView(x); });
   for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) window.addEventListener(ev, pause, { capture: true, passive: true });
@@ -1871,6 +1884,7 @@ async function main() {
   startAutoScroll('#src-b, #fields-b, #pri-b, #anom-b, #haz-b, #mkt-b, #pol-b', { held: () => !!(state.about || state.sheet) || setOpen() || !state.set.motion.scroll || !$('task-pop').hidden || !$('watch-pop').hidden });
   let rt = 0;
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => state.map && state.map.resize(), 160); });
+  window.addEventListener('parallax-theme', () => { if (state.map) state.map.resize(); });   // the map's ground is drawn in the page's tones
 
   const dp = dataPath();
   if (dp.bad != null) { showFatal('data= は同じ場所の相対パス（.json）だけ指定できます。'); return; }

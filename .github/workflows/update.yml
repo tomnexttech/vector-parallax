@@ -1,9 +1,9 @@
 name: update-data
 
 # Builds the public edition every 3 hours and DEPLOYS it as a GitHub Pages artifact (page + data in one package).
-# Nothing that holds a headline is committed (CONTRACT 20.1): data/latest.json, board.json, history.json, stats.json, politics.json, hazards.json,
+# Nothing that holds a headline is committed (CONTRACT 20.1): data/latest.json, board.json, history.json, stats.json, politics.json, critical.json, hazards.json,
 # markets.json, summary_cache.json, recorded.json, eval.json are build products. The repository keeps code, rules, contract, tests and the settings
-# that hold no headline (data/prompt.json, labels.json, watchwords.json, places.json, traps.json, withheld.json).
+# that hold no headline (data/prompt.json, labels.json, watchwords.json, places.json, traps.json, withheld.json, scenes.json).
 # One-time setting by the owner: Settings -> Pages -> Source: "GitHub Actions" (not "Deploy from a branch").
 #
 # A manual run ("Run workflow") rebuilds and redeploys at once. Use it after changing data/withheld.json (CONTRACT 20.9): do not wait 3 hours.
@@ -35,7 +35,7 @@ jobs:
 
       # What the next run needs from the last one is passed on here, not through git (CONTRACT 20.1): latest.json (the kept previous AI view),
       # summary_cache.json (one-line summaries), history.json (lineage), og_robots.json (robots.txt of the hosts asked for og:image) and the last
-      # hazards / markets / politics / board files ("the previous file stays" when a fetch fails). A rolling key: the newest cache is restored, a new one is saved.
+      # hazards / markets / politics / critical / board files ("the previous file stays" when a fetch fails; critical.json also lets a source that failed this run keep its items of the last 3 days, marked as carried). A rolling key: the newest cache is restored, a new one is saved.
       - name: Restore the previous run's data
         uses: actions/cache@v4
         with:
@@ -45,6 +45,7 @@ jobs:
             data/board.json
             data/history.json
             data/politics.json
+            data/critical.json
             data/hazards.json
             data/markets.json
             data/summary_cache.json
@@ -64,7 +65,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}   # empty or unset -> no AI call
         # --og: for events that may carry a photo (two or more outlets, not an incident, not a wire photo) whose feed items have no image, read the
         # article's og:image URL, obeying robots.txt (CONTRACT 15, 20.5, 20.6). Only the URL is kept; the page loads the image from the outlet.
-        # --extras (CONTRACT 18/19): also reads the pages that have no feed and writes board.json, history.json, politics.json. data/withheld.json is applied first (20.9) and the log prints counts and ids, never a headline.
+        # --extras (CONTRACT 18/19): also reads the pages that have no feed and writes board.json, history.json, politics.json (elections and the cabinet-approval series inside) and critical.json. data/withheld.json is applied first (20.9) and the log prints counts and ids, never a headline.
         run: python -m parallax.build --public --og --extras --min-stories 300
 
       # Map and market data (CONTRACT 18.7, 18.8). Independent of the news build; a source that cannot be read becomes a row with the reason, and when nothing could be fetched the previous file stays.

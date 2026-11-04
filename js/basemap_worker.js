@@ -202,9 +202,10 @@ const projector = (tx, ty, n, ext, s) => {
   return (px, py) => [bx + px * ax, (s.latN - latOf(v0 + py * dv)) * s.ry];
 };
 
-/** the relief as grey over the land tone: white where the slope faces the light, black where it turns away; nothing on the flat
- * and nothing at sea. Light from the north-west, altitude 45 degrees. */
-async function hillshade(dem, dx0, dy0, nx, ny, z, ck) {
+/** the relief over the land tone; nothing on the flat and nothing at sea. Light from the north-west, altitude 45 degrees.
+ * Dark: light only, the slopes that face the light turn toward white. Light (light = true): a soft grey shade on the slopes that
+ * turn away, a faint white on those that face it. */
+async function hillshade(dem, dx0, dy0, nx, ny, z, ck, light) {
   const Wm = nx * 256, Hm = ny * 256, c = canvas(Wm, Hm);
   const cg = c.getContext('2d', { willReadFrequently: true });
   const have = new Uint8Array(nx * ny);
@@ -233,10 +234,19 @@ async function hillshade(dem, dx0, dy0, nx, ny, z, ck) {
       const fe = (E[xr] - E[xl]) * inv, fs = (E[dn + x] - E[up + x]) * inv;
       if (!Number.isFinite(fe) || !Number.isFinite(fs)) continue;
       const s = (cA * (fe + fs) + sA) / Math.sqrt(1 + fe * fe + fs * fs);
+      const step = e > 0 && (Math.floor(E[xr] / ci) !== Math.floor(e / ci) || Math.floor(E[dn + x] / ci) !== Math.floor(e / ci));
+      if (light) {
+        // shade grows as the slope turns from the light (and a little with height); a contour step adds a faint trace
+        let d = 0.62 * (sA - s) + 0.035 * Math.min(1, Math.max(0, e) / 3000) + (step ? 0.045 : 0);
+        const k = i * 4;
+        if (d > 0) { d = d > 0.36 ? 0.36 : d; o[k] = 52; o[k + 1] = 56; o[k + 2] = 64; o[k + 3] = d * 255; }
+        else { d = -d * 1.6; d = d > 0.55 ? 0.55 : d; o[k] = 255; o[k + 1] = 255; o[k + 2] = 255; o[k + 3] = d * 255; }
+        continue;
+      }
       // light only, in the grey of the page: the land is a faint lit field over the dark ground, the slopes that face the light
       // turn toward white, contour steps add a trace. No dark shading (the ground under it is already dark)
       let a = 0.085 + 0.5 * (s - sA) + 0.05 * Math.min(1, Math.max(0, e) / 3000);
-      if (e > 0) { const b = Math.floor(e / ci); if (Math.floor(E[xr] / ci) !== b || Math.floor(E[dn + x] / ci) !== b) a += 0.06; }
+      if (step) a += 0.06;
       a = a < 0 ? 0 : a > 0.46 ? 0.46 : a;
       const hi = s > sA + 0.1 ? Math.min(1, (s - sA - 0.1) * 4) : 0, k = i * 4;
       o[k] = 206 + 40 * hi; o[k + 1] = 208 + 39 * hi; o[k + 2] = 213 + 37 * hi; o[k + 3] = a * 255;
@@ -254,7 +264,20 @@ const ROADS = [
   ['trunk', 0.75, 'rgba(200,236,252,.42)', 7],        // in Japan every national route is a trunk: dense, so not before z7
   ['motorway', 0.9, 'rgba(226,244,252,.52)', 5],
 ];
+// the same lines on the light ground: greys, the national border the darkest
+const ROADS_LIGHT = [
+  ['tertiary', 0.4, 'rgba(60,64,72,.2)', 10],
+  ['secondary', 0.5, 'rgba(60,64,72,.26)', 9],
+  ['primary', 0.6, 'rgba(60,64,72,.34)', 8],
+  ['trunk', 0.75, 'rgba(60,64,72,.4)', 7],
+  ['motorway', 0.9, 'rgba(48,52,60,.5)', 5],
+];
+const LINES = {
+  dark: { rail: 'rgba(143,216,242,.22)', admin: 'rgba(143,216,242,.34)', natHalo: 'rgba(96,170,206,.16)', nat: 'rgba(238,247,252,.88)', disputed: 'rgba(238,247,252,.7)' },
+  light: { rail: 'rgba(60,64,72,.3)', admin: 'rgba(60,64,72,.4)', natHalo: 'rgba(255,255,255,.7)', nat: 'rgba(58,61,68,.78)', disputed: 'rgba(58,61,68,.6)' },
+};
 function lines(g, t, P, z, px, col) {
+  const Lc = col.light ? LINES.light : LINES.dark, roads = col.light ? ROADS_LIGHT : ROADS;
   const stroke = (L, test, w, colour, dash) => {
     if (!L) return;
     const Pl = P(L.ext);
@@ -266,17 +289,17 @@ function lines(g, t, P, z, px, col) {
     g.stroke();
   };
   if (z >= 5) stroke(t.waterway, (p) => !p.intermittent && p.brunnel !== 'tunnel', 0.6, col.sea);
-  if (z >= 6) stroke(t.transportation, (p) => p.class === 'rail' && p.brunnel !== 'tunnel', 0.45, 'rgba(143,216,242,.22)', [3, 2.5]);
+  if (z >= 6) stroke(t.transportation, (p) => p.class === 'rail' && p.brunnel !== 'tunnel', 0.45, Lc.rail, [3, 2.5]);
   // roads are quieter while they are many and far (a whole country's motorways at once)
   const quiet = z <= 6 ? 0.5 : z <= 8 ? 0.65 : 0.85;
   g.globalAlpha = quiet;
-  for (const [cls, w, colour, zmin] of ROADS) if (z >= zmin) stroke(t.transportation, (p) => p.class === cls, w, colour);
+  for (const [cls, w, colour, zmin] of roads) if (z >= zmin) stroke(t.transportation, (p) => p.class === cls, w, colour);
   g.globalAlpha = 1;
-  if (z >= 4) stroke(t.boundary, (p) => p.admin_level >= 3 && p.admin_level <= 4 && !p.maritime, 0.6, 'rgba(143,216,242,.34)', [4, 3]);
+  if (z >= 4) stroke(t.boundary, (p) => p.admin_level >= 3 && p.admin_level <= 4 && !p.maritime, 0.6, Lc.admin, [4, 3]);
   const nat = (p) => p.admin_level === 2 && !p.maritime;
-  stroke(t.boundary, nat, 2.8, 'rgba(96,170,206,.16)');
-  stroke(t.boundary, (p) => nat(p) && !p.disputed, 1.0, 'rgba(238,247,252,.88)');
-  stroke(t.boundary, (p) => nat(p) && p.disputed, 1.0, 'rgba(238,247,252,.7)', [4, 3]);
+  stroke(t.boundary, nat, 2.8, Lc.natHalo);
+  stroke(t.boundary, (p) => nat(p) && !p.disputed, 1.0, Lc.nat);
+  stroke(t.boundary, (p) => nat(p) && p.disputed, 1.0, Lc.disputed, [4, 3]);
 }
 const WATER_SKIP = new Set(['swimming_pool', 'pond']);
 const COAST = new Set(['ocean', 'lake']);
@@ -312,7 +335,7 @@ async function build(pl, alive, opt) {
   // 1) the land tone, and the relief on it (Mercator -> equirectangular, one drawImage per row)
   g.fillStyle = col.land; g.fillRect(0, 0, Wd, Hd);
   if (dem.length && missD < dem.length) {
-    const shade = await hillshade(dem, dx0, dy0, dx1 - dx0 + 1, dy1 - dy0 + 1, pl.zD, ck);
+    const shade = await hillshade(dem, dx0, dy0, dx1 - dx0 + 1, dy1 - dy0 + 1, pl.zD, ck, !!col.light);
     const sx0 = (((pl.lonA + 180) / 360) * nD - dx0) * 256, sw = ((pl.lonB - pl.lonA) / 360) * nD * 256, TT = nD * 256, my0 = dy0 * 256;
     g.imageSmoothingEnabled = true;
     for (let j = 0; j < Hd; j++) {

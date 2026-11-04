@@ -325,6 +325,13 @@ export function createMap(canvas, opts = {}) {
     }
     for (const sg of area.lines || []) { if (Array.isArray(sg) && sg.length === 2) { line(v, sg); g.stroke(); } }
   }
+  /** [r, g, b] of a hex colour, or null */
+  function rgbOf(hex) {
+    const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex || '');
+    if (!m) return null;
+    const h = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+    return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  }
   /** a red that fades out from (x, y) over r px, for the envelope; null when the colour is not a hex */
   function fade(hex, x, y, r) {
     const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex || '');
@@ -355,7 +362,7 @@ export function createMap(canvas, opts = {}) {
       grid: css(canvas, '--map-grid', 'rgba(255,255,255,.05)'), label: css(canvas, '--map-label', '#c9cbcf'),
       dot: css(canvas, '--map-dot', 'rgba(231,232,234,.15)'), ink: css(canvas, '--ink', '#e6e7e9'), ink2: css(canvas, '--ink-2', '#a2a5aa'),
       ink3: css(canvas, '--ink-3', '#6f7277'), ink4: css(canvas, '--ink-4', '#4e5156'), red: css(canvas, '--red', '#ff5246'), cyan: css(canvas, '--cyan', '#5ac8f0'),
-      font: css(canvas, '--font', 'sans-serif'), halo: css(canvas, '--map-halo', 'rgba(14,15,17,.92)'),
+      font: css(canvas, '--font', 'sans-serif'), halo: css(canvas, '--map-halo', 'rgba(14,15,17,.92)'), light: css(canvas, '--map-mode', '') === 'light',
     };
   }
 
@@ -367,9 +374,21 @@ export function createMap(canvas, opts = {}) {
   /** the ground: the detailed sheets where they cover the view, the bundled ground under them where they do not */
   function ground(v, quick, C) {
     if (!basemap) { bundled(v, quick, C); return; }
-    basemap.colours({ sea: C.sea, land: C.land, coast: C.coast });
+    basemap.colours({ sea: C.sea, land: C.land, coast: C.coast, light: C.light });
     basemap.paint(g, { w: W, h: H, K: dpr, lonL: v.lon0, latT: v.lat0, ppd: v.s, moving: !!quick }, () => bundled(v, quick, C));
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  /** the relief over the land, as drawn (a grey about the land tone, LAND = 42 in js/map_worker.js); for the light appearance
+   *  (--map-mode: light) the same picture added onto a ground set so that the mean comes out at the light land tone: the land stays
+   *  near white, lit slopes lighter and slopes turned away darker, the light still from the north-west */
+  function relief(v, quick, C, sh) {
+    const draw = () => { if (sh) { g.imageSmoothingEnabled = false; g.drawImage(sh.land, 0, 0, W, H); } else if (world) drawWorld(v, quick); };
+    if (!C.light || (!sh && !world)) { draw(); return; }
+    const K = 0.42, L = rgbOf(C.land) || [244, 244, 245];
+    g.save();
+    g.fillStyle = `rgb(${L.map((c) => Math.round(c - 42 * K)).join(',')})`; g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'lighter'; g.globalAlpha = K; draw();
+    g.restore();
   }
   /** sea, land (vector rings, the relief clipped to them), the coast as one fine line */
   function bundled(v, quick, C) {
@@ -378,8 +397,7 @@ export function createMap(canvas, opts = {}) {
     const sh = sharp && sharp.key === keyOf(v) ? sharp : null;
     if (!quick && !sh && render) requestSharp(v);
     if (!coast) {
-      if (sh) { g.imageSmoothingEnabled = false; g.drawImage(sh.land, 0, 0, W, H); }
-      else if (world) drawWorld(v, quick);
+      relief(v, quick, C, sh);
       return;
     }
     if (sh && sh.water) { g.imageSmoothingEnabled = false; g.drawImage(sh.water, 0, 0, W, H); }
@@ -391,8 +409,7 @@ export function createMap(canvas, opts = {}) {
       g.fillStyle = C.land; g.fill(P.fill, 'evenodd');
       g.clip(P.fill, 'evenodd');
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (sh) { g.imageSmoothingEnabled = false; g.drawImage(sh.land, 0, 0, W, H); }
-      else if (world) drawWorld(v, quick);
+      relief(v, quick, C, sh);
       g.restore();
     }
     g.save();
