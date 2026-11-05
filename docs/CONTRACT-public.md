@@ -121,6 +121,7 @@ sources.MAINSTREAM_TYPES (公共放送, 通信社, 全国紙, 民放), among the
     "made_at": 1762225200,              // when this line was made
     "provider": "gemini" | "claude-recorded", "model": "..."   // who wrote it
   },
+  "videos": absent | [ { "id": "...", "title": "...", "ts": 1762225200, "station": "ann" } ],   // 18.14: the broadcasters' own videos that fit this event (<= 3, newest first)
   "basis": null | {                     // why these headlines were put together (8); null for a single member
     "by": "rule" | "ai",                // rule = word overlap of one rule cluster; ai = the AI grouped it
     "words": ["委員会", "committee"],   // <= 6 names/phrases (and concept labels) found in >= 2 member headlines
@@ -1010,6 +1011,14 @@ A tracked setting (no headline): the scene types of the page, their thresholds a
   (the conditions, written over fields that exist in the data files: `switch` / `banner_only` for `disaster`, `any` for `election` - a burst of election words in the headlines of 6 h, or a vote dated
   today in `politics.elections.upcoming` - and `all` for `world` and `live`), `banner_ja`. `vocab` holds the words for counting headlines (they only count; they never judge; an opinion poll is not an
   election word).
+
+### 18.14 Event videos (`stories[].videos`, decided 2026-11-05)
+
+The news pane no longer asks YouTube what a channel is streaming now: a channel may stream anything (a 24-hour nature camera once came up in the news pane), and nothing tied the picture to the event on screen.
+
+- **Build** (`parallax/video.py`, called by `build.main` once the stories exist and before the safety check; `--no-video` and a replay with `--items` skip it). It reads the public feed `https://www.youtube.com/feeds/videos.xml?channel_id=<ID>` (no key, the newest 15 uploads) of the 11 channels of `js/tv.js` (that file is the one table; the build reads the channel ids from it) and compares each video title with the headlines of each event (the titles of its members, then its AI headlines) by the rule that puts headlines together (`cluster._sim_feat`: rare words and numbers count, a conflict of numbers, dates or places vetoes), at `MATCH_T` = 0.42 (fixed on the live pairs of 2026-11-05: another angle of the same broad topic scored 0.40 or less). A video fits an event when it was published from 12 h before the event's first report to 36 h after its last. The videos that fit go into `stories[].videos`, at most 3, newest first: `{"id": "<11 characters of A-Z a-z 0-9 _ ->", "title": "<the channel's own title, white space collapsed, at most 120 characters>", "ts": <epoch seconds of publication>, "station": "<id of js/tv.js>"}`. `videos` is absent when none fits.
+- **Quotation**: the title is quoted as the channel wrote it, with the channel (`station`), the time and the link (`https://www.youtube.com/watch?v=<id>`); it is not an AI field. A title or a channel that the name gate (17) or the withheld list (20.9) stops is dropped before writing. A channel that cannot be read is skipped; when none can be read no event has `videos`, and the build goes on (log: `video stations=<ok>/<n> fetched=<n> events_with_videos=<n> videos=<n> failed=[...]`). Nothing is downloaded: the page embeds from `youtube-nocookie.com` and links to the video, and a video id that does not match `^[A-Za-z0-9_-]{11}$` is never used, on either side.
+- **Page** (`js/tv.js`, `playFor`): the selected event's videos (its own and those of the stories folded into it) first; else the latest uploads of a channel that reported the event (`videoseries`); else the 24-hour stream (`live_stream`) of a channel whose `mode` is `live`, which is only a channel that really streams the news all day: ANNnewsCH, Al Jazeera English, DW News, FRANCE 24 English, Sky News (for an event reported at home, ANN; for one reported abroad, Al Jazeera English). The first line of the pane says the channel, the title (a link to the video) and its time, or "latest uploads" / "live stream (the news, all day)". A press on a channel plays its stream or uploads, a press on one of the event's videos plays that video; selecting another event by hand lets both go. The scenes (18.13) keep their `video` channel ids as before.
 
 ## 19. Sources added and pages without a feed (decided 2026-11-04 night)
 

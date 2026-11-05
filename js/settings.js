@@ -8,6 +8,9 @@
  *   importSettings(text) -> { ok, settings, watch, error }     error: 'big' | 'json' | 'shape'
  *   addTerm(list, term, max, len) / removeTerm(list, term)     the muted words and outlets, folded like the watched words (NFKC, case)
  *   hiddenBy(s, ev) -> null | { k, v }       why an event is hidden: k = word | outlet | type | field | scope
+ *   loadOwnAI(storage) / saveOwnAI(storage, c) / cleanOwnAI(x) / activeOwnAI(c, fallbackModel)     the viewer's own AI: a provider, a key and a model
+ *                                            for each provider. Kept under its own storage key, apart from the settings: the key is never in the file that
+ *                                            exportSettings writes, and never leaves this browser except to the provider the viewer chose
  *
  * Hiding is the visitor's choice and is never silent: the page counts what the settings hide, shows it on one press, and keeps a
  * priority row as a folded tag instead of removing it. An event is hidden by outlet or by type only when every report of it is
@@ -15,6 +18,7 @@
 
 import { STATIONS } from './tv.js';
 import { fold, terms } from './prefs.js';
+import { KINDS, PROVIDERS, MODEL_RE } from './provider.js';
 
 export const SETTINGS_KEY = 'parallax.settings.v1';
 export const SETTINGS_SCHEMA = 'parallax-settings/1';
@@ -135,3 +139,48 @@ export function reasonJa(r) {
     : r.k === 'field' ? `分野「${r.v}」` : r.v === 'intl' ? '海外の出来事' : '国内の出来事';
 }
 export const KIND_JA = { word: '語', outlet: '媒体', type: '源の型', field: '分野', scope: '国内と海外' };
+
+// ------------------------------------------------------------ the viewer's own AI (a key of their own, optional)
+export const OWN_AI_KEY = 'parallax.ownai.v1';
+export const OWN_KINDS = ['none', ...KINDS];
+const KEY_RE = /^[\x21-\x7e]{8,400}$/;    // printable ASCII, no spaces: what a header can carry and a provider's key looks like
+
+/** is this text usable as a key (the panel says so before it keeps it) */
+export const keyOk = (v) => typeof v === 'string' && KEY_RE.test(v.trim());
+export const modelOk = (v) => typeof v === 'string' && MODEL_RE.test(v.trim());
+export function emptyOwnAI() {
+  return { kind: 'none', keys: Object.fromEntries(KINDS.map((k) => [k, ''])), models: Object.fromEntries(KINDS.map((k) => [k, ''])) };
+}
+/** one key and one model for each provider, so a key typed for one provider can never be sent to another */
+export function cleanOwnAI(x) {
+  const o = isObj(x) ? x : {}, ks = isObj(o.keys) ? o.keys : {}, ms = isObj(o.models) ? o.models : {};
+  const out = emptyOwnAI();
+  out.kind = pick(o.kind, OWN_KINDS, 'none');
+  for (const k of KINDS) {
+    out.keys[k] = keyOk(ks[k]) ? ks[k].trim() : '';
+    out.models[k] = modelOk(ms[k]) ? ms[k].trim() : '';
+  }
+  return out;
+}
+export function loadOwnAI(storage) {
+  try {
+    const raw = storage ? storage.getItem(OWN_AI_KEY) : null;
+    return cleanOwnAI(raw ? JSON.parse(raw) : null);
+  } catch { return emptyOwnAI(); }
+}
+export function saveOwnAI(storage, c) {
+  try {
+    if (!storage) return false;
+    const v = cleanOwnAI(c);
+    if (v.kind === 'none' && KINDS.every((k) => !v.keys[k] && !v.models[k])) storage.removeItem(OWN_AI_KEY);
+    else storage.setItem(OWN_AI_KEY, JSON.stringify(v));
+    return true;
+  } catch { return false; }
+}
+/** the AI in use: { kind, ja, key, model } when a provider is chosen and has a key, else null. fallbackModel: the model the data names for Gemini. */
+export function activeOwnAI(c, fallbackModel) {
+  const v = cleanOwnAI(c);
+  if (!KINDS.includes(v.kind) || !v.keys[v.kind]) return null;
+  const k = v.kind;
+  return { kind: k, ja: PROVIDERS[k].ja, key: v.keys[k], model: v.models[k] || (k === 'gemini' && modelOk(fallbackModel) ? fallbackModel : PROVIDERS[k].model) };
+}

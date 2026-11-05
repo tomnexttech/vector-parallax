@@ -27,8 +27,10 @@ import { speechSupported, listen, route as voiceRoute } from './voice.js';
 import { absentOutlets, absentBlock } from './absent.js';
 import { entryEvents, renderEntry } from './entry.js';
 import { detect, bannerText, sceneOf } from './scenes.js';
-import { STATIONS, stationFor, embedSrc } from './tv.js';
-import { loadSettings, saveSettings, cleanSettings, hiddenBy, reasonJa, KIND_JA } from './settings.js';
+import { STATIONS, videosOf, playFor, playOfStation, playOfVideo, describe, embedSrc } from './tv.js';
+import { loadSettings, saveSettings, cleanSettings, hiddenBy, reasonJa, KIND_JA, loadOwnAI, saveOwnAI, cleanOwnAI, activeOwnAI } from './settings.js';
+import { makeProvider } from './provider.js';
+import { askOwnAI, testOwnAI, errJa, ASK_NOTE } from './ownai.js';
 import { createSettingsPanel } from './settings_panel.js';
 import { initLandscape } from './landscape.js';
 import { initDial } from './dial.js';
@@ -768,6 +770,45 @@ function histNote() {
   if (!isObj(hs)) return '記録を読めない';
   return `記録 ${isNum(hs.n) ? hs.n : arr(hs.entries).length} 件・${isNum(hs.days) ? hs.days : 30} 日分まで・${fmtShort(hs.updated_at)} 更新`;
 }
+// ---------------------------------------------------------------- the viewer's own AI (js/ownai.js): nothing shows until the settings hold a provider and a key
+const ownActive = () => activeOwnAI(state.own, defaultModel);
+const ownSig = () => { const a = ownActive(); return a ? `${a.kind}|${a.model}` : ''; };
+/** what the AI is given: the heading and, for each outlet once and by the clock, the headline and description the page itself shows */
+function ownEvent(e) {
+  const seen = new Set();
+  const items = [...e.members].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity))
+    .filter((it) => { const o = outletOf(it); if (seen.has(o)) return false; seen.add(o); return true; })
+    .map((it) => ({ outlet: outletOf(it), title: str(it.title), desc: str(it.desc) }));
+  return { heading: e.heading.text, items };
+}
+function paintOwn(box, e) {
+  const a = ownActive(), st = state.ownAsk.get(e.key) || null;
+  if (!a) { box.replaceChildren(); box.hidden = true; return; }
+  box.hidden = false;
+  const busy = !!(st && st.busy);
+  const out = [h('div', { class: 'ch-own' },
+    h('button', { type: 'button', class: 'tbb', data: { f: 'own-ask' }, disabled: busy ? true : null, on: { click: () => askOwn(e) } }, busy ? '聞いています…' : '自分の AI に聞く'),
+    h('span', { class: 'ch-own-s', text: '各媒体の伝え方の違いを中立に 3 行で' }),
+    st && st.err ? h('span', { class: 'ch-own-m', role: 'status', text: errJa(st.err) }) : null)];
+  if (st && st.lines && st.lines.length) {
+    out.push(h('ol', { class: 'ch-own-l' }, st.lines.map((l) => h('li', { text: l }))),
+      h('p', { class: 'ainote' }, h('span', { class: 'aimk', text: 'AI' }), `（自分の鍵）${st.by}${isNum(st.at) ? `・${fmtShort(st.at)}` : ''}・${ASK_NOTE}`));
+  }
+  box.replaceChildren(...out);
+}
+const ownBox = (e) => { const box = h('div', { class: 'ch-ownbox', data: { k: e.key } }); paintOwn(box, e); return box; };
+function repaintOwn(e) { const box = $('case').querySelector('.ch-ownbox'); if (box && box.dataset.k === String(e.key)) paintOwn(box, e); }
+async function askOwn(e) {
+  const a = ownActive(), prev = state.ownAsk.get(e.key);
+  if (!a || (prev && prev.busy)) return;
+  state.ownAsk.set(e.key, { busy: true });
+  repaintOwn(e);
+  let res;
+  try { res = await askOwnAI(makeProvider(a.kind, a.key, a.model, { retries: 1, timeoutMs: 45000 }), ownEvent(e)); } catch (err) { res = { lines: [], err: (err && err.code) || 'network' }; }
+  state.ownAsk.set(e.key, { busy: false, ...res, by: `${a.ja} · ${a.model}`, at: Math.floor(Date.now() / 1000) });
+  repaintOwn(e);
+}
+
 function renderCase() {
   const box = $('case');
   const e = cur();
@@ -808,6 +849,7 @@ function renderCase() {
   if (e.summary) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: str(e.summary.text_ja) }), aiTag([str(e.summary.provider), str(e.summary.model)], e.summary.made_at)));
   if (e.ai && str(e.ai.contrast_ja)) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: e.ai.contrast_ja }), aiTag(aiBy, aiAt)));
   if (aiLines.length || e.heading.ai) aiLines.push(h('p', { class: 'ainote', text: AI_NOTE }));
+  if (ownActive()) aiLines.push(ownBox(e));
 
   const sorted = [...ms].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity));
   // the photos: the one the board chose (CONTRACT 20.5) first, then each report that carries one, by the clock; never cropped;
@@ -1162,23 +1204,72 @@ function renderPol() {
 }
 // ---------------------------------------------------------------- broadcast: the broadcasters' own channels (js/tv.js)
 function tvList() { const off = new Set(state.set.tv.off); return state.set.tv.order.map((id) => STATIONS.find((x) => x.id === id)).filter((x) => x && !off.has(x.id)); }
+// the videos of the selected event (stories[].videos, CONTRACT 18.14): of the built stories whose reports it holds (a rule cluster, an AI regrouping and the stories folded into a lead all find theirs)
+function videoIndex() {
+  const src = state.base || state.data;
+  if (state.vidIx && state.vidIxSrc === src) return state.vidIx;
+  const ix = new Map();
+  for (const st of arr(src && src.stories)) if (isObj(st) && arr(st.videos).length) for (const id of arr(st.member_ids)) ix.set(id, st);
+  state.vidIx = ix; state.vidIxSrc = src;
+  return ix;
+}
+function videosOfEvent(e) {
+  if (!e) return [];
+  const ix = videoIndex();
+  const votes = new Map();
+  for (const id of arr(e.ids)) { const st = ix.get(id); if (st) votes.set(st, (votes.get(st) || 0) + 1); }
+  return [...votes].filter(([st, n]) => n * 2 >= Math.min(arr(e.ids).length, arr(st.member_ids).length)).flatMap(([st]) => arr(st.videos));
+}
+// what plays: a video the visitor pressed, a channel the visitor pressed, else what follows the selected event (tv.js playFor)
+function tvPlay(ls) {
+  const v = state.tvV && arr(state.tvVids).find((x) => x.id === state.tvV);
+  if (v) return playOfVideo(v, ls);
+  const m = state.tv && ls.find((x) => x.id === state.tv);
+  if (m) return playOfStation(m);
+  if (state.tvAuto && ls.includes(state.tvAuto.st)) return state.tvAuto;
+  return playFor([], [], 'jp', ls);
+}
 function renderTv() {
   const box = $('tv-b');
   if (!box) return;
   const ls = tvList();
   // the pane turned off, or no channel left: no player at all (nothing loads, nothing plays)
   if (state.set.panes.off.includes('tv') || !ls.length) { box.replaceChildren(h('p', { class: 'empty', text: ls.length ? '' : '表示する局がない（設定の映像）' })); $('tv-c').textContent = ''; return; }
-  const st = ls.find((x) => x.id === state.tv) || (state.tvAuto && ls.includes(state.tvAuto) ? state.tvAuto : null) || ls[0];
+  const p = tvPlay(ls);
+  const st = p.st;
+  const d = describe(p);
   $('tv-c').textContent = st.name;
   let f = box.querySelector('.tv-f');
-  if (!f) { f = h('div', { class: 'tv-f' }); box.replaceChildren(f, h('div', { class: 'tv-ch', role: 'group', 'aria-label': '局' }), h('p', { class: 'pfoot tv-n' })); }
-  const src = embedSrc(st, { auto: state.set.tv.auto, sound: state.set.tv.sound });
+  if (!f) { f = h('div', { class: 'tv-f' }); box.replaceChildren(h('p', { class: 'tv-t' }), f, h('div', { class: 'tv-v', role: 'group', 'aria-label': 'この出来事の映像' }), h('div', { class: 'tv-ch', role: 'group', 'aria-label': '局' }), h('p', { class: 'pfoot tv-n' })); }
+  const src = embedSrc(p, { auto: state.set.tv.auto, sound: state.set.tv.sound });
   const fr = f.querySelector('iframe');
-  if (!fr || fr.dataset.src !== src) f.replaceChildren(h('iframe', { src, title: `${st.name}（YouTube）`, loading: 'lazy', allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, referrerpolicy: 'strict-origin-when-cross-origin', data: { src } }));
-  box.querySelector('.tv-ch').replaceChildren(...ls.map((x) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(x.id === st.id), on: { click: () => { state.tv = x.id; renderTv(); } } }, x.short)));
-  box.querySelector('.tv-n').textContent = `${st.mode === 'live' ? 'ライブ' : '最新'}・公式・${state.set.tv.sound ? '音あり' : '消音'}${state.set.tv.auto ? '' : '・押して再生'}`;
+  if (!fr || fr.dataset.src !== src) f.replaceChildren(h('iframe', { src, title: `${st.name}（YouTube）${p.kind === 'video' ? ' ' + d.title : ''}`, loading: 'lazy', allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, referrerpolicy: 'strict-origin-when-cross-origin', data: { src } }));
+  // the first line: which channel and what is playing (the title is a quotation: channel, time, link)
+  const url = d.url && safeUrl(d.url);
+  box.querySelector('.tv-t').replaceChildren(h('b', { class: 'tv-tn', text: st.name }), url ? extLink(url, { class: 'tv-tl', title: d.title }, d.title) : h('span', { class: 'tv-tl', text: d.title }), d.ts ? h('span', { class: 'tv-ts', text: fmtShort(d.ts) }) : '');
+  const vids = arr(state.tvVids);
+  const vb = box.querySelector('.tv-v');
+  vb.hidden = !vids.length;
+  vb.replaceChildren(...vids.map((v, i) => {
+    const same = vids.filter((x) => x.station === v.station);
+    const sx = ls.find((x) => x.id === v.station);
+    return h('button', { type: 'button', class: 'chip', title: v.title, 'aria-pressed': String(p.kind === 'video' && p.video.id === v.id), on: { click: () => { state.tvV = v.id; state.tv = null; renderTv(); } } },
+      `${sx ? sx.short : v.station}${same.length > 1 ? ' ' + (same.indexOf(v) + 1) : ''}`);
+  }));
+  box.querySelector('.tv-ch').replaceChildren(...ls.map((x) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(p.kind !== 'video' && x.id === st.id), on: { click: () => { state.tv = x.id; state.tvV = null; renderTv(); } } }, x.short)));
+  const what = p.kind === 'video' ? '出来事の映像' : p.kind === 'live' ? 'ライブ（ニュースの常時配信）' : '最新の投稿';
+  box.querySelector('.tv-n').textContent = `${what}・公式・${state.set.tv.sound ? '音あり' : '消音'}${state.set.tv.auto ? '' : '・押して再生'}`;
 }
-function followTv(e) { if (!e) return; const ls = tvList(); if (!ls.length) return; state.tvAuto = stationFor(e.members.map(outletOf), e.cover, ls); if (!state.tv) renderTv(); }
+// a new event selected by hand: its video, else the latest of a channel that reported it, else the news stream; a channel or video pressed before is let go
+function followTv(e) {
+  if (!e) return;
+  const ls = tvList();
+  if (!ls.length) return;
+  state.tv = null; state.tvV = null;
+  state.tvAuto = playFor(videosOfEvent(e), e.members.map(outletOf), e.cover, ls);
+  state.tvVids = arr(state.tvAuto.videos);
+  renderTv();
+}
 
 // ---------------------------------------------------------------- bottom: the source on screen and the next event
 function renderStatus() {
@@ -1840,7 +1931,9 @@ function voiceSay(parts) { const p = $('voice-pop'); p.hidden = false; p.replace
 async function voiceRun(alts) {
   const ja = (id) => (actions.list.find((c) => c.id === id) || {}).ja || id;
   let provider = null;
-  if (voiceKey && MODEL_RE.test(defaultModel)) { try { provider = (await import('./provider.js')).geminiProvider(voiceKey, defaultModel, { retries: 0, timeoutMs: 8000 }); } catch { provider = null; } }
+  const own = ownActive();   // the provider and key chosen in the settings; else the Gemini key typed here, for this visit only
+  if (own) { try { provider = makeProvider(own.kind, own.key, own.model, { retries: 0, timeoutMs: 8000 }); } catch { provider = null; } }
+  else if (voiceKey && MODEL_RE.test(defaultModel)) { try { provider = makeProvider('gemini', voiceKey, defaultModel, { retries: 0, timeoutMs: 8000 }); } catch { provider = null; } }
   const r = await voiceRoute(alts, { provider, catalog: actions.list });
   if (r.id !== 'none') {
     const out = actions.run(r.id, r.arg);
@@ -1852,7 +1945,7 @@ async function voiceRun(alts) {
   if (r.heard) cands.push(h('button', { type: 'button', class: 'chip', text: `「${r.heard.slice(0, 16)}」で探す`, on: { click: () => { actions.run('case_find', r.heard); $('voice-pop').hidden = true; } } }));
   const keyIn = h('input', { type: 'password', class: 'vk', placeholder: 'Gemini の鍵（任意・この窓の間だけ）', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Gemini の鍵' });
   keyIn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); voiceKey = keyIn.value.trim(); keyIn.value = ''; voiceRun(alts); } });
-  voiceSay([h('p', { class: 'vh', text: r.heard ? `「${r.heard}」` : '聞き取れず' }), h('p', { class: 'vr', text: r.by === 'ai' ? '一覧に当たらない' : '規則に当たらない' }), h('div', { class: 'vc' }, cands), voiceKey ? null : keyIn]);
+  voiceSay([h('p', { class: 'vh', text: r.heard ? `「${r.heard}」` : '聞き取れず' }), h('p', { class: 'vr', text: r.by === 'ai' ? '一覧に当たらない' : '規則に当たらない' }), h('div', { class: 'vc' }, cands), voiceKey || own ? null : keyIn]);
 }
 function startVoice() {
   if (voiceStop) { voiceStop(); voiceStop = null; return true; }
@@ -1975,11 +2068,29 @@ async function main() {
   state.watch = loadWatch(store);
   state.tasks = loadTasks(store);
   state.set = loadSettings(store);
+  state.own = loadOwnAI(store); state.ownAsk = new Map();
   document.documentElement.toggleAttribute('data-calm', state.set.motion.calm === 'on');
   if (window.parallaxTheme) window.parallaxTheme.apply(state.set.look.theme);
   if (!hashView && state.set.news.view !== 'auto') state.view = state.set.news.view;
   state.panel = createSettingsPanel({ root: $('set-layer'), get: () => state.set, set: (n) => applySettings(n), info: settingsInfo,
-    watch: { get: () => state.watch, set: (l) => setWatch(l) } });
+    watch: { get: () => state.watch, set: (l) => setWatch(l) },
+    ai: {
+      get: () => state.own,
+      set: (c) => {   // the choice is kept apart from the settings; the case pane is drawn again only when what is asked of changes
+        const before = ownSig();
+        state.own = cleanOwnAI(c);
+        const ok = saveOwnAI(store, state.own);
+        if (ownSig() !== before && state.data) renderCase();
+        return ok;
+      },
+      active: () => { const a = ownActive(); return a ? { kind: a.kind, ja: a.ja, model: a.model } : null; },
+      fallback: () => defaultModel,
+      test: async () => {
+        const a = ownActive();
+        if (!a) return { ok: false, err: 'nokey' };
+        try { return await testOwnAI(makeProvider(a.kind, a.key, a.model, { retries: 0, timeoutMs: 20000 })); } catch (err) { return { ok: false, err: (err && err.code) || 'network' }; }
+      },
+    } });
   applyPanes();
   try { const l = store ? JSON.parse(store.getItem(LAYER_KEY) || 'null') : null; state.layers = isObj(l) ? l : {}; } catch { state.layers = {}; }
   window.parallaxActions = actions;   // the voice layer (later) reads the same list

@@ -1573,6 +1573,23 @@ def write_extras(data, items, now, out_dir, removed=(), get=None):
     return counts
 
 
+def attach_videos(data, items, now, get=None):
+    """CONTRACT 18.14: the broadcasters' own videos that fit an event go into `stories[].videos`. Never raises and never stops the build: a channel that cannot
+    be read is skipped, and when nothing could be read no event has `videos`. `get` replaces the network in tests (get(url) -> text)."""
+    try:
+        from parallax import video as video_mod
+        rep = video_mod.attach(data, items, now, get=get,
+                               blocked=lambda t: has_gate_name(t) or names_withheld_outlet(t))
+        print("video stations=%d/%d fetched=%d events_with_videos=%d videos=%d failed=%s"
+              % (rep["ok"], rep["stations"], rep["fetched"], rep["events"], rep["videos"], rep["failed"]))
+        return rep
+    except Exception as e:
+        for s in data.get("stories", []):
+            s.pop("videos", None)
+        print("video FAILED (no videos this time): %s: %s" % (type(e).__name__, e), file=sys.stderr)
+        return None
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="python -m parallax.build", description=__doc__.split("\n")[0])
     ap.add_argument("--items", help="取得の写し（--save-items の形）を読む。取得しない")
@@ -1595,6 +1612,7 @@ def main(argv=None):
     ap.add_argument("--min-stories", type=int, default=0,
                     help="stories がこれ未満なら --out を上書きしない（前の良い版を残す）。Actions では実数を渡す")
     ap.add_argument("--stats", help="stats.json の置き場（既定は --out と同じ場所の stats.json）")
+    ap.add_argument("--no-video", action="store_true", help="CONTRACT 18.14: do not read the broadcasters' channel feeds (a run with --items never reads them)")
     ap.add_argument("--extras", action="store_true",
                     help="CONTRACT 18: also read the pages that have no feed (audit board, gazette, bills) and write board.json, history.json, politics.json, critical.json next to --out. A failure here never stops latest.json")
     a = ap.parse_args(argv)
@@ -1637,6 +1655,8 @@ def main(argv=None):
     extras = {}
     data, requests_full = build(items, status, now, a.window_h, provider, status_if_none, prompt, a.public, previous,
                                 s_provider, s_status, cache, extras, og_mod.fill if a.og else None, withheld=w_counts)
+    if not (a.items or a.no_video):                   # the channel feeds are a network read; a replay of a saved fetch (--items) reads none
+        attach_videos(data, items, now)
     if a.dump_requests:
         write_json(a.dump_requests, dump_requests(requests_full, prompt, extras.get("summary_requests")))
     problems = check_output(data, a.min_stories, prompt)

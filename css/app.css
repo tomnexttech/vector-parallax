@@ -656,6 +656,14 @@ body.sheet-open .board { filter: var(--dim); }
 .tv-f iframe { display: block; width: 100%; height: 100%; border: 0; }
 .tv-ch { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
 .tv-ch .chip { font-size: var(--fs-2); padding: 1px 6px; }
+.tv-t { display: flex; gap: 6px; align-items: baseline; margin: 0 0 6px; font-size: var(--fs-2); line-height: var(--lh-2); color: var(--ink-2); white-space: nowrap; overflow: hidden; }
+.tv-tn { flex: none; font-weight: var(--fw-2); color: var(--ink); }
+.tv-tl { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: inherit; text-decoration: none; }
+a.tv-tl:hover { text-decoration: underline; }
+.tv-ts { flex: none; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.tv-v { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+.tv-v[hidden] { display: none; }
+.tv-v .chip { font-size: var(--fs-2); padding: 1px 6px; }
 .more { display: block; width: 100%; margin: 0; padding: 9px 12px; border: 0; border-top: 1px solid var(--line); background: none; text-align: left; font-size: var(--fs-3); color: var(--cyan); }
 .pfoot.legend { color: var(--ink-3); }
 .dt tr.flash, .ds-b li.flash { animation: rowflash 1.8s ease-out 1; }
@@ -1263,3 +1271,13 @@ a.en-a:hover { text-decoration: underline; }
 .stb.old { color: var(--amber); }
 .dot[data-genre] { background: var(--gc); }
 .note-bar.err { color: var(--red); }
+
+/* the viewer's own AI: the field of the key and the model in the settings, and the ask under an event */
+.set-in { width: 250px; max-width: 100%; height: 26px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--sheet); outline: none; font-size: var(--fs-3); color: var(--ink); }
+.set-in:focus-visible { outline: 2px solid var(--cyan); outline-offset: 0; }
+.set-in::placeholder { color: var(--ink-3); }
+.ch-ownbox { margin-top: 8px; }
+.ch-own { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: var(--fs-2); color: var(--ink-3); }
+.ch-own-m { color: var(--red); }
+.ch-own-l { margin: 7px 0 0; padding: 0; list-style: none; max-width: 74ch; font-size: var(--fs-4); line-height: 1.55; color: var(--ink-2); }
+.ch-own-l li + li { margin-top: 2px; }

@@ -4,10 +4,14 @@
  *   createSettingsPanel({ root, get, set, info, watch }) -> { open(section), close(), isOpen(), render() }
  *     get() -> settings          set(next) -> boolean (kept in this browser or not)
  *     info() -> { types: [[type, n]], fields: [name], outlets: [name], hidden: { n, by }, calmSystem, saved }
- *     watch: { get() -> [term], set([term]) }      the watched words travel in the same file */
+ *     watch: { get() -> [term], set([term]) }      the watched words travel in the same file
+ *     ai: { get() -> own-AI choice, set(choice) -> boolean, active() -> { kind, ja, model } | null, test() -> Promise<{ ok, err }> }
+ *                                                  the viewer's own AI (js/settings.js keeps it apart from the settings; the key is never exported) */
 
 import { STATIONS } from './tv.js';
-import { PANES, MUTE_WORDS, MUTE_OUTLETS, NAME_LEN, KIND_JA, addTerm, removeTerm, cleanSettings, defaults, exportSettings, importSettings } from './settings.js';
+import { PANES, MUTE_WORDS, MUTE_OUTLETS, NAME_LEN, KIND_JA, addTerm, removeTerm, cleanSettings, defaults, exportSettings, importSettings, cleanOwnAI, keyOk, modelOk } from './settings.js';
+import { KINDS, PROVIDERS } from './provider.js';
+import { errJa } from './ownai.js';
 
 const SECTIONS = [
   ['tv', '映像', '<rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="M8.5 8v4l3.4-2z"/>'],
@@ -16,6 +20,7 @@ const SECTIONS = [
   ['motion', '動き', '<path d="M3 10h9.5M9.5 6.5L13 10l-3.5 3.5M16.5 4.5v11"/>'],
   ['look', '外観', '<circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" stroke="none"/>'],
   ['panes', '盤の欄', '<rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M7.5 3.5v13M12.5 3.5v6.5h5"/>'],
+  ['ai', '自分の AI', '<path d="M10 3l1.7 4.3L16 9l-4.3 1.7L10 15l-1.7-4.3L4 9l4.3-1.7z"/><path d="M15.5 13.5v3M14 15h3"/>'],
   ['data', '保存と復元', '<path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M3.5 13.5v3h13v-3"/>'],
 ];
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -41,8 +46,8 @@ function icon(paths) {
 }
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
-export function createSettingsPanel({ root, get, set, info, watch }) {
-  let sec = 'tv', open = false, msg = null, resetArm = 0, back = null;
+export function createSettingsPanel({ root, get, set, info, watch, ai }) {
+  let sec = 'tv', open = false, msg = null, resetArm = 0, back = null, aiMsg = null, aiBusy = false;
   const file = h('input', { type: 'file', accept: 'application/json,.json', hidden: true, tabindex: '-1', 'aria-hidden': 'true' });
   file.addEventListener('change', onFile);
 
@@ -154,18 +159,106 @@ export function createSettingsPanel({ root, get, set, info, watch }) {
       return [group('', PANES.map(([id, ja]) => row(ja, id === 'tv' ? '隠している間は読み込まない' : null,
         sw(`p-${id}`, !off.has(id), ja, (n, v) => { n.panes.off = v ? n.panes.off.filter((x) => x !== id) : [...n.panes.off, id]; }))), '出来事と注目の欄は常に出す')];
     },
+    ai() {
+      const cfg = cleanOwnAI(ai.get());
+      const kind = cfg.kind, p = PROVIDERS[kind] || null;
+      const dflt = p ? (kind === 'gemini' && ai.fallback && modelOk(ai.fallback()) ? ai.fallback() : p.model) : '';
+      const rows = [row('提供元', 'なしのままでも、AI のまとめは今まで通り全部使える',
+        h('div', { class: 'seg', role: 'group', 'aria-label': '提供元' },
+          [['none', 'なし'], ...KINDS.map((k) => [k, PROVIDERS[k].ja])].map(([v, ja]) => h('button', {
+            type: 'button', 'aria-pressed': String(kind === v), data: { f: `ai-kind-${v}` }, on: { click: () => aiChange((c) => { c.kind = v; }) } }, ja))))];
+      if (p) {
+        const keyIn = h('input', { type: 'password', class: 'set-in', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'off', placeholder: '鍵を貼り付ける', 'aria-label': `${p.ja} の鍵`, data: { f: 'ai-key' } });
+        keyIn.value = cfg.keys[kind];
+        keyIn.addEventListener('change', () => onKey(keyIn.value));
+        keyIn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); onKey(keyIn.value); } });
+        const show = h('button', { type: 'button', class: 'tbb', 'aria-pressed': 'false', 'aria-label': '鍵の表示を切り替える', data: { f: 'ai-show' }, on: { click: (ev) => {
+          const on = keyIn.type === 'password'; keyIn.type = on ? 'text' : 'password';
+          ev.currentTarget.setAttribute('aria-pressed', String(on)); ev.currentTarget.textContent = on ? '隠す' : '表示'; } } }, '表示');
+        const modelIn = h('input', { type: 'text', class: 'set-in', list: 'set-ai-models', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'off', placeholder: dflt, 'aria-label': `${p.ja} の型`, data: { f: 'ai-model' } });
+        modelIn.value = cfg.models[kind];
+        modelIn.addEventListener('change', () => onModel(modelIn.value));
+        modelIn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); onModel(modelIn.value); } });
+        rows.push(row('鍵', `${cfg.keys[kind] ? '保存済み' : '未入力'}・送る先は ${p.host} だけ`, [keyIn, show]));
+        rows.push(row('型', `空なら各社の今の型（${dflt}）`, modelIn));
+        rows.push(row('接続', null, [
+          h('button', { type: 'button', class: 'tbb', data: { f: 'ai-test' }, on: { click: onTest } }, '接続を試す'),
+          h('button', { type: 'button', class: 'tbb', data: { f: 'ai-forget' }, on: { click: onForget } }, '鍵を消す')]));
+      }
+      return [
+        h('p', { class: 'set-lead', text: '鍵はこのブラウザの中だけに保存し、選んだ提供元にだけ送る。費用はあなたの契約に掛かる' }),
+        group('', rows, '使い道は、声の操作と、出来事の欄の「自分の AI に聞く」。AI のまとめや要約は、鍵がなくても今のまま使える'),
+        p ? h('datalist', { id: 'set-ai-models' }, p.models.map((m) => h('option', { value: m }))) : null,
+        h('p', { class: 'set-msg' + (aiMsg && aiMsg.err ? ' err' : ''), role: 'status', 'aria-live': 'polite', hidden: !aiMsg, data: { f: 'ai-msg' }, text: aiMsg ? aiMsg.text : '' }),
+      ];
+    },
     data() {
       const armed = Date.now() < resetArm;
       return [
         group('', [
-          row('書き出す', '設定と追う語を一つの JSON に', h('button', { type: 'button', class: 'tbb', data: { f: 'd-exp' }, on: { click: onExport } }, 'JSON を書き出す')),
+          row('書き出す', '設定と追う語を一つの JSON に（鍵は入れない）', h('button', { type: 'button', class: 'tbb', data: { f: 'd-exp' }, on: { click: onExport } }, 'JSON を書き出す')),
           row('読み込む', '書き出した JSON から戻す', h('button', { type: 'button', class: 'tbb', data: { f: 'd-imp' }, on: { click: () => file.click() } }, 'JSON を読み込む')),
-          row('既定に戻す', '追う語は残す', h('button', { type: 'button', class: 'tbb' + (armed ? ' warn' : ''), data: { f: 'd-reset' }, on: { click: onReset } }, armed ? 'もう一度押すと戻す' : '既定に戻す')),
+          row('既定に戻す', '追う語と自分の AI は残す', h('button', { type: 'button', class: 'tbb' + (armed ? ' warn' : ''), data: { f: 'd-reset' }, on: { click: onReset } }, armed ? 'もう一度押すと戻す' : '既定に戻す')),
         ]),
         msg ? h('p', { class: 'set-msg' + (msg.err ? ' err' : ''), role: 'status', text: msg.text }) : null,
       ];
     },
   };
+
+  // ------------------------------------------------------------ 自分の AI: the key is kept when the field is left, the window is not drawn again, so a click on the next button is never lost
+  function say(text, err) {
+    aiMsg = text ? { text, err: !!err } : null;
+    const n = root.querySelector('[data-f="ai-msg"]');
+    if (n) { n.textContent = aiMsg ? aiMsg.text : ''; n.hidden = !aiMsg; n.classList.toggle('err', !!(aiMsg && aiMsg.err)); }
+  }
+  const noKeep = 'このブラウザに保存できない（プライベートウィンドウなど）。この窓を閉じるまでは効く';
+  function aiChange(fn, text) {
+    const next = cleanOwnAI(ai.get());
+    fn(next);
+    const ok = ai.set(next);
+    aiMsg = ok ? (text ? { text } : null) : { err: true, text: noKeep };
+    render();
+  }
+  function onKey(v) {
+    const t = String(v).trim(), cur = cleanOwnAI(ai.get()), kind = cur.kind;
+    if (kind === 'none') return;
+    if (t && !keyOk(t)) { say('鍵に使えない文字が入っている（半角の英数と記号だけ・8 文字以上・空白なし）', true); return; }
+    if (cur.keys[kind] === t) return;
+    cur.keys[kind] = t;
+    const ok = ai.set(cur);
+    keyState(kind, ok && t);
+    say(!ok ? noKeep : t ? 'このブラウザに保存した' : '鍵を消した', !ok);
+  }
+  function onModel(v) {
+    const t = String(v).trim(), cur = cleanOwnAI(ai.get()), kind = cur.kind;
+    if (kind === 'none') return;
+    if (t && !modelOk(t)) { say('型の名は半角の英数と . _ - だけ', true); return; }
+    if (cur.models[kind] === t) return;
+    cur.models[kind] = t;
+    const ok = ai.set(cur);
+    say(!ok ? noKeep : t ? `型を ${t} にした` : '型を既定に戻した', !ok);
+  }
+  /** the line under 鍵 follows what is kept, without drawing the window again */
+  function keyState(kind, kept) {
+    const f = root.querySelector('[data-f="ai-key"]'), r = f && f.closest('.set-r'), d = r && r.querySelector('.set-d');
+    if (d && PROVIDERS[kind]) d.textContent = `${kept ? '保存済み' : '未入力'}・送る先は ${PROVIDERS[kind].host} だけ`;
+  }
+  async function onTest() {
+    if (aiBusy) return;
+    const k = root.querySelector('[data-f="ai-key"]'); if (k) onKey(k.value);
+    const a = ai.active();
+    if (!a) { say('先に提供元を選び、鍵を入れてください', true); return; }
+    aiBusy = true; say(`試している…（${a.ja} · ${a.model}）`);
+    let r;
+    try { r = await ai.test(); } catch { r = { ok: false, err: 'network' }; }
+    aiBusy = false;
+    say(r && r.ok ? `つながった（${a.ja} · ${a.model}）` : `つながらない：${errJa(r && r.err)}`, !(r && r.ok));
+  }
+  function onForget() {
+    const kind = cleanOwnAI(ai.get()).kind;
+    if (kind === 'none') return;
+    aiChange((c) => { c.keys[kind] = ''; }, 'この提供元の鍵を消した');
+  }
 
   function onExport() {
     const text = exportSettings(get(), watch.get());
@@ -195,7 +288,7 @@ export function createSettingsPanel({ root, get, set, info, watch }) {
   }
 
   // ------------------------------------------------------------ the window
-  function go(k) { sec = k; msg = null; resetArm = 0; render(); const b = root.querySelector(`.set-nav[data-k="${k}"]`); if (b) b.focus(); }
+  function go(k) { sec = k; msg = null; aiMsg = null; resetArm = 0; render(); const b = root.querySelector(`.set-nav[data-k="${k}"]`); if (b) b.focus(); }
   function render() {
     if (!open) return;
     const active = document.activeElement;
@@ -205,7 +298,7 @@ export function createSettingsPanel({ root, get, set, info, watch }) {
     const title = (SECTIONS.find(([k]) => k === sec) || SECTIONS[0])[1];
     win.replaceChildren(
       h('header', { class: 'set-top' }, h('h2', { id: 'set-title', text: '設定' }),
-        h('p', { class: 'set-priv', text: 'このブラウザだけに保存・送信しない' }),
+        h('p', { class: 'set-priv', text: sec === 'ai' ? 'このブラウザだけに保存・選んだ提供元にだけ送る' : 'このブラウザだけに保存・送信しない' }),
         h('button', { type: 'button', class: 'ds-x', data: { f: 'close' }, on: { click: close } }, '閉じる')),
       inf.saved === false ? h('p', { class: 'set-warn', role: 'status', text: 'このブラウザに保存できない（プライベートウィンドウなど）。この窓を閉じるまでは効く' }) : null,
       h('div', { class: 'set-cols' },
@@ -218,7 +311,7 @@ export function createSettingsPanel({ root, get, set, info, watch }) {
   function openAt(k) {
     if (k && SECTIONS.some(([x]) => x === k)) sec = k;
     back = document.activeElement;
-    open = true; msg = null; root.hidden = false;
+    open = true; msg = null; aiMsg = null; root.hidden = false;
     document.body.classList.add('set-open');
     render();
     const b = root.querySelector(`.set-nav[data-k="${sec}"]`);
