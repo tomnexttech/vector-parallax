@@ -141,6 +141,8 @@ export function createSettingsPanel({ root, get, set, info, watch }) {
           row('出来事の自動切替', '12 秒ごとに注目の次の出来事へ。触れている間は止まる', sw('m-cases', s.motion.cases, '出来事の自動切替', (n, v) => { n.motion.cases = v; })),
           row('一覧の自動送り', '見切れる一覧をゆっくり送る', sw('m-scroll', s.motion.scroll, '一覧の自動送り', (n, v) => { n.motion.scroll = v; })),
           row('動きを減らす', `この端末は動きを${inf.calmSystem ? '減らす' : '減らさない'}設定`, seg('m-calm', '動きを減らす', s.motion.calm, [['system', 'システムに従う'], ['on', '常に減らす']], (n, v) => { n.motion.calm = v; })),
+          row('操作の音・押した時', '押した時と切り替えた時にごく小さな音。スマホは押した時に短く震える', sw('m-sound', s.motion.sound, '押した時の音', (n, v) => { n.motion.sound = v; })),
+          row('操作の音・当てた時', 'カーソルを当てた時にごく小さな音', sw('m-hsound', s.motion.hoverSound, '当てた時の音', (n, v) => { n.motion.hoverSound = v; })),
         ], '動きを減らすと、自動の送りと切替の動き、地図の移動の動きを止める'),
       ];
     },

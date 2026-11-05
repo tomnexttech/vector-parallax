@@ -17,6 +17,8 @@ import { loadWatch, saveWatch, addWatch, removeWatch, hitsOf } from './prefs.js'
 import { TOPICS, FIELDS, topicsOf, fieldOf, topicJa } from './topics.js';
 import { createMap } from './map.js';
 import { createFloor } from './floor.js';
+import { GENRE_ALL, genreBar, genreCounts } from './genres.js';
+import { createFeel } from './feel.js';
 import { startAutoScroll } from './autoscroll.js';
 import { loadHazards, nearby, dir8, shindoJa, disasterJa } from './hazards.js';
 import { createActions } from './actions.js';
@@ -66,7 +68,7 @@ const LAYERS = [['events', '出来事'], ['pri', '注目'], ['radius', '半径']
 
 const state = {
   base: null, data: null, live: false, view: 'ai', q: '', watch: [], sel: null, about: false, ix: null, snap: null, busy: false, sumBy: null,
-  pending: null, evalData: null, dataPath: DEFAULT_DATA, labels: null, es: [], byKey: new Map(), pri: [], topic: 'all', field: null, fieldAt: 0,
+  pending: null, evalData: null, dataPath: DEFAULT_DATA, labels: null, es: [], byKey: new Map(), pri: [], topic: 'all', genre: GENRE_ALL, genreKey: '', field: null, fieldAt: 0,
   newKeys: new Set(), flashed: new Set(), prevSeen: null, autoNext: 0, pausedUntil: 0, stopped: false, haz: null, mkt: undefined, pol: undefined,
   layers: null, tickQ: [], tickI: 0, tickAt: 0, map: null, board: null, hist: null, fieldTabs: [], hazFresh: new Set(), hazSeen: null, leadOf: new Map(), anomKind: null, sheet: null, tasks: [],
   set: cleanSettings(null), setSaved: true, showHid: false, unfold: new Set(), panel: null,
@@ -335,7 +337,10 @@ const matchesQ = (e) => !state.q || e.hay.toLowerCase().includes(state.q.toLower
 /** hidden by the settings: off every list and the map, except a priority row, which stays as a folded tag. One press shows all for this visit */
 const vis = (e) => !e.hid || state.showHid;
 const folded = (e) => !!e.hid && !state.showHid && !state.unfold.has(e.key);
-function shownPri() {
+/** the field chosen with the icons (js/genres.js): every list of events shows that field only */
+const inGenre = (e) => state.genre === GENRE_ALL || e.field === state.genre;
+function shownPri() { return shownPriAll().filter(inGenre); }
+function shownPriAll() {
   if (state.q) return state.es.filter((e) => !e.foldedInto && matchesQ(e)).sort((a, b) => b.n - a.n || (b.last || 0) - (a.last || 0)).slice(0, 200);
   const t = state.topic;
   if (t === 'cross') return state.es.filter((e) => !e.foldedInto && e.cover === 'both').sort((a, b) => b.n - a.n || (b.last || 0) - (a.last || 0)).slice(0, 200);
@@ -570,7 +575,27 @@ function row(e, opt = {}) {
   if (state.sel === e.key && !opt.compact) li.append(h('i', { class: 'autoline', 'aria-hidden': 'true' }));
   return li;
 }
+/** the field icons: at the head of the priority list (PC), as a strip above the board (phones), and in the simple view */
+function genreEl() {
+  return genreBar({ fields: [...FIELDS, OTHER_FIELD], counts: genreCounts(state.pri), total: state.pri.length, active: state.genre, onPick: setGenre });
+}
+function renderGenres() {
+  const c = genreCounts(state.pri), key = `${state.genre}|${state.pri.length}|${[...c].join()}`;
+  if (key === state.genreKey) return;
+  state.genreKey = key;
+  $('pri-genres').replaceChildren(genreEl());
+  $('genre-strip').replaceChildren(genreEl());
+}
+function setGenre(g) {
+  state.genre = g;
+  if (g !== GENRE_ALL && state.fieldTabs.includes(g)) { state.field = g; state.fieldAt = Date.now(); }
+  renderPri(); renderAnom(); renderFields(); renderEntryView();
+  const c = cur(), f = shownPri().find((e) => !e.hid);
+  if (f && (!c || !inGenre(c))) select(f.key, false);
+  return true;
+}
 function renderPri() {
+  renderGenres();
   const pri = state.pri;
   const counts = new Map(TOPICS.map((t) => [t.id, pri.filter((e) => e.topics.includes(t.id)).length]));
   const chips = [['all', '全て', pri.length], ...TOPICS.map((t) => [t.id, flagJa(t.id), counts.get(t.id)])];
@@ -608,7 +633,7 @@ function anomRows() {
   return rows;
 }
 function renderAnom() {
-  const rows = anomRows();
+  const rows = anomRows().filter((r) => !r || !r.e || inGenre(r.e));
   const by = new Map();
   for (const r of rows) by.set(r.ja, (by.get(r.ja) || 0) + 1);
   const ca = counts() && isObj(counts().asymmetric) ? counts().asymmetric : null;
@@ -684,6 +709,27 @@ function related(e) {
     if (shared.length >= 2 || place) out.push({ o, shared, place });
   }
   return out.sort((x, y) => y.shared.length - x.shared.length || y.o.n - x.o.n || (y.o.last || 0) - (x.o.last || 0)).slice(0, 6);
+}
+/** under the event: the related headlines of this fetch, and the source of every report, the government's own documents first */
+function renderUnder(e, sorted) {
+  const rel = related(e);
+  $('rel-c').textContent = `${rel.length} 件`;
+  $('rel-b').replaceChildren(rel.length ? h('ul', { class: 'rows mini' }, rel.map((x) => h('li', { class: 'r', on: { click: () => select(x.o.key, true) } },
+    h('span', { class: 'rt', lang: x.o.heading.lang || null, text: x.o.heading.text }),
+    h('span', { class: 'rm', text: [`${x.o.n}媒体`, isNum(x.o.last) ? fmtClock(x.o.last) : '', x.shared.slice(0, 3).join('・'), x.place ? `同じ地点 ${x.o.geo.name}` : ''].filter(Boolean).join(' · ') }))))
+    : h('p', { class: 'empty', text: '0 件（この取得の中）' }));
+  const gov = sorted.filter((it) => str(it.type) === GOV);
+  const src = (it) => {
+    const link = safeUrl(it.link);
+    return h('li', null, h('b', { text: outletOf(it) || '—' }), h('span', { class: 'sk', text: `${str(it.type)}${it.home === 'intl' ? '・海外' : ''}` }),
+      link ? extLink(link, { class: 'sh' }, hostOf(link)) : h('span', { class: 'sh', text: '—' }));
+  };
+  $('basis-c').textContent = `${new Set(sorted.map(outletOf).filter(Boolean)).size} 媒体`;
+  $('basis-b').replaceChildren(
+    h('h4', null, '官公庁の一次資料', h('span', { class: 'n', text: ` ${gov.length}` })),
+    gov.length ? h('ul', { class: 'srcs' }, gov.map(src)) : h('p', { class: 'empty', text: '0 件（この出来事の中）' }),
+    h('h4', null, '全報道の出典', h('span', { class: 'n', text: ` ${sorted.length}` })),
+    h('ul', { class: 'srcs' }, sorted.map(src)));
 }
 /** the feed's own description of a report (CONTRACT 14.1), quoted: never the article's body, never rewritten */
 function descOf(it, link) {
@@ -777,15 +823,9 @@ function renderCase() {
           angles.get(it.id) ? h('span', { class: 'mf' }, h('span', { class: 'aimk', text: 'AI' }), angles.get(it.id)) : null));
     })));
 
-  // the related headlines of this fetch, then the outlets whose feeds reach back to the first report and do not show it
-  // (js/absent.js); never "did not carry"
-  const rel = related(e);
-  members.append(h('div', { class: 'cb-rel' },
-    h('h3', null, '関連の見出し', h('span', { class: 'n', text: rel.length })),
-    rel.length ? h('ul', { class: 'rows mini' }, rel.map((x) => h('li', { class: 'r', on: { click: () => select(x.o.key, true) } },
-      h('span', { class: 'rt', lang: x.o.heading.lang || null, text: x.o.heading.text }),
-      h('span', { class: 'rm', text: [`${x.o.n}媒体`, isNum(x.o.last) ? fmtClock(x.o.last) : '', x.shared.slice(0, 3).join('・'), x.place ? `同じ地点 ${x.o.geo.name}` : ''].filter(Boolean).join(' · ') }))))
-      : h('p', { class: 'empty', text: '0 件（この取得の中）' })), absentOf(e));
+  // the outlets whose feeds reach back to the first report and do not show it (js/absent.js); never "did not carry".
+  // The related headlines and the sources stand under the event (renderUnder)
+  members.append(absentOf(e));
 
   // the side: timing by type, counts by type, labels, why grouped, radius, same words
   const flags = e.ruleFlags.map((f) => { const t = flagText(f); return t ? h('li', { class: 'flag-row', title: t.tip }, h('span', { class: 'flag', text: t.ja }), h('span', { class: 'rl', text: '規則' })) : null; });
@@ -832,6 +872,7 @@ function renderCase() {
 
   const node = h('div', { class: 'case-in' }, h('header', { class: 'ch' }, place, head, facts, aiLines), h('div', { class: 'cbody' + (photo ? '' : ' nophoto') }, photo, members, side));
   box.replaceChildren(node);
+  renderUnder(e, sorted);
   if (!reduced()) { node.classList.add('enter'); }
   renderStatus();
   renderTasks();
@@ -846,8 +887,9 @@ function absentOf(e) {
 function renderEntryView() {
   if (state.ui !== 'simple' || !state.data) return;
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
-  renderEntry($('entry'), { h, events: entryEvents(state.pri), sel: state.entrySel, pick: (k) => { state.entrySel = k; renderEntryView(); }, gen: state.data.generated_at,
+  renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: (k) => { state.entrySel = k; renderEntryView(); }, gen: state.data.generated_at,
     fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => setUi('full') });
+  $('entry').prepend(genreEl());
 }
 function setUi(m) {
   state.ui = m === 'simple' ? 'simple' : 'full';
@@ -1825,7 +1867,7 @@ function renderHid() {
 }
 const PANE_EL = { src: 'p-src', hours: 'p-hours', fields: 'p-fields', anom: 'p-anom', map: 'p-map', count: 'p-count', tv: 'p-tv', haz: 'p-haz', mkt: 'p-mkt', pol: 'p-pol' };
 const PANE_ROWS = { 'p-src': 'auto', 'p-hours': 'auto', 'p-fields': 'minmax(0, 1fr)', 'p-pri': 'minmax(0, 60fr)', 'p-anom': 'minmax(0, 40fr)', 'p-case': 'minmax(0, 1fr)',
-  'p-map': 'minmax(0, 1fr)', 'p-count': 'auto', 'p-tv': 'auto', 'p-haz': 'minmax(0, 1.2fr)', 'p-mkt': 'auto', 'p-pol': 'minmax(0, 1fr)' };
+  'p-map': 'minmax(210px, 1.15fr)', 'p-count': 'auto', 'p-tv': 'auto', 'p-haz': 'minmax(0, 1fr)', 'p-mkt': 'auto', 'p-pol': 'minmax(0, .8fr)' };
 /** panes turned off leave the board; a column with one off is laid out again from the panes left (the stylesheet keeps the rest) */
 function applyPanes() {
   const off = new Set(state.set.panes.off);
@@ -1965,7 +2007,9 @@ async function main() {
     local: (x, y) => (state.floor ? state.floor.local(x, y) : null),
     onPaint: (info) => { if (state.floor) state.floor.paint(info); },
   });
-  state.floor = createFloor({ map: state.map, board: $('board'), onMode: () => { state.map.resize(); renderMap(true); } });
+  state.floor = createFloor({ map: state.map, board: $('board'), onMode: () => { applyPanes(); state.map.resize(); renderMap(true); } });
+  // the board answers a touch: a press and a switch make a quiet sound by default, a hover only when chosen (js/feel.js)
+  state.feel = createFeel({ press: () => state.set.motion.sound !== false, hover: () => state.set.motion.hoverSound === true });
   // a list that does not fit scrolls itself (the event list follows the event in focus, so its own move takes over there)
   startAutoScroll('#src-b, #fields-b, #pri-b, #anom-b, #haz-b, #mkt-b, #pol-b', { held: () => !!(state.about || state.sheet) || setOpen() || !state.set.motion.scroll || !$('task-pop').hidden || !$('watch-pop').hidden });
   let rt = 0;

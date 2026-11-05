@@ -50,7 +50,7 @@ test('a damaged file falls back field by field', () => {
   assert.deepEqual(c.mute.words.slice(0, 2), ['台湾', 'ＢＯＪ']);
   assert.equal(c.mute.words[2].length, WORD_LEN);
   assert.deepEqual(c.mute.outlets, []);
-  assert.deepEqual(c.motion, { cases: false, scroll: true, calm: 'system' });
+  assert.deepEqual(c.motion, { cases: false, scroll: true, calm: 'system', sound: true, hoverSound: false });
   assert.deepEqual(c.panes.off, ['map', 'mkt'], 'the event and the priority list cannot be turned off');
   assert.ok(!('extra' in c));
   assert.ok(PANES.every(([id]) => id !== 'case' && id !== 'pri'));

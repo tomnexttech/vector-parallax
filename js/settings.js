@@ -44,7 +44,7 @@ export function defaults() {
     tv: { auto: true, sound: false, order: [...STATION_IDS], off: [] },
     news: { types_off: [], fields_off: [], scope: 'all', view: 'auto', lang: 'ja' },
     mute: { words: [], outlets: [] },
-    motion: { cases: true, scroll: true, calm: 'system' },
+    motion: { cases: true, scroll: true, calm: 'system', sound: true, hoverSound: false },
     panes: { off: [] },
     look: { theme: 'dark' },
   };
@@ -69,7 +69,8 @@ export function cleanSettings(x) {
       scope: pick(news.scope, SCOPES, d.news.scope), view: pick(news.view, VIEWS, d.news.view), lang: pick(news.lang, LANGS, d.news.lang),
     },
     mute: { words: terms(mute.words, MUTE_WORDS, WORD_LEN), outlets: terms(mute.outlets, MUTE_OUTLETS, NAME_LEN) },
-    motion: { cases: bool(motion.cases, d.motion.cases), scroll: bool(motion.scroll, d.motion.scroll), calm: pick(motion.calm, CALM, d.motion.calm) },
+    motion: { cases: bool(motion.cases, d.motion.cases), scroll: bool(motion.scroll, d.motion.scroll), calm: pick(motion.calm, CALM, d.motion.calm),
+      sound: bool(motion.sound, d.motion.sound), hoverSound: bool(motion.hoverSound, d.motion.hoverSound) },
     panes: { off: subset(panes.off, PANE_IDS) },
     look: { theme: pick(look.theme, THEMES, d.look.theme) },
   };

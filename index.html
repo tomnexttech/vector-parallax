@@ -63,8 +63,9 @@
   <div class="note-bar scene-bar" id="scene-bar" role="status" hidden></div>
 
   <nav class="jump" aria-label="欄へ移る">
-    <a href="#p-case">出来事</a><a href="#p-pri">注目</a><a href="#p-map">地図</a><a href="#p-anom">非対称</a><a href="#p-tv">映像</a><a href="#p-haz">災害</a><a href="#p-src">源</a><a class="lx" href="#p-hours">時間</a><a class="lx" href="#p-fields">分野</a><a class="lx" href="#p-count">件数</a><a class="lx" href="#p-mkt">市場</a><a class="lx" href="#p-pol">政治</a>
+    <a href="#p-case">出来事</a><a href="#p-pri">注目</a><a href="#p-map">地図</a><a href="#p-rel">関連</a><a href="#p-basis">出典</a><a href="#p-anom">非対称</a><a href="#p-tv">映像</a><a href="#p-haz">災害</a><a href="#p-src">源</a><a class="lx" href="#p-hours">時間</a><a class="lx" href="#p-fields">分野</a><a class="lx" href="#p-count">件数</a><a class="lx" href="#p-mkt">市場</a><a class="lx" href="#p-pol">政治</a>
   </nav>
+  <div class="gwrap genre-strip" id="genre-strip"></div>
 
   <section class="entry" id="entry" aria-label="かんたん表示" hidden></section>
 
@@ -88,6 +89,7 @@
     <div class="col c2">
       <section class="pane" id="p-pri" aria-labelledby="pri-h">
         <header class="ph"><h2 id="pri-h">注目</h2><b class="pc num" id="pri-c">—</b></header>
+        <div class="gwrap" id="pri-genres"></div>
         <div class="chips" id="pri-chips" role="group" aria-label="論点で絞る"></div>
         <div class="pb" id="pri-b"></div>
       </section>
@@ -101,6 +103,39 @@
     <div class="col c3">
       <section class="pane case" id="p-case" aria-label="出来事">
         <div class="pb" id="case"></div>
+      </section>
+      <div class="under" id="under">
+        <section class="pane tv" id="p-tv" aria-labelledby="tv-h">
+          <header class="ph"><h2 id="tv-h">映像</h2><span class="pc" id="tv-c"></span></header>
+          <div class="pb" id="tv-b"></div>
+        </section>
+        <section class="pane" id="p-rel" aria-labelledby="rel-h">
+          <header class="ph"><h2 id="rel-h">関連の見出し</h2><span class="pc" id="rel-c"></span></header>
+          <div class="pb" id="rel-b"></div>
+        </section>
+        <section class="pane" id="p-basis" aria-labelledby="basis-h">
+          <header class="ph"><h2 id="basis-h">根拠と出典</h2><span class="pc" id="basis-c"></span></header>
+          <div class="pb" id="basis-b"></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="col c4">
+      <section class="pane count" id="p-count" aria-labelledby="count-h">
+        <header class="ph"><h2 id="count-h">取得した見出し</h2></header>
+        <div class="pb"><b class="big num" id="count-n">—</b><dl class="kv tight" id="count-f"></dl></div>
+      </section>
+      <section class="pane" id="p-haz" aria-labelledby="haz-h">
+        <header class="ph"><h2 id="haz-h">災害</h2><span class="pc" id="haz-c"></span></header>
+        <div class="pb" id="haz-b"></div>
+      </section>
+      <section class="pane fold" id="p-mkt" aria-labelledby="mkt-h">
+        <header class="ph"><h2 id="mkt-h">市場</h2><span class="pc" id="mkt-c"></span></header>
+        <div class="pb" id="mkt-b"></div>
+      </section>
+      <section class="pane" id="p-pol" aria-labelledby="pol-h">
+        <header class="ph"><h2 id="pol-h">政治</h2><span class="pc" id="pol-c"></span></header>
+        <div class="pb" id="pol-b"></div>
       </section>
       <section class="pane map" id="p-map" aria-labelledby="map-h">
         <header class="ph"><h2 id="map-h">地図</h2></header>
@@ -118,29 +153,6 @@
           <p class="map-credit">© OpenStreetMap contributors · OpenMapTiles · OpenFreeMap · 標高 AWS Terrain Tiles · Natural Earth · 気象庁 · USGS · GDACS</p>
           <div class="modebar" id="modebar"><b class="mtag" id="mtag">CASE</b><span class="mtabs" role="group" aria-label="地図の表示（m）"><button type="button" data-m="case" aria-pressed="true">CASE</button><button type="button" data-m="map" aria-pressed="false">MAP</button></span></div>
         </div>
-      </section>
-    </div>
-
-    <div class="col c4">
-      <section class="pane count" id="p-count" aria-labelledby="count-h">
-        <header class="ph"><h2 id="count-h">取得した見出し</h2></header>
-        <div class="pb"><b class="big num" id="count-n">—</b><dl class="kv tight" id="count-f"></dl></div>
-      </section>
-      <section class="pane tv" id="p-tv" aria-labelledby="tv-h">
-        <header class="ph"><h2 id="tv-h">映像</h2><span class="pc" id="tv-c"></span></header>
-        <div class="pb" id="tv-b"></div>
-      </section>
-      <section class="pane" id="p-haz" aria-labelledby="haz-h">
-        <header class="ph"><h2 id="haz-h">災害</h2><span class="pc" id="haz-c"></span></header>
-        <div class="pb" id="haz-b"></div>
-      </section>
-      <section class="pane fold" id="p-mkt" aria-labelledby="mkt-h">
-        <header class="ph"><h2 id="mkt-h">市場</h2><span class="pc" id="mkt-c"></span></header>
-        <div class="pb" id="mkt-b"></div>
-      </section>
-      <section class="pane" id="p-pol" aria-labelledby="pol-h">
-        <header class="ph"><h2 id="pol-h">政治</h2><span class="pc" id="pol-c"></span></header>
-        <div class="pb" id="pol-b"></div>
       </section>
     </div>
   </main>

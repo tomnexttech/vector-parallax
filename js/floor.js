@@ -2,12 +2,13 @@
  *
  *   createFloor({ map, board, onMode }) -> { mode(), setMode(m), toggle(), paint(info), data(d), local(x, y), pillars(), span() }
  *
- * Three ways to show one map (js/map.js draws it flat on one canvas; this turns the canvas with CSS):
- *   case  the floor is laid back (rotateX 58deg) under the event pane, and the places on the priority list stand up from it as
- *         pillars, with the event in focus as the one red pillar;
- *   map   the event pane folds away and the floor rises to fill the column (rotateX 14deg): the layer bar, the frame and its
- *         reading (LAT / LON / SPAN / OBJECTS / UTC), and TRACKING on one thing at a time;
- *   flat  1280 px and narrower: no 3D, the map lies flat in the page.
+ * Three ways to show one map (js/map.js draws it on one canvas), all of them flat: nobody is asked to read a tilted map.
+ *   case  the map is a small pane at the right foot of the board (the middle column keeps the event, and under it the video,
+ *         the related headlines and the sources); the places on the priority list are marks with their names, the event in
+ *         focus the one red mark;
+ *   map   the event pane folds away and the map takes the middle column, flat: the layer bar, the frame and its reading
+ *         (LAT / LON / SPAN / OBJECTS / UTC), and TRACKING on one thing at a time;
+ *   flat  1280 px and narrower: the map lies in the page, without the marks.
  * A pointer on the turned floor is carried back to the canvas through the floor's four corners (a projective map, quadMatrix).
  * Nothing moves by itself: the scan line runs once when the content of the layers changes, TRACKING moves on only when
  * something new appears. */
@@ -47,7 +48,7 @@ const SWEEP_K = 10;                              // a tenth replaced -> the scan
 
 export function createFloor({ map, board, onMode }) {
   const $ = (id) => document.getElementById(id);
-  const theater = $('theater'), floor = $('floor'), canvas = $('map'), host = $('pillars'), trk = $('ftrk');
+  const theater = $('theater'), floor = $('floor'), pane = $('p-map'), canvas = $('map'), host = $('pillars'), trk = $('ftrk');
   const flatQ = window.matchMedia('(max-width: 1280px)');
   const reduce = () => document.documentElement.hasAttribute('data-calm') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let want = 'case', last = null, data = { counts: {}, track: [], keys: new Set() }, keysWas = null;
@@ -57,6 +58,9 @@ export function createFloor({ map, board, onMode }) {
   function apply() {
     const m = mode();
     board.dataset.floor = m;
+    // CASE (and flat): the map sits at the right foot of the board; MAP: it takes the middle column
+    const home = board.querySelector(m === 'map' ? '.c3' : '.c4');
+    if (home && pane && pane.parentElement !== home) home.append(pane);
     for (const b of document.querySelectorAll('#modebar [data-m]')) b.setAttribute('aria-pressed', String(b.dataset.m === m));
     $('mtag').textContent = m === 'map' ? 'MAP' : 'CASE';
     theater.removeEventListener('wheel', map.wheel);
@@ -77,8 +81,6 @@ export function createFloor({ map, board, onMode }) {
     if (onMode) onMode(m);
     return true;
   }
-  // the canvas changes size with the turn: draw it again at the end (and once at the start for the new size)
-  floor.addEventListener('transitionend', (ev) => { if (ev.target === floor && ev.propertyName === 'transform') map.resize(); });
   flatQ.addEventListener('change', () => { apply(); if (onMode) onMode(mode()); });
   for (const b of document.querySelectorAll('#modebar [data-m]')) b.addEventListener('click', () => setMode(b.dataset.m));
 
@@ -93,12 +95,12 @@ export function createFloor({ map, board, onMode }) {
     return uv ? [uv[0] * w, uv[1] * h] : null;
   }
 
-  // ---- pillars: the places of the priority list, and the event in focus (the red one). Styles are set through the CSSOM
+  // ---- marks: the places of the priority list, a dot and a name each, and the event in focus (the red one). Styles are set through the CSSOM
   // (the page's CSP has no inline style)
   // The places are kept as shares of the canvas: while the floor turns (CASE <-> MAP) the canvas is stretched by the
   // transition and the pillars stretch with it, so they never stand off the ground they mark.
   const pct = (u, d) => `${((u / (d || 1)) * 100).toFixed(3)}%`;
-  const place = (el, x, y, hgt, info) => { el.style.left = pct(x, info.w); el.style.top = pct(y, info.h); el.style.marginTop = `${-hgt}px`; el.style.height = `${hgt}px`; };
+  const place = (el, x, y, d, info) => { el.style.left = pct(x, info.w); el.style.top = pct(y, info.h); el.style.width = `${d}px`; el.style.height = `${d}px`; };
   // the pillars are kept from frame to frame (by name), so a name hidden by declutter stays hidden while the map moves
   const kept = new Map();
   const pillarEl = (key, cls) => {
@@ -110,12 +112,12 @@ export function createFloor({ map, board, onMode }) {
   function pillars(info) {
     const m = mode();
     if (m === 'flat' || !info) { host.replaceChildren(); kept.clear(); return; }
-    const k = m === 'map' ? 2.2 : 1;
+    const k = m === 'map' ? 1.4 : 1;
     const ps = info.marks.filter((x) => x.pri && x.x >= 0 && x.x <= info.w && x.y >= 0 && x.y <= info.h)
       .sort((a, b) => b.n - a.n).slice(0, PILLARS);
     const top = Math.max(1, ...ps.map((x) => x.n));
     const els = ps.map((p) => {
-      const hgt = Math.round((16 + 46 * Math.sqrt(p.n / top)) * k);
+      const hgt = Math.round((5 + 5 * Math.sqrt(p.n / top)) * k);   // the dot grows with the count
       const el = pillarEl(`ev|${p.name}`, 'pl ev');
       place(el, p.x, p.y, hgt, info);
       el.firstChild.textContent = `${p.name} ${p.n}`;
@@ -128,7 +130,7 @@ export function createFloor({ map, board, onMode }) {
     const sameN = same >= 0 ? ps[same].n : null;
     if (same >= 0) els.splice(same, 1);
     if (fin) {
-      const hgt = Math.round(84 * k);
+      const hgt = Math.round(11 * k);
       const el = pillarEl('case', 'pl case');
       place(el, f[0], f[1], hgt, info);
       const t = [data.focus.label, sameN].filter((x) => x != null && x !== '').join(' ');
@@ -215,7 +217,7 @@ export function createFloor({ map, board, onMode }) {
     span: () => {
       const m = mode();
       if (m !== 'map') return SPANS[m] || null;
-      const w = theater.clientWidth, h = theater.clientHeight * 1.062;
+      const w = theater.clientWidth, h = theater.clientHeight;
       return w && h ? Math.round(Math.max(60, Math.min(SPANS.map, (w * 120) / h))) : SPANS.map;
     },
     paint(info) { last = info; pillars(info); if (mode() === 'map') { read(); trackShow(); } },
