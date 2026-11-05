@@ -27,6 +27,7 @@ import { speechSupported, listen, route as voiceRoute } from './voice.js';
 import { absentOutlets, absentBlock } from './absent.js';
 import { entryEvents, renderEntry } from './entry.js';
 import { detect, bannerText, sceneOf } from './scenes.js';
+import { createPolitics } from './politics_ui.js';
 import { STATIONS, videosOf, playFor, playOfStation, playOfVideo, describe, embedSrc } from './tv.js';
 import { loadSettings, saveSettings, cleanSettings, hiddenBy, reasonJa, KIND_JA, loadOwnAI, saveOwnAI, cleanOwnAI, activeOwnAI } from './settings.js';
 import { makeProvider } from './provider.js';
@@ -71,7 +72,7 @@ const LAYERS = [['events', '出来事'], ['pri', '注目'], ['radius', '半径']
 const state = {
   base: null, data: null, live: false, view: 'ai', q: '', watch: [], sel: null, about: false, ix: null, snap: null, busy: false, sumBy: null,
   pending: null, evalData: null, dataPath: DEFAULT_DATA, labels: null, es: [], byKey: new Map(), pri: [], topic: 'all', genre: GENRE_ALL, genreKey: '', field: null, fieldAt: 0,
-  newKeys: new Set(), flashed: new Set(), prevSeen: null, autoNext: 0, pausedUntil: 0, stopped: false, haz: null, mkt: undefined, pol: undefined,
+  newKeys: new Set(), flashed: new Set(), prevSeen: null, autoNext: 0, pausedUntil: 0, stopped: false, haz: null, mkt: undefined, pol: undefined, crit: undefined,
   layers: null, tickQ: [], tickI: 0, tickAt: 0, map: null, board: null, hist: null, fieldTabs: [], hazFresh: new Set(), hazSeen: null, leadOf: new Map(), anomKind: null, sheet: null, tasks: [],
   set: cleanSettings(null), setSaved: true, showHid: false, unfold: new Set(), panel: null,
 };
@@ -987,7 +988,12 @@ function applyScene(id) {
   $('app').dataset.scene = id;
   for (const el of document.querySelectorAll('[data-sfold]')) { el.classList.remove('fold'); delete el.dataset.sfold; }
   for (const k of arr((sceneOf(state.scenes, id) || {}).fold)) { const el = $(SCENE_PANE[k]); if (el && !el.classList.contains('fold')) { el.classList.add('fold'); el.dataset.sfold = '1'; } }
+  // "big": the pane takes a larger share of its column (the politics pane in the election scene puts the elections and the approval first)
+  for (const el of document.querySelectorAll('[data-sbig]')) delete el.dataset.sbig;
+  for (const k of arr((sceneOf(state.scenes, id) || {}).big)) { const el = $(SCENE_PANE[k]); if (el) el.dataset.sbig = '1'; }
   applyPanes();
+  renderPol();
+  if (state.sheet === 'pol') renderSheet();
 }
 function sceneTick() {
   if (!state.scenes || !state.data || !state.ix) return;
@@ -1195,29 +1201,17 @@ function renderMkt() {
   }
   b.replaceChildren(...parts, h('p', { class: 'pfoot', 'data-host': '' }, `${fmtShort(m.generated_at)} `, ageEl(m.generated_at, SIX_H), ` · 日々の値 · ${str(m.note_ja) || '売買の推奨ではありません'}`));
 }
+// the politics pane and its sheet live in js/politics_ui.js; here only the wiring
+let polUi = null;
+const politics = () => (polUi = polUi || createPolitics({ h, s, extLink, safeUrl, fmtAge, fmtShort, sec, tbl, td, fmtN }));
+const sceneNow = () => $('app').dataset.scene || 'calm';
 function renderPol() {
-  const p = state.pol;
-  const b = $('pol-b');
+  const p = state.pol, b = $('pol-b');
   if (p === undefined) { b.replaceChildren(h('p', { class: 'empty', text: '読込中' })); return; }
   if (!p) { $('pol-c').textContent = '—'; b.replaceChildren(h('p', { class: 'empty', text: '政治のデータを読めない' })); return; }
-  const link = (r) => (safeUrl(r.link) ? extLink(safeUrl(r.link), { class: 'pt' }, str(r.title) || '—') : h('span', { class: 'pt', text: str(r.title) || '—' }));
-  const sec = [];
-  const rows = (title, list, fmt, n) => { const r = arr(list).filter(isObj); sec.push(h('h4', null, title, h('span', { class: 'n', text: ` ${r.length}` }))); sec.push(r.length ? h('ul', { class: 'pol' }, r.slice(0, n || 4).map(fmt)) : h('p', { class: 'empty sm', text: p.failed && p.failed[title] ? '取得できず' : '0 件' })); };
-  const counts = isObj(p.bills) && isObj(p.bills.counts) ? p.bills.counts : {};
-  const top = (o) => Object.entries(isObj(o) ? o : {}).sort((a, b2) => b2[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} ${v}`).join(' · ');
-  sec.push(h('h4', { text: '議案' }), h('p', { class: 'polc' }, h('b', { text: '衆 ' }), top(counts.shugiin) || '—'), h('p', { class: 'polc' }, h('b', { text: '参 ' }), top(counts.sangiin) || '—'));
-  const recent = [...arr(p.bills && p.bills.recent && p.bills.recent.shugiin), ...arr(p.bills && p.bills.recent && p.bills.recent.sangiin)].filter(isObj).sort((a, b2) => (b2.ts || 0) - (a.ts || 0));
-  if (recent.length) sec.push(h('ul', { class: 'pol' }, recent.slice(0, 3).map((r) => h('li', null, h('span', { class: 'po', text: str(r.status) }), link(r), h('span', { class: 'pa', text: fmtAge(r.ts) })))));
-  rows('官邸', p.office, (r) => h('li', null, h('span', { class: 'po', text: str(r.outlet) }), link(r), h('span', { class: 'pa', text: fmtAge(r.ts) })), 3);
-  rows('官報', p.gazette, (r) => h('li', null, h('span', { class: 'po', text: fmtShort(r.ts) }), link(r), h('span', { class: 'pa' })), 3);
-  rows('会計検査院', p.audit, (r) => h('li', null, h('span', { class: 'po', text: fmtShort(r.ts) }), link(r), h('span', { class: 'pa' })), 3);
-  const parties = arr(p.parties).filter(isObj);
-  sec.push(h('h4', null, '各党の発信', h('span', { class: 'n', text: ` ${parties.length}` })), h('ul', { class: 'pol' }, parties.map((x) => { const r = arr(x.items).filter(isObj).sort((a, b2) => (b2.ts || 0) - (a.ts || 0))[0] || {}; return h('li', null, h('span', { class: 'po', text: str(x.outlet) }), link(r), h('span', { class: 'pa', text: fmtAge(r.ts) })); })));
-  const k = isObj(p.kokkai) ? arr(p.kokkai.meetings).filter(isObj) : null;
-  sec.push(h('h4', null, '会議録', h('span', { class: 'n', text: k ? ` ${k.length}` : ' —' })), k && k.length ? h('ul', { class: 'pol' }, k.slice(0, 4).map((m2) => h('li', null, h('span', { class: 'po', text: str(m2.date).slice(5) }), safeUrl(m2.url) ? extLink(safeUrl(m2.url), { class: 'pt' }, `${str(m2.house)} ${str(m2.meeting)}`) : h('span', { class: 'pt', text: `${str(m2.house)} ${str(m2.meeting)}` }), h('span', { class: 'pa', text: str(m2.issue) })))) : h('p', { class: 'empty sm', text: k ? '0 件' : '取得できず' }));
   $('pol-c').replaceChildren(ageEl(p.generated_at, SIX_H));
   $('pol-c').dataset.host = '';
-  b.replaceChildren(...sec, h('p', { class: 'pfoot', text: str(p.order_rule) ? '並びは官邸が先、各党は名前の順。色・順位なし' : '' }));
+  b.replaceChildren(...politics().pane(p, state.crit, sceneNow()));
 }
 // ---------------------------------------------------------------- broadcast: the broadcasters' own channels (js/tv.js)
 function tvList() { const off = new Set(state.set.tv.off); return state.set.tv.order.map((id) => STATIONS.find((x) => x.id === id)).filter((x) => x && !off.has(x.id)); }
@@ -1677,9 +1671,10 @@ async function loadHaz() {
   if (state.sheet === 'haz') renderSheet();
 }
 async function loadSide() {
-  const [m, p, hs] = await Promise.all([getJson(dataDir() + 'markets.json'), getJson(dataDir() + 'politics.json'), getJson(dataDir() + 'history.json')]);
+  const [m, p, hs, cr] = await Promise.all([getJson(dataDir() + 'markets.json'), getJson(dataDir() + 'politics.json'), getJson(dataDir() + 'history.json'), getJson(dataDir() + 'critical.json')]);
   state.mkt = isObj(m) ? m : null;
   state.pol = isObj(p) ? p : null;
+  state.crit = isObj(cr) ? cr : null;
   state.hist = isObj(hs) ? hs : null;
   renderMkt(); renderPol();
   if (cur()) renderCase();
@@ -1811,24 +1806,7 @@ const SHEET_BODY = {
     return { big: top ? chg(top) : '—', unit: top ? `${str(top.name_ja)}・最大の動き` : '', bad: false,
       facts: [['系列', `${ok.length} / ${m.series.length}`], ['取得', fmtShort(m.generated_at)], ['国債の日付', str(m.jgb && m.jgb.date) || '—']], body, foot: str(m.note_ja) || '売買の推奨ではありません' };
   },
-  pol() {
-    const p = state.pol;
-    if (!p) return { big: '—', unit: '政治のデータを読めない', facts: [], body: [] };
-    const link = (r) => (safeUrl(r.link) ? extLink(safeUrl(r.link), {}, str(r.title) || '—') : str(r.title) || '—');
-    const list = (title, rs, who) => [sec(title, rs.length), rs.length ? tbl([['', 'opt'], ['件名'], ['', 'r']], rs.map((r) => h('tr', null, td(who(r), 'dim opt'), td(link(r), 'tt'), td(fmtAge(r.ts), 'r dim')))) : h('p', { class: 'empty sm', text: '0 件' })];
-    const counts = isObj(p.bills) && isObj(p.bills.counts) ? p.bills.counts : {};
-    const pending = ['shugiin', 'sangiin'].reduce((a, k) => a + Object.entries(isObj(counts[k]) ? counts[k] : {}).filter(([n]) => /審議中|審査中/.test(n)).reduce((x, [, v]) => x + (isNum(v) ? v : 0), 0), 0);
-    const recent = [...arr(p.bills && p.bills.recent && p.bills.recent.shugiin), ...arr(p.bills && p.bills.recent && p.bills.recent.sangiin)].filter(isObj).sort((a, b2) => (b2.ts || 0) - (a.ts || 0));
-    const parties = arr(p.parties).filter(isObj);
-    const k = isObj(p.kokkai) ? arr(p.kokkai.meetings).filter(isObj) : [];
-    const st = p.session && isObj(p.session.state) ? p.session.state : null;
-    const left = [...list('議案', recent, (r) => str(r.status)), ...list('官邸', arr(p.office).filter(isObj), (r) => str(r.outlet)), ...list('官報', arr(p.gazette).filter(isObj), (r) => fmtShort(r.ts)), ...list('会計検査院', arr(p.audit).filter(isObj), (r) => fmtShort(r.ts))];
-    const right = [sec('各党の発信', parties.length), tbl([['党'], ['件名'], ['', 'r']], parties.flatMap((x) => arr(x.items).filter(isObj).sort((a, b2) => (b2.ts || 0) - (a.ts || 0)).slice(0, 3).map((r, i) => h('tr', null, td(i ? '' : str(x.outlet), 'dim'), td(link(r), 'tt'), td(fmtAge(r.ts), 'r dim'))))),
-      sec('会議録', k.length), k.length ? tbl([['日付'], ['会議'], ['号', 'r']], k.map((m2) => h('tr', null, td(str(m2.date), 'dim'), td(safeUrl(m2.url) ? extLink(safeUrl(m2.url), {}, `${str(m2.house)} ${str(m2.meeting)}`) : `${str(m2.house)} ${str(m2.meeting)}`, 'tt'), td(str(m2.issue), 'r dim')))) : h('p', { class: 'empty sm', text: '0 件' })];
-    return { big: fmtN(pending), unit: '審議中の議案（衆・参）',
-      facts: [['会期', st ? str(st.text) || '—' : '—'], ['官邸', fmtN(arr(p.office).length)], ['官報', fmtN(arr(p.gazette).length)], ['検査院', fmtN(arr(p.audit).length)], ['各党', fmtN(parties.length)], ['会議', fmtN(k.length)], ['取得', fmtShort(p.generated_at)]],
-      body: [h('div', { class: 'ds-cols' }, h('div', null, left), h('div', null, right))], foot: '並びは官邸が先、各党は名前の順。色・順位なし' };
-  },
+  pol() { return politics().sheet(state.pol, state.crit, sceneNow()); },
   haz() {
     const hz = state.haz;
     if (!hz) return { big: '—', unit: '読込中', facts: [], body: [] };
@@ -2014,8 +1992,8 @@ function applyPanes() {
   for (const col of document.querySelectorAll('.board > .col')) {
     const ps = [...col.children].filter((x) => x.classList.contains('pane'));
     const shown = ps.filter((x) => !x.hidden);
-    if (shown.length === ps.length && !shown.some((x) => x.dataset.sfold)) { col.style.gridTemplateRows = ''; continue; }
-    const rows = shown.map((x) => (x.classList.contains('fold') ? 'auto' : PANE_ROWS[x.id] || 'auto'));
+    if (shown.length === ps.length && !shown.some((x) => x.dataset.sfold || x.dataset.sbig)) { col.style.gridTemplateRows = ''; continue; }
+    const rows = shown.map((x) => (x.classList.contains('fold') ? 'auto' : x.dataset.sbig ? (PANE_ROWS[x.id] || 'auto').replace(/([\d.]+)fr/, (_, n) => `${+n * 2.5}fr`) : PANE_ROWS[x.id] || 'auto'));
     if (rows.length && !rows.some((r) => r.includes('fr'))) rows[rows.length - 1] = 'minmax(0, 1fr)';
     col.style.gridTemplateRows = rows.join(' ') || 'minmax(0, 1fr)';
   }

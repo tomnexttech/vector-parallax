@@ -1363,3 +1363,33 @@ a.en-a:hover { text-decoration: underline; }
 .ch-own-m { color: var(--red); }
 .ch-own-l { margin: 7px 0 0; padding: 0; list-style: none; max-width: 74ch; font-size: var(--fs-4); line-height: 1.55; color: var(--ink-2); }
 .ch-own-l li + li { margin-top: 2px; }
+
+/* politics: elections, cabinet approval, the scrutiny sources (js/politics_ui.js) */
+.pk { padding: 4px 10px 2px; font-size: var(--fs-2); color: var(--ink-3); }
+.pnote { padding: 3px 10px 6px; font-size: var(--fs-2); line-height: 1.5; color: var(--ink-3); }
+.pnote a { color: var(--ink-2); }
+.pch { padding: 4px 10px 0; }
+.pchart { display: block; width: 100%; height: auto; }
+.pchart .gl { stroke: var(--line-2); stroke-width: .6; }
+.pchart .gl.v { stroke: var(--line); }
+.pchart path { fill: none; stroke-width: 1; opacity: .5; }
+.pchart .a path { stroke: var(--ink-2); }
+.pchart .a circle { fill: var(--ink-2); }
+.pchart .d path { stroke: var(--cyan); }
+.pchart .d circle { fill: var(--pane); stroke: var(--cyan); stroke-width: 1; }
+.pchart.l .ax { font-size: 10px; }
+.plg { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; padding: 2px 10px 4px; font-size: var(--fs-2); color: var(--ink-3); }
+.plg i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
+.plg i.ap { background: var(--ink-2); }
+.plg i.dp { border: 1px solid var(--cyan); }
+.plg span { margin-left: 6px; }
+.pv li { display: grid; grid-template-columns: minmax(0, 1fr) 40px 52px 52px; gap: 6px; align-items: baseline; padding: 3px 10px; font-size: var(--fs-3); border-bottom: 1px solid var(--line); }
+.pv li.pvh { padding-top: 4px; padding-bottom: 2px; font-size: var(--fs-2); color: var(--ink-3); }
+.pv li.pvh .pvv { color: var(--ink-3); font-weight: 400; font-size: var(--fs-2); }
+.pv .pn { color: var(--ink-2); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv .pd { color: var(--ink-3); font-size: var(--fs-2); font-variant-numeric: tabular-nums; }
+.pv .pvv { text-align: right; white-space: nowrap; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.psub2 { display: block; margin-top: 1px; font-size: var(--fs-2); color: var(--ink-3); }
+.ds-b .pk, .ds-b .pnote, .ds-b .plg { padding-left: 0; padding-right: 0; }
+.ds-b .pchart { margin: 4px 0 2px; }
+.ds-b .pchart .d circle { fill: var(--sheet); }
