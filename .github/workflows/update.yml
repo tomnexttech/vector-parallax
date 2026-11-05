@@ -12,6 +12,8 @@ on:
   schedule:
     - cron: "17 */3 * * *"      # minute 17 avoids the top of the hour, when scheduled runs are most delayed
   workflow_dispatch:
+  push:
+    branches: [main]            # a push of the page or the rules redeploys at once (GitHub's scheduled runs are often late or skipped)
 
 permissions:
   contents: read                # the build never pushes; the deploy job asks for pages: write and id-token: write on its own
