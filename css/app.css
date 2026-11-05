@@ -1151,3 +1151,17 @@ a.en-a:hover { text-decoration: underline; }
   .dial-read { width: 220px; margin: 0 2px 16px 0; }
   .dial-btn { right: calc(9px + env(safe-area-inset-right)); bottom: calc(9px + env(safe-area-inset-bottom)); width: 40px; height: 40px; }
 }
+
+/* the feed's own description under each headline, quoted (CONTRACT 14.1); the photos of an event; the related headlines */
+.mq { margin: 4px 0 0; padding: 0 0 0 9px; border-left: 2px solid var(--line-2); }
+.mq p { margin: 0; font-size: var(--fs-3); line-height: 1.65; color: var(--ink-2); overflow-wrap: anywhere; }
+.mq footer { margin-top: 2px; font-size: var(--fs-2); color: var(--ink-3); }
+.mq-o { color: var(--ink-2); text-decoration: none; }
+.mq-o:hover { text-decoration: underline; }
+.cb-photo .strip { margin-top: 4px; }
+.strip .pth { display: block; padding: 0; border: 0; background: var(--well); border-radius: 2px; cursor: pointer; }
+.strip .pth[aria-pressed="true"] img { opacity: 1; outline: 1px solid var(--ink-3); outline-offset: -1px; }
+.strip .pth:hover img { opacity: 1; }
+.cb-rel { margin-top: 12px; }
+.en-q { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-top: 3px; padding-left: 8px;
+  border-left: 2px solid var(--line-2); font-size: var(--fs-3); line-height: 1.6; color: var(--ink-2); }

@@ -70,7 +70,8 @@ export function renderEntry(root, o) {
       return h('li', null,
         h('span', { class: 'en-m' }, h('span', { class: 'mt', text: isNum(it.ts) ? fmt.clock(it.ts) : '—' }), h('b', { text: outletOf(it) }), h('span', { text: str(it.type) })),
         link ? h('a', { class: 'en-a', href: link, target: '_blank', rel: 'noopener noreferrer', lang: it.lang === 'en' ? 'en' : null }, title2 ? `「${title2}」` : outletOf(it))
-          : h('span', { class: 'en-a', text: title2 ? `「${title2}」` : '—' }));
+          : h('span', { class: 'en-a', text: title2 ? `「${title2}」` : '—' }),
+        str(it.desc).trim() ? h('span', { class: 'en-q', lang: it.lang === 'en' ? 'en' : null, text: `「${str(it.desc).trim()}」` }) : null);
     })) : h('p', { class: 'en-none' }, '取得した配信には見当たりません', h('button', { type: 'button', class: 'en-to', on: { click: toAbsent } }, '見当たらない媒体へ')),
     list.length > PER_COL ? h('p', { class: 'en-rest', text: `残り ${list.length - PER_COL} 件` }) : null);
   const diff = sel.ai && str(sel.ai.contrast_ja)

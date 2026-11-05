@@ -95,21 +95,30 @@ export function createFloor({ map, board, onMode }) {
 
   // ---- pillars: the places of the priority list, and the event in focus (the red one). Styles are set through the CSSOM
   // (the page's CSP has no inline style)
-  const place = (el, x, y, hgt) => { el.style.left = `${x.toFixed(1)}px`; el.style.top = `${(y - hgt).toFixed(1)}px`; el.style.height = `${hgt}px`; };
+  // The places are kept as shares of the canvas: while the floor turns (CASE <-> MAP) the canvas is stretched by the
+  // transition and the pillars stretch with it, so they never stand off the ground they mark.
+  const pct = (u, d) => `${((u / (d || 1)) * 100).toFixed(3)}%`;
+  const place = (el, x, y, hgt, info) => { el.style.left = pct(x, info.w); el.style.top = pct(y, info.h); el.style.marginTop = `${-hgt}px`; el.style.height = `${hgt}px`; };
+  // the pillars are kept from frame to frame (by name), so a name hidden by declutter stays hidden while the map moves
+  const kept = new Map();
+  const pillarEl = (key, cls) => {
+    let el = kept.get(key);
+    if (!el) { el = document.createElement('i'); el.append(document.createElement('b')); kept.set(key, el); }
+    el.className = cls;
+    return el;
+  };
   function pillars(info) {
     const m = mode();
-    if (m === 'flat' || !info) { host.replaceChildren(); return; }
+    if (m === 'flat' || !info) { host.replaceChildren(); kept.clear(); return; }
     const k = m === 'map' ? 2.2 : 1;
     const ps = info.marks.filter((x) => x.pri && x.x >= 0 && x.x <= info.w && x.y >= 0 && x.y <= info.h)
       .sort((a, b) => b.n - a.n).slice(0, PILLARS);
     const top = Math.max(1, ...ps.map((x) => x.n));
     const els = ps.map((p) => {
       const hgt = Math.round((16 + 46 * Math.sqrt(p.n / top)) * k);
-      const el = document.createElement('i');
-      el.className = 'pl ev';
-      place(el, p.x, p.y, hgt);
-      const b = document.createElement('b'); b.textContent = `${p.name} ${p.n}`;
-      el.append(b);
+      const el = pillarEl(`ev|${p.name}`, 'pl ev');
+      place(el, p.x, p.y, hgt, info);
+      el.firstChild.textContent = `${p.name} ${p.n}`;
       return el;
     });
     const f = data.focus && map.xy(data.focus.lat, data.focus.lon);
@@ -120,14 +129,14 @@ export function createFloor({ map, board, onMode }) {
     if (same >= 0) els.splice(same, 1);
     if (fin) {
       const hgt = Math.round(84 * k);
-      const el = document.createElement('i');
-      el.className = 'pl case';
-      place(el, f[0], f[1], hgt);
-      const b = document.createElement('b'); b.textContent = [data.focus.label, sameN].filter((x) => x != null && x !== '').join(' ');
-      if (b.textContent) el.append(b);
+      const el = pillarEl('case', 'pl case');
+      place(el, f[0], f[1], hgt, info);
+      const t = [data.focus.label, sameN].filter((x) => x != null && x !== '').join(' ');
+      el.firstChild.textContent = t; el.firstChild.hidden = !t;
       els.push(el);
     }
-    host.replaceChildren(...els);
+    for (const [key, el] of kept) if (!els.includes(el)) kept.delete(key);
+    if (els.length !== host.children.length || els.some((el, i) => host.children[i] !== el)) host.replaceChildren(...els);
     if (!info.moving) declutter();
   }
   // a name that would cover a heavier one is not shown (the focus first, then by height)
@@ -181,7 +190,7 @@ export function createFloor({ map, board, onMode }) {
     lab.hidden = !seen; trk.hidden = !seen;
     if (!seen) return;
     lab.textContent = trackItem.label;
-    trk.style.left = `${p[0].toFixed(1)}px`; trk.style.top = `${p[1].toFixed(1)}px`;
+    trk.style.left = pct(p[0], last.w); trk.style.top = pct(p[1], last.h);
   }
 
   // ---- the scan line: once, when what the layers hold was replaced (its strength is the share replaced)

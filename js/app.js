@@ -671,18 +671,27 @@ function byType(e) {
   return h('ul', { class: 'bars' }, rows.map((r) => h('li', null, h('span', { class: 'bl', text: r.type }), h('span', { class: 'bb' }, h('i', { style: `width:${(r.n / max) * 100}%` })),
     h('span', { class: 'bn', text: r.n }), h('span', { class: 'bd', text: r.who.join('、') }))));
 }
-/** the lineage: the board's 30-day record (CONTRACT 18.10) when it has one; otherwise events of this fetch that share words */
-function sameWords(e) {
-  if (e.exact && Array.isArray(e.case.lineage)) return { from: 'history', rows: e.case.lineage.filter(isObj) };
-  const words = e.basis && arr(e.basis.words).length ? arr(e.basis.words) : [];
+/** the related headlines of this fetch: other events that share two of this one's words (the words it was bundled by, the
+ *  board's key terms, the words it was found by), or stand at the same named place (a country's representative point is not one) */
+function related(e) {
+  const words = uniq([...(e.basis ? arr(e.basis.words) : []), ...(e.case ? arr(e.case.key_terms) : []), ...(e.case ? arr(e.case.hits) : [])])
+    .filter((w) => typeof w === 'string' && w.length >= 2);
   const out = [];
   for (const o of state.es) {
-    if (o === e) continue;
+    if (o === e || o.hid || o.foldedInto) continue;
     const shared = words.filter((w) => o.hay.includes(w));
-    const place = e.geo && o.geo && o.geo.key === e.geo.key && o.topics.some((t) => e.topics.includes(t));
-    if (shared.length >= 2 || (shared.length && place)) out.push({ o, shared });
+    const place = !!(e.geo && o.geo && !e.geo.country && o.geo.key === e.geo.key);
+    if (shared.length >= 2 || place) out.push({ o, shared, place });
   }
-  return { from: 'fetch', rows: out.sort((a, b) => b.shared.length - a.shared.length || b.o.n - a.o.n).slice(0, 5) };
+  return out.sort((x, y) => y.shared.length - x.shared.length || y.o.n - x.o.n || (y.o.last || 0) - (x.o.last || 0)).slice(0, 6);
+}
+/** the feed's own description of a report (CONTRACT 14.1), quoted: never the article's body, never rewritten */
+function descOf(it, link) {
+  const d = typeof it.desc === 'string' ? it.desc.trim() : '';
+  if (!d) return null;
+  return h('blockquote', { class: 'mq', cite: link || null, lang: it.lang === 'en' ? 'en' : null },
+    h('p', { text: `「${d}」` }),
+    h('footer', null, outletOf(it), isNum(it.ts) ? ` · ${fmtClock(it.ts)}` : '', link ? [' · ', extLink(link, { class: 'mq-o' }, '原文を開く')] : null));
 }
 function histNote() {
   const hs = state.hist;
@@ -730,20 +739,30 @@ function renderCase() {
   if (e.ai && str(e.ai.contrast_ja)) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: e.ai.contrast_ja }), aiTag(aiBy, aiAt)));
   if (aiLines.length || e.heading.ai) aiLines.push(h('p', { class: 'ainote', text: AI_NOTE }));
 
-  // the photo: the one the board chose (CONTRACT 20.5) for an event of two or more outlets; never cropped; the outlet and the link stay
+  const sorted = [...ms].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity));
+  // the photos: the one the board chose (CONTRACT 20.5) first, then each report that carries one, by the clock; never cropped;
+  // the outlet, the time and the link stay with each; a small one below brings it up in the large frame
   const ph = e.case && isObj(e.case.photo) ? e.case.photo : null;
   const phUrl = ph ? safeImg(ph.url) : null;
   const phIt = ph ? ctx().ix.items[ph.id] || state.ix.items[ph.id] || {} : {};
-  const photo = phUrl ? h('section', { class: 'cb cb-photo' },
-    h('figure', { class: 'pfig' },
-      extLink(safeUrl(phIt.link) || '#', { class: 'pimg', title: `${str(ph.outlet)} の記事を開く` }, h('img', { src: phUrl, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer',
-        on: { error: (ev) => { ev.target.closest('figure').classList.add('noimg'); ev.target.replaceWith(h('span', { class: 'pcard', text: str(ph.outlet) })); } } })),
-      h('figcaption', null, h('b', { text: str(ph.outlet) }), viaGN(phIt) ? ' · Google ニュース経由' : '', isNum(phIt.ts) ? ` ${fmtClock(phIt.ts)}` : ''))) : null;
+  const pics = phUrl ? [{ url: phUrl, outlet: str(ph.outlet), link: safeUrl(phIt.link), ts: phIt.ts, via: viaGN(phIt) }] : [];
+  for (const it of sorted) { const im = imageOf(it); if (im && !pics.some((p) => p.url === im.url)) pics.push({ ...im, via: viaGN(it) }); }
+  const fig = (p) => h('figure', { class: 'pfig' },
+    extLink(p.link || '#', { class: 'pimg', title: `${p.outlet} の記事を開く` }, h('img', { src: p.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer',
+      on: { error: (ev) => { ev.target.closest('figure').classList.add('noimg'); ev.target.replaceWith(h('span', { class: 'pcard', text: p.outlet })); } } })),
+    h('figcaption', null, h('b', { text: p.outlet }), p.via ? ' · Google ニュース経由' : '', isNum(p.ts) ? ` ${fmtClock(p.ts)}` : ''));
+  let photo = null;
+  if (pics.length) {
+    let shown = fig(pics[0]);
+    const thumbs = pics.slice(0, 8).map((p, i) => h('button', { type: 'button', class: 'pth', title: p.outlet, 'aria-label': `${p.outlet} の写真`, 'aria-pressed': String(i === 0),
+      on: { click: (ev) => { const nf = fig(p); shown.replaceWith(nf); shown = nf; for (const b of ev.currentTarget.parentElement.children) b.setAttribute('aria-pressed', String(b === ev.currentTarget)); } } },
+      h('img', { src: p.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => { ev.target.closest('button').hidden = true; } } })));
+    photo = h('section', { class: 'cb cb-photo' }, h('h3', null, '写真', h('span', { class: 'n', text: pics.length })), shown, pics.length > 1 ? h('div', { class: 'strip' }, thumbs) : null);
+  }
 
   // every report: time, delay from the first, outlet, type, the headline as published, the AI's focus line
   const angles = new Map(e.ai ? arr(e.ai.angles).filter(isObj).map((a) => [a.item_id, str(a.focus_ja)]) : []);
   const t0 = first && isNum(first.ts) ? first.ts : null;
-  const sorted = [...ms].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity));
   const members = h('section', { class: 'cb cb-members' },
     h('h3', null, '全報道', h('span', { class: 'n', text: ms.length })),
     h('ol', { class: 'mem' }, sorted.map((it, i) => {
@@ -754,11 +773,19 @@ function renderCase() {
         h('span', { class: 'mb' },
           h('span', { class: 'mo' }, h('b', { text: outletOf(it) }), h('span', { text: ` ${str(it.type)}${it.home === 'intl' ? '・海外' : ''}` }), viaGN(it) ? h('span', { class: 'via', text: ' · Google ニュース経由' }) : null),
           link ? extLink(link, { class: 'mh', lang: it.lang === 'en' ? 'en' : null }, title ? `「${title}」` : outletOf(it) || hostOf(link)) : h('span', { class: 'mh', text: title ? `「${title}」` : '—' }),
+          descOf(it, link),
           angles.get(it.id) ? h('span', { class: 'mf' }, h('span', { class: 'aimk', text: 'AI' }), angles.get(it.id)) : null));
     })));
 
-  // the outlets whose feeds reach back to the first report and do not show it (js/absent.js); never "did not carry"
-  members.append(absentOf(e));
+  // the related headlines of this fetch, then the outlets whose feeds reach back to the first report and do not show it
+  // (js/absent.js); never "did not carry"
+  const rel = related(e);
+  members.append(h('div', { class: 'cb-rel' },
+    h('h3', null, '関連の見出し', h('span', { class: 'n', text: rel.length })),
+    rel.length ? h('ul', { class: 'rows mini' }, rel.map((x) => h('li', { class: 'r', on: { click: () => select(x.o.key, true) } },
+      h('span', { class: 'rt', lang: x.o.heading.lang || null, text: x.o.heading.text }),
+      h('span', { class: 'rm', text: [`${x.o.n}媒体`, isNum(x.o.last) ? fmtClock(x.o.last) : '', x.shared.slice(0, 3).join('・'), x.place ? `同じ地点 ${x.o.geo.name}` : ''].filter(Boolean).join(' · ') }))))
+      : h('p', { class: 'empty', text: '0 件（この取得の中）' })), absentOf(e));
 
   // the side: timing by type, counts by type, labels, why grouped, radius, same words
   const flags = e.ruleFlags.map((f) => { const t = flagText(f); return t ? h('li', { class: 'flag-row', title: t.tip }, h('span', { class: 'flag', text: t.ja }), h('span', { class: 'rl', text: '規則' })) : null; });
@@ -789,7 +816,7 @@ function renderCase() {
       h('ul', { class: 'near' }, [...(qs || []).slice(0, 3).map((x) => h('li', null, `M${x.x.mag.toFixed(1)} ${x.x.shindo ? `震度${shindoJa(x.x.shindo)} ` : ''}${x.x.place} · ${Math.round(x.d)} km ${dir8(x.b)}`)),
         ...(ts || []).map((x) => h('li', { class: 'hot' }, `台風 ${x.x.name} · ${Math.round(x.d)} km ${dir8(x.b)}`))]));
   }
-  const same = sameWords(e);
+  const lin = e.exact && Array.isArray(e.case.lineage) ? e.case.lineage.filter(isObj) : null;
   const terms = e.case ? arr(e.case.key_terms).filter((x) => typeof x === 'string') : [];
   const side = h('section', { class: 'cb cb-side' },
     h('h3', null, '経過'), lanes(e),
@@ -799,11 +826,9 @@ function renderCase() {
     h('h3', null, '束ねた理由'), basis,
     terms.length ? h('p', { class: 'terms' }, h('span', { class: 'k', text: '鍵語' }), terms.join('、')) : null,
     h('h3', null, `半径 ${RADIUS_KM} km`), radius,
-    h('h3', null, same.from === 'history' ? '系譜' : '同じ語の出来事', h('span', { class: 'n', text: same.rows.length })),
-    same.from === 'history'
-      ? (same.rows.length ? h('ul', { class: 'near' }, same.rows.map((x) => h('li', null, `${fmtShort(x.first_ts)}〜${fmtShort(x.last_ts)} · ${x.n_outlets}媒体 · ${arr(x.shared).join('・')}`)))
-        : h('p', { class: 'empty', text: `0 件（${histNote()}）` }))
-      : same.rows.length ? h('ul', { class: 'rows mini' }, same.rows.map((x) => h('li', { class: 'r', on: { click: () => select(x.o.key, true) } }, h('span', { class: 'rt', text: x.o.heading.text }), h('span', { class: 'rm', text: `${x.o.n}媒体 · ${x.shared.join('・') || (x.o.geo ? x.o.geo.name : '')}` })))) : h('p', { class: 'empty', text: '0 件（この取得の中）' }));
+    lin ? h('h3', null, '系譜', h('span', { class: 'n', text: lin.length })) : null,
+    lin ? (lin.length ? h('ul', { class: 'near' }, lin.map((x) => h('li', null, `${fmtShort(x.first_ts)}〜${fmtShort(x.last_ts)} · ${x.n_outlets}媒体 · ${arr(x.shared).join('・')}`)))
+      : h('p', { class: 'empty', text: `0 件（${histNote()}）` })) : null);
 
   const node = h('div', { class: 'case-in' }, h('header', { class: 'ch' }, place, head, facts, aiLines), h('div', { class: 'cbody' + (photo ? '' : ' nophoto') }, photo, members, side));
   box.replaceChildren(node);

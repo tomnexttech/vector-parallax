@@ -562,12 +562,12 @@ export function createMap(canvas, opts = {}) {
       const fx = X(v, f.lon), fy = Y(v, f.lat);
       if (f.radiusKm && L.radius !== false) {
         ring(v, f.lat, f.lon, f.radiusKm); g.strokeStyle = C.cyan; g.globalAlpha = 0.6; g.setLineDash([4, 3]); g.lineWidth = 1; g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
-        if (!quick) labels.push({ x: fx, y: fy - kmY(v, f.radiusKm), r: 2, text: `${f.radiusKm} km`, rank: 4.8, t: { ...tier.faint, color: C.cyan } });
+        labels.push({ x: fx, y: fy - kmY(v, f.radiusKm), r: 2, text: `${f.radiusKm} km`, rank: 4.8, t: { ...tier.faint, color: C.cyan } });
       }
       g.fillStyle = C.cyan; g.beginPath(); g.arc(fx, fy, 3.6, 0, Math.PI * 2); g.fill();
       g.strokeStyle = C.cyan; g.lineWidth = 1.3; g.beginPath(); g.arc(fx, fy, 8, 0, Math.PI * 2); g.stroke();
     }
-    if (quick) return;
+    // the names are drawn in every frame, moving or not, so that they never trail the ground under them
     // degree labels on the edges, small and quiet
     g.font = `9px ${C.font}`; g.fillStyle = C.ink4; g.textBaseline = 'top';
     for (let lon = -180; lon < 180; lon += step) { const x = X(v, lon); if (x > 30 && x < W - 40) g.fillText(`${Math.abs(lon)}°${lon < 0 ? 'W' : lon > 0 ? 'E' : ''}`, x + 3, 4); }
@@ -686,7 +686,10 @@ export function createMap(canvas, opts = {}) {
     paint(view, t < 1);
     if (t < 1) requestAnimationFrame(frame); else { anim = null; ringNew(freshQuakes()); }
   }
-  function later() { clearTimeout(settle); settle = setTimeout(() => { if (scene && view) paint(view, false); }, SETTLE_MS); }
+  function later() { clearTimeout(settle); settle = setTimeout(() => { cancelAnimationFrame(queued); queued = 0; if (scene && view) paint(view, false); }, SETTLE_MS); }
+  // a drag or a wheel paints once per frame: the ground, the names on it and the pillars over it (onPaint) in the same frame
+  let queued = 0;
+  function queue() { if (!queued) queued = requestAnimationFrame(() => { queued = 0; if (view) paint(view, true); }); }
 
   const finite = (v) => v && Number.isFinite(v.lon0) && Number.isFinite(v.lat0) && Number.isFinite(v.s) && v.s > 0;
   function show(sc, animate) {
@@ -715,7 +718,7 @@ export function createMap(canvas, opts = {}) {
       if (!drag.moved && Math.hypot(dx, dy) < 4) return;
       drag.moved = true; held = true; anim = null; pulse = null;
       view = clampV({ lon0: drag.v.lon0 - dx / drag.v.s, lat0: drag.v.lat0 + dy / drag.v.s, s: drag.v.s });
-      paint(view, true); later();
+      queue(); later();
       return;
     }
     canvas.style.cursor = api.pick(lx, ly) ? 'pointer' : 'grab';
@@ -738,7 +741,7 @@ export function createMap(canvas, opts = {}) {
     const s = Math.max(minS(), Math.min(W / 6, view.s * k));
     held = true; anim = null; pulse = null;
     view = clampV({ lon0: lon - mx / s, lat0: lat + my / s, s });
-    paint(view, true); later();
+    queue(); later();
   }
   if (opts.wheel !== false) canvas.addEventListener('wheel', onWheel, { passive: false });
   canvas.addEventListener('dblclick', () => api.reset());
