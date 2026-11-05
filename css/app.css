@@ -1393,3 +1393,32 @@ a.en-a:hover { text-decoration: underline; }
 .ds-b .pk, .ds-b .pnote, .ds-b .plg { padding-left: 0; padding-right: 0; }
 .ds-b .pchart { margin: 4px 0 2px; }
 .ds-b .pchart .d circle { fill: var(--sheet); }
+
+/* ------------------------------------------------------------ the first visit's tour (js/tour.js): the part it speaks of outlined, the rest dimmed */
+:root { --tour-dim: rgba(0, 0, 0, .62); }
+:root[data-theme="light"] { --tour-dim: rgba(28, 28, 32, .42); }
+.tour { position: fixed; inset: 0; z-index: 60; }
+.tour.bare { background: var(--tour-dim); }
+.tour-hole {
+  position: fixed; border-radius: 10px; border: 1.5px solid var(--cyan); box-shadow: 0 0 0 200vmax var(--tour-dim); pointer-events: none;
+  transition: left .22s var(--ease), top .22s var(--ease), width .22s var(--ease), height .22s var(--ease);
+}
+.tour-card {
+  position: fixed; width: min(380px, calc(100vw - 32px)); padding: 18px 18px 14px; border-radius: 12px;
+  background: var(--sheet); border: 1px solid var(--line-2); box-shadow: var(--shadow-pop); color: var(--ink); font-size: 15px; line-height: 1.65;
+}
+.tour-card.dock { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); width: auto; }
+.tour-n { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.tour-t { margin-top: 2px; font-size: 18px; font-weight: 600; line-height: 1.4; color: var(--ink-hi); }
+.tour-x { margin-top: 6px; color: var(--ink-2); }
+.tour-f { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.tour-sp { flex: 1; }
+.tour-f button {
+  min-height: 44px; min-width: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--raise);
+  color: var(--ink); font-size: 15px; white-space: nowrap;
+}
+.tour-f button:hover { background: var(--raise-h); }
+.tour-f .tour-skip { margin-left: -10px; padding: 0 10px; border-color: transparent; background: none; color: var(--ink-2); }
+.tour-f .tour-skip:hover { background: var(--fill-2); }
+.tour-f .tour-next, .tour-f .tour-next:hover { background: var(--cyan-fill); border-color: transparent; color: #fff; font-weight: 500; }
+@media (prefers-reduced-motion: reduce) { .tour-hole { transition: none; } }

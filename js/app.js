@@ -25,7 +25,8 @@ import { createActions } from './actions.js';
 import { loadTasks, saveTasks, addTask, toggleTask, removeTask, hasTask } from './tasks.js';
 import { speechSupported, listen, route as voiceRoute } from './voice.js';
 import { absentOutlets, absentBlock } from './absent.js';
-import { entryEvents, renderEntry } from './entry.js';
+import { entryEvents, renderEntry, pickFirst } from './entry.js';
+import { tidyGovTitles } from './tidy.js';
 import { detect, bannerText, sceneOf } from './scenes.js';
 import { createPolitics } from './politics_ui.js';
 import { STATIONS, videosOf, playFor, playOfStation, playOfVideo, describe, embedSrc } from './tv.js';
@@ -35,6 +36,7 @@ import { askOwnAI, testOwnAI, errJa, ASK_NOTE } from './ownai.js';
 import { createSettingsPanel } from './settings_panel.js';
 import { initLandscape } from './landscape.js';
 import { initDial } from './dial.js';
+import { createTour, wantTour } from './tour.js';
 
 const DEFAULT_DATA = 'data/latest.json';
 const POLL_MS = 5 * 60 * 1000;
@@ -392,24 +394,25 @@ function renderBar() {
   const kept = state.snap ? state.snap.kept : null;
   const st = str(run.status) || 'off';
   const src = kept ? kept.snapRun : run;
-  const at = state.live ? run.at : kept ? kept.aiAt : run.at;
   const who = $('ai-who');
   const recorded = st === 'recorded' || str(src.provider) === 'claude-recorded';
   $('v-ai').disabled = state.hasAI === false;
   $('v-ai').title = state.hasAI === false ? 'AI 停止中' : '';
-  // the AI's state in two or three words; the model and the note go to the tooltip
-  const prov = /claude/i.test(str(run.provider)) && !recorded ? 'Claude' : 'Gemini';
-  who.textContent = state.live ? 'Gemini 使用中' : recorded ? 'Gemini 未実行' : kept ? `${prov} 前回分`
-    : st === 'ok' ? `${prov} 使用中` : st === 'partial' ? `${prov} 一部` : st === 'error' ? `${prov} 失敗` : 'Gemini 未接続';
+  // the bar says only what is the same for everyone: when the AI's grouping was written, or the last one when it stopped.
+  // The visitor's own key is told only in the settings (自分の AI); the provider and the model stay in the tooltip.
+  const tm = (ts) => (nowS() - ts < 86400 ? fmtClock(ts) : fmtShort(ts));
+  const prevAt = kept && isNum(kept.aiAt) ? kept.aiAt : null;
+  const runAt = isNum(run.at) && (state.live || recorded || st === 'ok' || st === 'partial') ? run.at : null;
+  who.textContent = !kept && runAt != null ? `まとめ ${tm(runAt)}` : prevAt != null ? `前回 ${tm(prevAt)}` : '停止中';
   who.title = [state.live ? '閲覧者の鍵' : '', state.live || st === 'ok' || st === 'partial' ? str(run.model) : kept ? str(src.model) : '',
     recorded ? `${str(src.model || run.model)} ${str(run.note_ja)}`.trim() : ''].filter(Boolean).join('・');
   const ma = $('m-ai');
-  ma.dataset.bad = st === 'error' ? '1' : '0';
-  const age = ageEl(isNum(at) && st !== 'nokey' && st !== 'off' ? at : null, SIX_H);
+  ma.dataset.bad = '0';
+  const age = ageEl(null, SIX_H);
   age.id = 'ai-age';
   $('ai-age').replaceWith(age);
-  ma.classList.toggle('stale', st === 'error');
-  ma.dataset.tone = st === 'error' ? 'bad' : st === 'nokey' || st === 'off' || !isNum(at) ? '' : isOld(at, nowS()) ? 'warn' : 'ok';
+  ma.classList.toggle('stale', false);
+  ma.dataset.tone = !kept && runAt != null && !isOld(runAt, nowS()) && st !== 'partial' ? 'ok' : 'warn';   // amber when old or stopped, never red
   // since the last visit
   $('m-new').hidden = !state.prevSeen;
   roll($('new-n'), state.newKeys.size);
@@ -1614,7 +1617,7 @@ function syncAutoLine() {
   if (!held) { line.style.setProperty('--auto-ms', `${Math.max(0, state.autoNext - now)}ms`); void line.offsetWidth; line.classList.add('run'); }
 }
 function autoStep() {
-  if (narrow() || state.about || state.sheet || state.stopped || !state.set.motion.cases || setOpen() || document.hidden) return;
+  if (narrow() || state.about || state.sheet || state.stopped || (state.tour && state.tour.isOpen()) || !state.set.motion.cases || setOpen() || document.hidden) return;
   if (state.floor && state.floor.mode() === 'map') return;     // the whole map is being read: the event in focus stays
   const now = Date.now();
   if (now < state.pausedUntil) return;
@@ -1646,6 +1649,7 @@ async function poll() {
   const prev = keysOf(state.base);
   const board = await getJson(dataDir() + 'board.json');
   if (isObj(board) && board.schema === 'parallax-board/1') state.board = board;
+  tidyGovTitles(d);
   state.base = d; state.data = d;
   markNew(prev);
   state.flashed.clear();
@@ -1961,7 +1965,7 @@ function startVoice() {
 // ---------------------------------------------------------------- the visitor's settings (this browser only; js/settings.js)
 const setOpen = () => !!(state.panel && state.panel.isOpen());
 /** the first event to show: the first priority event the settings do not hide */
-function firstShown() { return state.pri.find((e) => !e.hid) || state.es.find((e) => !e.hid && !e.foldedInto) || state.pri[0] || state.es[0] || null; }
+function firstShown() { return pickFirst(state.pri.filter((e) => !e.hid && !e.foldedInto)) || state.pri.find((e) => !e.hid) || state.es.find((e) => !e.hid && !e.foldedInto) || state.pri[0] || state.es[0] || null; }
 function hidCount() {
   const hid = state.es.filter((e) => !e.foldedInto && e.hid);
   const by = {};
@@ -2104,6 +2108,9 @@ async function main() {
   themeLabel();
   $('entry-btn').addEventListener('click', () => setUi(state.ui === 'simple' ? 'full' : 'simple'));
   if (new URLSearchParams(location.search).get('m') === 'simple') setUi('simple');
+  // the first visit: a short tour over the simple view, which stays open after it (js/tour.js); 使い方 in the bar shows it again
+  state.tour = createTour({ doc: document, win: window, storage: store, onEnd: () => { setUi('simple'); $('entry').scrollTop = 0; window.scrollTo(0, 0); } });
+  $('tour-btn').addEventListener('click', () => { setUi('simple'); state.tour.open(); });
   state.sceneMode = 'auto';
   getJson(dataDir() + 'scenes.json').then((c) => { state.scenes = isObj(c) && c.schema === 'parallax-scenes/1' ? c : null; sceneTick(); });
   $('task-btn').addEventListener('click', () => { const p = $('task-pop'); if (p.hidden) openTasks(); else { p.hidden = true; $('task-btn').setAttribute('aria-expanded', 'false'); } });
@@ -2163,6 +2170,7 @@ async function main() {
     data = await res.json();
   } catch (err) { showFatal(`${dp.path} を読めませんでした（${err && err.message ? err.message : String(err)}）。`); setState('データなし'); return; }
   if (!isObj(data)) { showFatal(`${dp.path} の中身が JSON の物ではありません。`); return; }
+  tidyGovTitles(data);   // the gaps a ministry page's line breaks leave in a title (js/tidy.js)
   state.base = data; state.data = data;
   const [labels, board] = await Promise.all([getJson(dataDir() + 'labels.json'), getJson(dataDir() + 'board.json')]);
   state.labels = labels;
@@ -2179,6 +2187,7 @@ async function main() {
   if (first) { select(first.key, false); followTv(first); }
   const askSid = new URLSearchParams(location.search).get('sid');   // a link to a story; a folded one opens its event
   if (askSid) find(askSid);
+  if (wantTour(store, location.search)) { setUi('simple'); state.tour.open(); }
   state.autoNext = Date.now() + AUTO_MS;
   loadHaz(); loadSide(); loadEval(); loadDefaultModel();
   setInterval(tick, 30000);

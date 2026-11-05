@@ -163,7 +163,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai }) {
       const cfg = cleanOwnAI(ai.get());
       const kind = cfg.kind, p = PROVIDERS[kind] || null;
       const dflt = p ? (kind === 'gemini' && ai.fallback && modelOk(ai.fallback()) ? ai.fallback() : p.model) : '';
-      const rows = [row('提供元', 'なしのままでも、AI のまとめは今まで通り全部使える',
+      const rows = [row('状態', null, h('b', { class: 'set-state', data: { f: 'ai-state' }, text: p && cfg.keys[kind] ? '設定済み' : '未設定' })), row('提供元', 'なしのままでも、AI のまとめは今まで通り全部使える',
         h('div', { class: 'seg', role: 'group', 'aria-label': '提供元' },
           [['none', 'なし'], ...KINDS.map((k) => [k, PROVIDERS[k].ja])].map(([v, ja]) => h('button', {
             type: 'button', 'aria-pressed': String(kind === v), data: { f: `ai-kind-${v}` }, on: { click: () => aiChange((c) => { c.kind = v; }) } }, ja))))];

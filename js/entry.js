@@ -45,7 +45,16 @@ const byTime = (a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts :
 const JA = /[぀-ヿ一-鿿]/;
 
 export function entryEvents(pri, n = CARDS) {
-  return (Array.isArray(pri) ? pri : []).filter((e) => e && !e.hid && !e.foldedInto && (e.cover === 'both' || e.n >= 3)).slice(0, n);
+  const all = (Array.isArray(pri) ? pri : []).filter((e) => e && !e.hid && !e.foldedInto && (e.cover === 'both' || e.n >= 3));
+  const top = all.slice(0, n), best = pickFirst(all);
+  return best && !top.includes(best) ? [...top.slice(0, n - 1), best] : top;   // the event opened first is always among the cards
+}
+
+/** the event to open first: reported by all three sides, else by two, else the first; the order of the list decides among equals */
+export function pickFirst(list) {
+  const es = (Array.isArray(list) ? list : []).filter(Boolean);
+  const k = (e) => { const s = sides(e); return (s.jp.length > 0) + (s.intl.length > 0) + (s.gov.length > 0); };
+  return es.find((e) => k(e) === 3) || es.find((e) => k(e) === 2) || es[0] || null;
 }
 
 export function sides(e) {
@@ -89,7 +98,7 @@ export function lineIcon(k, cls = '') {
 
 export function renderEntry(root, o) {
   const { h, events, fmt } = o;
-  const sel = events.find((e) => e.key === o.sel) || events[0] || null;
+  const sel = events.find((e) => e.key === o.sel) || pickFirst(events) || null;
   const fieldOf = (e) => str(e.field) || 'その他';
   const photo = (e) => (o.photo ? o.photo(e) : null);
   const credit = (p) => `${p.kind === 'video' ? '映像' : '写真'}：${p.outlet || '—'}${isNum(p.ts) ? `・${fmt.clock(p.ts)}` : ''}`;
