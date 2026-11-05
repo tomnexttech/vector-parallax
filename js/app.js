@@ -953,9 +953,26 @@ function absentOf(e) {
 function renderEntryView() {
   if (state.ui !== 'simple' || !state.data) return;
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
-  renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: (k) => { state.entrySel = k; renderEntryView(); }, gen: state.data.generated_at,
-    fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => setUi('full') });
-  $('entry').prepend(genreEl());
+  renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
+    fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => setUi('full'),
+    photo: entryPhoto, img: (it) => { const im = imageOf(it); return im ? im.url : null; }, videos: videosOfEvent });
+  const hd = $('entry').querySelector('.en-head');
+  if (hd) hd.after(genreEl()); else $('entry').prepend(genreEl());
+}
+function pickEntry(k) {
+  state.entrySel = k; renderEntryView();
+  const s = $('entry').querySelector('.en-sel');
+  if (s) s.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
+}
+// the photo of an event in the simple view: the one the board chose (CONTRACT 20.5), else the earliest report that carries one
+function entryPhoto(e) {
+  const ph = e.case && isObj(e.case.photo) ? e.case.photo : null, u = ph ? safeImg(ph.url) : null;
+  if (u) { const it = ctx().ix.items[ph.id] || state.ix.items[ph.id] || {}; return { url: u, outlet: str(ph.outlet) || str(it.outlet), ts: it.ts, link: safeUrl(it.link) }; }
+  const im = [...arr(e.imgs)].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity))[0];
+  if (im) return im;
+  // else a still of the event's own video (the broadcaster's image); in the chosen event it plays in its place
+  const v = videosOf(videosOfEvent(e), STATIONS, 1)[0], st = v && STATIONS.find((x) => x.id === v.station);
+  return v ? { url: `https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`, outlet: st ? st.name : '', ts: Number(v.ts) || null, link: `https://www.youtube.com/watch?v=${v.id}`, kind: 'video', id: v.id } : null;
 }
 function setUi(m) {
   state.ui = m === 'simple' ? 'simple' : 'full';

@@ -5,6 +5,7 @@
  *   genreShort(field)                                           -> the name under the icon (国内政治 -> 政治, 安全保障 -> 安保)
  *   genreCounts(events)                                         -> Map(field -> number of events)
  *   genreBar({ fields, counts, total, active, onPick, label })  -> <div class="genres"> of <button class="gn" aria-pressed>
+ *   genreIcon(field)                                            -> the field's line symbol, an <svg> (the simple view's cards use it)
  */
 export const GENRE_ALL = 'all';
 const SHORT = { 国内政治: '政治', 安全保障: '安保' };
@@ -17,9 +18,18 @@ const ICON = {
   安全保障: '<path d="M10 3.5l5.5 2v4.2c0 3.4-2.3 5.9-5.5 6.8-3.2-.9-5.5-3.4-5.5-6.8V5.5z"/>',
   技術: '<rect x="6" y="6" width="8" height="8" rx="1.2"/><path d="M8 3.5V6M12 3.5V6M8 14v2.5M12 14v2.5M3.5 8H6M3.5 12H6M14 8h2.5M14 12h2.5"/>',
   市場: '<path d="M3.5 14l4-4.5 3 2.5 5.5-6M12.5 6h3.5v3.5"/>',
+  災害: '<path d="M10 3.5l7 12.5H3z"/><path d="M10 8.3v3.6M10 14.1v.2"/>',
   その他: '<circle cx="5.5" cy="10" r=".9"/><circle cx="10" cy="10" r=".9"/><circle cx="14.5" cy="10" r=".9"/>',
 };
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+export function genreIcon(f) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 20 20');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.innerHTML = ICON[f] || ICON.その他;
+  return svg;
+}
 
 export const genreShort = (f) => (f === GENRE_ALL ? 'すべて' : SHORT[f] || f);
 
@@ -46,11 +56,7 @@ export function genreBar({ fields, counts, total, active, onPick, label = '分�
     b.title = `${name}・${n} 件`;
     const ic = document.createElement('span');
     ic.className = 'gi';
-    const svg = document.createElementNS(SVG_NS, 'svg');
-    svg.setAttribute('viewBox', '0 0 20 20');
-    svg.setAttribute('aria-hidden', 'true');
-    svg.innerHTML = ICON[f] || ICON.その他;
-    ic.append(svg);
+    ic.append(genreIcon(f));
     const t = document.createElement('span');
     t.className = 'gl';
     t.textContent = genreShort(f);

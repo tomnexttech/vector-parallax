@@ -192,7 +192,7 @@ then describes only this build's own attempt.
      東京 大阪 京都 沖縄 北海道 福島 広島 長崎; no personal names), newest `last_ts` first.
    - `gov_only`: up to 10 blocks whose items are all `政府一次` and `home == "jp"`, newest first.
 4. Pack into calls of at most 45 items, at most 2 calls (`MERGE_CALL_LIMIT`, fixed in code), first-fit in pick order. Free tier of the bundling model: 20 requests a day; one build every 3 hours is 8 builds x 2 calls = 16.
-   A retry counts as a call, so a build never sends a third; blocks that do not fit stay rule stories. A block that fits no call
+   A retry counts as a call, so a build never sends a third to the bundling model; when that model is busy the retry goes on to the fallback models (13), counted apart (`MERGE_FALLBACK_LIMIT`, 4 attempts per build). Blocks that do not fit stay rule stories. A block that fits no call
    (and no new call may be opened) is left to the rules. The blocks that were packed get `bid` `b01`, `b02`, ...
    in pick order; `blocks` lists exactly those.
 
@@ -273,9 +273,9 @@ A provider has `name`, `model` and `call(system, user_text, schema) -> (raw_text
 `user_text` is `prompt.user_template` with `{DOC}` replaced by the request's `doc`; `schema` is `prompt.schema`.
 - `GeminiProvider`: the key goes in the `x-goog-api-key` header only (never in a URL, a log or an error message).
   `generationConfig.maxOutputTokens` = `prompt.max_output_tokens`. A failed call is retried at most 2 times
-  (3 attempts), waiting 2 s then 4 s, for HTTP 429, HTTP 5xx, timeout and network errors only.
+  (3 attempts), for HTTP 429, HTTP 5xx, timeout and network errors only. The wait is 2 s then 4 s after a 429, a timeout or a network error, and 10 s then 30 s (one wait never above 60 s) after an HTTP 500 or 503, the busy answers that do not clear in seconds. A 429, 500 or 503 also moves the retry to the next model of the provider's fallback chain (`merge_fallback_models`, `summary_fallback_models` in `data/prompt.json`; 13), and on the last model the retries stay on it. When every model of the chain answers 503 the call ends as `http` and the build keeps its rules.
   HTTP 401/403 -> `auth`, 429 -> `quota`, other non-2xx -> `http`. The key comes from the environment
-  (`GEMINI_API_KEY`, an Actions secret) and nowhere else. With a `CallBudget` (13) every attempt, retries included, takes one call;
+  (`GEMINI_API_KEY`, an Actions secret) and nowhere else. With a `CallBudget` (13) every attempt on the main model, retries included, takes one call, and every attempt on a fallback model takes one from a separate fallback budget;
   at the limit nothing is sent (`budget`).
 - `prompt.error_messages[code]` = `{ja, en}`: the plain sentence a page or the CLI shows for each error code
   (`quota` says the free quota or rate limit was reached and to wait).
@@ -557,7 +557,7 @@ them for one run. The free-tier limits of each model are in the README ("AI cost
 (at most `prompt.summary.limits.summary_ja` characters) that says what happened in the event as a whole. A story that has an AI
 headline gets none: its `headline_ja` is already that line. The order is the order of `stories` (the page order). Events go out in
 batches of 45 (`SUMMARY_BATCH`), at most 15 batches (`SUMMARY_CALL_LIMIT`): at most 675 events per build, counted from the top.
-Events that do not fit are left without a line (`ai_run.summary.left_out`). The bundling itself is unchanged (2 calls). **Free-tier check (2026-11-05).** `gemini-3.5-flash-lite` allows 500 requests a day (README, "AI cost"): 8 builds x 15 calls = 120 at the very most, and the bundling's fallback to the same model (`merge_fallback_model`, only on 429 / 500 / 503) adds at most 8 x 2 = 16: 136 of 500. The limit of 15 per build is therefore kept. `gemini-3.6-flash` has its own count (8 x 2 = 16 of 20).
+Events that do not fit are left without a line (`ai_run.summary.left_out`). The bundling itself is unchanged (2 calls). **Free-tier check (2026-11-05, with the fallback chains).** 8 builds a day (one every 3 hours). Per model, at the very most: `gemini-3.6-flash` (the main bundling model) 8 x 2 = 16 of its 20 requests a day; `gemini-3.5-flash-lite` (the main summary model, 8 x 15 = 120, plus the first step of the bundling chain, 8 x 4 = 32) = 152 of its 500; `gemini-3.1-flash-lite` (the last step of both chains: bundling 8 x 4 = 32, summary 8 x 20 = 160) = 192. The fallback budget is one for the whole chain of a job, so each model is counted with all of it (4 and 20). The free-tier count of `gemini-3.1-flash-lite` is shown only on the signed-in AI Studio rate-limit page, which was not read (2026-11-05): 192 is held under 500, the count of the other Flash-Lite model, as an ASSUMPTION; `ai.merge` and `ai.summary` in `data/stats.json` and the 429 lines of the build log show if it is wrong. Counts are taken to be kept per model (README, "AI cost"). The limits of 15 per build (main) and 20 per build (fallback) are therefore kept.
 
 ```jsonc
 "summary": { "text_ja": "...", "made_at": 1762225200, "provider": "gemini" | "claude-recorded", "model": "..." }
@@ -582,7 +582,7 @@ per-outlet text is produced in this stage, so the focus rule of section 7 has no
   "partitions": { "<provider>": { "<sha256 of the sorted member ids joined by \n>":
       { "text_ja": "...", "made_at": 1762225200, "model": "...", "prompt_version": "parallax-prompt/5", "sid": "s..." } } } }
 ```
-- Key = the members' sha256 plus `prompt.version`, and the same `model`. A change in any of the three means a new call. A hit is never called again.
+- Key = the members' sha256 plus `prompt.version`, and the same `model` (or another model of the same provider's fallback chain). A change in any of the three means a new call. A hit is never called again.
 - Entries whose member set is no longer one of this build's stories (out of the window, regrouped) are dropped at every write. The whole file holds at
   most 2000 entries (oldest `made_at` dropped first).
 - Providers are never mixed. There is one partition per provider. A build reads and writes the partition of its own provider. When it has no provider
@@ -600,13 +600,15 @@ next to `responses`. `--dump-requests` together with `--responses` replays the b
 and `summary.model`, never `gemini` unless Gemini wrote them.
 
 **Call budget.** Per build: bundling 2 calls (`MERGE_CALL_LIMIT`, also the most requests the bundling packs: `MAX_CALLS`), summary 15 calls
-(`SUMMARY_CALL_LIMIT`). A retry counts as a call: `GeminiProvider` carries a `CallBudget`, each attempt takes one, and at the limit nothing is sent
+(`SUMMARY_CALL_LIMIT`). A retry counts as a call: `GeminiProvider` carries a `CallBudget` that counts the attempts on the main model only, each attempt takes one, and at the limit the call goes on to the fallback models if they have room, else nothing is sent
 (error `budget`; the retry loop stops with the last real error). The requests left over are skipped (`calls_skipped`), their blocks or events stay as rules and the
 status is `partial`. The workflow runs one build at a time (`concurrency`), so a manual run cannot add to a scheduled one.
 
-**ai_run additions.** `attempts` (calls actually sent, retries included), `call_limit`, `calls_skipped`, and `summary`:
+**Fallback chain (decided 2026-11-05, after the build log of that evening: `gemini-3.6-flash` and `gemini-3.5-flash-lite` both answered HTTP 503 "high demand" for hours).** `data/prompt.json` holds `merge_fallback_models` and `summary_fallback_models`, arrays of model names tried in order when the model before them answers 429, 500 or 503; a model that was busy is not asked again in the same build while a later one is left, and on the last one the retries stay. Now: `merge_fallback_models` = [`gemini-3.5-flash-lite`, `gemini-3.1-flash-lite`], `summary_fallback_models` = [`gemini-3.1-flash-lite`]. The names were checked against the official model list (https://aistudio.google.com/docs/models, 2026-11-05): `gemini-3.5-flash-lite` and `gemini-3.1-flash-lite` are labelled Stable with no shutdown date. `gemini-2.5-flash` is on that list as Deprecated (requests route to another model on 2026-12-01) and `gemini-2.5-flash-lite` carries no Stable label (served until further notice), so neither is in a chain. The old single key `merge_fallback_model` is still read when the array is absent; `--model` and `--summary-model` run without a chain. Waits before a retry: 2 s then 4 s after a 429, a timeout or a network error; 10 s then 30 s (one wait never above 60 s) after an HTTP 500 or 503, which do not clear in seconds. Attempts on the fallback models are counted apart from the main model's: bundling at most 4 per build (`MERGE_FALLBACK_LIMIT`), summary at most 20 (`SUMMARY_FALLBACK_LIMIT`), each shared by the whole chain of the job; the limits 2 and 15 above therefore count the attempts on the main model only. When the main budget is spent a retry goes on to the next model of the chain. When no model of the chain has room left the call ends as `budget` and the rest is skipped as above; when every model answers 503 the call ends as `http`, the block keeps its rules (`ai: "fallback"`) or the event gets no line, and the status is `error` or `partial`. A summary line is kept in the cache with the model that made it (`ai_run.summary.model` is the model last used), and counts as a hit for the next build whichever model of the chain that build starts on.
+
+**ai_run additions.** `attempts` (calls actually sent to the main model, retries included), `call_limit`, `fallback_attempts` (calls sent to the fallback models), `fallback_limit`, `calls_skipped`, and `summary`:
 `{status: ok|partial|error|recorded|off|nokey|none, provider, model, at, prompt_version, targets, cache_hits, summarized, calls, calls_failed,
-calls_skipped, attempts, call_limit, left_out, errors, quoted_fields, empty, missing, shown_provider, note_ja}`. `at` is the newest `made_at` shown.
+calls_skipped, attempts, call_limit, fallback_attempts, fallback_limit, left_out, errors, quoted_fields, empty, missing, shown_provider, note_ja}`. `at` is the newest `made_at` shown.
 
 ## 14. Rights mode (`prompt.rights_mode`, decided 2026-11-04)
 

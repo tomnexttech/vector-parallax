@@ -229,15 +229,20 @@ class SummaryBudgetWithTheStageOn(unittest.TestCase):
     def test_the_stage_is_on_with_the_light_model_and_the_bundling_models_are_unchanged(self):
         self.assertIs(self.PROMPT["summary"]["enabled"], True)
         self.assertEqual(self.PROMPT["summary_model"], "gemini-3.5-flash-lite")
-        self.assertEqual((self.PROMPT["merge_model"], self.PROMPT["merge_fallback_model"]), ("gemini-3.6-flash", "gemini-3.5-flash-lite"))
+        self.assertEqual((self.PROMPT["merge_model"], self.PROMPT["merge_fallback_models"]), ("gemini-3.6-flash", ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]))
+        self.assertEqual(self.PROMPT["summary_fallback_models"], ["gemini-3.1-flash-lite"])
         self.assertEqual((build.MERGE_CALL_LIMIT, build.SUMMARY_CALL_LIMIT), (2, 15))
 
-    def test_a_day_of_builds_stays_inside_the_free_tier_even_when_the_fallback_is_used_every_time(self):
-        summary = self.BUILDS_PER_DAY * build.SUMMARY_CALL_LIMIT          # 8 x 15 = 120
-        fallback = self.BUILDS_PER_DAY * build.MERGE_CALL_LIMIT           # 予備は同じ flash-lite の数を使う: 8 x 2 = 16
-        self.assertEqual((summary, fallback), (120, 16))
-        self.assertLessEqual(summary + fallback, self.FLASH_LITE_RPD)
-        self.assertLessEqual(self.BUILDS_PER_DAY * build.MERGE_CALL_LIMIT, 20)          # 束ね直し gemini-3.6-flash の 1 日 20
+    def test_a_day_of_builds_stays_inside_the_free_tier_of_every_model_even_when_the_chains_are_used_every_time(self):
+        b = self.BUILDS_PER_DAY
+        self.assertEqual((build.MERGE_FALLBACK_LIMIT, build.SUMMARY_FALLBACK_LIMIT), (4, 20))
+        on_36 = b * build.MERGE_CALL_LIMIT                                                       # gemini-3.6-flash: 8 x 2 = 16 of 20
+        on_35 = b * build.SUMMARY_CALL_LIMIT + b * build.MERGE_FALLBACK_LIMIT                    # gemini-3.5-flash-lite: 120 + 32 = 152
+        on_31 = b * build.MERGE_FALLBACK_LIMIT + b * build.SUMMARY_FALLBACK_LIMIT                # gemini-3.1-flash-lite: 32 + 160 = 192（鎖の予備の上限は鎖の全部で一つ）
+        self.assertEqual((on_36, on_35, on_31), (16, 152, 192))
+        self.assertLessEqual(on_36, 20)
+        self.assertLessEqual(on_35, self.FLASH_LITE_RPD)
+        self.assertLessEqual(on_31, self.FLASH_LITE_RPD)             # 3.1 の無料枠は未確認（要ログイン）: 同じ Flash-Lite の 500 を仮に当てる
 
     def test_a_build_sends_at_most_fifteen_summary_calls_and_the_rest_is_left_out(self):
         from test_summary import PROMPT_ON, sfake, stage, synth

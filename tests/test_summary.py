@@ -184,19 +184,22 @@ class CallLimits(unittest.TestCase):
         self.assertEqual(prov.call("s", "u", {}), (None, "budget"))
         self.assertEqual(len(seen), 2)
 
-    def test_the_bundling_never_goes_to_a_third_call(self):
+    def test_the_bundling_never_goes_past_its_two_limits(self):
         seen = []
 
         def always_429(url, headers, body, timeout):
-            seen.append(1)
+            seen.append(url.split("/models/")[1].split(":")[0])
             return 429, ""
         prov, _ = build.choose_provider({}, {"GEMINI_API_KEY": KEY}, None, PROMPT)
         prov._transport, prov._sleep = always_429, lambda s: None
         d, reqs = run_build(prov, None, prompt=PROMPT)
-        self.assertEqual(len(seen), 2)                                  # 要求が何本でも、やり直しを含めて 2 呼びで止まる
+        main = sum(1 for m in seen if m == PROMPT["merge_model"])
+        self.assertLessEqual(main, build.MERGE_CALL_LIMIT)                 # 主の型へは、やり直しを含めて 2 呼びまで
+        self.assertLessEqual(len(seen) - main, build.MERGE_FALLBACK_LIMIT)  # 予備の型へは別に 4 試行まで
         self.assertLessEqual(len(reqs), build.MERGE_CALL_LIMIT)
-        self.assertEqual(d["ai_run"]["attempts"], 2)
-        self.assertEqual(d["ai_run"]["call_limit"], 2)
+        self.assertEqual((d["ai_run"]["attempts"], d["ai_run"]["fallback_attempts"]), (main, len(seen) - main))
+        self.assertEqual((d["ai_run"]["call_limit"], d["ai_run"]["fallback_limit"]), (2, 4))
+        self.assertTrue(all(b["ai"] == "fallback" for b in d["blocks"]))
         self.assertEqual(build.check_output(d), [])                     # 超える塊は規則のまま残る
 
     def test_merge_run_reports_the_limit(self):

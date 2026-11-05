@@ -24,7 +24,11 @@ _MODEL_RE = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 DEFAULT_MAX_OUTPUT_TOKENS = 16384
 RETRIES = 2                                   # やり直しは 2 回まで（計 3 回）
-BACKOFF_BASE_S = 2.0                          # 2 秒、4 秒と倍に待つ
+BACKOFF_BASE_S = 2.0                          # 429・時間切れ・網の誤りの後: 2 秒、4 秒と倍に待つ
+BUSY_STATUSES = (500, 503)                    # 混雑・サーバ側の誤り。数秒では空かないので長く待つ
+BUSY_BACKOFF_BASE_S = 10.0                    # その後の待ち: 10 秒、30 秒と 3 倍に
+BUSY_BACKOFF_MAX_S = 60.0                     # 1 回の待ちの上限
+SWITCH_STATUSES = (429, 500, 503)             # この番号の後のやり直しは、鎖の次の型へ移る
 RETRY_CODES = ("quota", "http", "timeout", "network")   # 認証・形・遮断・途切れはやり直しても変わらない
 _ROOT = Path(__file__).resolve().parent.parent
 _messages = None
@@ -145,24 +149,39 @@ class GeminiProvider:
     budget = None
 
     def __init__(self, key, model, timeout=90, transport=None, max_output_tokens=DEFAULT_MAX_OUTPUT_TOKENS,
-                 retries=RETRIES, sleep=time.sleep, budget=None, fallback_model=None):
+                 retries=RETRIES, sleep=time.sleep, budget=None, fallback_model=None,
+                 fallback_models=None, fallback_budget=None):
         key = (key or "").strip()
         if not key:
             raise ValueError("nokey")
         if not _MODEL_RE.match(model or ""):
             raise ValueError("badmodel")
+        chain = [model]                      # 主の型、続けて予備の型（混雑・枠切れの時に順に移る）。同じ名は一度だけ
+        for m in ([fallback_model] if fallback_model is not None else []) + list(fallback_models or []):
+            if not isinstance(m, str) or not _MODEL_RE.match(m):
+                raise ValueError("badmodel")
+            if m not in chain:
+                chain.append(m)
         self._key = key                      # 外へ出さない（repr にも出さない）
-        self.model = model
+        self.model = model                   # 直近に送った型 = 答えた型
+        self._chain = chain
+        self._pos = 0                        # 鎖の中の今の位置。前へだけ進む（混んでいた型へは、同じ build の間は戻らない）
         self.timeout = timeout
         self._transport = transport or _default_transport
         self.max_output_tokens = int(max_output_tokens)
         self.retries = max(0, int(retries))
         self._sleep = sleep
-        self.budget = budget                 # CallBudget | None。やり直しも 1 呼びに数える（CONTRACT §13）
-        if fallback_model is not None and not _MODEL_RE.match(fallback_model):
-            raise ValueError("badmodel")
-        self.fallback_model = fallback_model  # 混雑・枠切れ（429・500・503）の時のやり直しだけ、この型へ移る（枠は型ごと）。model は答えた型を指す
+        self.budget = budget                 # CallBudget | None。主の型への試行（やり直しも）だけを数える（CONTRACT §13）
+        self.fallback_budget = fallback_budget  # CallBudget | None。予備の型への試行を鎖の全部で数える。None なら予備も budget で数える
         self._last_status = None
+
+    @property
+    def chain_models(self):
+        return tuple(self._chain)
+
+    @property
+    def fallback_models(self):
+        return tuple(self._chain[1:])
 
     def __repr__(self):
         return "GeminiProvider(model=%r)" % self.model
@@ -180,18 +199,36 @@ class GeminiProvider:
         }
         return url, headers, json.dumps(body, ensure_ascii=False).encode("utf-8")
 
+    def _budget_for(self, i):
+        return self.budget if i == 0 or self.fallback_budget is None else self.fallback_budget
+
+    def _first_with_room(self, start):
+        """鎖の start 以降で、試行の残りがある最初の型の位置。無ければ None。"""
+        for i in range(start, len(self._chain)):
+            b = self._budget_for(i)
+            if b is None or b.used < b.limit:
+                return i
+        return None
+
+    def _wait_s(self, n):
+        """n 回目のやり直しの前の待ち。直前の試行の番号で決める: 500・503 は 10 秒・30 秒（上限つき）、それ以外は 2 秒・4 秒。"""
+        if self._last_status in BUSY_STATUSES:
+            return min(BUSY_BACKOFF_BASE_S * (3 ** n), BUSY_BACKOFF_MAX_S)
+        return BACKOFF_BASE_S * (2 ** n)
+
     def call(self, system, user_text, schema):
-        """やり直しは RETRY_CODES の時だけ、最大 RETRIES 回、BACKOFF_BASE_S * 2**n 秒待って。
-        budget があれば、やり直しも 1 呼びに数え、上限に達したらそこで止める（最後の本物の誤りを返す）。"""
+        """やり直しは RETRY_CODES の時だけ、最大 RETRIES 回。待ちは _wait_s。429・500・503 の後は鎖の次の型へ移る（末尾なら同じ型）。
+        主の型の試行は budget、予備の型の試行は fallback_budget で数え、次に送れる型が無ければそこで止める（最後の本物の誤りを返す）。"""
         raw, err = self._call_once(system, user_text, schema)
         for n in range(self.retries):
             if err not in RETRY_CODES:
                 break
-            if self.budget is not None and self.budget.used >= self.budget.limit:
+            switch = self._last_status in SWITCH_STATUSES
+            i = self._first_with_room(min(self._pos + 1, len(self._chain) - 1) if switch else self._pos)
+            if i is None:
                 break
-            self._sleep(BACKOFF_BASE_S * (2 ** n))
-            if self.fallback_model and self._last_status in (429, 500, 503):
-                self.model = self.fallback_model
+            self._sleep(self._wait_s(n))
+            self._pos = i
             raw2, err2 = self._call_once(system, user_text, schema)
             if err2 == "budget":
                 break
@@ -199,8 +236,14 @@ class GeminiProvider:
         return raw, err
 
     def _call_once(self, system, user_text, schema):
-        if not gate(self):
+        i = self._first_with_room(self._pos)
+        if i is None:
             return None, "budget"
+        self._pos = i
+        self.model = self._chain[i]
+        b = self._budget_for(i)
+        if b is not None:
+            b.take()
         url, headers, body = self.build_request(system, user_text, schema)
         self._last_status = None
         try:

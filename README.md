@@ -120,7 +120,7 @@ field); nothing is copied into this repository. Article bodies are never include
 
 ## AI cost / AI の費用
 
-The build calls Gemini for the bundling (2 calls per build, fixed in code, a retry counts as a call; 8 builds a day = 16 of the 20 requests a day) and, when switched on, for a second job. Each job has its own model named in `data/prompt.json`
+The build calls Gemini for the bundling (2 calls per build on that model, fixed in code, a retry counts as a call; 8 builds a day = 16 of the 20 requests a day; when it is busy, HTTP 429/500/503, the retry goes on to the fallback models named in `data/prompt.json`, counted apart) and, when switched on, for a second job. Each job has its own model named in `data/prompt.json`
 (`merge_model` and `summary_model`; no model name is written in code). Nothing in this repository sets up billing: use a key from a
 project with no billing attached (free tier).
 
@@ -128,6 +128,7 @@ project with no billing attached (free tier).
 |---|---|---|---|---|---|
 | bundling (the core: join and split events) | `gemini-3.6-flash` | 5 | 20 | 250K | at most 2 calls per build, one build every 3 hours: 2 x 8 = 16 a day |
 | one neutral line per event (summary; **switched off by default**) | `gemini-3.5-flash-lite` | 15 | 500 | 250K | when switched on: at most 15 calls per build (45 events each), cached: 120 a day at the very most, far fewer once the cache is warm |
+| fallback of both jobs (only when the model before is busy) | bundling: `gemini-3.5-flash-lite`, then `gemini-3.1-flash-lite`; summary: `gemini-3.1-flash-lite` | 3.5: 15; 3.1: not read | 3.5: 500; 3.1: not read (signed-in page; 500 assumed) | 3.5: 250K; 3.1: not read | bundling at most 4 attempts per build and summary at most 20, each shared by the chain and counted apart from the 2 and 15 above; `gemini-3.1-flash-lite` 8 x (4 + 20) = 192, `gemini-3.5-flash-lite` 120 + 8 x 4 = 152 at the very most. Both names are Stable in the official list (https://aistudio.google.com/docs/models, 2026-11-05) |
 
 * **Source and date.** The numbers are what Google AI Studio's rate-limit page (https://aistudio.google.com/rate-limit, the page that
   https://ai.google.dev/gemini-api/docs/rate-limits points to for per-model values) showed for the default project, with the "free tier" badge,

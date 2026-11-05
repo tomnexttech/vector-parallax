@@ -5,7 +5,7 @@ import socket
 import unittest
 import urllib.error
 
-from helpers import ai, load_prompt
+from helpers import ai, build, load_prompt
 
 PROMPT = load_prompt()
 FAKE_KEY = "TEST-KEY-NOT-REAL-0000"
@@ -155,11 +155,11 @@ class Retry(unittest.TestCase):
         self.assertEqual((len(calls), sleeps), (2, [2.0]))
 
     def test_at_most_two_retries_with_exponential_wait(self):
-        for code, err in ((429, "quota"), (500, "http"), (503, "http")):
+        for code, err, waits in ((429, "quota", [2.0, 4.0]), (500, "http", [10.0, 30.0]), (503, "http", [10.0, 30.0])):
             tr, calls = self.counting([code])
             sleeps = []
             self.assertEqual(gem(tr, sleep=sleeps.append).call("s", "u", {}), (None, err))
-            self.assertEqual((len(calls), sleeps), (3, [2.0, 4.0]), code)
+            self.assertEqual((len(calls), sleeps), (3, waits), code)
 
     def test_network_and_timeout_are_retried(self):
         for exc, err in ((TimeoutError(), "timeout"), (urllib.error.URLError("dns"), "network")):
@@ -211,6 +211,126 @@ class Retry(unittest.TestCase):
         tr, calls = self.counting([429])
         self.assertEqual(gem(tr, retries=0).call("s", "u", {}), (None, "quota"))
         self.assertEqual(len(calls), 1)
+
+
+class FallbackChain(unittest.TestCase):
+    """主の型 -> 予備の型の鎖。混雑（503・500）の待ちは長く、429 は短いまま。主の型と予備の型は別の上限で数える。"""
+
+    def make(self, status_of, **kw):
+        seen, sleeps = [], []
+
+        def tr(url, headers, body, timeout):
+            m = url.split("/models/")[1].split(":")[0]
+            seen.append(m)
+            st = status_of(m)
+            return (200, ok_body('{"blocks":[]}')) if st == 200 else (st, "{}")
+        kw.setdefault("fallback_models", ["step-1", "step-2"])
+        return ai.GeminiProvider(FAKE_KEY, "main-m", transport=tr, sleep=sleeps.append, **kw), seen, sleeps
+
+    def test_busy_waits_are_long_and_a_429_keeps_the_short_wait(self):
+        for code, want in ((503, [10.0, 30.0]), (500, [10.0, 30.0]), (429, [2.0, 4.0])):
+            p, seen, sleeps = self.make(lambda m, code=code: code)
+            p.call("s", "u", {})
+            self.assertEqual(sleeps, want, code)
+        p, seen, sleeps = self.make(lambda m: 503, retries=4)             # 1 回の待ちには上限がある
+        p.call("s", "u", {})
+        self.assertEqual(sleeps, [10.0, 30.0, 60.0, 60.0])
+        self.assertEqual(ai.BUSY_BACKOFF_MAX_S, 60.0)
+
+    def test_a_503_walks_down_the_chain_and_the_answering_model_is_named(self):
+        p, seen, sleeps = self.make(lambda m: 200 if m == "step-1" else 503)
+        self.assertEqual(p.call("s", "u", {}), ('{"blocks":[]}', ""))
+        self.assertEqual((seen, sleeps, p.model), (["main-m", "step-1"], [10.0], "step-1"))
+        p.call("s", "u", {})                                              # 混んでいた主の型へは戻らない
+        self.assertEqual(seen, ["main-m", "step-1", "step-1"])
+        self.assertEqual(p.chain_models, ("main-m", "step-1", "step-2"))
+        self.assertEqual(p.fallback_models, ("step-1", "step-2"))
+
+    def test_the_http_record_names_the_model_and_status_of_every_attempt(self):
+        ai.HTTP_DETAILS.clear()
+        p, seen, sleeps = self.make(lambda m: 503)
+        p.call("s", "u", {})
+        self.assertEqual([(m, s) for m, s, _ in ai.HTTP_DETAILS], [("main-m", 503), ("step-1", 503), ("step-2", 503)])
+
+    def test_the_main_budget_counts_only_the_main_model(self):
+        main, fb = ai.CallBudget(2), ai.CallBudget(4)
+        p, seen, sleeps = self.make(lambda m: 503 if m == "main-m" else 200, budget=main, fallback_budget=fb)
+        for _ in range(3):
+            self.assertEqual(p.call("s", "u", {})[1], "")
+        self.assertEqual(seen, ["main-m", "step-1", "step-1", "step-1"])
+        self.assertEqual((main.used, fb.used), (1, 3))                    # 主の型は 1 回だけ。予備の 3 回は予備の上限に数える
+
+    def test_the_fallback_has_a_limit_of_its_own_and_all_503_ends_as_http_then_budget(self):
+        main, fb = ai.CallBudget(2), ai.CallBudget(4)
+        p, seen, sleeps = self.make(lambda m: 503, budget=main, fallback_budget=fb)
+        self.assertEqual(p.call("s", "u", {}), (None, "http"))
+        self.assertEqual(seen, ["main-m", "step-1", "step-2"])
+        self.assertEqual(p.call("s", "u", {}), (None, "http"))
+        self.assertEqual(seen[3:], ["step-2", "step-2"])                  # 末尾の型では同じ型にとどまる。予備の 4 回目で止まる
+        self.assertEqual((main.used, fb.used), (1, 4))
+        self.assertEqual(p.call("s", "u", {}), (None, "budget"))
+        self.assertEqual(len(seen), 5)
+        self.assertTrue(sleeps and all(s >= 10.0 for s in sleeps))
+
+    def test_a_timeout_stays_on_the_model_and_a_spent_main_budget_hands_over(self):
+        seen, sleeps = [], []
+
+        def tr(url, headers, body, timeout):
+            seen.append(url.split("/models/")[1].split(":")[0])
+            raise TimeoutError()
+        main, fb = ai.CallBudget(2), ai.CallBudget(4)
+        p = ai.GeminiProvider(FAKE_KEY, "main-m", transport=tr, sleep=sleeps.append, fallback_models=["step-1"],
+                              budget=main, fallback_budget=fb)
+        self.assertEqual(p.call("s", "u", {}), (None, "timeout"))
+        self.assertEqual((seen, sleeps), (["main-m", "main-m", "step-1"], [2.0, 4.0]))
+        self.assertEqual((main.used, fb.used), (2, 1))
+
+    def test_names_are_checked_and_the_old_single_argument_still_works(self):
+        with self.assertRaises(ValueError):
+            ai.GeminiProvider(FAKE_KEY, "m", fallback_models=["bad/../x"])
+        p = ai.GeminiProvider(FAKE_KEY, "main-m", fallback_models=["main-m", "step-1", "step-1"])
+        self.assertEqual(p.chain_models, ("main-m", "step-1"))            # 同じ名は一度だけ
+        self.assertEqual(gem(lambda *a: (200, "{}"), fallback_model="lite").chain_models, ("gemini-test-model", "lite"))
+
+
+class ChainInPrompt(unittest.TestCase):
+    ENV = {"GEMINI_API_KEY": FAKE_KEY}
+
+    def test_prompt_json_names_the_chains_and_the_providers_carry_them(self):
+        self.assertEqual(PROMPT["merge_fallback_models"], ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"])
+        self.assertEqual(PROMPT["summary_fallback_models"], ["gemini-3.1-flash-lite"])
+        for name in PROMPT["merge_fallback_models"] + PROMPT["summary_fallback_models"]:
+            self.assertTrue(ai._MODEL_RE.match(name), name)
+            self.assertNotIn(name, ("gemini-2.5-flash", "gemini-2.5-pro"))        # 一覧で Deprecated の型は入れない
+        self.assertNotIn(PROMPT["merge_model"], PROMPT["merge_fallback_models"])
+        self.assertNotIn(PROMPT["summary_model"], PROMPT["summary_fallback_models"])
+        p, _ = build.choose_provider({}, self.ENV, None, PROMPT)
+        self.assertEqual(p.chain_models, (PROMPT["merge_model"],) + tuple(PROMPT["merge_fallback_models"]))
+        self.assertEqual((p.budget.limit, p.fallback_budget.limit), (build.MERGE_CALL_LIMIT, build.MERGE_FALLBACK_LIMIT))
+        on = dict(PROMPT, summary=dict(PROMPT["summary"], enabled=True))
+        sp, _ = build.choose_summary_provider({}, self.ENV, on)
+        self.assertEqual(sp.chain_models, (PROMPT["summary_model"],) + tuple(PROMPT["summary_fallback_models"]))
+        self.assertEqual((sp.budget.limit, sp.fallback_budget.limit), (build.SUMMARY_CALL_LIMIT, build.SUMMARY_FALLBACK_LIMIT))
+        p2, _ = build.choose_provider({}, self.ENV, "gemini-other", PROMPT)       # --model で名指しした時は鎖を付けない
+        self.assertEqual(p2.chain_models, ("gemini-other",))
+        old = {k: v for k, v in PROMPT.items() if k != "merge_fallback_models"}
+        old["merge_fallback_model"] = "gemini-3.5-flash-lite"                     # 古い単数の鍵も読む
+        p3, _ = build.choose_provider({}, self.ENV, None, old)
+        self.assertEqual(p3.chain_models, (PROMPT["merge_model"], "gemini-3.5-flash-lite"))
+
+    def test_every_model_503_sends_the_build_back_to_the_rules(self):
+        p, _ = build.choose_provider({}, self.ENV, None, PROMPT)
+        sleeps = []
+        p._transport = lambda url, headers, body, timeout: (503, "{}")
+        p._sleep = sleeps.append
+        reqs = [{"doc": "{}", "bids": ["b01"]}, {"doc": "{}", "bids": ["b02"]}]
+        results, run = build.run_ai(reqs, p, PROMPT, {}, 0)
+        self.assertEqual(results, {})                                              # 塊は規則のまま
+        self.assertEqual(run["errors"], ["http", "http"])
+        self.assertEqual(build.ai_status(p, run), "error")
+        ar = build.make_ai_run("error", p, PROMPT, 0, run)
+        self.assertEqual((ar["attempts"], ar["call_limit"], ar["fallback_attempts"], ar["fallback_limit"]), (1, 2, 4, 4))
+        self.assertTrue(sleeps and all(s >= 10.0 for s in sleeps))
 
 
 class Messages(unittest.TestCase):

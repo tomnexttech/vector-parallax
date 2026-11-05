@@ -53,6 +53,8 @@ LOOSE_T = 0.18
 MAX_BLOCK_ITEMS = 40
 MAX_CALL_ITEMS = 45
 MERGE_CALL_LIMIT = 2                       # 1 回の build での束ね直しの呼び数の上限。やり直しも数える（CONTRACT §13）
+MERGE_FALLBACK_LIMIT = 4                   # 束ね直しの予備の型（鎖の全部）への試行の上限。主の型の上限とは別に数える（CONTRACT §13）
+SUMMARY_FALLBACK_LIMIT = 20                # 要約の予備の型への試行の上限。同じく別に数える
 SUMMARY_CALL_LIMIT = 15                    # 同じく要約の呼び数の上限
 SUMMARY_BATCH = 45                         # 要約 1 呼びの出来事の数
 SUMMARY_MAX_ITEMS = 8                      # 1 出来事あたり要約に渡す見出しの上限
@@ -619,6 +621,14 @@ def dump_requests(requests, prompt, summary_requests=None):
 
 
 # ---------------------------------------------------------------- 8. AI
+def fallback_chain(pr, key):
+    """data/prompt.json の予備の型の鎖。<key>s（配列）を読み、無ければ古い単数の <key> を一つの鎖として読む。-> [型の名, ...]"""
+    arr = pr.get(key + "s")
+    if not isinstance(arr, list):
+        arr = [pr.get(key)] if pr.get(key) else []
+    return [m for m in arr if isinstance(m, str) and m]
+
+
 def choose_provider(args, env, model=None, prompt=None):
     """束ね直しの provider。-> (provider | None, status_if_none)。鍵を読むのはここと choose_summary_provider だけ。
     --responses があれば、--dump-requests と一緒でも記録済みの答えで再生する（要約の要求を束ね直しの後の stories から作るため）。"""
@@ -637,7 +647,8 @@ def choose_provider(args, env, model=None, prompt=None):
         raise ValueError("data/prompt.json has no merge_model")
     return ai_mod.GeminiProvider(key, name, max_output_tokens=pr.get("max_output_tokens") or ai_mod.DEFAULT_MAX_OUTPUT_TOKENS,
                                  budget=ai_mod.CallBudget(MERGE_CALL_LIMIT),
-                                 fallback_model=None if model else pr.get("merge_fallback_model")), ""
+                                 fallback_models=[] if model else fallback_chain(pr, "merge_fallback_model"),
+                                 fallback_budget=ai_mod.CallBudget(MERGE_FALLBACK_LIMIT)), ""
 
 
 def summary_enabled(prompt):
@@ -648,7 +659,7 @@ def summary_enabled(prompt):
 def summary_disabled_run(prompt):
     return {"status": "disabled", "provider": None, "model": None, "at": None, "prompt_version": prompt.get("version"),
             "targets": 0, "cache_hits": 0, "summarized": 0, "calls": 0, "calls_failed": 0, "calls_skipped": 0, "attempts": 0,
-            "call_limit": SUMMARY_CALL_LIMIT, "left_out": 0, "errors": [], "quoted_fields": 0, "empty": 0, "missing": 0,
+            "call_limit": SUMMARY_CALL_LIMIT, "fallback_attempts": 0, "fallback_limit": SUMMARY_FALLBACK_LIMIT, "left_out": 0, "errors": [], "quoted_fields": 0, "empty": 0, "missing": 0,
             "named_outlets": 0, "shown_provider": None, "note_ja": ""}
 
 
@@ -671,7 +682,9 @@ def choose_summary_provider(args, env, prompt, merge_provider=None, model=None):
     if not name:
         raise ValueError("data/prompt.json has no summary_model")
     return ai_mod.GeminiProvider(key, name, max_output_tokens=sp.get("max_output_tokens") or ai_mod.DEFAULT_MAX_OUTPUT_TOKENS,
-                                 budget=ai_mod.CallBudget(SUMMARY_CALL_LIMIT)), ""
+                                 budget=ai_mod.CallBudget(SUMMARY_CALL_LIMIT),
+                                 fallback_models=[] if model else fallback_chain(prompt, "summary_fallback_model"),
+                                 fallback_budget=ai_mod.CallBudget(SUMMARY_FALLBACK_LIMIT)), ""
 
 
 def run_ai(requests, provider, prompt, items, now):
@@ -722,6 +735,7 @@ def make_ai_run(status, provider, prompt, now, run=None, note_ja=""):
             "prompt_version": prompt.get("version"),
             "calls": base["calls"], "calls_failed": base["calls_failed"], "errors": base["errors"],
             "attempts": budget.used if budget is not None else base["calls"], "call_limit": MERGE_CALL_LIMIT,
+            "fallback_attempts": getattr(getattr(provider, "fallback_budget", None), "used", 0), "fallback_limit": MERGE_FALLBACK_LIMIT,
             "calls_skipped": base["calls_skipped"],
             "blocks_sent": base["blocks_sent"], "blocks_ok": base["blocks_ok"],
             "dropped_ids": base["dropped_ids"], "dup_ids": base["dup_ids"],
@@ -778,7 +792,7 @@ def cache_lookup(cache, part, digest, prompt_version, model=None):
     e = (cache.get("partitions", {}).get(part) or {}).get(digest) if part else None
     if not _entry_ok(e) or e["prompt_version"] != prompt_version:
         return None
-    if model is not None and e["model"] != model:
+    if model is not None and e["model"] not in ((model,) if isinstance(model, str) else tuple(model)):
         return None
     return e
 
@@ -844,6 +858,7 @@ def run_summaries(requests, provider, prompt):
             run["errors"].extend(res["errors"])
             continue
         got.update(res["summaries"])
+        run.setdefault("models", {}).update({sid: getattr(provider, "model", None) for sid in req["sids"]})   # 行ごとに、答えた型
         for k, v in res["counts"].items():
             run[k] += v
     return got, run
@@ -863,9 +878,10 @@ def summary_stage(stories, by_id, now, prompt, provider, status_if_none, cache, 
     digest = {s["sid"]: members_digest(s["member_ids"]) for s in targets}
     live = provider.name if provider is not None else None
     model = getattr(provider, "model", None)
+    lookup_models = getattr(provider, "chain_models", None) or model     # 鎖の別の型が作った行も当たりにする（同じ provider の中）
     hits, named = 0, 0
     for s in targets:                                       # 1. 控え（この回の provider の区画・同じ model・同じ版）
-        e = cache_lookup(cache, live, digest[s["sid"]], pv, model)
+        e = cache_lookup(cache, live, digest[s["sid"]], pv, lookup_models)
         if e and reject and reject(e["text_ja"]):
             cache["partitions"][live].pop(digest[s["sid"]], None)
             named += 1
@@ -890,7 +906,7 @@ def summary_stage(stories, by_id, now, prompt, provider, status_if_none, cache, 
                 named += 1
                 text = ""
             if text:
-                e = {"text_ja": text, "made_at": made_at, "model": model, "prompt_version": pv, "sid": s["sid"]}
+                e = {"text_ja": text, "made_at": made_at, "model": run.get("models", {}).get(s["sid"]) or model, "prompt_version": pv, "sid": s["sid"]}
                 part[digest[s["sid"]]] = e
                 _put_summary(s, e, live)
         if not reqs:
@@ -917,11 +933,13 @@ def summary_stage(stories, by_id, now, prompt, provider, status_if_none, cache, 
     prune_cache(cache, set(digest.values()))
     sm = [s["summary"] for s in stories if "summary" in s]
     budget = getattr(provider, "budget", None) if provider is not None else None
-    summary_run = {"status": status, "provider": getattr(provider, "name", None) if provider else None, "model": model,
+    summary_run = {"status": status, "provider": getattr(provider, "name", None) if provider else None, "model": getattr(provider, "model", None),
                    "at": max((x["made_at"] for x in sm), default=None), "prompt_version": pv,
                    "targets": len(targets), "cache_hits": hits, "summarized": len(sm),
                    "calls": run["calls"], "calls_failed": run["calls_failed"], "calls_skipped": run["calls_skipped"],
                    "attempts": budget.used if budget is not None else run["calls"], "call_limit": SUMMARY_CALL_LIMIT,
+                   "fallback_attempts": getattr(getattr(provider, "fallback_budget", None), "used", 0),
+                   "fallback_limit": SUMMARY_FALLBACK_LIMIT,
                    "left_out": left_out, "errors": run["errors"], "quoted_fields": run["quoted_fields"],
                    "empty": run["empty"], "missing": run["missing"], "named_outlets": named,
                    "shown_provider": sm[0]["provider"] if sm else None,
