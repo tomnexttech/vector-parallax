@@ -12,7 +12,7 @@
 export const MAJOR_TYPES = ['公共放送', '通信社', '全国紙', '民放', '海外主流', '海外公共'];
 export const TYPE_ORDER = ['政府一次', '通信社', '公共放送', '全国紙', '民放', '経済紙', '地方紙', '専門', '海外公共', '海外主流', '国家メディア'];
 export const FRESH_S = 6 * 3600;
-export const CAVEAT = 'ここに無いことは、その媒体が扱わなかったことを意味しません。別の言い方の見出しは束ねの規則で拾えないことがあります。';
+export const CAVEAT = 'ここに無いことは、その媒体が扱わなかったことを意味しません。別の言い方の見出しはまとめの規則で拾えないことがあります。';
 const WHY_JA = { late: '初報より後から', failed: '取得できず', stale: '6 時間より前の取得' };
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -60,7 +60,7 @@ export function absentBlock(res, { h, when, windowH, major = MAJOR_TYPES }) {
   return h('div', { class: 'cb-absent' },
     h('h3', null, '見当たらない媒体', h('span', { class: 'n', text: res.absent.length })),
     h('p', { class: 'ab-sum', text: `取得した ${res.total} 配信（${isNum(windowH) ? windowH : '—'} 時間の窓・${when.at} 取得）のうち、初報（${when.first}）まで遡れる配信は ${res.reach}。` }),
-    named.length ? list(named, true) : h('p', { class: 'empty', text: '主要な型では 0' }),
+    named.length ? list(named, true) : h('p', { class: 'empty', text: '主要な種類では 0' }),
     rest.length ? h('details', { class: 'ab-more' }, h('summary', { text: rest.map((g) => `${g.type} ${g.names.length}`).join('・') }), list(rest, false)) : null,
     nUnknown > 0 ? h('details', { class: 'ab-more' }, h('summary', { text: `判定できない ${nUnknown} 配信` }),
       h('dl', { class: 'ab-list' }, Object.keys(WHY_JA).flatMap((k) => { const xs = res.unknown.filter((u) => u.why === k); return xs.length ? [h('dt', { text: WHY_JA[k] }), h('dd', { text: xs.map((u) => u.outlet).join('・') })] : []; }))) : null,

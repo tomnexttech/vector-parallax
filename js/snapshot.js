@@ -58,9 +58,9 @@ export function keptView(data) {
 /** 短い札の組（[見出し, 値]）。lead はいつの取得の AI の束ねか、ai は AI 自身の時刻の見出し、why はこの回の AI（無ければ null）、rules は規則の束。
  *  fmtFull(ts) は時刻の文字列、explain(codes) は誤り符号を閲覧者向けの文にする関数、errors はこの回の誤り符号。 */
 export function noticeParts(kept, fmtFull, explain, errors) {
-  const lead = ['AI の束ね', `${fmtFull(kept.fetchedAt)} の取得`];
+  const lead = ['AI のまとめ', `${fmtFull(kept.fetchedAt)} の取得`];
   let why = null;
   if (kept.reason === 'nokey') why = ['今回', '鍵なし'];
   else if (kept.reason === 'error') why = ['今回', ['失敗', explain(errors)].filter(Boolean).join('・')];
-  return { lead, ai: '結果', why, rules: ['規則の束', '今回の取得'] };
+  return { lead, ai: '結果', why, rules: ['自動のまとめ', '今回の取得'] };
 }

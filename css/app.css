@@ -1,6 +1,7 @@
 /* Parallax — one board in the manner of a pro desktop app. Dark: panes divided by hairlines, no shadows on the board. Light: a pale
  * grey window, white panes lifted off it by a hairline and a faint shadow.
- * Colour: greys, one cyan (selection, focus, the place on screen), one red (failed, old, first report, alerts, falls). No yellow, no green.
+ * Colour: greys and one cyan (selection, focus, the place on screen); other hues only where they mean something (see "colour by use" at the end):
+ * one per field, green / amber / red for fresh / old / failed, one purple for what the AI wrote. No gradients, no glow.
  * Two appearances, dark and light, from the same tokens (<html data-theme>, set before the first paint by js/theme_boot.js).
  * Type: IBM Plex Sans JP for every word; IBM Plex Sans (the Latin of the same family, tabular) for figures only. Sizes, weights and leading are tokens. */
 
@@ -139,7 +140,7 @@ ul, ol { list-style: none; }
 /* rows: one event per row */
 .rows .r { position: relative; padding: 7px 10px 7px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
 .rows .r:hover { background: var(--fill-1); }
-.rows .r.sel { background: var(--cyan-a); }
+.rows .r.sel { background: var(--cyan-b); box-shadow: inset 2px 0 0 var(--cyan); }
 .rows .r.sel .rt { color: var(--ink-hi); }
 .rt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: var(--fs-4); line-height: 1.42; color: var(--ink); }
 .rm { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin-top: 2px; font-size: var(--fs-2); color: var(--ink-3); }
@@ -149,10 +150,6 @@ ul, ol { list-style: none; }
 .rows .r.watched::before { content: ""; position: absolute; left: 4px; top: 10px; width: 3px; height: 3px; border-radius: 50%; background: var(--cyan); }
 .newdot { width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); }
 .flag { display: inline-block; margin: 0 0 3px; padding: 0 5px; border: 1px solid var(--red-l); border-radius: 3px; font-size: var(--fs-2); line-height: 1.6; color: var(--red); }
-.autoline { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--cyan); transform-origin: left; transform: scaleX(0); }
-.autoline.run { animation: autoline var(--auto-ms, 12000ms) linear 1 forwards; }
-.autoline.held { transform: scaleX(1); opacity: .22; }
-@keyframes autoline { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 .rows .r.fresh { animation: fresh 1.6s ease-out 1; }
 @keyframes fresh { from { background: var(--cyan-a); } to { background: transparent; } }
 .num.bump { animation: beat .6s var(--ease) 1; }
@@ -438,7 +435,6 @@ a.mh:hover { text-decoration: underline; text-decoration-color: var(--ink-3); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
-  .autoline.run { transform: scaleX(1); opacity: .5; }
 }
 
 /* ------------------------------------------------------------ refinement (11/4 late): quieter heads, real type sizes, rules marked as rules, the sheets */
@@ -569,7 +565,8 @@ body.sheet-open .board { filter: var(--dim); }
 .dt .err, .dt tr.bad td:first-child, .dt .hot { color: var(--red); }
 .dt tr.go { cursor: pointer; }
 .dt tr.go:hover td { background: var(--fill-1); }
-.dt tr.sel td { background: var(--cyan-a); }
+.dt tr.sel td { background: var(--cyan-b); }
+.dt tr.sel td:first-child { box-shadow: inset 2px 0 0 var(--cyan); }
 .dt .tt { color: var(--ink); }
 .dt .tt a, .dt td a { color: inherit; text-decoration: none; }
 .dt td a:hover { text-decoration: underline; text-decoration-color: var(--ink-3); }
@@ -845,7 +842,6 @@ body.set-open .board { filter: var(--dim); }
 .set-r.set-cnt { min-height: 0; padding: 4px 12px 6px; justify-content: flex-end; border-top: 0 !important; }
 .tbb.warn { color: var(--red); border-color: var(--red-l); }
 html[data-calm] *, html[data-calm] *::before, html[data-calm] *::after { animation: none !important; transition: none !important; }
-html[data-calm] .autoline.run { transform: scaleX(1); opacity: .5; }
 @media (max-width: 1100px) {
   .hid-bar { flex-wrap: wrap; row-gap: 4px; }
   .hid-bar .hb-k { white-space: normal; }
@@ -1230,3 +1226,40 @@ a.en-a:hover { text-decoration: underline; }
   .genre-strip { display: none; }
   #pri-genres { display: block; }
 }
+
+/* ------------------------------------------------------------ colour by use (11/5): one hue per field (icon, tab, tag in a row), green / amber / red
+ * for fresh / old / failed, one purple for the AI. Every value reads at AA as text on its panes, in both appearances. */
+:root { --g-pol: #6aa5ff; --g-intl: #3fc6b5; --g-eco: #5bc776; --g-sec: #f2914a; --g-tech: #a09aff; --g-mkt: #e0bd45; --g-oth: #9a9da3; --ok: #5bc776; --amber: #f0a93b; --ai: #c792f7; --g-dis: var(--red); }
+:root[data-theme="light"] { --g-pol: #1d5fc4; --g-intl: #0a776e; --g-eco: #1d7a37; --g-sec: #b0500a; --g-tech: #4f48c7; --g-mkt: #7f6100; --g-oth: #686b71; --ok: #1d7a37; --amber: #975800; --ai: #8639b8; --g-dis: var(--red); }
+[data-genre="国内政治"] { --gc: var(--g-pol); }
+[data-genre="国際"] { --gc: var(--g-intl); }
+[data-genre="経済"] { --gc: var(--g-eco); }
+[data-genre="安全保障"] { --gc: var(--g-sec); }
+[data-genre="技術"] { --gc: var(--g-tech); }
+[data-genre="市場"] { --gc: var(--g-mkt); }
+[data-genre="災害"] { --gc: var(--g-dis); }
+[data-genre="その他"] { --gc: var(--g-oth); }
+.gn .gi { color: var(--gc, var(--ink-2)); background: color-mix(in srgb, var(--gc, var(--ink-3)) 11%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--gc, var(--ink-3)) 32%, transparent); }
+.gn:hover .gi { background: color-mix(in srgb, var(--gc, var(--ink-3)) 19%, transparent); }
+.gn[aria-pressed="true"] .gi { color: var(--gc, var(--ink)); background: color-mix(in srgb, var(--gc, var(--ink-3)) 24%, transparent); box-shadow: inset 0 0 0 1.5px var(--gc, var(--ink-2)); }
+.tab[data-genre]::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--gc, var(--ink-4)); vertical-align: 1px; }
+.gtag { display: inline-flex; align-items: center; gap: 4px; color: var(--gc, var(--ink-2)); font-weight: var(--fw-2); }
+.gtag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.stale, .stale b, .stale time { color: var(--amber) !important; }
+.meter.stale[data-bad="1"], .meter.stale[data-bad="1"] b, .meter.stale[data-bad="1"] time, .meter.stale[data-bad="1"] span { color: var(--red) !important; }
+.meter[data-tone]::before, .dot { content: ""; flex: none; align-self: center; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-4); }
+.meter[data-tone=""]::before { content: none; }
+.meter[data-tone="ok"]::before, .dot.ok { background: var(--ok); }
+.meter[data-tone="warn"]::before, .dot.warn { background: var(--amber); }
+.meter[data-tone="bad"]::before, .dot.bad { background: var(--red); }
+.newdot { background: var(--ok); }
+.aimk { color: var(--ai); border-color: color-mix(in srgb, var(--ai) 50%, transparent); }
+
+/* the state line: a dot and a word each at the end of the line above the board; the bars below open on a press */
+.stat { display: inline-flex; align-items: center; gap: 2px; margin-left: auto; align-self: center; }
+.stat:empty { display: none; }
+.stb { display: inline-flex; align-items: center; gap: 6px; border: 0; border-radius: 5px; padding: 1px 8px; background: none; font-size: var(--fs-2); color: var(--ink-2); white-space: nowrap; }
+.stb:hover, .stb[aria-expanded="true"] { background: var(--fill-2); color: var(--ink); }
+.stb.old { color: var(--amber); }
+.dot[data-genre] { background: var(--gc); }
+.note-bar.err { color: var(--red); }

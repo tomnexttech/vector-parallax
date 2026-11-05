@@ -5,7 +5,8 @@
 
 Copies a whitelist only: the page files, the generated data (headlines live here, and only here) and the tracked settings.
 Never copied: recorded.json, eval.json (no recorded run exists in Actions: the page shows "not measured"), summary_cache.json,
-og_robots.json, withheld.json, history.json (the build's own lineage memory). Exit status 1 when the page or latest.json is missing (a deploy must not publish a page without data).
+og_robots.json, withheld.json, history.json as it is (the build's own lineage memory: its event keys and words stay home; the site gets
+history.json as three numbers only, how many it holds, how many days and when it was written, which is all the page shows). Exit status 1 when the page or latest.json is missing (a deploy must not publish a page without data).
 """
 import argparse
 import shutil
@@ -54,6 +55,18 @@ def assemble(root, out):
             copied.append("data/" + f)
         else:
             missing.append("data/" + f)
+    hist = root / "data" / "history.json"
+    if hist.is_file():
+        import json
+        try:
+            h = json.loads(hist.read_text(encoding="utf-8"))
+        except ValueError:
+            h = {}
+        h = h if isinstance(h, dict) else {}
+        ent = h.get("entries")
+        small = {"schema": h.get("schema"), "updated_at": h.get("updated_at"), "days": h.get("days"), "n": len(ent) if isinstance(ent, list) else 0}
+        (out / "data" / "history.json").write_text(json.dumps(small, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        copied.append("data/history.json")
     return copied, missing
 
 

@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://generativelanguage.googleapis.com https://earthquake.usgs.gov https://www.jma.go.jp https://www.gdacs.org https://tiles.openfreemap.org https://s3.amazonaws.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
-<meta name="description" content="同じ出来事を、日本と海外の源・官公庁の資料・地図・災害・市場と一画面で並べる盤。">
+<meta name="description" content="同じ出来事を、日本と海外の媒体・官公庁の資料・地図・災害・市場と一画面で並べる盤。">
 <meta name="theme-color" content="#26272a">
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,13 +32,13 @@
       <svg class="mark" viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7.5h10M7.5 12.5h10"/></svg>
       <span class="app-name">Parallax</span>
     </div>
-    <div class="seg" role="group" aria-label="束ね方">
+    <div class="seg" role="group" aria-label="まとめ方">
       <button type="button" id="v-ai" aria-pressed="true">AI</button>
-      <button type="button" id="v-rules" aria-pressed="false">規則</button>
+      <button type="button" id="v-rules" aria-pressed="false">自動</button>
     </div>
     <div class="state" id="state" role="status" aria-live="polite">読込中</div>
     <div class="meters">
-      <span class="meter" id="m-src" data-host><span class="k">源</span><b class="num" id="src-live">—</b><span class="sl">/</span><span id="src-total">—</span></span>
+      <span class="meter" id="m-src" data-host><span class="k">媒体</span><b class="num" id="src-live">—</b><span class="sl">/</span><span id="src-total">—</span></span>
       <span class="meter" id="m-gen" data-host><span class="k">取得</span><b id="gen-at">—</b><time id="gen-age"></time></span>
       <span class="meter" id="m-ai" data-host><span class="k">AI</span><b id="ai-who">—</b><time id="ai-age"></time></span>
       <span class="meter" id="m-new" hidden><span class="k">前回から</span><b class="num" id="new-n">—</b></span>
@@ -63,7 +63,7 @@
   <div class="note-bar scene-bar" id="scene-bar" role="status" hidden></div>
 
   <nav class="jump" aria-label="欄へ移る">
-    <a href="#p-case">出来事</a><a href="#p-pri">注目</a><a href="#p-map">地図</a><a href="#p-rel">関連</a><a href="#p-basis">出典</a><a href="#p-anom">非対称</a><a href="#p-tv">映像</a><a href="#p-haz">災害</a><a href="#p-src">源</a><a class="lx" href="#p-hours">時間</a><a class="lx" href="#p-fields">分野</a><a class="lx" href="#p-count">件数</a><a class="lx" href="#p-mkt">市場</a><a class="lx" href="#p-pol">政治</a>
+    <a href="#p-case">出来事</a><a href="#p-pri">注目</a><a href="#p-map">地図</a><a href="#p-rel">関連</a><a href="#p-basis">出典</a><a href="#p-anom">一部の媒体だけ</a><a href="#p-tv">映像</a><a href="#p-haz">災害</a><a href="#p-src">媒体</a><a class="lx" href="#p-hours">時間</a><a class="lx" href="#p-fields">分野</a><a class="lx" href="#p-count">件数</a><a class="lx" href="#p-mkt">市場</a><a class="lx" href="#p-pol">政治</a>
   </nav>
   <div class="gwrap genre-strip" id="genre-strip"></div>
 
@@ -72,7 +72,7 @@
   <main class="board" id="board">
     <div class="col c1">
       <section class="pane" id="p-src" aria-labelledby="src-h">
-        <header class="ph"><h2 id="src-h">源</h2><span class="pc" id="src-c"></span></header>
+        <header class="ph"><h2 id="src-h">媒体</h2><span class="pc" id="src-c"></span></header>
         <div class="pb" id="src-b"></div>
       </section>
       <section class="pane" id="p-hours" aria-labelledby="hours-h">
@@ -94,8 +94,8 @@
         <div class="pb" id="pri-b"></div>
       </section>
       <section class="pane" id="p-anom" aria-labelledby="anom-h">
-        <header class="ph"><h2 id="anom-h">非対称</h2><b class="pc num" id="anom-c">—</b></header>
-        <div class="asum" id="anom-sum" role="group" aria-label="非対称の種類で絞る"></div>
+        <header class="ph"><h2 id="anom-h">一部の媒体だけ</h2><b class="pc num" id="anom-c">—</b></header>
+        <div class="asum" id="anom-sum" role="group" aria-label="報じ方の種類で絞る"></div>
         <div class="pb" id="anom-b"></div>
       </section>
     </div>

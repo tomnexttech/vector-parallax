@@ -214,7 +214,9 @@ class Site(unittest.TestCase):
                 (root / "data" / f).write_text('{"name_gate":1,"x":2}', encoding="utf-8")
             copied, missing = assemble_site.assemble(root, out)
             names = sorted(p.name for p in (out / "data").iterdir())
-            self.assertEqual(names, ["labels.json", "latest.json"])
+            self.assertEqual(names, ["history.json", "labels.json", "latest.json"])
+            hist = json.loads((out / "data" / "history.json").read_text(encoding="utf-8"))
+            self.assertEqual(sorted(hist), ["days", "n", "schema", "updated_at"])   # three numbers for the page, no keys and no words
             self.assertNotIn("name_gate", (out / "data" / "latest.json").read_text(encoding="utf-8"))
 
 

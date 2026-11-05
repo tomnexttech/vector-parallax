@@ -111,12 +111,12 @@ export function createSettingsPanel({ root, get, set, info, watch }) {
         on: { click: () => change((n) => { n.news[`${k}_off`] = []; }) } }, label);
       return [
         group('', [
-          row('最初に開く見方', '自動は AI の束ねがあれば AI。上の帯でいつでも替えられる', seg('view', '最初に開く見方', s.news.view, [['auto', '自動'], ['ai', 'AI'], ['rules', '規則']], (n, v) => { n.news.view = v; })),
+          row('最初に開く見方', '自動は AI のまとめがあれば AI。上の帯でいつでも替えられる', seg('view', '最初に開く見方', s.news.view, [['auto', '自動'], ['ai', 'AI'], ['rules', '自動']], (n, v) => { n.news.view = v; })),
           row('見出しの言語', 'AI の題が無い出来事は、報じた媒体の見出しを出す', seg('lang', '見出しの言語', s.news.lang, [['ja', '日本語'], ['en', 'English'], ['orig', '元の見出し']], (n, v) => { n.news.lang = v; })),
           row('国内と海外', '両方で報じられた出来事は常に出す', seg('scope', '国内と海外', s.news.scope, [['all', '両方'], ['jp', '国内'], ['intl', '海外']], (n, v) => { n.news.scope = v; })),
         ]),
-        group('源の型', inf.types.map(([t, k]) => row(t, null, [h('span', { class: 'set-k', text: `源 ${k}` }), sw(`ty-${t}`, !tOff.has(t), t, (n, v) => { n.news.types_off = v ? n.news.types_off.filter((x) => x !== t) : [...n.news.types_off, t]; })])),
-          '表示する型の源が一つでも報じた出来事は出す', allOn('types', '全て表示', 'ty-all')),
+        group('媒体の種類', inf.types.map(([t, k]) => row(t, null, [h('span', { class: 'set-k', text: `媒体 ${k}` }), sw(`ty-${t}`, !tOff.has(t), t, (n, v) => { n.news.types_off = v ? n.news.types_off.filter((x) => x !== t) : [...n.news.types_off, t]; })])),
+          '表示する種類の媒体が一つでも報じた出来事は出す', allOn('types', '全て表示', 'ty-all')),
         group('分野', inf.fields.map((f) => row(f, null, sw(`fd-${f}`, !fOff.has(f), f, (n, v) => { n.news.fields_off = v ? n.news.fields_off.filter((x) => x !== f) : [...n.news.fields_off, f]; }))),
           null, allOn('fields', '全て表示', 'fd-all')),
       ];
@@ -125,14 +125,14 @@ export function createSettingsPanel({ root, get, set, info, watch }) {
       const hd = inf.hidden;
       const by = Object.entries(hd.by).filter(([, n]) => n).map(([k, n]) => `${KIND_JA[k] || k} ${n}`).join(' · ');
       return [
-        h('p', { class: 'set-lead' }, h('span', { text: '当たった出来事は一覧と地図から外し、上の帯に数を出す。注目の行は札だけ残して畳む。' }),
+        h('p', { class: 'set-lead' }, h('span', { text: '当たった出来事は一覧と地図から外し、上の帯に数を出す。注目の行はラベルだけ残して畳む。' }),
           h('b', { class: 'num', text: ` いま ${hd.n} 件` }), by ? h('span', { class: 'set-by', text: `（${by}）` }) : null),
         group('語', terms('mw', s.mute.words, MUTE_WORDS, '見出しに含む語', (n, v) => { n.mute.words = addTerm(n.mute.words, v, MUTE_WORDS); }, (n, t) => { n.mute.words = removeTerm(n.mute.words, t); }),
           '全角と半角、大文字と小文字は同じに扱う'),
         group('媒体', terms('mo', s.mute.outlets, MUTE_OUTLETS, '媒体の名', (n, v) => { n.mute.outlets = addTerm(n.mute.outlets, v, MUTE_OUTLETS, NAME_LEN); }, (n, t) => { n.mute.outlets = removeTerm(n.mute.outlets, t); }, 'set-outlets'),
           '隠すのは、その媒体だけが報じた出来事。他も報じた出来事は残す'),
         h('datalist', { id: 'set-outlets' }, inf.outlets.map((o) => h('option', { value: o }))),
-        h('p', { class: 'set-gf' }, '分野と源の型は ', h('button', { type: 'button', class: 'set-link', data: { f: 'go-news' }, on: { click: () => go('news') } }, 'ニュース'), ' で選ぶ'),
+        h('p', { class: 'set-gf' }, '分野と媒体の種類は ', h('button', { type: 'button', class: 'set-link', data: { f: 'go-news' }, on: { click: () => go('news') } }, 'ニュース'), ' で選ぶ'),
       ];
     },
     motion(s, inf) {
