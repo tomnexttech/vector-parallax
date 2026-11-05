@@ -37,7 +37,7 @@ export const SCOPES = ['all', 'jp', 'intl'];
 export const VIEWS = ['auto', 'ai', 'rules'];
 export const LANGS = ['ja', 'en', 'orig'];
 export const CALM = ['system', 'on'];
-export const THEMES = ['system', 'light', 'dark'];   // the appearance; js/theme_boot.js reads look.theme before the first paint
+export const THEMES = ['dark', 'light'];   // the appearance, dark unless chosen; js/theme_boot.js reads look.theme before the first paint
 
 export function defaults() {
   return {
@@ -46,7 +46,7 @@ export function defaults() {
     mute: { words: [], outlets: [] },
     motion: { cases: true, scroll: true, calm: 'system' },
     panes: { off: [] },
-    look: { theme: 'system' },
+    look: { theme: 'dark' },
   };
 }
 

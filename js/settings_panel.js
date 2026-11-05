@@ -145,7 +145,7 @@ export function createSettingsPanel({ root, get, set, info, watch }) {
       ];
     },
     look(s) {
-      return [group('', [row('外観', null, seg('look-theme', '外観', s.look.theme, [['system', '自動'], ['light', 'ライト'], ['dark', 'ダーク']], (n, v) => { n.look.theme = v; }))], '自動はこの端末の設定に従う')];
+      return [group('', [row('外観', null, seg('look-theme', '外観', s.look.theme, [['dark', 'ダーク'], ['light', 'ライト']], (n, v) => { n.look.theme = v; }))])];
     },
     panes(s) {
       const off = new Set(s.panes.off);

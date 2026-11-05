@@ -138,11 +138,12 @@ test('video: the settings decide autoplay and sound; the channel is chosen among
   assert.equal(stationFor([], 'jp', []).id, 'ann', 'an empty list falls back to the full one');
 });
 
-test('the appearance is system, light or dark; anything else is the system', () => {
-  assert.equal(defaults().look.theme, 'system');
+test('the appearance is dark or light, dark unless chosen; anything else (the old system too) is dark', () => {
+  assert.equal(defaults().look.theme, 'dark');
+  assert.equal(cleanSettings({ look: { theme: 'system' } }).look.theme, 'dark');
   assert.equal(cleanSettings({ look: { theme: 'light' } }).look.theme, 'light');
   assert.equal(cleanSettings({ look: { theme: 'dark' } }).look.theme, 'dark');
-  assert.equal(cleanSettings({ look: { theme: 'neon' } }).look.theme, 'system');
-  assert.equal(cleanSettings({ look: 'dark' }).look.theme, 'system');
-  assert.equal(loadSettings(null).look.theme, 'system');
+  assert.equal(cleanSettings({ look: { theme: 'neon' } }).look.theme, 'dark');
+  assert.equal(cleanSettings({ look: 'light' }).look.theme, 'dark');
+  assert.equal(loadSettings(null).look.theme, 'dark');
 });

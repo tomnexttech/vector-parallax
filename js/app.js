@@ -22,6 +22,9 @@ import { loadHazards, nearby, dir8, shindoJa, disasterJa } from './hazards.js';
 import { createActions } from './actions.js';
 import { loadTasks, saveTasks, addTask, toggleTask, removeTask, hasTask } from './tasks.js';
 import { speechSupported, listen, route as voiceRoute } from './voice.js';
+import { absentOutlets, absentBlock } from './absent.js';
+import { entryEvents, renderEntry } from './entry.js';
+import { detect, bannerText, sceneOf } from './scenes.js';
 import { STATIONS, stationFor, embedSrc } from './tv.js';
 import { loadSettings, saveSettings, cleanSettings, hiddenBy, reasonJa, KIND_JA } from './settings.js';
 import { createSettingsPanel } from './settings_panel.js';
@@ -752,6 +755,9 @@ function renderCase() {
           angles.get(it.id) ? h('span', { class: 'mf' }, h('span', { class: 'aimk', text: 'AI' }), angles.get(it.id)) : null));
     })));
 
+  // the outlets whose feeds reach back to the first report and do not show it (js/absent.js); never "did not carry"
+  members.append(absentOf(e));
+
   // the side: timing by type, counts by type, labels, why grouped, radius, same words
   const flags = e.ruleFlags.map((f) => { const t = flagText(f); return t ? h('li', { class: 'flag-row', title: t.tip }, h('span', { class: 'flag', text: t.ja }), h('span', { class: 'rl', text: '規則' })) : null; });
   const ae = e.case && state.board ? arr(state.board.asymmetry).find((a) => isObj(a) && a.sid === e.case.sid) : null;
@@ -802,6 +808,50 @@ function renderCase() {
   if (!reduced()) { node.classList.add('enter'); }
   renderStatus();
   renderTasks();
+}
+
+// ---------------------------------------------------------------- the simple view (js/entry.js): six cards, three columns
+const tagAI = (by, at) => { const b = by.filter(Boolean); return h('span', { class: 'by', title: b.join(' ') || null }, h('span', { class: 'aimk', text: 'AI' }), b[b.length - 1] || '—', isNum(at) ? `・${fmtShort(at)}` : ''); };
+function absentOf(e) {
+  const first = e.members.filter((it) => isNum(it.ts)).sort((a, b) => a.ts - b.ts)[0], gen = state.data.generated_at;
+  return absentBlock(absentOutlets({ members: e.members, first: first && first.ts }, arr(state.data.sources), gen), { h, when: { at: fmtShort(gen), first: fmtShort(first && first.ts) }, windowH: state.data.window_h });
+}
+function renderEntryView() {
+  if (state.ui !== 'simple' || !state.data) return;
+  const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
+  renderEntry($('entry'), { h, events: entryEvents(state.pri), sel: state.entrySel, pick: (k) => { state.entrySel = k; renderEntryView(); }, gen: state.data.generated_at,
+    fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => setUi('full') });
+}
+function setUi(m) {
+  state.ui = m === 'simple' ? 'simple' : 'full';
+  $('app').dataset.ui = state.ui; $('entry').hidden = state.ui !== 'simple'; $('entry-btn').setAttribute('aria-pressed', String(state.ui === 'simple'));
+  if (state.ui === 'simple') renderEntryView(); else if (state.data) renderMap(false);
+  return true;
+}
+
+// ---------------------------------------------------------------- scenes (js/scenes.js, data/scenes.json): the arrangement only, never silent
+const SCENE_PANE = { pri: 'p-pri', case: 'p-case', src: 'p-src', hours: 'p-hours', fields: 'p-fields', map: 'p-map', count: 'p-count', tv: 'p-tv', haz: 'p-haz', mkt: 'p-mkt', pol: 'p-pol' };
+function applyScene(id) {
+  $('app').dataset.scene = id;
+  for (const el of document.querySelectorAll('[data-sfold]')) { el.classList.remove('fold'); delete el.dataset.sfold; }
+  for (const k of arr((sceneOf(state.scenes, id) || {}).fold)) { const el = $(SCENE_PANE[k]); if (el && !el.classList.contains('fold')) { el.classList.add('fold'); el.dataset.sfold = '1'; } }
+  applyPanes();
+}
+function sceneTick() {
+  if (!state.scenes || !state.data || !state.ix) return;
+  if (state.sceneMode === 'auto') {
+    const evs = state.pri.slice(0, 40).map((e) => ({ n: e.n, new6h: e.case && e.case.n_new6h, sinceH: e.case && e.case.since_first_h, intl: uniq(e.members.filter((it) => it.home === 'intl').map(outletOf)).length,
+      lat: e.geo && e.geo.lat, lon: e.geo && e.geo.lon, flags: e.topics, place: e.geo && e.geo.name }));
+    state.sceneRes = detect({ gen: state.data.generated_at, now: Date.now() / 1000, events: evs, items: Object.values(state.ix.items), hz: state.haz || {} }, state.scenes);
+  }
+  const r = state.sceneRes || { id: 'calm', reasons: [] }, manual = state.sceneMode === 'manual';
+  if ($('app').dataset.scene !== r.id) applyScene(r.id);
+  const text = manual ? '場面 平時（手動）' : bannerText(state.scenes, r, state.sceneMode, fmtClock);
+  const go = (mode, res) => () => { state.sceneMode = mode; if (res) state.sceneRes = res; sceneTick(); };
+  const bar = $('scene-bar'); bar.hidden = !text;
+  if (text) bar.replaceChildren(h('span', { class: 'sc-t', text }), manual ? h('button', { type: 'button', class: 'sc-b', on: { click: go('auto') } }, '自動へ')
+    : [h('button', { type: 'button', class: 'sc-b', on: { click: go('manual', { id: 'calm', reasons: [] }) } }, '平時へ戻す'),
+      h('button', { type: 'button', class: 'sc-b', 'aria-pressed': String(state.sceneMode === 'pinned'), on: { click: go(state.sceneMode === 'pinned' ? 'auto' : 'pinned') } }, '固定')]);
 }
 
 // ---------------------------------------------------------------- the map
@@ -1338,7 +1388,7 @@ function renderAll() {
     renderPri(); renderAnom();
     renderCase(); renderMap(false);
     renderCount(); renderHaz(); renderMkt(); renderPol(); renderTv();
-    renderTicker(false); renderWatch(); renderHid();
+    renderTicker(false); renderWatch(); renderHid(); renderEntryView(); sceneTick();
     if (state.panel) state.panel.render();
     if (state.about) renderAbout();
     if (state.sheet) renderSheet();
@@ -1416,6 +1466,7 @@ async function loadHaz() {
   state.hazFresh = new Set(ids.filter((q) => (state.hazSeen ? !state.hazSeen.has(q.id) : isNum(q.ts) && t - q.ts < 3 * 3600)).map((q) => q.id));
   state.hazSeen = new Set(ids.map((q) => q.id));
   state.haz = hz;
+  sceneTick();
   renderHaz(); renderMap(false);
   if (cur()) renderCase();
   if (state.sheet === 'haz') renderSheet();
@@ -1756,8 +1807,8 @@ function applyPanes() {
   for (const col of document.querySelectorAll('.board > .col')) {
     const ps = [...col.children].filter((x) => x.classList.contains('pane'));
     const shown = ps.filter((x) => !x.hidden);
-    if (shown.length === ps.length) { col.style.gridTemplateRows = ''; continue; }
-    const rows = shown.map((x) => PANE_ROWS[x.id] || 'auto');
+    if (shown.length === ps.length && !shown.some((x) => x.dataset.sfold)) { col.style.gridTemplateRows = ''; continue; }
+    const rows = shown.map((x) => (x.classList.contains('fold') ? 'auto' : PANE_ROWS[x.id] || 'auto'));
     if (rows.length && !rows.some((r) => r.includes('fr'))) rows[rows.length - 1] = 'minmax(0, 1fr)';
     col.style.gridTemplateRows = rows.join(' ') || 'minmax(0, 1fr)';
   }
@@ -1844,6 +1895,14 @@ async function main() {
   $('watch-form').addEventListener('submit', (ev) => { ev.preventDefault(); const v = $('watch-in').value; $('watch-in').value = ''; if (v.trim()) setWatch(addWatch(state.watch, v)); });
   $('about-btn').addEventListener('click', () => actions.run('about'));
   $('set-btn').addEventListener('click', () => actions.run('settings'));
+  // the appearance in the bar: the same value as 外観 in the settings
+  const themeLabel = () => $('theme-btn').setAttribute('aria-label', `外観 ${state.set.look.theme === 'light' ? 'ライト' : 'ダーク'}`);
+  $('theme-btn').addEventListener('click', () => { applySettings({ ...state.set, look: { theme: state.set.look.theme === 'light' ? 'dark' : 'light' } }); themeLabel(); });
+  themeLabel();
+  $('entry-btn').addEventListener('click', () => setUi(state.ui === 'simple' ? 'full' : 'simple'));
+  if (new URLSearchParams(location.search).get('m') === 'simple') setUi('simple');
+  state.sceneMode = 'auto';
+  getJson(dataDir() + 'scenes.json').then((c) => { state.scenes = isObj(c) && c.schema === 'parallax-scenes/1' ? c : null; sceneTick(); });
   $('task-btn').addEventListener('click', () => { const p = $('task-pop'); if (p.hidden) openTasks(); else { p.hidden = true; $('task-btn').setAttribute('aria-expanded', 'false'); } });
   if (speechSupported()) { $('voice-btn').hidden = false; $('voice-btn').addEventListener('click', startVoice); }
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });

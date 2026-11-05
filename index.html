@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600&amp;display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600&amp;display=swap&amp;text=0123456789.%2C%3A%2F%25%2B-">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&amp;display=swap&amp;text=0123456789.%2C%3A%2F%25%2B-">
 <link rel="stylesheet" href="css/app.css">
 <script type="module" src="js/app.js"></script>
 </head>
@@ -49,19 +49,24 @@
         <input id="q" type="search" placeholder="検索" aria-label="出来事・語・地名・媒体で検索" autocomplete="off" spellcheck="false">
       </label>
       <button type="button" class="tbb icon" id="voice-btn" hidden aria-label="声で操作" title="声で操作（v）"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.5" y="2.5" width="5" height="9.5" rx="2.5"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>
+      <button type="button" class="tbb" id="entry-btn" aria-pressed="false">かんたん表示</button>
       <button type="button" class="tbb" id="task-btn" aria-expanded="false" aria-controls="task-pop">タスク<span class="n" id="task-n"></span></button>
       <button type="button" class="tbb" id="watch-btn" aria-expanded="false" aria-controls="watch-pop">追う<span class="n" id="watch-n"></span></button>
       <button type="button" class="tbb" id="about-btn">データと AI</button>
+      <button type="button" class="tbb icon" id="theme-btn" aria-label="外観 ダーク" title="外観"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" stroke="none"/></svg></button>
       <button type="button" class="tbb" id="set-btn" aria-haspopup="dialog" title="設定（,）">設定</button>
     </div>
   </header>
   <p class="ailine" id="ai-line" role="status"></p>
   <p class="note-bar" id="snap-note" role="status" hidden></p>
   <div class="note-bar hid-bar" id="hid-bar" aria-live="polite" hidden></div>
+  <div class="note-bar scene-bar" id="scene-bar" role="status" hidden></div>
 
   <nav class="jump" aria-label="欄へ移る">
     <a href="#p-case">出来事</a><a href="#p-pri">注目</a><a href="#p-map">地図</a><a href="#p-anom">非対称</a><a href="#p-tv">映像</a><a href="#p-haz">災害</a><a href="#p-src">源</a>
   </nav>
+
+  <section class="entry" id="entry" aria-label="かんたん表示" hidden></section>
 
   <main class="board" id="board">
     <div class="col c1">
