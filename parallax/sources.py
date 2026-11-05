@@ -15,9 +15,10 @@ Yahoo! ニュースなどの転載ポータルと非公式ミラーは使わな�
   fixed    gn だけ。真なら媒体は源で決まる（site: 検索）、偽なら見出しの末尾の媒体名から引く（部門の RSS）
 
 媒体に左右の札は付けない。型は媒体の形態であって立場ではない。
-公開する data/*.json には見出し・リンク・媒体名・時刻だけを書く（本文と画像は書かない）。
+公開する data/*.json には見出し・リンク・媒体名・時刻と、配信が自ら付けた説明の先頭 140 字までを引用として書く（記事の本文は書かない。画像は URL だけ）。
 """
 import concurrent.futures as cf
+import difflib
 import gzip
 import hashlib
 import re
@@ -439,8 +440,78 @@ def parse(text):
         return feeds.parse(_XML_DECL.sub("", text, count=1))
 
 
+# ---------------------------------------------------------------- 配信の説明文（CONTRACT §14.1）
+DESC_MAX = 140                                          # items[].desc の長さの上限（字）。省略記号も数える
+DESC_MIN = 10                                           # これより短い断片は載せない
+_SENT_END = re.compile(r"[。！？!?]|\.(?=\s|$)")
+# 続きへの誘い・広告・配信の定型文。文全体がこれだけなら載せない（文の末尾に付いた物は外す）
+_AD_ONLY = re.compile(
+    r"^\W*(?:続き(?:を|は)?(?:読む|こちら)?|もっと(?:見る|読む)|詳(?:細|しく)(?:は|を)?(?:こちら|見る|読む)?|"
+    r"記事(?:の)?(?:全文|続き)?(?:を)?(?:読む|はこちら)?|全文(?:を)?(?:読む|表示)|会員(?:登録|限定)|有料(?:記事|会員)|PR|広告|スポンサー(?:ド)?(?:リンク)?|"
+    r"read\s+more|continue\s+reading|click\s+here|learn\s+more|view\s+(?:the\s+)?(?:full|original)|sponsored|advertisement|"
+    r"subscribe(?:\s+now)?|sign\s+up|comments?|full\s+story|more)\W*$", re.I)
+_AD_ANY = re.compile(
+    r"appeared first on|^(?:article|comments)\s+url\s*:|^points\s*:|"
+    r"^\W{0,2}(?:sponsored|advertisement|広告|PR)\s*[:：|｜\]】)]|"
+    r"(?:sign up for|subscribe to) (?:our|the) newsletter|ニュースレター(?:の)?(?:登録|購読)", re.I)
+_TAIL = re.compile(
+    r"\s*(?:\[\s*(?:…|\.{2,3})\s*\]|(?:…|\.{3})?\s*(?:続きを読む|続きはこちら|もっと見る|詳しくはこちら|Read more|Continue reading|\(?続く\)?)(?:\s*[»›>→]+)?)\W*$", re.I)
+_NORM = re.compile(r"[\W_]+", re.UNICODE)
+
+
+def _norm(t):
+    return _NORM.sub("", unicodedata.normalize("NFKC", t or "")).casefold()
+
+
+def _cut(t, n=DESC_MAX):
+    """n 字まで。収まる文はそのまま。長い時は n 字の中の最後の句点（。！？!? ピリオド）で切り、無ければ語の切れ目か n-1 字で切って … を付ける。"""
+    if len(t) <= n:
+        return t
+    head = t[:n]
+    ends = [m.end() for m in _SENT_END.finditer(head)]
+    if ends and ends[-1] >= 20:
+        return head[:ends[-1]].rstrip()
+    cut = head[:n - 1]
+    sp = cut.rfind(" ")
+    if sp >= n - 40:
+        cut = cut[:sp]
+    return cut.rstrip(" 、,;:・-") + "…"
+
+
+def make_desc(raw, title="", outlet=""):
+    """配信が項目に付けた説明の最初の段落（feeds.first_paragraph）-> items[].desc に載せる文。載せない時は ""。
+    載せない物: 空・短すぎる断片・見出しと同じ（または見出しに媒体名を足しただけ）・続きへの誘い／広告／定型文だけの物。
+    切り方は _cut（先頭 DESC_MAX 字まで、句点で切れればそこで）。文は書き換えない（語を足さない・言い換えない）。"""
+    t = re.sub(r"\s+", " ", _s(raw)).strip()
+    if not t:
+        return ""
+    for _ in range(3):                                   # 末尾の「続きを読む」「[…]」を外す（文の途中の物は外さない）
+        u = _TAIL.sub("", t).strip()
+        if u == t:
+            break
+        t = u
+    if len(t) < DESC_MIN or not re.search(r"\w", t, re.UNICODE):
+        return ""
+    if _AD_ONLY.match(t) or _AD_ANY.search(t) or t.lower().startswith(("http://", "https://")):
+        return ""
+    a, b = _norm(t), _norm(title)
+    if not a:
+        return ""
+    if b:
+        if a == b or a in b:
+            return ""
+        if a.startswith(b):                              # 見出し + 媒体名／日付だけ
+            rest = a[len(b):]
+            if len(rest) <= 24 or rest in _norm(outlet):
+                return ""
+        if len(a) <= len(b) * 1.3 and difflib.SequenceMatcher(None, a, b).ratio() >= 0.85:
+            return ""
+    return _cut(t)
+
+
 def _finish(it, src):
-    """feeds の item を公開できる形へ。見出しは書き換えない。summary と image は落とす。"""
+    """feeds の item を公開できる形へ。見出しは書き換えない。summary と image は落とす。
+    desc = 配信自身の説明の先頭（make_desc）。載せない物は欄ごと無い。Google News 経由（_finish_gn）と政府の頁（fetch_primary_sources）には付けない。"""
     out = {
         "title": _s(it.get("title")).strip(),
         "link": _s(it.get("link")).strip(),
@@ -454,6 +525,9 @@ def _finish(it, src):
     out["id"] = item_id(out)
     img = _s(it.get("image")).strip()
     out["image"] = {"url": img, "from": "rss"} if img.lower().startswith(("http://", "https://")) else None
+    d = make_desc(it.get("desc"), out["title"], src["outlet"])
+    if d:
+        out["desc"] = d
     return out
 
 

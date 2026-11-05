@@ -5,6 +5,7 @@
   {"title", "link", "source", "feed", "cat", "lang", "ts"(epoch 秒 or None), "summary", "image"}
 
 summary と image は読むだけで、公開する data/*.json へは書かない（build.py が落とす）。
+desc = 配信が項目に付けた説明の最初の段落（札を外した文）。載せるか・長さ・広告文の除外は sources.make_desc が決める（CONTRACT §14.1）。
 壊れた XML でも正規表現で拾えるだけ拾う。取れなかった源は取れなかったと status に残し、件数を作らない。
 見出しは原文のまま。読み取りのみで、外へ何も送らない。
 """
@@ -47,6 +48,35 @@ def _clean(s, n=None):
     s = html.unescape(_TAG.sub(" ", s))
     s = re.sub(r"\s+", " ", s).strip()
     return s[:n] if n else s
+
+
+_BREAK = re.compile(r"</p\s*>|</div\s*>|<hr\b[^>]*>|(?:<br\b[^>]*>\s*){2,}|\n[ \t]*\n", re.I)
+
+
+def first_paragraph(raw, n=600):
+    """配信が項目に付けた説明（description・summary・content の生の文字列。HTML でも、実体参照でエスケープした HTML でもよい）の最初の段落を、
+    札を外して空白を詰めた文で返す。段落の切れ目は </p>・</div>・<hr>・<br> の二連・空行。空の段落（画像だけの段落など）は飛ばす。
+    読めなければ ""。n は返す長さの上限（切り詰めの方針は sources.make_desc）。"""
+    if not raw or not isinstance(raw, str):
+        return ""
+    s = re.sub(r"<!\[CDATA\[(.*?)\]\]>", r"\1", raw, flags=re.S)
+    if "<" not in s and "&lt;" in s:
+        s = html.unescape(s)                      # 実体参照でエスケープされた HTML
+    for blk in _BREAK.split(s):
+        t = _clean(blk)
+        t = _clean(_TAG.sub(" ", t))              # 二重にエスケープされた札の取りこぼし
+        if t:
+            return t[:n]
+    return ""
+
+
+def _desc_raw(el):
+    """項目の説明の生の文字列。description → summary → content → encoded の順で、最初に中身のある物。"""
+    for name in ("description", "summary", "content", "encoded"):
+        v = _child_text(el, name)
+        if v and v.strip():
+            return v
+    return ""
 
 
 def _ts(s):
@@ -258,6 +288,7 @@ def _parse_xml(text):
                 src = (c.text or "").strip()
         pub = _child_text(el, "pubDate", "published", "updated", "date", "issued")
         summ = _child_text(el, "description", "summary", "content", "encoded")
+        desc = first_paragraph(_desc_raw(el))
         link = (link or "").strip()
         try:
             img = _image_el(el, link)
@@ -265,7 +296,7 @@ def _parse_xml(text):
             img = ""
         out.append({"title": _clean(title, 220), "link": link,
                     "source": _clean(src, 40), "ts": _ts(pub),
-                    "summary": _clean(summ, 360), "image": img,
+                    "summary": _clean(summ, 360), "image": img, "desc": desc,
                     # Google News は description に「同じ事件を報じた他媒体の見出し」の HTML を持つ。
                     # summary はタグを消すので、束ねのために生のまま一度だけ残す（fetch で GN 以外は捨てる）
                     "raw_desc": summ or ""})
@@ -303,7 +334,7 @@ def _parse_rx(text):
                     "link": link,
                     "source": _clean(_rx(blk, "source"), 40),
                     "ts": _ts(_clean(_rx(blk, "pubDate", "dc:date", "published", "updated"))),
-                    "summary": _clean(raw, 360), "image": img,
+                    "summary": _clean(raw, 360), "image": img, "desc": first_paragraph(raw),
                     "raw_desc": html.unescape(raw) if raw else ""})
     return out
 

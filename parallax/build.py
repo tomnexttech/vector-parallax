@@ -391,7 +391,7 @@ def make_name_gate(data):
     return {"words": len(pat), "ai_fields_checked": n_ai[0], "ai_hits": len(strict),
             "ai_blanked": int(run.get("name_words") or 0) + int(sn.get("name_blanked") or 0),
             "quoted_hits": quoted,
-            "quoted_fields": ["items[].title", "items[].link", "items[].image", "basis.words", "basis.places", "ai_requests[].doc", "sources[]"]}
+            "quoted_fields": ["items[].title", "items[].desc", "items[].link", "items[].image", "basis.words", "basis.places", "ai_requests[].doc", "sources[]"]}
 
 
 def headlineless_ai_stories(stories):
@@ -1001,10 +1001,53 @@ def assemble_stories(rule_clusters, blocks, block_results, items, word_ids=None)
 
 
 # ---------------------------------------------------------------- 10. 版
+# ---------------------------------------------------------------- 配信の説明文（CONTRACT §14.1）
+def desc_of(it, terms=True):
+    """items[].desc に載せる文。載せない時は None。配信が自ら付けた説明の先頭（sources.make_desc が切った物）だけ。
+    載せない物: 空・長さの上限超え・Google News 経由・名の関門（§17）の語を含む物・（strict の公開版で）見出しを出せない源の物。
+    停止の名簿（withheld.json）に載る源・記事は、取得の段階で item ごと無くなる（CONTRACT 20.9）ので、ここには来ない。"""
+    d = it.get("desc") if isinstance(it, dict) else None
+    if not isinstance(d, str) or not d.strip() or len(d) > sources_mod.DESC_MAX or it.get("via"):
+        return None
+    if terms and not terms_ok(it):
+        return None
+    if has_gate_name(d):
+        return None
+    return d
+
+
+def desc_problems(items, public):
+    """items の desc の検査（CONTRACT §14.1）。-> 問題の文の list。本文は問題文に入れない。"""
+    bad = []
+    shape = via = terms = name = 0
+    for it in items.values():
+        if not isinstance(it, dict) or "desc" not in it:
+            continue
+        d = it["desc"]
+        if not (isinstance(d, str) and d.strip() and len(d) <= sources_mod.DESC_MAX):
+            shape += 1
+            continue
+        via += 1 if it.get("via") else 0
+        terms += 1 if (public and not terms_ok(it)) else 0
+        name += 1 if has_gate_name(d) else 0
+    if shape:
+        bad.append("%d item description(s) have the wrong shape or are too long" % shape)
+    if via:
+        bad.append("%d item description(s) come through Google News" % via)
+    if terms:
+        bad.append("%d item description(s) belong to sources that do not allow it" % terms)
+    if name:
+        bad.append("%d item description(s) carry a word that must not appear" % name)
+    return bad
+
+
 def public_item(it):
     """公開版の item 行。見出しは terms_status が ok の源だけ。"""
     row = {k: it[k] for k in ("id", "title", "link", "outlet", "source_id", "type", "home", "lang", "ts")}
     row["image"] = image_row(it)
+    d = desc_of(it)
+    if d:
+        row["desc"] = d                                  # CONTRACT §14.1: the feed's own description, quoted (absent when not carried)
     if it.get("via"):                                    # CONTRACT 20.7: read through Google News
         row["via"], row["media"] = it["via"], it.get("media") or it.get("outlet")
     if not terms_ok(it):
@@ -1015,6 +1058,9 @@ def public_item(it):
 def local_item(it):
     row = {k: it[k] for k in ("id", "title", "link", "outlet", "source_id", "type", "home", "lang", "ts")}
     row["image"] = image_row(it)
+    d = desc_of(it, terms=False)
+    if d:
+        row["desc"] = d
     if it.get("via"):                                    # CONTRACT 20.7: read through Google News
         row["via"], row["media"] = it["via"], it.get("media") or it.get("outlet")
     return row
@@ -1193,6 +1239,7 @@ def snapshot_problems(sn, public=False, prompt=None):
         n_evt = event_text_problems(sn["stories"], sn["items"])
         if n_evt:
             bad.append("public snapshot keeps contrast / flag text on %d event(s) that include a withheld source" % n_evt)
+    bad += ["snapshot: " + p for p in desc_problems(sn["items"], public or sn.get("edition") == "public")]
     return bad
 
 
@@ -1204,6 +1251,9 @@ def _regate_public(sn, prompt=None):
         if isinstance(it, dict) and it.get("title") is not None and not terms_ok(it):
             it["title"] = None
             lost.add(iid)
+    for it in sn["items"].values():                      # the quoted description follows the title (CONTRACT §14.1)
+        if isinstance(it, dict) and "desc" in it and (not terms_ok(it) or has_gate_name(it["desc"]) or it.get("via")):
+            it.pop("desc", None)
     withhold_no_source_focus(sn["stories"], sn["items"])
     withhold_event_text(sn["stories"], sn["items"])
     withhold_outlet_names(sn["stories"])
@@ -1344,6 +1394,8 @@ def build(items, status, now, window_h=DEFAULT_WINDOW_H, provider=None, status_i
         data["withheld"] = withheld                      # CONTRACT 20.9: counts only
     data["images"] = image_stats(by_id, og_run)
     data["name_gate"] = make_name_gate(data)
+    data["name_gate"]["desc_carried"] = sum(1 for r in rows.values() if "desc" in r)          # CONTRACT §14.1 / §17
+    data["name_gate"]["desc_blanked"] = sum(1 for it in by_id.values() if isinstance(it.get("desc"), str) and has_gate_name(it["desc"]))
     return data, requests_full
 
 
@@ -1388,6 +1440,7 @@ def check_output(data, min_stories=0, prompt=None):
         n_evt = event_text_problems(data.get("stories", []), items)
         if n_evt:
             bad.append("public edition keeps contrast / flag text on %d event(s) that include a withheld source" % n_evt)
+    bad += desc_problems(items, data.get("edition") == "public")
     run = data.get("ai_run") if isinstance(data.get("ai_run"), dict) else {}
     kept = run.get("status") == "kept_previous"
     if kept != ("ai_snapshot" in data):
@@ -1615,6 +1668,8 @@ def main(argv=None):
     print("summary status=%s provider=%s model=%s targets=%d cache_hits=%d summarized=%d calls=%d attempts=%d/%d failed=%d left_out=%d"
           % (sr["status"], sr["provider"] or "-", sr["model"] or "-", sr["targets"], sr["cache_hits"], sr["summarized"],
              sr["calls"], sr["attempts"], sr["call_limit"], sr["calls_failed"], sr["left_out"]))
+    print("desc carried=%d of %d items name_blanked=%d"
+          % (data["name_gate"]["desc_carried"], len(data["items"]), data["name_gate"]["desc_blanked"]))
     if "ai_snapshot" in data:
         sn = data["ai_snapshot"]
         print("ai kept: answers made at %s (UTC) on the fetch of %s (UTC); they are not from this build"

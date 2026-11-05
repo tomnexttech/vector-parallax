@@ -232,7 +232,7 @@
     ]
   },
   "summary": {
-    "enabled": false,
+    "enabled": true,
     "max_output_tokens": 8192,
     "limits": {
       "summary_ja": 90

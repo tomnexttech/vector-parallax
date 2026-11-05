@@ -62,7 +62,8 @@ Every time is epoch seconds (int, UTC) or `null`. The page formats them.
   "items": {                            // only items referenced by rule_clusters
     "<id>": { "id": "<id>", "title": "..." | null, "link": "https://...", "outlet": "BBC",
               "source_id": "bbc-world", "type": "海外公共", "home": "intl", "lang": "en", "ts": 1762224000,
-              "image": null | { "url": "https://...", "from": "rss" | "og" } }          // 15
+              "image": null | { "url": "https://...", "from": "rss" | "og" },          // 15
+              "desc": "..." }                       // optional, absent when not carried: the feed's own description, quoted, first 140 characters at most (14.1)
   },                                    // title is null only in rights_mode strict + public, unless terms_status == "ok" (14)
   "rights_mode": "quote" | "strict",    // 14
   "scope": { },                         // 16: how far the search went (feeds, Japanese mainstream base, window, oldest / newest time)
@@ -207,7 +208,7 @@ then describes only this build's own attempt.
 ```
 
 Ids are per-call aliases `n1..nN` (short, hard to mistype); `alias` maps them back. Only titles go
-to the model: no links, no article text.
+to the model: no links, no article text, no feed descriptions (14.1).
 
 ### 4.2 Output (enforced by `schema`, then by the validator)
 
@@ -545,7 +546,7 @@ Reading the status of a run (`ai_run.status`, and `ai.status` in `data/stats.jso
 
 ## 13. Summaries (one neutral line per event), the two models and the call budget
 
-**Status: disabled by default (`summary.enabled` is `false` in `data/prompt.json`), waiting for the owner's decision.** While it is off the build calls nothing for summaries, leaves the cache content as it is, adds no `summary` to any story, and `ai_run.summary.status` is `disabled`.
+**Status: on since 2026-11-05 (`summary.enabled` is `true` in `data/prompt.json`; `false` switches the stage off).** While it is off the build calls nothing for summaries, leaves the cache content as it is, adds no `summary` to any story, and `ai_run.summary.status` is `disabled`.
 
 Two jobs, two models. Both names live only in `data/prompt.json`: `merge_model` (the bundling of section 4, the core of the
 product) and `summary_model` (this section). No model name is written in code. `--model` and `--summary-model` override
@@ -555,7 +556,7 @@ them for one run. The free-tier limits of each model are in the README ("AI cost
 (at most `prompt.summary.limits.summary_ja` characters) that says what happened in the event as a whole. A story that has an AI
 headline gets none: its `headline_ja` is already that line. The order is the order of `stories` (the page order). Events go out in
 batches of 45 (`SUMMARY_BATCH`), at most 15 batches (`SUMMARY_CALL_LIMIT`): at most 675 events per build, counted from the top.
-Events that do not fit are left without a line (`ai_run.summary.left_out`). The bundling itself is unchanged (2 calls).
+Events that do not fit are left without a line (`ai_run.summary.left_out`). The bundling itself is unchanged (2 calls). **Free-tier check (2026-11-05).** `gemini-3.5-flash-lite` allows 500 requests a day (README, "AI cost"): 8 builds x 15 calls = 120 at the very most, and the bundling's fallback to the same model (`merge_fallback_model`, only on 429 / 500 / 503) adds at most 8 x 2 = 16: 136 of 500. The limit of 15 per build is therefore kept. `gemini-3.6-flash` has its own count (8 x 2 = 16 of 20).
 
 ```jsonc
 "summary": { "text_ja": "...", "made_at": 1762225200, "provider": "gemini" | "claude-recorded", "model": "..." }
@@ -622,8 +623,20 @@ field is checked as `strict`). The code of both modes is kept; the committed dat
 | silence words (4.7), quoted fields (4.3), id checks (4.3) | **checked** | **checked** |
 
 What both modes keep: no judgement of truth, no left/right label on an outlet, no "did not report" (the label says "not found in the N feeds that were fetched", 16),
-no article text (a headline, an image URL and a link at most), the `CallBudget` limit of 2 bundling calls (3).
+no article body: the body of an article is never carried. What is carried is the headline, an image URL, a link, and, as a quotation with the outlet's name and the link beside it, the description the feed itself attached to the item, its first 140 characters at most (`items[].desc`, 14.1). The `CallBudget` limit of 2 bundling calls (3).
 Section 7 describes the `strict` behaviour in detail; where it says an item, angle or sentence is withheld, that holds in `strict` only.
+
+### 14.1 Feed descriptions (`items[].desc`, decided 2026-11-05)
+
+The body of an article is never read or carried. What is carried is the description the feed itself attached to an item, as a quotation: `items[].desc`, with the outlet's name, the time and the link of the same item beside it (`outlet`, `ts`, `link`). The field is absent when nothing is carried.
+
+- **What.** The first paragraph of the item's `description`, else its `summary`, else its `content` (`content:encoded`): tags removed, entities decoded, white space collapsed (`feeds.first_paragraph`; paragraphs end at `</p>`, `</div>`, `<hr>`, two `<br>` or a blank line; an empty paragraph, such as an image only, is skipped). At most 140 characters (`sources.DESC_MAX`, the ellipsis counts). A shorter text is carried as it is. A longer text is cut at the last full stop (`。` `！` `？` `!` `?` or a full stop followed by a space) inside the 140 characters if that stop comes after the 20th character; otherwise at a word boundary, or after 139 characters, followed by `…`. The words are never changed, added or paraphrased (`sources.make_desc`).
+- **Not carried** (the field is absent): empty; shorter than 10 characters; the same as the headline, or the headline with only the outlet's name or a date added; a line that only invites the reader to go on or is an advertisement or a feed's boilerplate (`続きを読む`, `Read more`, `Sponsored`, `The post ... appeared first on ...`, `Article URL: ...`); a bare link. A trailing `続きを読む` / `Read more` / `[...]` is taken off and the rest is kept.
+- **Not read.** A feed read through Google News (`via`): its description is the relay's text, not the outlet's. The government pages that have no feed (19). `desc` is never sent to the model (4.1), and the model never writes it.
+- **Rights (14).** `quote`: every source. `strict`: in the public edition only for a source whose `terms_status` is `ok` (the same rule as `title`); the local edition carries it.
+- **Name gate (17).** A description that carries a fixed word is not carried (a title cannot be left out, a description can). `name_gate.desc_carried` and `name_gate.desc_blanked` count them.
+- **Withheld list (20.9).** A withheld source or article is removed from the fetch as a whole, so its description goes with it. The previous good version that is kept loses it the same way, and a kept public snapshot drops the description of an item the rules no longer allow.
+- **`check_output` refuses** a `desc` that is not a non-empty string of at most 140 characters, that sits on a Google News item, that belongs to a source the strict public edition does not allow, or that carries a fixed word.
 
 ## 15. Images (item.image)
 
@@ -681,7 +694,7 @@ The difference `ai - rules` is what the AI changed.
 
 **Written by this project: strict.** A hit is refused. These are the code, the README, the guides, the contract and every data file except `data/latest.json`, and inside `data/latest.json` the AI-written fields: any string stored under the key `headline_ja`, `headline_en`, `focus_ja`, `contrast_ja`, `flag_note_ja`, `note_ja`, `text_ja` or `summary_ja` (the story headlines, the focus lines, the contrast and flag texts, the summaries, and the run notes `ai_run.note_ja` / `ai_run.summary.note_ja`), in the file itself and in `ai_snapshot`. The list is `STRICT_KEYS` in `tools/leakcheck.py`; the build reads the same list.
 
-**Quoted from the feeds: counted, not refused.** Every other string in `data/latest.json` is something an outlet published or a value derived from it: `items[].title`, `items[].link`, `items[].image` (the image URL), `basis.words` and `basis.places` (words taken from the titles), `ai_requests[].doc` (the request text, which holds the titles), `sources[]` (names and terms links). The project does not choose that wording, so a hit is counted and never stops anything: a scheduled build must not stop committing, and the page must not go stale, because a headline contains a place name.
+**Quoted from the feeds: counted, not refused.** Every other string in `data/latest.json` is something an outlet published or a value derived from it: `items[].title`, `items[].link`, `items[].image` (the image URL), `items[].desc` (the quoted description; unlike a title it is optional, so a description that carries a word is not carried and is counted in `name_gate.desc_blanked`, 14.1), `basis.words` and `basis.places` (words taken from the titles), `ai_requests[].doc` (the request text, which holds the titles), `sources[]` (names and terms links). The project does not choose that wording, so a hit is counted and never stops anything: a scheduled build must not stop committing, and the page must not go stale, because a headline contains a place name.
 
 **In the build** (`parallax/build.py`, uses `gate_counts` from `tools/leakcheck.py`; only the fixed words, never values read from the machine):
 - `run_ai`: after the validator, every AI text of a story that carries a word is emptied (`headline_ja`, `headline_en`, `contrast_ja`, `flag_note_ja`; an `angles` row is dropped; a summary is dropped). A story whose two headlines are both empty is not trusted and goes back to its rule groups (the same as the validator does for a story without a headline). The number of emptied texts is `ai_run.name_words` (also `stats.json` → `ai.merge.name_words`). A place-name compound that `tools/leakcheck.py` allows (a railway line, a region, a cape) passes; the bare word does not.
@@ -1116,7 +1129,7 @@ An item read through Google News carries `via: "gnews"` and `media` (the outlet 
 
 `{ "sources": ["<source id>"], "items": ["<article (item) id>"], "photos": { "items": ["<article id>"], "sources": ["<source id>"] } }`: source ids, article ids and photo permissions only.
 **No requester, no reason, no headline** is written in it. The build applies it before anything else: every item of a listed source or with a listed id is removed from the fetch, and the image of an item
-(or of every item of a source) listed under `photos` is cleared. It is applied again to **the previous good version that is kept** (the `kept_previous` AI view and the file left in place when a build is refused),
+(or of every item of a source) listed under `photos` is cleared. The description of an item (14.1) is a field of the item and goes with it. It is applied again to **the previous good version that is kept** (the `kept_previous` AI view and the file left in place when a build is refused),
 so that what was withheld cannot come back from an earlier version (`withheld.scrub`). `latest.json.withheld` = `{ "sources", "items", "photos", "items_removed", "photos_cleared" }` (counts only).
 The list is a tracked setting; a change is applied by a manual run of the workflow (20.1). Requests are received by GitHub Issues; the notice says that withholding here **does not reach copies or caches held by third parties**, and that a person concerned or a bereaved family
 need only write the article's URL. **The workflow log never prints a headline** (only counts and ids).

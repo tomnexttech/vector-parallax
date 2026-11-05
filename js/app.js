@@ -28,6 +28,8 @@ import { detect, bannerText, sceneOf } from './scenes.js';
 import { STATIONS, stationFor, embedSrc } from './tv.js';
 import { loadSettings, saveSettings, cleanSettings, hiddenBy, reasonJa, KIND_JA } from './settings.js';
 import { createSettingsPanel } from './settings_panel.js';
+import { initLandscape } from './landscape.js';
+import { initDial } from './dial.js';
 
 const DEFAULT_DATA = 'data/latest.json';
 const POLL_MS = 5 * 60 * 1000;
@@ -1944,6 +1946,8 @@ async function main() {
   let rt = 0;
   window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => state.map && state.map.resize(), 160); });
   window.addEventListener('parallax-theme', () => { if (state.map) state.map.resize(); });   // the map's ground is drawn in the page's tones
+  initLandscape();   // phones held sideways: the list on the left, one pane on the right
+  initDial();        // phones: two rings under the thumb to step through the topics and the events
 
   const dp = dataPath();
   if (dp.bad != null) { showFatal('data= は同じ場所の相対パス（.json）だけ指定できます。'); return; }

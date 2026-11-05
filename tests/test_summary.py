@@ -23,7 +23,9 @@ def setUpModule():                                    # 要約の試験は、束
 def tearDownModule():
     build.PICK_TOP, build.PICK_LOOSE_PAIR = _KEEP
 PROMPT_ON = copy.deepcopy(PROMPT)
-PROMPT_ON["summary"]["enabled"] = True        # 要約の段は既定で切ってある。段の試験は入れた版で回す
+PROMPT_ON["summary"]["enabled"] = True        # 2026-11-05 から既定で入れてある。切った時の試験は PROMPT_OFF で回す
+PROMPT_OFF = copy.deepcopy(PROMPT)
+PROMPT_OFF["summary"]["enabled"] = False
 ROOT_DATA = ROOT / "data"
 KEY = "TEST-KEY-NOT-REAL-0000"
 
@@ -332,9 +334,13 @@ class KeylessRun(unittest.TestCase):
 
 
 class Disabled(unittest.TestCase):
-    """既定は切ってある（prompt.summary.enabled = false）。切った時に、何も呼ばず・何も出さず・何も壊さない。"""
+    """既定は入れてある（prompt.summary.enabled = true、2026-11-05）。切った時（false）に、何も呼ばず・何も出さず・何も壊さない。"""
 
-    def test_off_by_default_nothing_called_nothing_shown(self):
+    def test_the_committed_prompt_has_the_stage_on(self):
+        self.assertIs(PROMPT["summary"]["enabled"], True)
+
+    def test_off_nothing_called_nothing_shown(self):
+        PROMPT = PROMPT_OFF
         self.assertIs(PROMPT["summary"]["enabled"], False)
         self.assertEqual(build.choose_summary_provider({}, {"GEMINI_API_KEY": KEY}, PROMPT), (None, "disabled"))
         cache = build.empty_cache()
@@ -353,9 +359,12 @@ class Disabled(unittest.TestCase):
         self.assertEqual((st["summarized"], st["summary"]["status"], st["summary"]["calls"]), (0, "disabled", 0))
         self.assertEqual(build.dump_requests([], PROMPT, extras["summary_requests"])["summary_requests"], [])
 
-    def test_the_committed_data_carries_no_summary(self):
-        # latest.json is a build product (CONTRACT 20.1), not tracked: build from the synthetic fixture with the committed prompt
+    def test_a_build_without_a_key_carries_no_summary(self):
+        # latest.json is a build product (CONTRACT 20.1), not tracked: build from the synthetic fixture with the committed prompt and no key
         d, _ = run_build(None, None, build.empty_cache(), public=True, status="off", sstatus="off", prompt=PROMPT)
+        self.assertFalse(any("summary" in s for s in d["stories"]))
+        self.assertEqual(d["ai_run"]["summary"]["status"], "off")
+        d, _ = run_build(None, None, build.empty_cache(), public=True, status="off", sstatus="off", prompt=PROMPT_OFF)
         self.assertFalse(any("summary" in s for s in d["stories"]))
         self.assertEqual(d["ai_run"]["summary"]["status"], "disabled")
 
