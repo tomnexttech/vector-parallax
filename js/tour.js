@@ -25,7 +25,7 @@ export const STEPS = [
   { id: 'simple', at: ['#entry .en-card[aria-pressed="true"]', '#entry .en-card', '#entry-btn'], title: 'かんたん表示',
     text: 'ニュースを一つ選ぶと、国内メディア・海外メディア・官公庁の発表が三列に並びます。上の「かんたん表示」ボタンで、詳しい画面と切り替えられます。' },
   { id: 'absent', at: ['#entry .cb-absent', '#entry .en-cols'], title: '見当たらない媒体',
-    text: '集めた記事の中で、このニュースが見つからなかったメディアです。そのメディアが報じていないとは限りません。' },
+    text: '集めた記事の中で、このニュースが見つからなかったメディアです。あくまで集めた範囲での結果です。' },
   { id: 'ai', at: ['#entry .en-sel .en-ai', '#v-ai'], title: 'AI のまとめ',
     text: '言語が違っても、同じニュースの見出しを AI がひとまとめにします。AI が書いた文には「AI」マークが付きます。内容の真偽は判定しません。' },
   { id: 'settings', at: ['#set-btn'], title: '設定',
