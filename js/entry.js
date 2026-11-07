@@ -54,7 +54,9 @@ export function entryEvents(pri, n = CARDS) {
 export function pickFirst(list) {
   const es = (Array.isArray(list) ? list : []).filter(Boolean);
   const k = (e) => { const s = sides(e); return (s.jp.length > 0) + (s.intl.length > 0) + (s.gov.length > 0); };
-  return es.find((e) => k(e) === 3) || es.find((e) => k(e) === 2 && e.members.length >= 3) || es.find((e) => k(e) === 2) || es[0] || null;   // three reports and up can be measured
+  const rich = (l) => l.find((e) => k(e) === 3) || l.find((e) => k(e) === 2 && e.members.length >= 3);   // three reports and up can be measured
+  const named = es.filter((e) => e.field && e.field !== 'その他');   // the first thing shown belongs to a field of the news
+  return rich(named) || rich(es) || es.find((e) => k(e) === 2) || es[0] || null;
 }
 
 export function sides(e) {

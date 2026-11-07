@@ -2291,6 +2291,7 @@ function applyPanes() {
     if (shown.length === ps.length && !shown.some((x) => x.dataset.sfold || x.dataset.sbig)) { col.style.gridTemplateRows = ''; continue; }
     const rows = shown.map((x) => (x.classList.contains('fold') ? 'auto' : x.dataset.sbig ? (PANE_ROWS[x.id] || 'auto').replace(/([\d.]+)fr/, (_, n) => `${+n * 2.5}fr`) : PANE_ROWS[x.id] || 'auto'));
     if (rows.length && !rows.some((r) => r.includes('fr'))) rows[rows.length - 1] = 'minmax(0, 1fr)';
+    if (col.querySelector(':scope > .under')) rows.push('minmax(0, 1fr)');   // the row under the event keeps its share, or more related headlines would push the event out
     col.style.gridTemplateRows = rows.join(' ') || 'minmax(0, 1fr)';
   }
   $('board').classList.toggle('nomap', off.has('map'));
