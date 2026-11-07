@@ -44,6 +44,30 @@ export function absentOutlets(event, sources, generatedAt) {
   return { total: feeds.length, reach, first, absent, unknown };
 }
 
+/** what one outlet carried in the collected news, measured, never scored:
+ *  outletProfile(events, outlet, { outletOf }) -> { n, multi, first, lagMed, fields: [[field, n]], rows: [{ e, ts, lag, first }] }
+ *  n = the news with a headline of it; multi = of those, the news two outlets or more carried; first = in multi, its earliest
+ *  headline is the news's earliest (ties count); lagMed = in multi, the median of its earliest headline minus the news's earliest, in seconds */
+export function outletProfile(events, outlet, { outletOf = (it) => str(it.media) || str(it.outlet) } = {}) {
+  const rows = [];
+  for (const e of Array.isArray(events) ? events : []) {
+    const ms = e && Array.isArray(e.members) ? e.members.filter((m) => m && typeof m === 'object') : [];
+    const mine = ms.filter((m) => outletOf(m) === outlet);
+    if (!outlet || !mine.length) continue;
+    const outs = new Set(ms.map(outletOf).filter(Boolean)).size;
+    const all = ms.map((m) => m.ts).filter(isNum), own = mine.map((m) => m.ts).filter(isNum);
+    const t0 = all.length ? Math.min(...all) : null, t = own.length ? Math.min(...own) : null;
+    rows.push({ e, ts: t, multi: outs >= 2, lag: t != null && t0 != null ? t - t0 : null, first: t != null && t === t0 });
+  }
+  const multi = rows.filter((r) => r.multi);
+  const lags = multi.map((r) => r.lag).filter(isNum).sort((a, b) => a - b);
+  const mid = lags.length ? (lags.length % 2 ? lags[(lags.length - 1) / 2] : (lags[lags.length / 2 - 1] + lags[lags.length / 2]) / 2) : null;
+  const f = new Map();
+  for (const r of rows) { const k = str(r.e.field) || 'その他'; f.set(k, (f.get(k) || 0) + 1); }
+  rows.sort((a, b) => (isNum(b.ts) ? b.ts : -Infinity) - (isNum(a.ts) ? a.ts : -Infinity));
+  return { n: rows.length, multi: multi.length, first: multi.filter((r) => r.first).length, lagMed: mid, fields: [...f.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ja')), rows };
+}
+
 /** groups of { type, names[] } in the type order */
 export function groupByType(list) {
   const m = new Map();

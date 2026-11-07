@@ -23,10 +23,10 @@ import { createFeel } from './feel.js';
 import { startAutoScroll } from './autoscroll.js';
 import { loadHazards, nearby, dir8, shindoJa, disasterJa } from './hazards.js';
 import { createActions } from './actions.js';
-import { loadTasks, saveTasks, addTask, toggleTask, removeTask, hasTask } from './tasks.js';
+import { loadTasks, saveTasks, addTask, toggleTask, removeTask, hasTask, loadReads, saveReads, clearReads, noteRead, readMix } from './tasks.js';
 import { speechSupported, listen, route as voiceRoute } from './voice.js';
-import { absentOutlets, absentBlock } from './absent.js';
-import { entryEvents, renderEntry, pickFirst, lineIcon, sides as sidesOf, SIDES } from './entry.js';
+import { absentOutlets, absentBlock, outletProfile } from './absent.js';
+import { entryEvents, renderEntry, pickFirst, lineIcon, sides as sidesOf, SIDES, original } from './entry.js';
 import { tidyGovTitles } from './tidy.js';
 import { detect, bannerText, sceneOf } from './scenes.js';
 import { createPolitics } from './politics_ui.js';
@@ -38,11 +38,11 @@ import { createSettingsPanel } from './settings_panel.js';
 import { initLandscape } from './landscape.js';
 import { initDial } from './dial.js';
 import { createTour, wantTour } from './tour.js';
-import { createDossier, measure, paperPick } from './dossier.js';
+import { createDossier, measure, paperPick, drawShareCard, CARD_W, CARD_H } from './dossier.js';
 import { biasOf as biasIndex, sourceBase } from './bias.js';
 import { newsView, createMapNews } from './mapnews.js';
 import { createWall, wallOn, pageOf, pageHolding, perOf } from './wall.js';
-import { SECTIONS, NEWS_TABS, parseHash, hashOf, paperOf, nextSeen, shareUrl, ruleJa } from './sections.js';
+import { SECTIONS, NEWS_TABS, parseHash, hashOf, paperOf, nextSeen, shareUrl, ruleJa, oneSideOf, ONE_SIDE_TITLE, ONE_SIDE_NOTE } from './sections.js';
 import { createPalette } from './palette.js';
 
 const DEFAULT_DATA = 'data/latest.json';
@@ -738,6 +738,8 @@ function anomRows() {
   if (!(b && Array.isArray(b.asymmetry))) for (const e of es) for (const f of e.ruleFlags) { const t = flagText(f); if (t) rows.push({ e, k: 'rule-' + f, ja: t.ja, tip: t.tip }); }
   return rows;
 }
+/** the news of one side only (js/sections.js), on what the visitor's settings and search show */
+function sideGroups(byGenre) { return oneSideOf(state.es.filter((e) => !e.foldedInto && vis(e) && matchesQ(e) && (!byGenre || inGenre(e))), { sidesOf, outletOf }); }
 function renderAnom() {
   const rows = anomRows().filter((r) => !r || !r.e || inGenre(r.e));
   const by = new Map();
@@ -746,9 +748,16 @@ function renderAnom() {
   if (!state.q && ca && isNum(ca.shown)) $('anom-c').textContent = isNum(ca.total) && ca.total !== ca.shown ? `${fmtN(ca.shown)} / ${fmtN(ca.total)}` : fmtN(ca.shown);
   else roll($('anom-c'), rows.length);
   const ast = state.board && isObj(state.board.asym_status) ? state.board.asym_status : null;
-  if (state.anomKind && !by.has(state.anomKind)) state.anomKind = null;
-  $('anom-sum').replaceChildren(...[...by.entries()].map(([k, n]) => h('button', { type: 'button', class: 'ak', 'aria-pressed': String(state.anomKind === k),
-    on: { click: () => { state.anomKind = state.anomKind === k ? null : k; renderAnom(); } } }, h('span', { class: 'akn num', text: n }), h('span', { class: 'akl', text: k }))));
+  const groups = sideGroups(true), sk = (g) => 'side-' + g.side;
+  if (state.anomKind && !by.has(state.anomKind) && !groups.some((g) => sk(g) === state.anomKind)) state.anomKind = null;
+  const kindBtn = (k, n, label, side) => h('button', { type: 'button', class: side ? 'ak side' : 'ak', data: side ? { side } : null, 'aria-pressed': String(state.anomKind === k),
+    on: { click: () => { state.anomKind = state.anomKind === k ? null : k; renderAnom(); } } }, h('span', { class: 'akn num', text: n }), h('span', { class: 'akl' }, side ? lineIcon(side) : null, label));
+  $('anom-sum').replaceChildren(...groups.map((g) => kindBtn(sk(g), g.events.length, g.short, g.side)), ...[...by.entries()].map(([k, n]) => kindBtn(k, n, k)));
+  const g = groups.find((x) => sk(x) === state.anomKind);
+  if (g) {
+    $('anom-b').replaceChildren(h('p', { class: 'anom-rule', title: ONE_SIDE_NOTE, text: `${g.rule}。` }), h('ul', { class: 'rows' }, g.events.slice(0, 80).map((e) => row(e, { flag: { ja: g.short, tip: g.rule } }))));
+    return;
+  }
   const shown = state.anomKind ? rows.filter((r) => r.ja === state.anomKind) : rows;
   const ruleNow = state.anomKind && shown[0] ? shown[0].tip : '';
   $('anom-b').replaceChildren(...(ruleNow ? [h('p', { class: 'anom-rule', text: `${ruleNow}。` })] : []), shown.length
@@ -1229,13 +1238,16 @@ function renderEntryView() {
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
   renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
     fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => setUi('full'),
-    detail: entryDetail, measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent });
+    detail: entryDetail, measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)),
+    oneSide: sideGroups(true), oneSideTitle: ONE_SIDE_TITLE, oneSideNote: ONE_SIDE_NOTE, more: entryMore });
   const hd = $('entry').querySelector('.en-head');
   if (hd) hd.after(genreEl()); else $('entry').prepend(genreEl());
 }
+// the rest of the news of one side: the list on the detailed screen
+function entryMore(side) { state.anomKind = 'side-' + side; setUi('full'); setSect('news', 'anom'); }
 // a press on a card: the news under the strip changes, and the page brings its title up unless it is already near the top
 function pickEntry(k) {
-  state.entrySel = k; renderEntryView();
+  state.entrySel = k; renderEntryView(); recordRead(state.byKey.get(k));
   const s = $('entry').querySelector('.en-sel'), c = $('entry').querySelector('.en-card[aria-pressed="true"]'), how = reduced() ? 'auto' : 'smooth';
   if (c) { const st = c.parentElement, r = c.getBoundingClientRect(), b = st.getBoundingClientRect(); if (r.left < b.left || r.right > b.right) st.scrollBy({ left: r.left - b.left - 16, behavior: how }); }
   const top = s ? s.getBoundingClientRect().top : 0;
@@ -1824,7 +1836,7 @@ function select(key, byHand) {
   for (const el of document.querySelectorAll(`.rows .r[data-key="${CSS.escape(key)}"]`)) el.classList.add('sel');
   const inPri = document.querySelector(`#pri-b .r[data-key="${CSS.escape(key)}"]`);
   if (inPri && !byHand) inPri.scrollIntoView({ block: 'nearest' });
-  if (changed) { renderCase(); renderSources(); renderHours(); renderMap(true); renderMapNews(); followWall(); paintNewsCase(); if (byHand) followTv(state.byKey.get(key)); }
+  if (changed) { renderCase(); renderSources(); renderHours(); renderMap(true); renderMapNews(); followWall(); paintNewsCase(); if (byHand) { followTv(state.byKey.get(key)); recordRead(state.byKey.get(key)); } }
   syncAutoLine();
   return true;
 }
@@ -1995,7 +2007,7 @@ async function loadSide() {
 }
 
 // ---------------------------------------------------------------- sheets: a pane opened toward the viewer — one big number, the facts, then everything
-const SHEETS = { keys: 'キーの一覧', case: '出来事', src: '媒体', hours: '時間ごとの見出し', pri: '注目', anom: '一部の媒体だけ', mkt: '市場', pol: '政治', haz: '災害' };
+const SHEETS = { keys: 'キーの一覧', outlet: 'メディア', case: '出来事', src: '媒体', hours: '時間ごとの見出し', pri: '注目', anom: '一部の媒体だけ', mkt: '市場', pol: '政治', haz: '災害' };
 const SHEET_PANE = { src: 'p-src', hours: 'p-hours', pri: 'p-pri', anom: 'p-anom', mkt: 'p-mkt', pol: 'p-pol', haz: 'p-haz' };
 const SHEET_ALIAS = { 源: 'src', ソース: 'src', 情報源: 'src', 媒体: 'src', 時間ごと: 'hours', 時間: 'hours', 注目: 'pri', 非対称: 'anom', 一部の媒体だけ: 'anom', 市場: 'mkt', 政治: 'pol', 災害: 'haz' };
 const sheetKind = (k) => { const x = String(k || '').trim(); return SHEETS[x] ? x : SHEET_ALIAS[x] || null; };
@@ -2066,7 +2078,7 @@ const SHEET_BODY = {
       const rs = rows.filter((r) => r.type === t).sort((p, q) => (q.h48 || 0) - (p.h48 || 0));
       body.push(sec(t, `${rs.filter((r) => !bad(r)).length} / ${rs.length}`));
       body.push(tbl([['媒体'], ['', 'opt'], ['状態'], ...(anyQ ? [['経由・検索の語', 'opt']] : []), ['1時間', 'r'], ['6時間', 'r'], ['48時間', 'r'], ['最新', 'r opt'], ...(anyDrop ? [['外した', 'r opt']] : [])], rs.map((r) => h('tr', { class: bad(r) ? 'bad' : null },
-        td(str(r.name)), td(r.home === 'intl' ? '海外' : '国内', 'dim opt'), td(bad(r) ? (str(r.err) || staleJa) : '届いた', bad(r) ? 'err' : 'dim'), ...(anyQ ? [td(r.via === 'gnews' ? `Google ニュース${str(r.query) ? '「' + str(r.query) + '」' : ''}` : '', 'dim opt')] : []),
+        td(lk(str(r.name), () => openOutlet(str((lsrc.get(r.id) || r).outlet) || str(r.name)), 'このメディアが扱ったニュース', 'op-lk')), td(r.home === 'intl' ? '海外' : '国内', 'dim opt'), td(bad(r) ? (str(r.err) || staleJa) : '届いた', bad(r) ? 'err' : 'dim'), ...(anyQ ? [td(r.via === 'gnews' ? `Google ニュース${str(r.query) ? '「' + str(r.query) + '」' : ''}` : '', 'dim opt')] : []),
         td(fmtN(r.h1), 'r'), td(fmtN(r.h6), 'r'), td(fmtN(r.h48), 'r'), td(isNum(r.age_h) ? `${r.age_h}時間前` : '—', 'r dim opt'), ...(anyDrop ? [td(fmtN(dropOf(r)), 'r dim opt')] : [])))));
     }
     return { big: fmtN(live), unit: `/ ${rows.length} 届いた媒体`, bad: live < rows.length * 0.8,
@@ -2106,16 +2118,38 @@ const SHEET_BODY = {
       facts: TOPICS.map((t) => [flagJa(t.id), fmtN(state.pri.filter((e) => e.topics.includes(t.id)).length)]),
       body: [tbl([['', 'r'], ['旗'], ['見出し'], ['媒体', 'r'], ['分野', 'opt'], ['共通する言葉', 'opt'], ['最新', 'r']], rows)], foot: '旗は公開した自動のラベル' };
   },
+  outlet() {
+    const o = str(state.outlet);
+    const p = outletProfile(state.es.filter((e) => !e.foldedInto && vis(e)), o, { outletOf });
+    const src = arr(state.data.sources).find((r) => isObj(r) && (str(r.outlet) === o || str(r.name) === o)) || {};
+    const kind = [str(src.type) === GOV ? '官公庁の資料' : str(src.type), src.home === 'intl' ? '海外' : src.home ? '国内' : ''].filter(Boolean).join('・');
+    const top = p.fields.length ? p.fields[0][1] : 1;
+    const body = [];
+    if (p.fields.length) body.push(sec('分野', p.fields.length), h('ul', { class: 'me-bars op-bars' }, p.fields.slice(0, 8).map(([f, n]) => h('li', null,
+      h('span', { class: 'k', text: f }), h('span', { class: 'b' }, h('i', { style: `width:${Math.max(2, (n / top) * 100).toFixed(1)}%` })), h('b', { class: 'num', text: n }), h('span', { class: 'pc num', text: `${Math.round((n / p.n) * 100)}%` })))));
+    body.push(sec('扱ったニュース', p.n), p.n ? h('ul', { class: 'rows' }, p.rows.slice(0, 40).map((x) => row(x.e, { press: openCase }))) : h('p', { class: 'empty', text: '集めたニュースには、このメディアの見出しが見当たりません。' }),
+      h('p', { class: 'op-go' }, h('button', { type: 'button', class: 'tbb', on: { click: () => { closeSheet(); searchFor(o); setSect('news', 'now'); } } }, 'このメディアの見出しを探す')));
+    const lag = isNum(p.lagMed) ? (p.lagMed < 60 ? '1分未満' : fmtSpan(p.lagMed)) : '—';
+    return { big: fmtN(p.n), unit: `${o}${kind ? `（${kind}）` : ''} が扱ったニュース`, facts: p.multi ? [['2 媒体以上のニュース', fmtN(p.multi)], ['最初に報じた', fmtN(p.first)], ['最初の報道からの遅れ（中央値）', lag]] : [],
+      body, foot: '集めた範囲のニュースだけで数えています。最初に報じた回数と遅れは、2 媒体以上が扱ったニュースの中での見出しの時刻です。' };
+  },
   anom() {
     const rows = anomRows();
     const kinds = uniq(rows.map((r) => r.ja));
-    const body = [];
+    const groups = sideGroups(false), CAP = 12;
+    const sideRows = (es) => h('ul', { class: 'rows' }, es.map((e) => row(e, { press: openCase, compact: true })));
+    const body = groups.length ? [sec(ONE_SIDE_TITLE, groups.reduce((a, g) => a + g.events.length, 0)), h('p', { class: 'anom-rule', text: ONE_SIDE_NOTE }),
+      h('div', { class: 'os-cols', style: `--n:${groups.length}` }, groups.map((g) => h('section', { class: 'os-col', data: { side: g.side } },
+        h('h4', null, lineIcon(g.side), h('span', { text: g.ja }), h('span', { class: 'n num', text: g.events.length })),
+        h('p', { class: 'os-rule', text: g.rule }), sideRows(g.events.slice(0, CAP)),
+        g.events.length > CAP ? h('details', { class: 'os-more' }, h('summary', { text: `残り ${g.events.length - CAP} 件` }), sideRows(g.events.slice(CAP))) : null)))] : [];
     for (const k of kinds) {
       const rs = rows.filter((r) => r.ja === k);
       body.push(sec(k, rs.length), rs[0].tip ? h('p', { class: 'anom-rule', text: `${rs[0].tip}。` }) : null, tbl([['見出し'], ['媒体', 'r'], ['種類', 'opt'], ['最新', 'r']], rs.map((r) => h('tr', { class: 'go', on: { click: () => { closeSheet(); select(r.e.key, true); } } },
         td(r.e.heading.text, 'tt'), td(`${r.e.n}`, 'r'), td(uniq(r.e.members.map((it) => it.type)).join('・'), 'dim opt'), td(fmtAge(r.e.last), 'r dim')))));
     }
-    return { big: fmtN(rows.length), unit: '一部の媒体だけが報じた出来事', facts: kinds.map((k) => [k, fmtN(rows.filter((r) => r.ja === k).length)]), body: body.length ? body : [h('p', { class: 'empty', text: '0 件' })], foot: `自動のラベル・${noteJa()}` };
+    return { big: fmtN(new Set([...rows.map((r) => r.e), ...groups.flatMap((g) => g.events)]).size), unit: '一部の媒体だけ・片方の側だけのニュース',
+      facts: [...groups.map((g) => [g.short, fmtN(g.events.length)]), ...kinds.map((k) => [k, fmtN(rows.filter((r) => r.ja === k).length)])], body: body.length ? body : [h('p', { class: 'empty', text: '0 件' })], foot: `自動のラベル・${noteJa()}` };
   },
   mkt() {
     const m = state.mkt;
@@ -2249,6 +2283,33 @@ function renderTasks() {
     : [h('li', { class: 'empty', text: 'ニュースを開いて「保存」を押すと、ここに並びます。' })]));
 }
 function setTasks(list) { state.tasks = list; saveTasks(store, list); renderTasks(); return true; }
+// one outlet's page (js/absent.js outletProfile): what it carried in the collected news, measured
+function openOutlet(name) { if (!name) return false; state.outlet = name; return openSheet('outlet'); }
+// 自分の読み方 (js/tasks.js): a news opened by hand is noted in this browser only, never sent; 記録を消す removes all of it
+function recordRead(e) {
+  if (!e || !Array.isArray(state.reads)) return;
+  const x = sidesOf(e), types = {};
+  for (const it of e.members) if (it && typeof it.type === 'string' && it.type) types[it.type] = (types[it.type] || 0) + 1;
+  state.reads = noteRead(state.reads, { k: saveId(e), f: e.field || '', jp: x.jp.length, intl: x.intl.length, gov: x.gov.length, types }, Date.now());
+  saveReads(store, state.reads);
+}
+function renderReads() {
+  const box = $('sv-me');
+  if (!box) return;
+  const m = readMix(state.reads), tot = m.sides.jp + m.sides.intl + m.sides.gov;
+  const pc = (n, of) => (of ? `${Math.round((n / of) * 100)}%` : '');
+  const nameOf = (t) => (t === GOV ? '官公庁の資料' : t);
+  const bars = (title, list, of) => (list.length ? h('section', { class: 'me-g' }, h('h3', { text: title }), h('ul', { class: 'me-bars' }, list.slice(0, 6).map(([k, n]) => h('li', null,
+    h('span', { class: 'k', text: nameOf(k) }), h('span', { class: 'b' }, h('i', { style: `width:${Math.max(2, (n / list[0][1]) * 100).toFixed(1)}%` })), h('b', { class: 'num', text: n }), h('span', { class: 'pc num', text: pc(n, of) }))))) : null);
+  const clear = () => { clearReads(store); state.reads = []; renderReads(); };
+  box.replaceChildren(
+    h('h2', null, '自分の読み方', m.n ? h('span', { class: 'n num', text: `${m.n} 件` }) : null),
+    m.n ? h('p', { class: 'me-sum', text: `${fmtShort(Math.floor(m.since / 1000))} から開いたニュース ${m.n} 件の見出しの内訳です。` }) : h('p', { class: 'empty', text: 'ニュースを開くと、ここに自分の読み方が出ます。' }),
+    tot ? h('section', { class: 'me-share' }, h('h3', { text: '国内・海外・官公庁の見出しの割合' }), h('span', { class: 'me-bar' }, dossier.ratioBar({ jp: Array(m.sides.jp), intl: Array(m.sides.intl), gov: Array(m.sides.gov) })),
+      h('ul', { class: 'me-lg' }, SIDES.map(([k, , short]) => h('li', { class: m.sides[k] ? null : 'zero', data: { side: k } }, lineIcon(k), h('span', { class: 'kl', text: short }), h('b', { class: 'num', text: m.sides[k] }), h('span', { class: 'pc num', text: pc(m.sides[k], tot) }))))) : null,
+    m.n ? h('div', { class: 'me-cols' }, bars('分野', m.fields, m.n), bars('メディアの種類', m.types, tot)) : null,
+    h('p', { class: 'me-f' }, h('span', { text: 'この記録はこのブラウザの中だけに置き、外へ送りません。' }), m.n ? h('button', { type: 'button', class: 'tbb', on: { click: clear } }, '記録を消す') : null));
+}
 function taskAdd() {
   const e = cur();
   if (!e) return false;
@@ -2267,6 +2328,30 @@ function toast(text) { const el = $('toast'); el.textContent = text; el.hidden =
 async function shareLink(title, url) {
   if (navigator.share) { try { await navigator.share({ title, url }); return true; } catch (err) { if (err && err.name === 'AbortError') return true; } }
   try { await navigator.clipboard.writeText(url); toast('リンクをコピーしました'); } catch { toast(url); }
+  return true;
+}
+// one news as an image (js/dossier.js drawShareCard): the device's share with the file, else the file is saved
+async function shareImage(e) {
+  if (!e) return false;
+  const m = measureOf(e), t = original(e), css = getComputedStyle(document.documentElement), v = (n) => css.getPropertyValue(n).trim();
+  const nOut = new Set(e.members.map(outletOf).filter(Boolean)).size;
+  const pc = (n) => (m.n ? `${Math.round((n / m.n) * 100)}%` : '');
+  const sides = SIDES.map(([k, , short]) => ({ k, label: short, n: m[k].length, pc: pc(m[k].length), first: m.firstOf && m.firstOf[k] ? { clock: fmtShort(m.firstOf[k].ts), outlet: outletOf(m.firstOf[k]) } : null }));
+  const lag = isNum(m.lag) && m.firstOf.jp && m.firstOf.intl ? `国内と海外の差 ${Math.abs(m.lag) < 60 ? '1分未満' : fmtSpan(Math.abs(m.lag))}・${m.lag > 0 ? '海外が先' : m.lag < 0 ? '国内が先' : '同じ時刻'}` : '';
+  const words = m.intl.length && m.jp.length + m.gov.length ? arr(m.words && m.words.jp).filter((x) => x.both).slice(0, 6).map((x) => x.w) : [];
+  const cv = document.createElement('canvas'); cv.width = CARD_W; cv.height = CARD_H;
+  try { await document.fonts.ready; } catch { /* */ }
+  drawShareCard(cv.getContext('2d'), { title: `「${t.text}」`, outlet: t.outlet, when: `${fmtShort(state.data.generated_at)} 時点・${nOut} 媒体・${m.n} 件`, sides, lag, words },
+    { bg: v('--pane'), ink: v('--ink'), ink2: v('--ink-2'), ink3: v('--ink-3'), line: v('--line-2'), lit: v('--cyan'), jp: v('--sd-jp'), intl: v('--sd-intl'), gov: v('--sd-gov'), font: v('--f-text'), num: v('--f-num') });
+  const blob = await new Promise((r) => { try { cv.toBlob(r, 'image/png'); } catch { r(null); } });
+  if (!blob) return false;
+  const name = `parallax-${saveId(e)}.png`.replace(/[^\w.-]+/g, '-');
+  try {
+    const file = new File([blob], name, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: t.text }); return true; }
+  } catch (err) { if (err && err.name === 'AbortError') return true; }
+  const url = URL.createObjectURL(blob), a = h('a', { href: url, download: name });
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 5000);
   return true;
 }
 function shareEvent(e) {
@@ -2358,7 +2443,7 @@ function pageOff(k) {
 }
 function renderSect() {
   const k = state.sect;
-  if (k === 'saved') { renderTasks(); renderWatch(); renderSavedHits(); return; }
+  if (k === 'saved') { renderTasks(); renderWatch(); renderSavedHits(); renderReads(); return; }
   if (k === 'video') renderTvEvents();
   if (!isPage(k)) return;
   const box = $('sect');
@@ -2400,10 +2485,10 @@ function paletteItems() {
   for (const [id, ja] of NEWS_TABS) if (id !== 'now') items.push({ kind: 'ニュース', label: ja, first: id === 'paper' || id === 'diff', run: go('news', id) });
   const c = genreCounts(state.pri);
   for (const f of [...FIELDS, OTHER_FIELD]) items.push({ kind: '分野', label: f, hint: isNum(c.get(f)) ? `${c.get(f)} 件` : '', run: () => { setGenre(f); setSect('news', 'now'); } });
-  for (const o of uniq(arr(state.data && state.data.sources).filter(isObj).map((r) => str(r.outlet) || str(r.name)).filter(Boolean))) items.push({ kind: 'メディア', label: o, run: () => { searchFor(o); setSect('news', 'now'); } });
+  for (const o of uniq(arr(state.data && state.data.sources).filter(isObj).map((r) => str(r.outlet) || str(r.name)).filter(Boolean))) items.push({ kind: 'メディア', label: o, run: () => openOutlet(o) });
   const toTheme = () => { applySettings({ ...state.set, look: { ...state.set.look, theme: state.set.look.theme === 'light' ? 'dark' : 'light' } }); };
   const ops = [['かんたん表示', () => { setSect('home'); setUi('simple'); }], ['ダークとライトを切り替える', toTheme], ['字の大きさを切り替える', () => applySettings({ ...state.set, look: { ...state.set.look, size: state.set.look.size === 'l' ? 'm' : 'l' } })],
-    ['使い方を見る', () => $('tour-btn').click()], ['キーの一覧', () => openSheet('keys')], ['設定', () => openSettings()], ['データと AI', () => openAbout()], ['表示中のニュースを保存', () => toggleSave(cur())], ['表示中のニュースを共有', () => shareEvent(cur())], ['世界の地図', () => { setSect('map'); actions.run('map_world'); }]];
+    ['使い方を見る', () => $('tour-btn').click()], ['キーの一覧', () => openSheet('keys')], ['設定', () => openSettings()], ['データと AI', () => openAbout()], ['表示中のニュースを保存', () => toggleSave(cur())], ['表示中のニュースを共有', () => shareEvent(cur())], ['表示中のニュースを画像で共有', () => shareImage(cur())], ['世界の地図', () => { setSect('map'); actions.run('map_world'); }]];
   for (const [ja, run] of ops) items.push({ kind: '操作', label: ja, first: ja === 'キーの一覧' || ja === '設定', run });
   for (const e of state.es) if (!e.foldedInto && vis(e)) items.push({ kind: 'ニュース', label: e.heading.text, hint: `${e.n}媒体`, hay: e.hay, run: () => openCase(e.key) });
   return items;
@@ -2556,6 +2641,7 @@ async function main() {
   if (hashView) state.view = hashView;
   state.watch = loadWatch(store);
   state.tasks = loadTasks(store);
+  state.reads = loadReads(store);
   state.set = loadSettings(store);
   state.own = loadOwnAI(store); state.ownAsk = new Map();
   document.documentElement.toggleAttribute('data-calm', state.set.motion.calm === 'on');

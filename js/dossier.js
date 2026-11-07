@@ -367,3 +367,75 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
   }
   return { tile, go, ratioBar, homeTile, typeTile, timeTile, sides, paper, biasTile, biasMini, divergeTile, overlapTile, halfGauge, areaSvg };
 }
+
+/* the share image of one news, 1200 x 630 (js/app.js shareImage): the headline as published, the share of each side, the first
+ * report of each side and the gap, the words both sides used. Only the counts the page already shows; colours and fonts are the
+ * page's own (c). */
+export const CARD_W = 1200, CARD_H = 630;
+const KEEP = '、。，．」』）)！？・ー';
+/** wrapLines(text, measure, maxW, maxLines) -> lines; a closing mark stays on its line, the last line ends in … when cut */
+export function wrapLines(text, measure, maxW, maxLines) {
+  const out = [];
+  let line = '';
+  for (const ch of Array.from(String(text || ''))) {
+    if (!line || measure(line + ch) <= maxW || KEEP.includes(ch)) { line += ch; continue; }
+    out.push(line); line = ch;
+  }
+  if (line) out.push(line);
+  if (out.length <= maxLines) return out;
+  const cut = out.slice(0, maxLines);
+  let last = cut[maxLines - 1];
+  while (last && measure(last + '…') > maxW) last = last.slice(0, -1);
+  cut[maxLines - 1] = last + '…';
+  return cut;
+}
+/** d = { title, outlet, when, sides: [{ k, label, n, pc, first }], lag, words: [w] }   c = { bg, ink, ink2, ink3, line, lit, jp, intl, gov, font, num } */
+export function drawShareCard(g, d, c) {
+  const F = (w, px, fam) => `${w} ${px}px ${fam || c.font}`;
+  const text = (s, x, y, font, color, align = 'left') => { g.font = font; g.fillStyle = color; g.textAlign = align; g.fillText(s, x, y); g.textAlign = 'left'; };
+  g.fillStyle = c.bg; g.fillRect(0, 0, CARD_W, CARD_H);
+  g.strokeStyle = c.lit; g.globalAlpha = 0.5; g.lineWidth = 2; g.strokeRect(1, 1, CARD_W - 2, CARD_H - 2); g.globalAlpha = 1;
+  g.lineWidth = 3;
+  for (const [x, y, dx, dy] of [[24, 24, 1, 1], [CARD_W - 24, 24, -1, 1], [24, CARD_H - 24, 1, -1], [CARD_W - 24, CARD_H - 24, -1, -1]]) {
+    g.beginPath(); g.moveTo(x, y + dy * 22); g.lineTo(x, y); g.lineTo(x + dx * 22, y); g.stroke();
+  }
+  text('Parallax', 64, 80, F(600, 26, c.num), c.ink);
+  text(d.when, CARD_W - 64, 80, F(400, 20), c.ink3, 'right');
+  g.font = F(600, 40);
+  const tl = wrapLines(d.title, (s) => g.measureText(s).width, CARD_W - 128, 3);
+  tl.forEach((s, i) => text(s, 64, 146 + i * 54, F(600, 40), c.ink));
+  let y = 146 + (tl.length - 1) * 54 + 40;
+  if (d.outlet) { text(d.outlet, 64, y, F(400, 20), c.ink2); y += 12; }
+  y += 40;
+  // the share of each side: one bar, a 2px gap between the parts, the counts under it
+  const sides = d.sides.filter((x) => x.n > 0), tot = sides.reduce((a, x) => a + x.n, 0), W = 500;
+  text('件数の割合', 64, y, F(500, 20), c.ink3);
+  let x = 64;
+  for (const s of sides) {
+    const w = Math.max(4, (s.n / tot) * (W - 2 * (sides.length - 1)));
+    g.fillStyle = c[s.k]; g.beginPath(); if (g.roundRect) g.roundRect(x, y + 14, w, 20, 4); else g.rect(x, y + 14, w, 20); g.fill();
+    x += w + 2;
+  }
+  d.sides.forEach((s, i) => {
+    const ly = y + 76 + i * 36;
+    g.fillStyle = c[s.k]; g.fillRect(64, ly - 14, 14, 14);
+    text(s.label, 88, ly, F(500, 22), s.n ? c.ink : c.ink3);
+    text(`${s.n} 件`, 200, ly, F(600, 22, c.num), s.n ? c.ink : c.ink3);
+    text(s.pc, 300, ly, F(400, 22, c.num), c.ink2);
+  });
+  // the first report of each side, and the gap between Japan and abroad
+  const X = 640;
+  text('最初に報じた時刻', X, y, F(500, 20), c.ink3);
+  d.sides.forEach((s, i) => {
+    const ly = y + 42 + i * 36;
+    text(s.label, X, ly, F(500, 22), s.first ? c.ink : c.ink3);
+    text(s.first ? s.first.clock : '—', X + 100, ly, F(600, 22, c.num), s.first ? c.ink : c.ink3);
+    if (s.first) { g.font = F(400, 22); const o = wrapLines(s.first.outlet, (t) => g.measureText(t).width, CARD_W - 64 - (X + 240), 1)[0] || ''; text(o, X + 240, ly, F(400, 22), c.ink2); }
+  });
+  if (d.lag) text(d.lag, X, y + 42 + d.sides.length * 36 + 8, F(600, 24), c.ink);
+  if (d.words.length) {
+    g.font = F(400, 22);
+    const line = wrapLines(`共通する言葉　${d.words.join('・')}`, (t) => g.measureText(t).width, CARD_W - 128, 1)[0];
+    text(line, 64, CARD_H - 56, F(400, 22), c.ink2);
+  }
+}

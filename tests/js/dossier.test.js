@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { measure, headlineWords, compareWords, sideLines, paperPick } from '../../js/dossier.js';
+import { measure, headlineWords, compareWords, sideLines, paperPick, wrapLines } from '../../js/dossier.js';
 
 const T = 1_790_000_000;
 const it = (title, home, type, ts, outlet = 'A', id = title) => ({ id, title, home, type, ts, outlet });
@@ -67,4 +67,12 @@ test('paperPick: another headline than the title, a ministry first, one with a d
   assert.equal(paperPick([a, b, c], '題と同じ').title, '説明のある見出し');
   assert.equal(paperPick([a, b], '「題と同じ」').title, '別の見出し');
   assert.equal(paperPick([a], '題と同じ'), null);
+});
+
+test('the share image wraps a headline: a closing mark stays on its line, the last line ends in … when cut', () => {
+  const ms = (s) => Array.from(s).length * 10;
+  assert.deepEqual(wrapLines('あいうえおかきくけこ', ms, 50, 3), ['あいうえお', 'かきくけこ']);
+  assert.deepEqual(wrapLines('あいうえお。かき', ms, 50, 3), ['あいうえお。', 'かき']);
+  assert.deepEqual(wrapLines('あいうえおかきくけこさしすせそ', ms, 50, 2), ['あいうえお', 'かきくけ…']);
+  assert.deepEqual(wrapLines('', ms, 50, 2), []);
 });

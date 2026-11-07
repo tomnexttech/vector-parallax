@@ -11,6 +11,8 @@
  *                                           what is new since the visitor last looked; a reload of the same data keeps the same answer
  *   shareUrl(loc, { sid, title }) -> url    one event's address: its story id, else its headline; ?data= stays for a local copy
  *   ruleJa(kind, en) -> text                the rule of an automatic label in Japanese, the published English where a kind is not known
+ *   oneSideOf(events, { sidesOf }) -> [{ side, ja, short, rule, events }]
+ *                                           the news whose reports come from one side only (Japan, abroad, the ministries), two outlets or more
  *
  * Neutral by rule: nothing here ranks an outlet or says what an outlet did not do. */
 
@@ -75,6 +77,30 @@ export function shareUrl(loc, { sid = '', title = '' } = {}) {
   if (/^s[0-9a-f]{8,}$/.test(sid)) u.searchParams.set('sid', sid);
   else if (title) u.searchParams.set('t', String(title).slice(0, 60));
   return u.href;
+}
+
+/* the news of one side only: the reports of an event come from one of Japan, abroad and the ministries, and from two outlets or more
+ * (one outlet alone says nothing about a side). Counted on the collected headlines only; the other sides may carry it in other words. */
+export const ONE_SIDE = [
+  { side: 'jp', ja: '国内の報道だけ', short: '国内だけ', rule: '集めたニュースのうち、国内のメディアの見出しだけにあるニュース（2 媒体以上）' },
+  { side: 'intl', ja: '海外の報道だけ', short: '海外だけ', rule: '集めたニュースのうち、海外のメディアの見出しだけにあるニュース（2 媒体以上）' },
+  { side: 'gov', ja: '官公庁の資料だけ', short: '官公庁だけ', rule: '集めたニュースのうち、官公庁の資料だけにあるニュース（2 か所以上）' },
+];
+export const ONE_SIDE_TITLE = '片方の側だけのニュース';
+export const ONE_SIDE_NOTE = 'ほかの側の見出しに無いことは、その側が扱わなかったことを意味しません。別の言い方の見出しはまとめの規則で拾えないことがあります。';
+
+/** oneSideOf(events, { sidesOf, outletOf, min }) -> [{ side, ja, short, rule, events }] the sides that have such news, most outlets first */
+export function oneSideOf(events, { sidesOf, outletOf = (it) => it.media || it.outlet, min = 2 } = {}) {
+  const got = new Map(ONE_SIDE.map((g) => [g.side, []]));
+  for (const e of Array.isArray(events) ? events : []) {
+    if (!e || typeof sidesOf !== 'function') continue;
+    const s = sidesOf(e);
+    const on = ONE_SIDE.filter((g) => Array.isArray(s[g.side]) && s[g.side].length);
+    if (on.length !== 1) continue;
+    const n = new Set(s[on[0].side].map(outletOf).filter(Boolean)).size;
+    if (n >= min) got.get(on[0].side).push({ e, n, last: Number.isFinite(e.last) ? e.last : 0 });
+  }
+  return ONE_SIDE.map((g) => ({ ...g, events: got.get(g.side).sort((a, b) => b.n - a.n || b.last - a.last).map((x) => x.e) })).filter((g) => g.events.length);
 }
 
 const RULE_JA = {

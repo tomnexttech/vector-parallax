@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SECTIONS, NEWS_TABS, parseHash, hashOf, paperOf, nextSeen, shareUrl, ruleJa, PAPER_ORDER } from '../../js/sections.js';
+import { SECTIONS, NEWS_TABS, parseHash, hashOf, paperOf, nextSeen, shareUrl, ruleJa, PAPER_ORDER, oneSideOf, ONE_SIDE_NOTE } from '../../js/sections.js';
+import { sides } from '../../js/entry.js';
 import { norm, scoreOf, rank } from '../../js/palette.js';
 
 test('the eight screens, home first', () => {
@@ -69,4 +70,21 @@ test('the one field: folded forms, the label over the words behind it, the first
   assert.deepEqual(rank(items, '地図').map((x) => x.label), ['地図', 'あとの地図']);
   assert.deepEqual(rank(items, '').map((x) => x.label), ['地図', '市場']);
   assert.deepEqual(rank(items, 'ちず'), []);
+});
+
+test('the news of one side only: one side, two outlets or more, most outlets first; the wording never says a side did not carry it', () => {
+  const m = (outlet, home, type = '全国紙') => ({ outlet, home, type, ts: 1 });
+  const es = [
+    { key: 'a', last: 5, members: [m('A', 'jp'), m('B', 'jp')] },
+    { key: 'b', last: 6, members: [m('X', 'intl', '海外主流'), m('Y', 'intl', '海外主流'), m('Z', 'intl', '海外公共')] },
+    { key: 'c', last: 7, members: [m('A', 'jp'), m('X', 'intl', '海外主流')] },
+    { key: 'd', last: 8, members: [m('A', 'jp'), m('A', 'jp')] },
+    { key: 'e', last: 9, members: [m('C', 'jp'), m('D', 'jp'), m('E', 'jp')] },
+    { key: 'f', last: 1, members: [m('省', 'jp', '政府一次'), m('庁', 'jp', '政府一次')] },
+  ];
+  const g = oneSideOf(es, { sidesOf: sides, outletOf: (it) => it.outlet });
+  assert.deepEqual(g.map((x) => [x.side, x.events.map((e) => e.key)]), [['jp', ['e', 'a']], ['intl', ['b']], ['gov', ['f']]]);
+  assert.deepEqual(oneSideOf([es[2], es[3]], { sidesOf: sides }), []);
+  assert.equal(oneSideOf(null, { sidesOf: sides }).length, 0);
+  for (const x of [...g.map((y) => y.rule + y.ja), ONE_SIDE_NOTE]) assert.doesNotMatch(x, /報じなかった|報じていない|無視|偏向/);
 });

@@ -15,7 +15,8 @@
  *   renderEntry(root, opt)                 opt = { h, events, sel, pick, gen, fmt: { clock, short, span }, aiTag, aiBy, aiAt, safeUrl,
  *                                                  absent(e), full(), detail(key, { bias }), measure(e) (js/dossier.js), bias(e) (js/bias.js),
  *                                                  dossier (ratioBar, areaSvg, biasMini), photo(e) -> { url, outlet, ts, link, kind?, id? } | null,
- *                                                  videos(e) -> stories[].videos }
+ *                                                  videos(e) -> stories[].videos, oneSide: [{ side, ja, events }] (js/sections.js),
+ *                                                  oneSideTitle, oneSideNote, more(side), outlet(name) -> one outlet's page }
  *
  * Neutral by rule: no side gets a rank or a label of right or wrong. The three sides carry a line symbol and a hue only so that a
  * card's counts lead to their column: the same weight for each, never red or green. Headlines are shown as published, with the
@@ -43,7 +44,9 @@ const ICON = {
   up: '<path d="M10 16V4.5M5 9.5l5-5 5 5"/>',
   down: '<path d="M10 4v11.5M5 10.5l5 5 5-5"/>',
   right: '<path d="M7.5 4.5l5.5 5.5-5.5 5.5"/>',
+  more: '<path d="M5 7.5l5 5 5-5"/>',
 };
+export const OS_CAP = 4;
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const str = (v) => (typeof v === 'string' ? v : '');
@@ -107,7 +110,8 @@ export function lineIcon(k, cls = '') {
 
 export function renderEntry(root, o) {
   const { h, events, fmt } = o;
-  const sel = events.find((e) => e.key === o.sel) || events[0] || null;
+  const os = Array.isArray(o.oneSide) ? o.oneSide.filter((g) => g && Array.isArray(g.events) && g.events.length) : [];
+  const sel = [...events, ...os.flatMap((g) => g.events)].find((e) => e.key === o.sel) || events[0] || null;
   const fieldOf = (e) => str(e.field) || 'その他';
   const photo = (e) => (o.photo ? o.photo(e) : null);
   const credit = (p) => `${p.kind === 'video' ? '映像' : '写真'}：${p.outlet || '—'}${isNum(p.ts) ? `・${fmt.clock(p.ts)}` : ''}`;
@@ -183,12 +187,18 @@ export function renderEntry(root, o) {
   const words = rows.length ? tile('fg-words', two ? '使った言葉の違い' : '見出しの言葉', h('div', { class: 'en-words' }, rows)) : null;
 
   // ---- the headlines side by side: a side without a report is one line, not an empty column
+  // a press on a headline opens the outlet's own description, quoted, and the link to the article
   const item = (it) => {
-    const link = o.safeUrl(it.link), t2 = str(it.title).trim(), en = it.lang === 'en' ? 'en' : null;
+    const link = o.safeUrl(it.link), t2 = str(it.title).trim(), d = str(it.desc).trim(), en = it.lang === 'en' ? 'en' : null;
+    const head = t2 ? `「${t2}」` : outletOf(it) || '—';
     return h('li', null,
-      h('span', { class: 'en-m' }, h('b', { text: outletOf(it) || '—' }), str(it.type) ? h('span', { class: 'en-ty', text: it.type }) : null, h('span', { class: 'mt', text: isNum(it.ts) ? fmt.clock(it.ts) : '—' })),
-      link ? h('a', { class: 'en-a', href: link, target: '_blank', rel: 'noopener noreferrer', lang: en }, t2 ? `「${t2}」` : outletOf(it))
-        : h('span', { class: 'en-a', lang: en, text: t2 ? `「${t2}」` : '—' }));
+      h('span', { class: 'en-m' }, o.outlet && outletOf(it) ? h('button', { type: 'button', class: 'en-mo', title: 'このメディアが扱ったニュース', on: { click: () => o.outlet(outletOf(it)) } }, outletOf(it)) : h('b', { text: outletOf(it) || '—' }), str(it.type) ? h('span', { class: 'en-ty', text: it.type }) : null, h('span', { class: 'mt', text: isNum(it.ts) ? fmt.clock(it.ts) : '—' })),
+      link || d ? h('details', { class: 'en-d' },
+        h('summary', { class: 'en-a', lang: en }, h('span', { class: 'en-at', text: head }), lineIcon('more', 'en-dc')),
+        h('div', { class: 'en-dp' },
+          d ? h('p', { class: 'en-q', lang: en, text: `「${d}」` }) : null,
+          link ? h('a', { class: 'en-open', href: link, target: '_blank', rel: 'noopener noreferrer' }, '記事を開く', lineIcon('right')) : null))
+        : h('span', { class: 'en-a', lang: en, text: head }));
   };
   const has = SIDES.filter(([k]) => s[k].length), miss = SIDES.filter(([k]) => !s[k].length);
   const col = ([k, title]) => h('section', { class: 'en-col', data: { side: k } },
@@ -221,7 +231,19 @@ export function renderEntry(root, o) {
 
   const foot = h('div', { class: 'en-foot' },
     h('button', { type: 'button', class: 'en-btn', on: { click: go('.en-pick') } }, lineIcon('up'), 'ほかのニュースを選ぶ'),
+    o.shareImage ? h('button', { type: 'button', class: 'en-btn en-img', on: { click: () => o.shareImage(sel.key) } }, '画像で共有') : null,
     o.detail ? h('button', { type: 'button', class: 'en-btn pri', on: { click: () => o.detail(sel.key) } }, 'このニュースを詳しい画面で見る', lineIcon('right')) : null);
+
+  // ---- the news of one side only (js/sections.js oneSideOf): a press shows it above, as a card does
+  const nOf = (e) => new Set((Array.isArray(e.members) ? e.members : []).filter((it) => it && typeof it === 'object').map(outletOf).filter(Boolean)).size;
+  const osEl = os.length ? h('section', { class: 'en-os', 'aria-label': o.oneSideTitle || null },
+    h('h3', { class: 'en-sub' }, o.oneSideTitle || '', h('span', { class: 'n', text: os.reduce((a, g) => a + g.events.length, 0) })),
+    o.oneSideNote ? h('p', { class: 'en-osn', text: o.oneSideNote }) : null,
+    h('div', { class: 'en-osc', style: `--n:${os.length}` }, os.map((g) => h('section', { class: 'en-osg', data: { side: g.side } },
+      h('h4', null, lineIcon(g.side), h('span', { text: g.ja }), h('span', { class: 'n', text: g.events.length })),
+      h('ul', { class: 'en-osl' }, g.events.slice(0, OS_CAP).map((e) => h('li', null, h('button', { type: 'button', class: 'en-osb', 'aria-pressed': String(e === sel), on: { click: () => o.pick(e.key) } },
+        titleEl(titleOf(e), 'en-ost'), h('span', { class: 'en-osm' }, h('span', { text: genreShort(fieldOf(e)) }), h('span', { class: 'num', text: `${nOf(e)} 媒体` })))))),
+      g.events.length > OS_CAP && o.more ? h('button', { type: 'button', class: 'en-rest', on: { click: () => o.more(g.side) } }, `残り ${g.events.length - OS_CAP} 件を一覧で見る`) : null)))) : null;
 
   root.replaceChildren(head, pick,
     h('section', { class: 'en-sel', data: { genre: f }, 'aria-label': '選んだニュースの伝え方' },
@@ -232,6 +254,6 @@ export function renderEntry(root, o) {
       h('div', { class: 'en-figs' }, share, time, words),
       h('h3', { class: 'en-sub' }, '各メディアの見出し'),
       has.length ? h('div', { class: 'en-cols', style: `--n:${has.length}` }, has.map(col)) : null,
-      missEl, vidEl, o.absent(sel), foot));
+      missEl, vidEl, o.absent(sel), foot), osEl);
   if (keep != null) cards.scrollLeft = keep;
 }
