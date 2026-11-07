@@ -75,11 +75,11 @@ export function playFor(videos, outlets, cover, list = STATIONS) {
 
 export function describe(p) {
   if (p.kind === 'video' && p.video) return { name: p.st.name, title: p.video.title, url: `https://www.youtube.com/watch?v=${p.video.id}`, ts: Number(p.video.ts) || null };
-  return { name: p.st.name, title: p.kind === 'live' ? 'ライブ配信（ニュースの常時配信）' : '最新の投稿', url: null, ts: null };
+  return { name: p.st.name, title: p.kind === 'live' ? 'ニュースのライブ' : '最新の投稿', url: null, ts: null };
 }
 
 export function embedSrc(p, { auto = true, sound = false } = {}) {
-  const q = `autoplay=${auto ? 1 : 0}&mute=${sound ? 0 : 1}&playsinline=1&rel=0&loop=1`;
+  const q = `autoplay=${auto ? 1 : 0}&mute=${sound ? 0 : 1}&playsinline=1&rel=0&loop=1&enablejsapi=1`;
   const st = p.st || p;
   const kind = p.kind || (st.mode === 'live' ? 'live' : 'uploads');
   if (kind === 'video' && p.video && VID.test(String(p.video.id))) return `https://www.youtube-nocookie.com/embed/${p.video.id}?${q}&playlist=${p.video.id}`;

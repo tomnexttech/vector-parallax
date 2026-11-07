@@ -1,9 +1,11 @@
 /* map — the world under the board, on one canvas.
  *
- *   createMap(canvas, { base, onPick, hi, local, onPaint, wheel }) -> { show(scene, animate), resize(), pick(x, y), reset(), zoom(k), view(),
- *                                                                   xy(lat, lon), wheel(ev) }
+ *   createMap(canvas, { base, onPick, onPress, hi, local, onPaint, wheel }) -> { show(scene, animate), resize(), pick(x, y), reset(), zoom(k), view(),
+ *                                                                   xy(lat, lon), wheel(ev), geoAt(x, y), setTheme(T), setPicked(p), setNames(list),
+ *                                                                   pin(on), jump(lat, lon, s), sample(w, h), cursor }
  *     local(clientX, clientY) -> [x, y] on the canvas, for a canvas that is turned in 3D (js/floor.js); onPaint({ view, w, h, marks, moving })
- *     after every frame; wheel: false leaves the wheel to the caller (api.wheel)
+ *     after every frame; wheel: false leaves the wheel to the caller (api.wheel); onPress(hit | null, { x, y, lat, lon }) -> true when the
+ *     caller took a press (js/mapui.js), before the folded mark opens or onPick is asked
  *
  * scene = { focus: null | { lat, lon, radiusKm: null | number, label },
  *           points: [{ lat, lon, n, pri, country, name, ref }],          events with a place (pri = on the priority list)
@@ -24,13 +26,20 @@
  * Marks with the same name are one mark. Inside Japan the marks fold with the scale: prefecture -> region (9) -> the country, when
  * their circles would overlap; a folded mark opens (zooms to its members) when pressed. Labels: the focus first, then hazards,
  * the priority list, the folded and the heavy; one that would overlap another or a mark is not drawn.
- * The map moves only when the event in focus changes, once. A quake that is new in the data rings once; nothing else moves. */
+ * The map moves only when the event in focus changes, once. A quake that is new in the data rings once; nothing else moves.
+ *
+ * Changing scale changes nothing at once: the wheel glides (the same frame draws the ground, the names and the marks), the finer steps of the
+ * graticule come up with the scale, a mark that folds or opens slides into or out of the mark it belongs to and fades, a name fades in and
+ * out and keeps its side, and a new sheet of the ground comes up over the old one (js/basemap.js). data-calm and reduced motion skip all of it.
+ * The theme (js/mapthemes.js, set by js/mapui.js) is one more layer, over the ground and under the marks: the places filled by their count. */
 
 import { createBasemap } from './basemap.js';
 
 const TILE = 256, COLS = 8, ROWS = 4, WW = COLS * TILE, WH = ROWS * TILE;
 export const SPAN = 64;            // degrees of longitude shown around an event (the region, not the street)
 const MOVE_MS = 520;
+const FADE_MS = 240;               // a mark or a name coming up or going
+const GLIDE_MS = 85;               // the wheel: the time constant the scale follows its target with
 const PULSE_MS = 1400;
 export const SETTLE_MS = 160;
 const ENVELOPE_KM = 900;           // the storm-warning envelope of a typhoon is drawn this far from its centre, fading
@@ -45,6 +54,8 @@ const hotQuake = (q) => q.mag >= 5 || ['4', '5-', '5+', '6-', '6+', '7'].include
 const JSTF = typeof Intl === 'object' ? new Intl.DateTimeFormat('ja-JP', { timeZone: 'Asia/Tokyo', day: 'numeric', hour: 'numeric', hourCycle: 'h23' }) : null;
 const dayHour = (ts) => { if (!JSTF || !Number.isFinite(ts)) return ''; const o = {}; for (const p of JSTF.formatToParts(new Date(ts * 1000))) o[p.type] = p.value; return `${o.day}日 ${o.hour}時`; };
 const lonDiff = (a, b) => ((a - b + 540) % 360) - 180;
+const band = (s, a, b) => { const t = Math.max(0, Math.min(1, (s - a) / (b - a))); return t * t * (3 - 2 * t); };
+const hasKid = (m, name) => !!m.kids && m.kids.some((k) => k.name === name || hasKid(k, name));
 
 // ---------------------------------------------------------------- prefectures and regions (public representative points)
 const REGIONS = ['北海道', '東北', '関東', '中部', '近畿', '中国', '四国', '九州', '沖縄'];
@@ -80,7 +91,7 @@ export function prefOf(name) {
   if (/[都府県]$/.test(s) && PREF_AT.has(s.slice(0, -1))) return s.slice(0, -1);
   return null;
 }
-const nameKey = (name) => {
+export const nameKey = (name) => {
   const s = String(name || '').trim();
   return prefOf(s) || (JP_NAMES.has(s) ? '日本' : COUNTRY_ALIAS[s] || s);
 };
@@ -93,6 +104,14 @@ function nearestPref(lat, lon) {
     if (d < bd) { bd = d; best = p.name; }
   }
   return best;
+}
+
+/** the name a place is counted under on the map: inside Japan its prefecture, elsewhere its own */
+export function markKey(name, lat, lon, country) {
+  const nm = nameKey(name), pf = prefOf(nm);
+  if (pf) return pf;
+  if (nm !== '日本' && !country) { const n = nearestPref(lat, lon); if (n) return n; }
+  return nm;
 }
 
 /** the marks to draw at scale s (px per degree): [{ kind: 'one' | 'cluster', level, name, lat, lon, n, pri, country, best, kids }] */
@@ -254,12 +273,17 @@ export function createMap(canvas, opts = {}) {
   const g = canvas.getContext('2d');
   let W = 0, H = 0, dpr = 1;
   let scene = null, view = null, anim = null, world = null, coast = null, render = null, sharp = null, sharpReq = 0, picks = [], settle = 0, held = false;
-  let pulse = null, drag = null;
+  let pulse = null, drag = null, glide = null, settling = false, pinned = false, sharpWant = null;
+  let themeNow = null, pickedNow = null, namesNow = null, lastPaint = 0, frameNo = 0;
+  const liveMarks = new Map(), liveLabels = new Map();           // what was on the map a moment ago: it fades, it does not vanish
   const pulsed = new Set();
   // the detailed ground: when a sheet arrives, paint again unless the map is moving (the next frame takes it)
-  const basemap = opts.basemap === false ? null : createBasemap({ onReady: () => { if (scene && view && !anim && !drag) paint(view, false); } });
+  const basemap = opts.basemap === false ? null : createBasemap({ calm: () => reduce(), onReady: () => { if (scene && view && !anim && !drag && !glide) paint(view, false); } });
   // for inspection only (the state of the detailed ground: sheets, requests, failures)
-  try { Object.defineProperty(canvas, 'groundStats', { value: () => (basemap ? basemap.stats() : null), configurable: true }); } catch { /* */ }
+  try {
+    Object.defineProperty(canvas, 'groundStats', { value: () => (basemap ? basemap.stats() : null), configurable: true });
+    Object.defineProperty(canvas, 'mapInspect', { value: () => ({ view: view && { ...view, w: W, h: H }, picks: picks.map((h) => ({ kind: h.kind, x: h.x, y: h.y, name: h.m ? h.m.name : '', n: h.m ? h.m.n : 0 })) }), configurable: true });
+  } catch { /* */ }
   const reduce = () => document.documentElement.hasAttribute('data-calm') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function size() {
@@ -395,7 +419,7 @@ export function createMap(canvas, opts = {}) {
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.fillStyle = C.sea; g.fillRect(0, 0, W, H);
     const sh = sharp && sharp.key === keyOf(v) ? sharp : null;
-    if (!quick && !sh && render) requestSharp(v);
+    if (!quick && !sh && render && sharpWant !== keyOf(v)) { sharpWant = keyOf(v); requestSharp(v); }
     if (!coast) {
       relief(v, quick, C, sh);
       return;
@@ -419,8 +443,33 @@ export function createMap(canvas, opts = {}) {
   }
 
 
+  /** the theme: the places filled by their count, the prefectures of Japan taking over from the country as the map comes close */
+  function drawTheme(v, C) {
+    const T = themeNow, jp = band(v.s, T.jpFrom, T.jpTo);
+    const a = v.lon0, b = v.lon0 + W / v.s;
+    const fill = (it, A) => {
+      if (A < 0.01) return;
+      g.globalAlpha = A; g.fill(it.path, 'evenodd');
+      g.globalAlpha = Math.min(1, A + 0.28); g.lineWidth = 0.9 / v.s; g.stroke(it.path);
+    };
+    for (let k = -1; k <= 1; k++) {
+      if (b < -180 + 360 * k || a > 180 + 360 * k) continue;
+      g.save();
+      geo(v, k);
+      g.lineJoin = 'round'; g.fillStyle = C.cyan; g.strokeStyle = C.cyan;
+      for (const it of T.countries) fill(it, it.jp ? it.a * (1 - jp) : it.a);
+      if (jp > 0) for (const it of T.prefs) fill(it, it.a * jp);
+      g.restore();
+    }
+    g.globalAlpha = 1;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
   function paint(v, quick) {
     if (pulse && pulse.running) pulse.dirty = true;
+    const nowP = performance.now(), fadeStep = reduce() ? 1 : Math.min(64, nowP - lastPaint || 16) / FADE_MS;
+    lastPaint = nowP; frameNo++;
+    let busy = false;
     const sc = scene || {};
     const L = sc.layers || {};
     const C = colours();
@@ -429,13 +478,21 @@ export function createMap(canvas, opts = {}) {
     g.fillStyle = C.sea; g.fillRect(0, 0, W, H);
     ground(v, quick, C);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // graticule: hairlines of one device pixel
-    const step = v.s > 24 ? 5 : v.s > 6 ? 10 : 30;
+    if (themeNow && L.theme !== false) drawTheme(v, C);
+    // graticule: hairlines of one device pixel; each finer step comes up with the scale
+    const gridOf = (d) => (d % 30 === 0 ? 30 : d % 10 === 0 ? 10 : 5);
+    const gridA = (st) => (st === 30 ? 1 : st === 10 ? band(v.s, 4.2, 7.5) : band(v.s, 17, 27));
     const px = (u) => (Math.round(u * dpr) + 0.5) / dpr;
-    g.strokeStyle = C.grid; g.lineWidth = 1 / dpr; g.beginPath();
-    for (let lon = -180; lon < 180; lon += step) { const x = px(X(v, lon)); if (x > 0 && x < W) { g.moveTo(x, 0); g.lineTo(x, H); } }
-    for (let lat = -80; lat <= 80; lat += step) { const y = px(Y(v, lat)); if (y > 0 && y < H) { g.moveTo(0, y); g.lineTo(W, y); } }
-    g.stroke();
+    g.strokeStyle = C.grid; g.lineWidth = 1 / dpr;
+    for (const st of [30, 10, 5]) {
+      const A = gridA(st);
+      if (A < 0.02) continue;
+      g.globalAlpha = A; g.beginPath();
+      for (let lon = -180; lon < 180; lon += 5) { if (gridOf(lon) !== st) continue; const x = px(X(v, lon)); if (x > 0 && x < W) { g.moveTo(x, 0); g.lineTo(x, H); } }
+      for (let lat = -80; lat <= 80; lat += 5) { if (gridOf(lat) !== st) continue; const y = px(Y(v, lat)); if (y > 0 && y < H) { g.moveTo(0, y); g.lineTo(W, y); } }
+      g.stroke();
+    }
+    g.globalAlpha = 1;
 
     const hits = [], labels = [], storms = [], marks = [];
     const tier = {
@@ -536,26 +593,93 @@ export function createMap(canvas, opts = {}) {
     if (L.events !== false) {
       const ms = marksAt(sc.points || [], v.s).sort((a, b) => (a.pri - b.pri) || (a.n - b.n));
       const fk = f && f.label ? nameKey(f.label) : null;
-      for (const m of ms) {
-        const x = X(v, m.lon), y = Y(v, m.lat);
-        if (x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
+      const markId = (m) => `${m.kind}|${m.name}`, nowIds = new Set(ms.map(markId)), firstMarks = !liveMarks.size;
+      const drawMark = (m, x, y, A) => {
         const cl = m.kind === 'cluster', r = markR(m), pri = m.pri && L.pri !== false;
         g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2);
-        if (m.country && !cl) { g.setLineDash([2, 2.5]); g.strokeStyle = C.ink2; g.globalAlpha = 0.7; g.lineWidth = 1; g.stroke(); g.setLineDash([]); g.globalAlpha = 1; }
+        if (m.country && !cl) { g.setLineDash([2, 2.5]); g.strokeStyle = C.ink2; g.globalAlpha = 0.7 * A; g.lineWidth = 1; g.stroke(); g.setLineDash([]); g.globalAlpha = 1; }
         else {
-          g.fillStyle = C.dot; g.fill();
-          g.strokeStyle = pri ? C.ink : C.ink2; g.globalAlpha = pri ? 0.95 : cl ? 0.7 : 0.5; g.lineWidth = pri ? 1.3 : 1; g.stroke();
-          if (cl) { g.beginPath(); g.arc(x, y, r + 3, 0, Math.PI * 2); g.globalAlpha = 0.24; g.lineWidth = 1; g.stroke(); }
-          g.globalAlpha = 1;
+          g.globalAlpha = A; g.fillStyle = C.dot; g.fill();
+          g.strokeStyle = pri ? C.ink : C.ink2; g.globalAlpha = (pri ? 0.95 : cl ? 0.7 : 0.5) * A; g.lineWidth = pri ? 1.3 : 1; g.stroke();
+          if (cl) { g.beginPath(); g.arc(x, y, r + 3, 0, Math.PI * 2); g.globalAlpha = 0.24 * A; g.lineWidth = 1; g.stroke(); }
+          g.globalAlpha = A;
           if (pri) { g.fillStyle = C.ink; g.beginPath(); g.arc(x, y, 1.6, 0, Math.PI * 2); g.fill(); }
+          g.globalAlpha = 1;
         }
-        hits.push(cl ? { x, y, r: r + 5, kind: 'cluster', m } : { x, y, r: r + 5, kind: 'event', p: m.best });
-        marks.push({ x, y, name: m.name, n: m.n, pri: !!pri, cluster: cl });
-        if (fbox && fk && m.name === fk && Math.hypot(x - fbox.x, y - fbox.y) < 40) { fbox.sub = ` ${m.n}`; continue; }
+      };
+      // marks that have just folded away go into the mark that took them, and fade
+      for (const [id, st] of liveMarks) {
+        if (nowIds.has(id)) continue;
+        st.a -= fadeStep;
+        if (st.a <= 0) { liveMarks.delete(id); continue; }
+        busy = true;
+        if (st.to === undefined) st.to = ms.find((q) => hasKid(q, st.m.name)) || null;
+        const k = st.to ? 1 - ease(st.a) : 0;
+        const la = st.m.lat + (st.to ? (st.to.lat - st.m.lat) * k : 0), lo = st.m.lon + (st.to ? lonDiff(st.to.lon, st.m.lon) * k : 0);
+        drawMark(st.m, X(v, lo), Y(v, la), st.a);
+      }
+      // under a theme a country's mark says the country's number, so the map and the legend agree
+      const themed = new Map();
+      if (themeNow && L.theme !== false) for (const it of band(v.s, themeNow.jpFrom, themeNow.jpTo) >= 0.5 ? [...themeNow.countries, ...themeNow.prefs] : themeNow.countries) themed.set(it.name, it.n);
+      for (const m of ms) {
+        const id = markId(m);
+        let st = liveMarks.get(id);
+        if (!st) {
+          // a mark that has just opened comes out of the folded mark it was in
+          let from = null;
+          if (!firstMarks) for (const [pid, o] of liveMarks) if (!nowIds.has(pid) && hasKid(o.m, m.name)) { from = o.m; break; }
+          st = { a: firstMarks ? 1 : 0, from };
+          liveMarks.set(id, st);
+        }
+        st.a = Math.min(1, st.a + fadeStep); st.m = m; st.to = undefined;
+        if (st.a < 1) busy = true; else st.from = null;
+        const k = st.from ? ease(st.a) : 1;
+        const x = X(v, st.from ? st.from.lon + lonDiff(m.lon, st.from.lon) * k : m.lon), y = Y(v, st.from ? st.from.lat + (m.lat - st.from.lat) * k : m.lat);
+        if (x < -20 || x > W + 20 || y < -20 || y > H + 20) continue;
+        const cl = m.kind === 'cluster', r = markR(m), pri = m.pri && L.pri !== false;
+        drawMark(m, x, y, st.a);
+        hits.push(cl ? { x, y, r: r + 5, kind: 'cluster', m } : { x, y, r: r + 5, kind: 'event', p: m.best, m });
+        marks.push({ x, y, name: m.name, n: themed.get(m.name) ?? m.n, pri: !!pri, cluster: cl });
+        if (fbox && fk && m.name === fk && Math.hypot(x - fbox.x, y - fbox.y) < 40) { fbox.sub = ` ${themed.get(m.name) ?? m.n}`; continue; }
         if (!m.name || !(cl || m.pri || m.n >= 2 || v.s >= 40)) continue;
         const t = m.country && !cl ? tier.faint : (m.pri && m.n >= 3) || (cl && m.n >= 10) ? tier.big : m.n >= 3 || m.pri || cl ? tier.mid : tier.small;
-        if (!(sc.pillars && pri)) labels.push({ x, y, r: r + (cl ? 3 : 1), text: m.name, sub: ` ${m.n}`, rank: (m.pri ? 3 : m.country && !cl ? 1 : 2) + Math.min(m.n, 999) / 1000, t, name: true });
+        if (!(sc.pillars && pri)) labels.push({ x, y, r: r + (cl ? 3 : 1), text: m.name, sub: ` ${themed.get(m.name) ?? m.n}`, rank: (m.pri ? 3 : m.country && !cl ? 1 : 2) + Math.min(m.n, 999) / 1000, t, name: true });
       }
+    } else liveMarks.clear();
+    // the theme speaks where it is painted: the name and the number
+    if (themeNow && L.theme !== false) {
+      const jp = band(v.s, themeNow.jpFrom, themeNow.jpTo) >= 0.5;
+      for (const it of jp ? themeNow.prefs : themeNow.countries) {
+        if (jp === false && it.jp === undefined) continue;
+        const x = X(v, it.cx), y = Y(v, it.cy);
+        if (x < 0 || x > W || y < 0 || y > H || it.w * v.s < 24 || (fbox && nameKey(fbox.text) === it.name) || labels.some((l) => l.text === it.name) || marks.some((k) => k.name === it.name)) continue;
+        labels.push({ x, y, r: 0, text: it.name, sub: ` ${it.n}`, rank: 3.5 + Math.min(it.n, 999) / 1000, t: tier.mid, name: true });
+      }
+      if (jp) for (const it of themeNow.countries) {
+        if (it.jp) continue;
+        const x = X(v, it.cx), y = Y(v, it.cy);
+        if (x >= 0 && x <= W && y >= 0 && y <= H && it.w * v.s >= 24 && !(fbox && nameKey(fbox.text) === it.name) && !labels.some((l) => l.text === it.name) && !marks.some((k) => k.name === it.name)) labels.push({ x, y, r: 0, text: it.name, sub: ` ${it.n}`, rank: 3.4 + Math.min(it.n, 999) / 1000, t: tier.mid, name: true });
+      }
+    }
+    // the names of the ground, the quietest: a country when it is wide enough on the screen, a prefecture when the map is close
+    if (namesNow) for (const n of namesNow) {
+      const wpx = n.w * v.s;
+      if (wpx < (n.pref ? 34 : 46) || (n.pref && v.s < 14) || (!n.pref && n.jp && v.s >= 14)) continue;
+      const x = X(v, n.cx), y = Y(v, n.cy);
+      if (x < 0 || x > W || y < 0 || y > H) continue;
+      labels.push({ x, y, r: 0, text: n.name, rank: 0.2 + Math.min(wpx, 500) / 2500, t: tier.faint, name: true });
+    }
+    // the place pressed: its outline (a country, a prefecture) and a ring
+    if (pickedNow) {
+      if (pickedNow.path) {
+        for (let k = -1; k <= 1; k++) {
+          if (v.lon0 + W / v.s < -180 + 360 * k || v.lon0 > 180 + 360 * k) continue;
+          g.save(); geo(v, k); g.strokeStyle = C.ink; g.lineJoin = 'round'; g.lineWidth = 1.5 / v.s; g.stroke(pickedNow.path); g.restore();
+        }
+        g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      const x = X(v, pickedNow.lon), y = Y(v, pickedNow.lat);
+      g.strokeStyle = C.ink; g.lineWidth = 1.3; g.beginPath(); g.arc(x, y, 11, 0, Math.PI * 2); g.stroke();
     }
     // focus
     if (f) {
@@ -570,13 +694,24 @@ export function createMap(canvas, opts = {}) {
     // the names are drawn in every frame, moving or not, so that they never trail the ground under them
     // degree labels on the edges, small and quiet
     g.font = `9px ${C.font}`; g.fillStyle = C.ink4; g.textBaseline = 'top';
-    for (let lon = -180; lon < 180; lon += step) { const x = X(v, lon); if (x > 30 && x < W - 40) g.fillText(`${Math.abs(lon)}°${lon < 0 ? 'W' : lon > 0 ? 'E' : ''}`, x + 3, 4); }
+    for (let lon = -180; lon < 180; lon += 5) { const A = gridA(gridOf(lon)); if (A < 0.3) continue; const x = X(v, lon); if (x > 30 && x < W - 40) { g.globalAlpha = A; g.fillText(`${Math.abs(lon)}°${lon < 0 ? 'W' : lon > 0 ? 'E' : ''}`, x + 3, 4); } }
     g.textBaseline = 'middle';
-    for (let lat = -80; lat <= 80; lat += step) { const y = Y(v, lat); if (y > 20 && y < H - 24) g.fillText(`${Math.abs(lat)}°${lat < 0 ? 'S' : lat > 0 ? 'N' : ''}`, 5, y - 7); }
+    for (let lat = -80; lat <= 80; lat += 5) { const A = gridA(gridOf(lat)); if (A < 0.3) continue; const y = Y(v, lat); if (y > 20 && y < H - 24) { g.globalAlpha = A; g.fillText(`${Math.abs(lat)}°${lat < 0 ? 'S' : lat > 0 ? 'N' : ''}`, 5, y - 7); } }
+    g.globalAlpha = 1;
     // labels: the focus first, then by rank; one that would overlap another label or a mark is not drawn (a dark halo, no plates)
     const boxes = [], names = new Set();
     const budget = Math.max(8, Math.floor((W * H) / 17000));
     let drawn = 0;
+    const firstLabels = !liveLabels.size;
+    const ink = (l, bx, by, w1, hgt, subPx, A) => {
+      const st = l.t;
+      g.globalAlpha = A;
+      g.textBaseline = 'middle'; g.lineJoin = 'round'; g.lineWidth = 3; g.strokeStyle = C.halo;
+      const ty = by + hgt / 2 + 0.5;
+      g.font = `${st.wt} ${st.px}px ${C.font}`; g.strokeText(l.text, bx, ty); g.fillStyle = st.color; g.fillText(l.text, bx, ty);
+      if (l.sub) { g.font = `400 ${subPx}px ${C.font}`; g.strokeText(l.sub, bx + w1, ty); g.fillStyle = st.sub; g.fillText(l.sub, bx + w1, ty); }
+      g.globalAlpha = 1;
+    };
     const place = (l) => {
       const st = l.t;
       g.font = `${st.wt} ${st.px}px ${C.font}`;
@@ -586,15 +721,21 @@ export function createMap(canvas, opts = {}) {
       if (l.sub) { g.font = `400 ${subPx}px ${C.font}`; w2 = g.measureText(l.sub).width; }
       const w = w1 + w2, hgt = st.px + 4;
       // first a place clear of everything; failing that, one that only covers a small quake ring (a soft box)
-      for (const relaxed of [false, true]) for (const [bx, by] of [[l.x + l.r + 4, l.y - hgt / 2], [l.x - l.r - 4 - w, l.y - hgt / 2], [l.x - w / 2, l.y - l.r - hgt - 1], [l.x - w / 2, l.y + l.r + 1]]) {
+      const live = liveLabels.get(l.text), sides = [0, 1, 2, 3];
+      if (live && live.side) { sides.splice(live.side, 1); sides.unshift(live.side); }     // a name keeps its side while it can
+      const at = [[l.x + l.r + 4, l.y - hgt / 2], [l.x - l.r - 4 - w, l.y - hgt / 2], [l.x - w / 2, l.y - l.r - hgt - 1], [l.x - w / 2, l.y + l.r + 1]];
+      for (const relaxed of [false, true]) for (const side of sides) {
+        const [bx, by] = at[side];
         const b = [bx - 1, by, w + 2, hgt];
         if (b[0] < 2 || b[0] + b[2] > W - 2 || b[1] < 2 || b[1] + b[3] > H - 16) continue;
         if (boxes.some((o) => !(relaxed && o[4]) && b[0] < o[0] + o[2] && b[0] + b[2] > o[0] && b[1] < o[1] + o[3] && b[1] + b[3] > o[1])) continue;
         boxes.push(b);
-        g.textBaseline = 'middle'; g.lineJoin = 'round'; g.lineWidth = 3; g.strokeStyle = C.halo;
-        const ty = by + hgt / 2 + 0.5;
-        g.font = `${st.wt} ${st.px}px ${C.font}`; g.strokeText(l.text, bx, ty); g.fillStyle = st.color; g.fillText(l.text, bx, ty);
-        if (l.sub) { g.font = `400 ${subPx}px ${C.font}`; g.strokeText(l.sub, bx + w1, ty); g.fillStyle = st.sub; g.fillText(l.sub, bx + w1, ty); }
+        const s2 = live || { a: firstLabels ? 1 : 0 };
+        s2.a = Math.min(1, s2.a + fadeStep); s2.f = frameNo; s2.side = side;
+        s2.l = l; s2.lon = v.lon0 + l.x / v.s; s2.lat = v.lat0 - l.y / v.s; s2.dx = bx - l.x; s2.dy = by - l.y; s2.w1 = w1; s2.hgt = hgt; s2.subPx = subPx;
+        liveLabels.set(l.text, s2);
+        if (s2.a < 1) busy = true;
+        ink(l, bx, by, w1, hgt, subPx, s2.a);
         return true;
       }
       return false;
@@ -605,13 +746,24 @@ export function createMap(canvas, opts = {}) {
       boxes.push([h.x - r, h.y - r, 2 * r, 2 * r, h.kind === 'quake' && !h.hot]);
     }
     if (fbox) { place(fbox); names.add(nameKey(fbox.text)); }
-    for (const l of labels.sort((a, b) => b.rank - a.rank)) {
+    // a name already on the map holds its place against a slightly heavier newcomer: fewer names blink while the scale changes
+    const rk = (l) => l.rank + (liveLabels.has(l.text) ? 0.6 : 0);
+    for (const l of labels.sort((a, b) => rk(b) - rk(a))) {
       if (drawn >= budget) break;
       if (l.name && names.has(l.text)) continue;
       if (place(l)) { drawn++; if (l.name) names.add(l.text); }
     }
+    // a name that has lost its place fades where it was
+    for (const [id, st] of liveLabels) {
+      if (st.f === frameNo) continue;
+      st.a -= fadeStep;
+      if (st.a <= 0) { liveLabels.delete(id); continue; }
+      busy = true;
+      ink(st.l, X(v, st.lon) + st.dx, Y(v, st.lat) + st.dy, st.w1, st.hgt, st.subPx, st.a);
+    }
     picks = hits;
     if (opts.onPaint) opts.onPaint({ view: v, w: W, h: H, marks, moving: !!quick });
+    if ((busy || (basemap && basemap.fading && basemap.fading())) && !anim) queue();
   }
 
   /** a folded mark opens: zoom so its members stand apart (or, when they cannot, the heaviest event is chosen) */
@@ -682,18 +834,40 @@ export function createMap(canvas, opts = {}) {
     const t = Math.min(1, (now - anim.t0) / MOVE_MS), k = ease(t), a = anim.from, b = anim.to;
     let dl = b.lon0 - a.lon0; dl = ((dl + 180) % 360 + 360) % 360 - 180;
     if (!Number.isFinite(dl) || !Number.isFinite(a.s) || !Number.isFinite(b.s)) { anim = null; view = b; paint(view, false); return; }
-    view = t < 1 ? { lon0: a.lon0 + dl * k, lat0: a.lat0 + (b.lat0 - a.lat0) * k, s: a.s + (b.s - a.s) * k } : b;
+    view = t < 1 ? { lon0: a.lon0 + dl * k, lat0: a.lat0 + (b.lat0 - a.lat0) * k, s: a.s * Math.pow(b.s / a.s, k) } : b;
     paint(view, t < 1);
     if (t < 1) requestAnimationFrame(frame); else { anim = null; ringNew(freshQuakes()); }
   }
-  function later() { clearTimeout(settle); settle = setTimeout(() => { cancelAnimationFrame(queued); queued = 0; if (scene && view) paint(view, false); }, SETTLE_MS); }
-  // a drag or a wheel paints once per frame: the ground, the names on it and the pillars over it (onPaint) in the same frame
+  function later() { settling = true; clearTimeout(settle); settle = setTimeout(() => { settling = false; cancelAnimationFrame(queued); queued = 0; if (scene && view) paint(view, false); }, SETTLE_MS); }
+  // a drag or a wheel paints once per frame: the ground, the names on it and the pillars over it (onPaint) in the same frame.
+  // The same frame carries the glide of the wheel and whatever is still fading.
   let queued = 0;
-  function queue() { if (!queued) queued = requestAnimationFrame(() => { queued = 0; if (view) paint(view, true); }); }
+  function tick(now) {
+    queued = 0;
+    if (!view) return;
+    if (glide) {
+      const G = glide, dt = Math.min(48, Math.max(1, now - G.t)), r = Math.log(G.s / view.s);
+      G.t = now;
+      const s = Math.abs(r) < 0.003 ? G.s : view.s * Math.exp(r * (1 - Math.exp(-dt / GLIDE_MS)));
+      view = clampV({ lon0: G.lon - G.mx / s, lat0: G.lat + G.my / s, s });
+      if (s === G.s) glide = null; else queue();
+      later();
+    }
+    paint(view, settling || !!glide);
+  }
+  function queue() { if (!queued) queued = requestAnimationFrame(tick); }
+  /** the scale goes to s, keeping the point at (mx, my) where it is; the wheel adds to where it is going, not to where it has got to */
+  function glideTo(sT, mx, my) {
+    const s = Math.max(minS(), Math.min(W / 6, sT)), lon = view.lon0 + mx / view.s, lat = view.lat0 - my / view.s;
+    held = true; anim = null; pulse = null;
+    if (reduce()) { glide = null; view = clampV({ lon0: lon - mx / s, lat0: lat + my / s, s }); }
+    else glide = { s, mx, my, lon, lat, t: performance.now() };
+    queue(); later();
+  }
 
   const finite = (v) => v && Number.isFinite(v.lon0) && Number.isFinite(v.lat0) && Number.isFinite(v.s) && v.s > 0;
   function show(sc, animate) {
-    const moved = !scene || JSON.stringify(scene.focus) !== JSON.stringify(sc.focus) || scene.span !== sc.span;
+    const moved = !pinned && (!scene || JSON.stringify(scene.focus) !== JSON.stringify(sc.focus) || scene.span !== sc.span);
     scene = sc;
     size();
     if (!moved && view) { paint(view, false); ringNew(freshQuakes()); return; }
@@ -710,7 +884,7 @@ export function createMap(canvas, opts = {}) {
     const r = canvas.getBoundingClientRect();
     return [ev.clientX - r.left, ev.clientY - r.top];
   };
-  canvas.addEventListener('pointerdown', (ev) => { if (!view) return; const [x, y] = local(ev); drag = { x, y, v: view, moved: false }; try { canvas.setPointerCapture(ev.pointerId); } catch { /* */ } });
+  canvas.addEventListener('pointerdown', (ev) => { if (!view) return; glide = null; const [x, y] = local(ev); drag = { x, y, v: view, moved: false }; try { canvas.setPointerCapture(ev.pointerId); } catch { /* */ } });
   canvas.addEventListener('pointermove', (ev) => {
     const [lx, ly] = local(ev);
     if (drag) {
@@ -721,13 +895,14 @@ export function createMap(canvas, opts = {}) {
       queue(); later();
       return;
     }
-    canvas.style.cursor = api.pick(lx, ly) ? 'pointer' : 'grab';
+    canvas.style.cursor = api.pick(lx, ly) ? 'pointer' : api.cursor;
   });
   canvas.addEventListener('pointerup', (ev) => {
     const d = drag; drag = null;
     if (!d || d.moved) return;
     const [x, y] = local(ev);
     const hit = api.pick(x, y);
+    if (opts.onPress && opts.onPress(hit, { x, y, ...api.geoAt(x, y) })) return;
     if (!hit) return;
     if (hit.kind === 'cluster') zoomInto(hit.m, hit.x, hit.y);
     else if (opts.onPick) opts.onPick(hit);
@@ -736,12 +911,7 @@ export function createMap(canvas, opts = {}) {
     if (!view) return;
     ev.preventDefault();
     const [lx, ly] = local(ev), mx = Math.max(0, Math.min(W, lx)), my = Math.max(0, Math.min(H, ly));
-    const k = Math.pow(1.0018, -ev.deltaY);
-    const lon = view.lon0 + mx / view.s, lat = view.lat0 - my / view.s;
-    const s = Math.max(minS(), Math.min(W / 6, view.s * k));
-    held = true; anim = null; pulse = null;
-    view = clampV({ lon0: lon - mx / s, lat0: lat + my / s, s });
-    queue(); later();
+    glideTo((glide ? glide.s : view.s) * Math.pow(1.0018, -ev.deltaY), mx, my);
   }
   if (opts.wheel !== false) canvas.addEventListener('wheel', onWheel, { passive: false });
   canvas.addEventListener('dblclick', () => api.reset());
@@ -750,7 +920,7 @@ export function createMap(canvas, opts = {}) {
     show,
     resize() { if (!scene) return; size(); if (!held || !view) view = target(scene); paint(view, true); later(); },
     reset() { if (!scene) return; held = false; const to = target(scene); if (view && !reduce()) { anim = { from: view, to, t0: performance.now() }; requestAnimationFrame(frame); } else { view = to; paint(view, false); } },
-    zoom(k) { if (!view) return false; const s = Math.max(minS(), Math.min(W / 6, view.s * k)); const cl = view.lon0 + W / 2 / view.s, ca = view.lat0 - H / 2 / view.s; held = true; view = clampV({ lon0: cl - W / 2 / s, lat0: ca + H / 2 / s, s }); paint(view, false); return true; },
+    zoom(k) { if (!view) return false; glideTo((glide ? glide.s : view.s) * k, W / 2, H / 2); return true; },
     pick(x, y) {
       let best = null, bd = Infinity;
       for (const q of picks) { const d = Math.hypot(q.x - x, q.y - y); if (d <= q.r && d < bd) { bd = d; best = q; } }
@@ -759,6 +929,43 @@ export function createMap(canvas, opts = {}) {
     view: () => view && { ...view, w: W, h: H },
     xy: (lat, lon) => (view ? [X(view, lon), Y(view, lat)] : null),
     wheel: onWheel,
+    /** the cursor over the map where nothing can be pressed */
+    cursor: 'grab',
+    /** a point on the canvas -> degrees */
+    geoAt: (x, y) => (view ? { lat: view.lat0 - y / view.s, lon: ((view.lon0 + x / view.s + 540) % 360 + 360) % 360 - 180 } : null),
+    /** the theme layer: { countries, prefs: [{ path, a, name, n, cx, cy, w, jp }], jpFrom, jpTo }, or null */
+    setTheme(T) { themeNow = T; if (view && !anim) queue(); },
+    /** the place pressed: { lat, lon, path? }, or null */
+    setPicked(p) { pickedNow = p; if (view && !anim) queue(); },
+    /** the quiet names of the ground: [{ name, cx, cy, w, pref, jp }] */
+    setNames(list) { namesNow = list; if (view && !anim) queue(); },
+    /** while pinned, a change of the event in focus does not move the map (a theme chosen, an event opened from the map) */
+    pin(on) { pinned = !!on; },
+    /** centre the map on a place at once (coming back from the 3D floor) */
+    jump(lat, lon, s) { if (!scene) return; size(); glide = null; anim = null; held = true; const sv = Math.max(minS(), Math.min(W / 6, s)); view = clampV({ lon0: lon - W / 2 / sv, lat0: lat + H / 2 / sv, s: sv }); paint(view, false); },
+    /** the ground as a grid for the 3D floor: { w, h, land: Uint8Array (0 | 1), relief: Uint8Array (128 = flat) }; null before the ground is read */
+    sample(w, h) {
+      if (!world) return null;
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d', { willReadFrequently: true });
+      if (!x) return null;
+      let mask = null;
+      if (coast) {
+        x.fillStyle = '#000'; x.fillRect(0, 0, w, h);
+        x.setTransform(w / 360, 0, 0, -h / 180, w / 2, h / 2);
+        x.fillStyle = '#fff'; x.fill(coast.fine.fill, 'evenodd');
+        x.setTransform(1, 0, 0, 1, 0, 0);
+        mask = x.getImageData(0, 0, w, h).data;
+      }
+      x.drawImage(world, 0, 0, WW, WH, 0, 0, w, h);
+      const px = x.getImageData(0, 0, w, h).data, n = w * h, land = new Uint8Array(n), relief = new Uint8Array(n);
+      for (let i = 0; i < n; i++) {
+        const v = px[i * 4];
+        land[i] = mask ? (mask[i * 4] > 127 ? 1 : 0) : (v > 26 ? 1 : 0);
+        relief[i] = Math.max(0, Math.min(255, Math.round(128 + (v - 42) / 0.3)));   // the land tone of js/map_worker.js, read back
+      }
+      return { w, h, land, relief };
+    },
   };
   hiListeners.add(() => { closeSharp(sharp); sharp = null; if (scene && view && !anim) paint(view, false); });
   loadGround(base, hiSrc).then((gr) => { world = gr.world; coast = gr.coast; render = gr.render; if (scene && !anim && view) paint(view, false); });

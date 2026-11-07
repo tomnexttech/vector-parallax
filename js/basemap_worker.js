@@ -397,6 +397,19 @@ async function build(pl, alive, opt) {
   }
   // 4) where a vector tile is missing, nothing (the bundled ground shows through)
   for (const r of miss) g.clearRect(Math.floor(r.x), Math.floor(r.y), Math.ceil(r.w) + 1, Math.ceil(r.h) + 1);
+  // 5) the rim of a regional sheet fades out, inside its margin, so that its square edge never shows over the coarser ground under it
+  if (!pl.world) {
+    const F = Math.max(8, Math.round(Math.min(Wd, Hd) * 0.04));
+    s.fd = F / s.rx;
+    g.save();
+    g.globalCompositeOperation = 'destination-out';
+    for (const [x0, y0, x1, y1, rx, ry, rw, rh] of [[0, 0, F, 0, 0, 0, F, Hd], [Wd, 0, Wd - F, 0, Wd - F, 0, F, Hd], [0, 0, 0, F, 0, 0, Wd, F], [0, Hd, 0, Hd - F, 0, Hd - F, Wd, F]]) {
+      const gr = g.createLinearGradient(x0, y0, x1, y1);
+      gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.fillRect(rx, ry, rw, rh);
+    }
+    g.restore();
+  }
   ck.check();
   T.lines = now() - t;
   T.total = now() - T.t0;

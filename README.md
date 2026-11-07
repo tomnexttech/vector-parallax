@@ -257,7 +257,7 @@ name and a link to the article; no image is copied into this repository. No imag
 
 The place maps use **Natural Earth II** raster tiles (`assets/map/ne2/2/`, level 2 of 8 x 4 tiles, 256 px). Natural Earth states:
 "All versions of Natural Earth raster + vector map data found on this website are in the public domain"
-(https://www.naturalearthdata.com/about/terms-of-use/, read 2026-11-04). Made with Natural Earth.
+(https://www.naturalearthdata.com/about/terms-of-use/, read 2026-11-04). Made with Natural Earth. The outlines for the map's theme colouring (`assets/map/borders.json`, made by `tools/build_borders.py`) are Natural Earth too: 1:50m countries and 1:10m admin-1, public domain, v5.1.2; they are its lines of de facto control, a guide for colouring only.
 The place names on the map come from the event's own text (AI headline, published titles, `basis.places`), not from a geocoder.
 
 To ask for an item to be taken down: https://github.com/tomnexttech/vector-parallax/issues

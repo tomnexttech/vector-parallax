@@ -13,11 +13,12 @@
 import { SIX_H, keptView, noticeParts, isOld, defaultView } from './snapshot.js';
 import { summaryOf, summaryIndex, memberKey } from './summary.js';
 import { PLACES, placeJa, placesOf, placesIn } from './places.js';
-import { loadWatch, saveWatch, addWatch, removeWatch, hitsOf } from './prefs.js';
+import { loadWatch, saveWatch, addWatch, removeWatch, hitsOf, loadView, saveView, countsFor, countIn, nextOf, COUNTS, LAYOUTS, COUNT_JA, LAYOUT_JA } from './prefs.js';
 import { TOPICS, FIELDS, topicsOf, fieldOf, topicJa } from './topics.js';
 import { createMap } from './map.js';
 import { createFloor } from './floor.js';
-import { GENRE_ALL, genreBar, genreCounts, genreShort } from './genres.js';
+import { createMapUi } from './mapui.js';
+import { GENRE_ALL, genreBar, genreCounts, genreShort, genreIcon } from './genres.js';
 import { createFeel } from './feel.js';
 import { startAutoScroll } from './autoscroll.js';
 import { loadHazards, nearby, dir8, shindoJa, disasterJa } from './hazards.js';
@@ -25,7 +26,7 @@ import { createActions } from './actions.js';
 import { loadTasks, saveTasks, addTask, toggleTask, removeTask, hasTask } from './tasks.js';
 import { speechSupported, listen, route as voiceRoute } from './voice.js';
 import { absentOutlets, absentBlock } from './absent.js';
-import { entryEvents, renderEntry, pickFirst } from './entry.js';
+import { entryEvents, renderEntry, pickFirst, lineIcon, sides as sidesOf, SIDES } from './entry.js';
 import { tidyGovTitles } from './tidy.js';
 import { detect, bannerText, sceneOf } from './scenes.js';
 import { createPolitics } from './politics_ui.js';
@@ -37,6 +38,10 @@ import { createSettingsPanel } from './settings_panel.js';
 import { initLandscape } from './landscape.js';
 import { initDial } from './dial.js';
 import { createTour, wantTour } from './tour.js';
+import { createDossier, measure, paperPick } from './dossier.js';
+import { biasOf as biasIndex, sourceBase } from './bias.js';
+import { newsView, createMapNews } from './mapnews.js';
+import { createWall, wallOn, pageOf, pageHolding, perOf } from './wall.js';
 
 const DEFAULT_DATA = 'data/latest.json';
 const POLL_MS = 5 * 60 * 1000;
@@ -58,7 +63,7 @@ let defaultModel = '';
 
 const FLAG_FALLBACK = {
   overseas_only: { ja: '海外の媒体だけ', tip_ja: '取得した媒体のうち、海外の媒体だけに出ていて、日本に関わる出来事' },
-  jp_main_not_found: { ja: '取得した国内の主要 {n} 配信に見当たらない', tip_ja: '取得した国内の主要配信には見当たらない' },
+  jp_main_not_found: { ja: '集めた国内の主要 {n} 媒体に見当たらない', tip_ja: '集めた国内の主要な媒体には見当たらない' },
   primary_only: { ja: '官公庁の資料だけ', tip_ja: '政府・中央銀行などの一次の資料だけに出ている' },
 };
 const VETO_WHY = { has_jp_outlet: '日本の媒体が含まれる', has_jp_mainstream: '日本の主要な媒体が含まれる', single_outlet: '媒体が一つだけ', has_non_primary: '官公庁でない媒体が含まれる' };
@@ -106,7 +111,7 @@ function h(tag, attrs, ...kids) {
     else if (k === 'data') for (const [dk, dv] of Object.entries(v)) el.dataset[dk] = String(dv);
     else el.setAttribute(k, v === true ? '' : String(v));
   }
-  for (const kid of kids.flat()) { if (kid == null || kid === false) continue; el.append(kid instanceof Node ? kid : document.createTextNode(String(kid))); }
+  for (const kid of kids.flat(4)) { if (kid == null || kid === false) continue; el.append(kid instanceof Node ? kid : document.createTextNode(String(kid))); }
   return el;
 }
 const SVGNS = 'http://www.w3.org/2000/svg';
@@ -182,6 +187,8 @@ function roll(el, to) {
 const kids = (...xs) => xs.flat(3).filter((x) => x != null && x !== false && x !== '');
 // a list of children may hold null for 'nothing here': drop it before the DOM turns it into the text null
 if (typeof Element !== 'undefined') for (const P of [Element.prototype, DocumentFragment.prototype]) { const rc = P.replaceChildren, ap = P.append; P.replaceChildren = function (...a) { return rc.apply(this, kids(...a)); }; P.append = function (...a) { return ap.apply(this, kids(...a)); }; }
+/** a word or a number that goes somewhere when pressed; the row under it does not take the press */
+const lk = (text, fn, title, cls, data) => h('button', { type: 'button', class: 'lk' + (cls ? ' ' + cls : ''), title: title || null, data: data || null, on: { click: (ev) => { ev.stopPropagation(); fn(); } } }, text);
 const num = (v, cls) => { const el = h('b', { class: 'num' + (cls ? ' ' + cls : '') }); roll(el, v); return el; };
 
 // ---------------------------------------------------------------- data
@@ -211,13 +218,14 @@ function denoms() {
   return { mainstream: src.filter((r) => r.home === 'jp' && MAINSTREAM.has(r.type)).length };
 }
 function flagDefs() { return state.labels && isObj(state.labels.flags) ? state.labels.flags : FLAG_FALLBACK; }
+const plainWord = (x) => str(x).replace(/配信/g, '媒体').replace(/取得した/g, '集めた');
 function flagText(id) {
   const def = flagDefs()[id];
   if (!isObj(def)) return null;
   const sc = state.view === 'ai' && state.snap && isObj(state.data.ai_snapshot) && isObj(state.data.ai_snapshot.scope) ? state.data.ai_snapshot.scope : state.data.scope;
   const n = isObj(sc) && isObj(sc.jp_main) && isNum(sc.jp_main.fetched) ? sc.jp_main.fetched : denoms().mainstream;
   const fill = (x) => str(x).replace(/\{n\}/g, String(n));
-  return { ja: fill(def.ja), tip: fill(def.tip_ja) };
+  return { ja: plainWord(fill(def.ja)), tip: plainWord(fill(def.tip_ja)) };
 }
 const noteJa = () => (state.labels && str(state.labels.note_ja)) || '真偽は判定しない';
 const pj = (k) => (state.labels && isObj(state.labels.places_ja) && str(state.labels.places_ja[k])) || placeJa(k);
@@ -475,7 +483,8 @@ function renderAiLine() {
   else if (!state.stSnap) parts.push(h('span', { class: 'al-k off', text: 'AI 停止中' }));   // with a dot at the end of the line, the word is said once
   if (both != null) parts.push(h('i', { class: 'al-sep', 'aria-hidden': 'true' }), h('span', { class: 'al-k', text: '自動' }), n(both, state.view === 'rules'));
   parts.push(h('button', { type: 'button', class: 'al-go', on: { click: () => { if (state.hasAI && ai != null && state.view !== 'ai') setView('ai'); setTopic('cross'); if (narrow()) $('p-pri').scrollIntoView({ block: 'start' }); } } }, '一覧'));
-  el.replaceChildren(...parts, statEl());
+  el.replaceChildren(...parts, viewEl());
+  (phoneBar.matches ? $('tb').querySelector('.meters') : el).append(statEl());
 }
 
 // ---------------------------------------------------------------- left column: the inputs
@@ -515,7 +524,7 @@ function renderSources() {
     const bt = btypes.get(t);
     const h48 = bt && isNum(bt.h48) ? bt.h48 : rs.reduce((a, r) => a + (isNum(r.h48) ? r.h48 : 0), 0);
     const hit = rs.filter((r) => inCase.has(r.id)).length;
-    return h('li', { class: down ? 'bad' : null, title: bt && isNum(bt.age_h) ? `最新 ${bt.age_h} 時間前` : null },
+    return h('li', { class: down ? 'bad' : null, title: bt && isNum(bt.age_h) ? `最新 ${bt.age_h} 時間前` : null, on: { click: () => openSheet('src', $('p-src')) } },
       h('span', { class: 'tn', text: t }), h('span', { class: 'tc', text: down ? `${rs.length - down}/${rs.length}` : String(rs.length) }),
       h('span', { class: 'ti', text: String(h48) }), h('span', { class: 'th', text: hit ? String(hit) : '' }));
   }));
@@ -528,7 +537,7 @@ function renderHours() {
   const e = cur();
   let bins, to, hours, priAgo = new Set(), label;
   if (b && isObj(b.volume) && Array.isArray(b.volume.total)) {
-    hours = b.volume.total.length; bins = [...b.volume.total].reverse(); to = b.generated_at; label = '取得した見出し';
+    hours = b.volume.total.length; bins = [...b.volume.total].reverse(); to = b.generated_at; label = '集めた見出し';
     const pri = new Set(arr(b.priority));
     for (const p of arr(b.slab && b.slab.pillars)) if (isObj(p) && pri.has(p.sid) && isNum(p.h)) priAgo.add(p.h);
   } else {
@@ -587,24 +596,79 @@ function row(e, opt = {}) {
   if (fresh) state.flashed.add(e.key + (opt.compact ? 'c' : ''));
   const first = e.members[0];
   const li = h('li', {
-    class: ['r', state.sel === e.key ? 'sel' : '', fresh ? 'fresh' : '', e.hits.length ? 'watched' : ''].filter(Boolean).join(' '),
+    class: ['r', state.sel === e.key ? 'sel' : '', fresh ? 'fresh' : '', e.hits.length ? 'watched' : '', state.openRow === e.key ? 'open' : ''].filter(Boolean).join(' '),
     data: { key: e.key }, tabindex: '-1',
-    on: { click: () => select(e.key, true) },
+    on: { click: () => pressRow(e.key) },
   });
   const tag = opt.flag ? h('span', { class: 'flag', title: opt.flag.tip, text: opt.flag.ja }) : null;
   li.append(...kids(
     tag,
     headNode(e, 'rt'),
     h('span', { class: 'rm' },
-      !opt.compact && e.field ? h('span', { class: 'gtag', data: { genre: e.field }, text: genreShort(e.field) }) : null,
+      !opt.compact && e.field ? lk(genreShort(e.field), () => setGenre(e.field), `${e.field} の出来事だけ見る`, 'gtag', { genre: e.field }) : null,
       state.newKeys.has(e.mk) ? h('span', { class: 'newdot', title: '前回から新しい' }) : null,
-      h('span', { class: 'rn', text: `${e.n}媒体` }),
+      dossier.ratioBar(measureOf(e)),
+      lk(`${e.n}媒体`, () => { select(e.key, true); goMembers(); }, 'この出来事の全報道を見る', 'rn'),
+      biasOf(e).ok ? lk(dossier.biasMini(biasOf(e)), () => { state.biasOpen = true; select(e.key, true); renderCase(); if (narrow() || $('board').dataset.wall === '1') openSheet('case'); }, 'バイアス度の内訳を見る', 'bi-chip') : null,
       h('span', { text: fmtAge(e.last) }),
-      !opt.compact && e.topics.length ? h('span', { class: 'rk', text: e.topics.map(flagJa).join('・') }) : null,
+      !opt.compact && e.topics.length ? h('span', { class: 'rk' }, e.topics.map((id, i) => [i ? '・' : '', lk(flagJa(id), () => setTopic(id), `${flagJa(id)} の出来事だけ見る`)])) : null,
       e.hits.length ? h('span', { class: 'rw', text: e.hits.join('・') }) : null),
+    state.openRow === e.key ? rowMore(e) : null,
   ));
   return li;
 }
+// "new in the last six hours" is counted when the data was built: an old build must not say it as if it were now
+const newsFresh = () => !isOld(state.data.generated_at, nowS());
+const measureOf = (e) => e.fig || (e.fig = measure(e, { order: TYPE_ORDER }));
+const dossier = createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineIcon });
+/** バイアス度 of an event (js/bias.js): held against the outlets this build collected; the AI's term only when the AI wrote its focus lines */
+const biasOf = (e) => { if (e.bias) return e.bias; const a = new Map(e.ai ? arr(e.ai.angles).filter(isObj).map((x) => [x.item_id, str(x.focus_ja)]) : []); e.bias = biasIndex(measureOf(e), { base: sourceBase(arr(state.data && state.data.sources)), angles: a.size ? a : null }); return e.bias; };
+/** a pressed row opens in place: the whole headline, the description the outlet published (quoted), and the way to the article */
+function rowMore(e) {
+  const sorted = [...e.members].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity));
+  const withDesc = sorted.find((it) => typeof it.desc === 'string' && it.desc.trim()) || null;
+  const first = withDesc || sorted[0];
+  const link = first ? safeUrl(first.link) : null;
+  const stop = (ev) => ev.stopPropagation();
+  const others = e.members.length - 1;
+  return h('div', { class: 'r-more', on: { click: stop } },
+    e.heading.ai && first && str(first.title) ? h('p', { class: 'r-orig', lang: first.lang === 'en' ? 'en' : null, text: `「${first.title}」（${outletOf(first)}）` }) : null,
+    withDesc ? descOf(withDesc, safeUrl(withDesc.link)) : null,
+    h('div', { class: 'r-go' },
+      link ? extLink(link, { class: 'r-a', on: { click: stop } }, `${outletOf(first) || hostOf(link)} の記事を開く`) : null,
+      others > 0 ? lk(`他の ${others} 件を見る`, () => { goMembers(); }, 'この出来事の全報道を見る', 'r-a') : null));
+}
+function pressRow(key) {
+  const was = state.openRow === key;
+  select(key, true);
+  key = state.sel;
+  state.openRow = was ? null : key;
+  for (const el of document.querySelectorAll('.rows .r.open')) { el.classList.remove('open'); const m = el.querySelector('.r-more'); if (m) m.remove(); }
+  if (!state.openRow) return;
+  const e = state.byKey.get(key);
+  for (const el of document.querySelectorAll(`.rows .r[data-key="${CSS.escape(key)}"]`)) { el.classList.add('open'); el.append(rowMore(e)); }
+}
+/** to the list of every report of the event in focus */
+function goMembers() {
+  if (state.floor && state.floor.mode() === 'map') state.floor.setMode('case');
+  const el = document.querySelector('#case .cb-members');
+  if (el) el.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
+}
+/** the search box takes a word from anywhere on the board; the lists narrow to it */
+function searchFor(w) {
+  const t = String(w || '').trim();
+  if (!t) return;
+  if (state.sheet) closeSheet();
+  $('q').value = t;
+  state.q = t;
+  pause();
+  if (state.floor && state.floor.mode() === 'map' && !state.mapPick) state.mapScope = 'pri';
+  renderPri(); renderAnom(); renderFields();
+  const p = $('p-pri');
+  if (p && (narrow() || !p.offsetParent)) p.scrollIntoView({ block: 'start' });
+  else if ($('pri-b')) $('pri-b').scrollTop = 0;
+}
+function clearSearch() { $('q').value = ''; state.q = ''; renderPri(); renderAnom(); renderFields(); }
 /** the field icons: at the head of the priority list (PC), as a strip above the board (phones), and in the simple view */
 function genreEl() {
   return genreBar({ fields: [...FIELDS, OTHER_FIELD], counts: genreCounts(state.pri), total: state.pri.length, active: state.genre, onPick: setGenre });
@@ -621,7 +685,11 @@ function setGenre(g) {
   if (g !== GENRE_ALL && state.fieldTabs.includes(g)) { state.field = g; state.fieldAt = Date.now(); }
   renderPri(); renderAnom(); renderFields(); renderEntryView();
   const c = cur(), f = shownPri().find((e) => !e.hid);
+  const hold = state.map && state.floor && state.floor.mode() !== 'case';     // the whole map is being read: a theme colours it, the view stays
+  if (hold) state.map.pin(true);
   if (f && (!c || !inGenre(c))) select(f.key, false);
+  if (hold) state.map.pin(false);
+  if (state.mapUi) state.mapUi.update();
   return true;
 }
 function renderPri() {
@@ -637,12 +705,15 @@ function renderPri() {
   const list = shownPri();
   $('pri-h').textContent = state.q ? '検索' : state.topic === 'cross' ? '国内と海外' : narrow() ? '今日の注目' : '注目';
   roll($('pri-c'), list.length);
+  const qOut = state.q ? h('p', { class: 'q-out' }, h('span', { text: `「${state.q}」で探している` }), lk('解除', clearSearch, '検索をやめて全部に戻す', 'r-a')) : null;
   const fold = narrow() && !state.priAll && !state.q && list.length > 5;
   const showN = fold ? list.slice(0, 5) : list;
-  $('pri-b').replaceChildren(showN.length ? h('ul', { class: 'rows' }, showN.map((e) => row(e))) : h('p', { class: 'empty', text: state.q ? '一致 0 件' : '0 件' }),
+  $('pri-b').replaceChildren(qOut, showN.length ? h('ul', { class: 'rows' }, showN.map((e) => row(e))) : h('p', { class: 'empty', text: state.q ? '一致 0 件' : '0 件' }),
     fold ? h('button', { type: 'button', class: 'more', on: { click: () => { state.priAll = true; renderPri(); } } }, `残り ${list.length - 5} 件`) : null,
     h('p', { class: 'pfoot legend', text: `ラベルは${FLAG_LEGEND}` }));
   syncAutoLine();
+  renderMapNews();
+  if (state.vwNow) { renderWall(); renderViewBar(); }
 }
 function anomRows() {
   const es = state.es.filter((e) => !e.foldedInto && matchesQ(e) && vis(e));
@@ -656,7 +727,7 @@ function anomRows() {
       const e = isObj(a) && byCase.get(a.sid);
       const L = isObj(a) && labels[a.kind];
       const ja = isObj(a) ? str(a.label_ja) || (isObj(L) ? str(L.ja) : '') : '';
-      if (e && ja) rows.push({ e, k: a.kind, ja, tip: isObj(L) ? str(L.rule) : '' });
+      if (e && ja) rows.push({ e, k: a.kind, ja: plainWord(ja), tip: isObj(L) ? plainWord(L.rule) : '' });
     }
   }
   if (!(b && Array.isArray(b.asymmetry))) for (const e of es) for (const f of e.ruleFlags) { const t = flagText(f); if (t) rows.push({ e, k: 'rule-' + f, ja: t.ja, tip: t.tip }); }
@@ -676,21 +747,22 @@ function renderAnom() {
   const shown = state.anomKind ? rows.filter((r) => r.ja === state.anomKind) : rows;
   $('anom-b').replaceChildren(shown.length
     ? h('ul', { class: 'rows' }, shown.slice(0, 80).map((r) => row(r.e, { flag: { ja: r.ja, tip: `自動・${r.tip}${r.tip ? '。' : ''}${noteJa()}` } })))
-    : h('p', { class: 'empty', text: ast && ast.complete === false ? '主流の配信に欠けがあり、この取得ではラベルを付けない' : '0 件' }), h('p', { class: 'pfoot', text: `自動のラベル・${noteJa()}` }));
+    : h('p', { class: 'empty', text: ast && ast.complete === false ? '主な媒体の一部が取れず、今回はラベルを付けない' : '0 件' }), h('p', { class: 'pfoot', text: `自動のラベル・${noteJa()}` }));
 }
 // ---------------------------------------------------------------- the event taken apart
 function lanes(e) {
   const ms = e.members.filter((it) => isNum(it.ts));
   const types = TYPE_ORDER.filter((t) => ms.some((it) => it.type === t));
   for (const it of ms) if (!types.includes(it.type)) types.push(it.type);
-  if (!ms.length) return h('p', { class: 'empty', text: '時刻の無い報道だけ' });
+  if (!ms.length) return h('p', { class: 'tl-none', text: '時刻の無い報道だけ' });
   const t0 = Math.min(...ms.map((it) => it.ts)), t1 = Math.max(...ms.map((it) => it.ts));
   const span = Math.max(3600, t1 - t0);
-  const W = 230, LH = 18, L = 58, H = types.length * LH + 18;
+  const W = 260, LH = 13, L = 62, H = types.length * LH + 13, STEP = 6;
   const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'lanes', role: 'img', 'aria-label': '種類ごとの報道の時刻' });
   types.forEach((t, i) => {
     const y = i * LH + LH / 2;
-    svg.append(s('text', { x: 0, y: y + 3.5, class: 'lt' }, document.createTextNode(t)), s('line', { x1: L, x2: W, y1: y, y2: y, class: 'll' }));
+    svg.append(s('text', { x: 0, y: y + 3, class: 'lt' }, document.createTextNode(t)));
+    for (let x = L; x <= W - 4; x += STEP) svg.append(s('circle', { cx: x, cy: y, r: .7, class: 'hd' }));
   });
   // the fingerprint: for each type, the span from its first to its last report (who followed, and how late)
   const fp = e.exact && Array.isArray(e.case.fingerprint) ? e.case.fingerprint.filter(isObj) : [];
@@ -698,33 +770,38 @@ function lanes(e) {
     const i = types.indexOf(f.type);
     if (i < 0 || !isNum(f.first_off_min) || !isNum(f.last_off_min)) continue;
     const x0 = L + ((f.first_off_min * 60) / span) * (W - L - 6), x1 = L + ((f.last_off_min * 60) / span) * (W - L - 6);
-    svg.append(s('rect', { x: x0.toFixed(1), y: i * LH + LH / 2 - 3, width: Math.max(1, x1 - x0).toFixed(1), height: 6, class: 'fp' }));
+    svg.append(s('rect', { x: x0.toFixed(1), y: i * LH + LH / 2 - 1, width: Math.max(1, x1 - x0).toFixed(1), height: 2, class: 'fp' }));
   }
   const used = new Map();
-  ms.sort((a, b) => a.ts - b.ts).forEach((it, i) => {
+  [...ms].sort((a, b) => a.ts - b.ts).forEach((it, i) => {
     const li = types.indexOf(it.type);
     const x0 = L + ((it.ts - t0) / span) * (W - L - 6);
     const k = `${li}:${Math.round(x0 / 3)}`; const off = (used.get(k) || 0); used.set(k, off + 1);
-    svg.append(s('circle', { cx: (x0 + off * 3).toFixed(1), cy: li * LH + LH / 2, r: i === 0 ? 3.6 : 2.6, class: i === 0 ? 'first' : '' },
-      s('title', {}, document.createTextNode(`${fmtClock(it.ts)} ${it.outlet}`))));
+    const side = it.type === GOV ? 'gov' : it.home === 'intl' ? 'intl' : 'jp';
+    const dot = s('circle', { cx: (x0 + off * 3).toFixed(1), cy: li * LH + LH / 2, r: i === 0 ? 3.6 : 2.6, class: i === 0 ? 'first' : 'lit', 'data-side': side },
+      s('title', {}, document.createTextNode(`${fmtClock(it.ts)} ${outletOf(it)}`)));
+    const link = safeUrl(it.link);
+    svg.append(link ? s('a', { href: link, target: '_blank', rel: 'noopener noreferrer' }, dot) : dot);
   });
-  svg.append(s('text', { x: L, y: H - 2, class: 'ax' }, document.createTextNode(fmtClock(t0))), s('text', { x: W, y: H - 2, class: 'ax end' }, document.createTextNode(`+${fmtSpan(t1 - t0)}`)));
+  svg.append(s('text', { x: L, y: H - 2, class: 'ax' }, document.createTextNode(fmtClock(t0))), s('text', { x: W, y: H - 2, class: 'ax end' }, document.createTextNode(t1 > t0 ? `+${fmtSpan(t1 - t0)}` : '')));
   const noTs = e.members.length - ms.length;
-  return h('div', null, svg, noTs ? h('p', { class: 'pfoot', text: `時刻不明 ${noTs}（初報に置かない）` }) : null);
+  return h('div', { class: 'lanes-w' }, svg, noTs ? h('p', { class: 'pfoot', text: `時刻不明 ${noTs}（初報に置かない）` }) : null);
 }
-function byType(e) {
+/** who reported in each type and how late (the board's by_type when it has the event): the tooltip of the card of kinds of media */
+function typeWho(e) {
   const offTxt = (m) => (m < 1 ? '+0分' : m < 60 ? `+${Math.round(m)}分` : `+${(m / 60).toFixed(m < 600 ? 1 : 0)}時間`);
-  let rows;
+  const out = new Map();
   if (e.exact && Array.isArray(e.case.by_type) && e.case.by_type.length) {
-    rows = e.case.by_type.filter(isObj).map((t) => ({ type: str(t.type), n: isNum(t.n) ? t.n : 0, who: arr(t.outlets).filter(isObj).map((o) => `${o.outlet} ${isNum(o.off_min) ? offTxt(o.off_min) : '時刻不明'}`) }));
-  } else {
-    const t0 = Math.min(...e.members.map((it) => it.ts).filter(isNum));
-    const types = uniq([...TYPE_ORDER, ...e.members.map((it) => it.type)]).filter((t) => e.members.some((it) => it.type === t));
-    rows = types.map((t) => { const ms = e.members.filter((it) => it.type === t).sort((a, b) => (a.ts || 0) - (b.ts || 0)); return { type: t, n: ms.length, who: ms.map((it) => (isNum(it.ts) && Number.isFinite(t0) ? `${it.outlet} ${offTxt((it.ts - t0) / 60)}` : `${it.outlet} 時刻不明`)) }; });
+    for (const r of e.case.by_type.filter(isObj)) out.set(str(r.type), arr(r.outlets).filter(isObj).map((o) => `${o.outlet} ${isNum(o.off_min) ? offTxt(o.off_min) : '時刻不明'}`));
+    return out;
   }
-  const max = Math.max(1, ...rows.map((r) => r.n));
-  return h('ul', { class: 'bars' }, rows.map((r) => h('li', null, h('span', { class: 'bl', text: r.type }), h('span', { class: 'bb' }, h('i', { style: `width:${(r.n / max) * 100}%` })),
-    h('span', { class: 'bn', text: r.n }), h('span', { class: 'bd', text: r.who.join('、') }))));
+  const t0 = Math.min(...e.members.map((it) => it.ts).filter(isNum));
+  for (const it of [...e.members].sort((a, b) => (a.ts || 0) - (b.ts || 0))) {
+    const l = out.get(it.type) || [];
+    l.push(isNum(it.ts) && Number.isFinite(t0) ? `${outletOf(it)} ${offTxt((it.ts - t0) / 60)}` : `${outletOf(it)} 時刻不明`);
+    out.set(it.type, l);
+  }
+  return out;
 }
 /** the related headlines of this fetch: other events that share two of this one's words (the words it was bundled by, the
  *  board's key terms, the words it was found by), or stand at the same named place (a country's representative point is not one) */
@@ -747,7 +824,7 @@ function renderUnder(e, sorted) {
   $('rel-b').replaceChildren(rel.length ? h('ul', { class: 'rows mini' }, rel.map((x) => h('li', { class: 'r', on: { click: () => select(x.o.key, true) } },
     h('span', { class: 'rt', lang: x.o.heading.lang || null, text: x.o.heading.text }),
     h('span', { class: 'rm', text: [`${x.o.n}媒体`, isNum(x.o.last) ? fmtClock(x.o.last) : '', x.shared.slice(0, 3).join('・'), x.place ? `同じ地点 ${x.o.geo.name}` : ''].filter(Boolean).join(' · ') }))))
-    : h('p', { class: 'empty', text: '0 件（この取得の中）' }));
+    : h('p', { class: 'empty', text: '0 件（今回集めた中）' }));
   const gov = sorted.filter((it) => str(it.type) === GOV);
   const src = (it) => {
     const link = safeUrl(it.link);
@@ -813,42 +890,58 @@ async function askOwn(e) {
   repaintOwn(e);
 }
 
+/** the photos of an event: the one the board chose (CONTRACT 20.5) first, then each report that carries one, by the clock */
+function picsOf(e) {
+  const sorted = [...e.members].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity));
+  const ph = e.case && isObj(e.case.photo) ? e.case.photo : null;
+  const phUrl = ph ? safeImg(ph.url) : null;
+  const phIt = ph ? ctx().ix.items[ph.id] || state.ix.items[ph.id] || {} : {};
+  const pics = phUrl ? [{ url: phUrl, outlet: str(ph.outlet), link: safeUrl(phIt.link), ts: phIt.ts, via: viaGN(phIt) }] : [];
+  for (const it of sorted) { const im = imageOf(it); if (im && !pics.some((p) => p.url === im.url)) pics.push({ ...im, via: viaGN(it) }); }
+  return pics;
+}
 function renderCase() {
   const box = $('case');
   const e = cur();
   if (!e) { box.replaceChildren(h('p', { class: 'empty big', text: state.es.length ? '出来事を選ぶ' : '出来事 0 件' })); renderStatus(); return; }
+  const node = caseNode(e);
+  box.replaceChildren(node);
+  box.scrollTop = 0;
+  renderUnder(e, [...e.members].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity)));
+  if (!reduced()) { node.classList.add('enter'); }
+  renderStatus();
+  renderTasks();
+}
+function caseNode(e) {
   const ms = e.members;
+  const m = measureOf(e);
   const first = [...ms].filter((it) => isNum(it.ts)).sort((a, b) => a.ts - b.ts)[0] || ms[0];
-  const jp = ms.filter((it) => it.home === 'jp').length, intl = ms.length - jp;
-  const types = uniq(ms.map((it) => it.type));
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
   const kept = state.snap ? state.snap.kept : null;
   const aiBy = kept ? [str(kept.snapRun.provider), str(kept.snapRun.model)] : [str(run.provider), str(run.model)];
   const aiAt = kept ? kept.aiAt : run.at;
   const aiTag = (by, at) => { const b = by.filter(Boolean); return h('span', { class: 'by', title: b.join(' ') || null }, h('span', { class: 'aimk', text: 'AI' }), b[b.length - 1] || '—', isNum(at) ? `・${fmtShort(at)}` : ''); };
+  // what a number or a word on these cards goes to: the list of reports narrowed, the search, or the outlets not seen
+  let paintMem = () => {};
+  const act = { home: (id) => paintMem({ home: id }), type: (ty) => paintMem({ type: ty }), all: () => paintMem({}), word: searchFor,
+    absent: () => { const a = members.querySelector('.cb-absent'); if (a) a.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' }); } };
 
-  // head: where, what, one big number and the facts
+  // the place card: where (the flag: the place, else the field), from which word the place was read, what, one big number
+  const coord = e.geo ? `${Math.abs(e.geo.lat).toFixed(1)}°${e.geo.lat >= 0 ? 'N' : 'S'} ${Math.abs(e.geo.lon).toFixed(1)}°${e.geo.lon >= 0 ? 'E' : 'W'}` : '';
   const place = h('div', { class: 'ch-place' },
-    e.geo ? h('span', { class: 'pl', text: e.geo.name }) : h('span', { class: 'pl none', text: '地名なし' }),
-    e.geo ? h('span', { class: 'prec', text: `${e.geo.prec} · 「${e.geo.via}」から${e.geo.guessed ? '推定' : ''}` }) : null,
-    e.topics.length ? h('span', { class: 'tp', text: e.topics.map(flagJa).join('・') }) : null,
-    h('span', { class: 'fd', text: e.field }),
-    h('button', { type: 'button', class: 'addtask', 'aria-pressed': 'false', on: { click: () => actions.run('task_add') } }, 'タスクに足す'),
-    extLink(`${ISSUES}/new?title=${encodeURIComponent('掲載の停止の依頼')}`, { class: 'stopreq', title: STOP_NOTE }, '掲載の停止'));
+    e.geo ? lk(e.geo.name, () => searchFor(e.geo.name), `${e.geo.name} の出来事を探す`, 'banner') : h('span', { class: 'banner soft', text: e.field || '分野の外' }),
+    e.geo ? h('span', { class: 'prec', text: `${e.geo.prec} · 「${e.geo.via}」から${e.geo.guessed ? '推定' : ''}` }) : h('span', { class: 'prec', text: '地名なし' }),
+    coord && state.floor && state.floor.mode() !== 'flat' ? lk(coord, () => state.floor.setMode('map'), '地図で見る', 'coord') : null,
+    h('span', { class: 'ch-tools' },
+      e.topics.length ? h('span', { class: 'tp' }, e.topics.map((id, i) => [i ? '・' : '', lk(flagJa(id), () => setTopic(id), `${flagJa(id)} の出来事だけ見る`)])) : null,
+      e.field ? lk(e.field, () => setGenre(e.field), `${e.field} の出来事だけ見る`, 'fd', { genre: e.field }) : null,
+      h('button', { type: 'button', class: 'addtask', 'aria-pressed': 'false', on: { click: () => actions.run('task_add') } }, 'タスクに足す'),
+      extLink(`${ISSUES}/new?title=${encodeURIComponent('掲載の停止の依頼')}`, { class: 'stopreq', title: STOP_NOTE }, '掲載の停止')));
   const head = h('div', { class: 'ch-main' },
     h('div', { class: 'ch-title' },
       h('h1', { lang: e.heading.lang || null, class: e.heading.none ? 'none' : null }, headNode(e, 'h1t')),
       e.heading.en ? h('p', { class: 'en', lang: 'en', text: e.heading.en }) : null),
-    h('div', { class: 'ch-big' }, num(e.n), h('span', { class: 'u', text: '媒体' })));
-  const facts = h('dl', { class: 'facts' },
-    h('dt', { text: '初報' }), h('dd', null, `${fmtClock(first && first.ts)} `, h('span', { class: 'o', text: str(first && first.outlet) })),
-    h('dt', { text: '最新' }), h('dd', { text: fmtClock(e.last) }),
-    h('dt', { text: '経過' }), h('dd', { text: fmtSpan(isNum(e.last) && isNum(e.first) ? e.last - e.first : null) }),
-    h('dt', { text: '国内・海外' }), h('dd', { text: `${jp} · ${intl}` }),
-    h('dt', { text: '種類' }), h('dd', { text: types.length }),
-    e.event ? [h('dt', { text: '事件' }), h('dd', null, e.event.key, h('span', { class: 'o', text: ` · 束 ${e.event.n}` }))] : null,
-    e.exact && isNum(e.case.n_new6h) ? [h('dt', { text: '6 時間の新着' }), h('dd', { text: e.case.n_new6h })] : null,
-    e.case && arr(e.case.hits).length ? [h('dt', { text: '当たった語' }), h('dd', { class: 'hits', text: arr(e.case.hits).join('・') })] : null);
+    h('button', { type: 'button', class: 'ch-big', title: '全部の報道を見る', on: { click: () => act.all() } }, num(e.n), h('span', { class: 'u', text: '媒体' })));
   const aiLines = [];
   if (e.summary) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: str(e.summary.text_ja) }), aiTag([str(e.summary.provider), str(e.summary.model)], e.summary.made_at)));
   if (e.ai && str(e.ai.contrast_ja)) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: e.ai.contrast_ja }), aiTag(aiBy, aiAt)));
@@ -856,59 +949,93 @@ function renderCase() {
   if (ownActive()) aiLines.push(ownBox(e));
 
   const sorted = [...ms].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity));
-  // the photos: the one the board chose (CONTRACT 20.5) first, then each report that carries one, by the clock; never cropped;
-  // the outlet, the time and the link stay with each; a small one below brings it up in the large frame
-  const ph = e.case && isObj(e.case.photo) ? e.case.photo : null;
-  const phUrl = ph ? safeImg(ph.url) : null;
-  const phIt = ph ? ctx().ix.items[ph.id] || state.ix.items[ph.id] || {} : {};
-  const pics = phUrl ? [{ url: phUrl, outlet: str(ph.outlet), link: safeUrl(phIt.link), ts: phIt.ts, via: viaGN(phIt) }] : [];
-  for (const it of sorted) { const im = imageOf(it); if (im && !pics.some((p) => p.url === im.url)) pics.push({ ...im, via: viaGN(it) }); }
+  const last = m.last;
+  const linkTo = (it, text) => { const u = it ? safeUrl(it.link) : null; return u ? extLink(u, { class: 'lk', title: `${outletOf(it)} の記事を開く` }, text) : h('span', { text }); };
+  // the band under the place card: how long since the first report (the bar is the share of the window it has run), and the first and the latest report
+  const gen = state.data.generated_at, windowS = (isNum(state.data.window_h) ? state.data.window_h : 36) * 3600;
+  const since = isNum(gen) && isNum(e.first) ? Math.max(0, gen - e.first) : null;
+  const status = h('div', { class: 't-status' },
+    h('b', { class: 'st-k', text: '初報から' }), h('i', { class: 'st-l' }, since != null ? h('i', { style: `width:${Math.min(100, (since / windowS) * 100).toFixed(1)}%` }) : null),
+    h('small', { class: 'st-v', text: `${since != null ? fmtSpan(since) : '—'}・${e.n}媒体` }),
+    h('dl', { class: 'facts' },
+      h('dt', { text: '初報' }), h('dd', null, `${fmtClock(first && first.ts)} `, linkTo(first, str(first && outletOf(first)))),
+      h('dt', { text: '最新' }), h('dd', null, last ? linkTo(last, fmtClock(last.ts)) : '—'),
+      e.event ? [h('dt', { text: '事件' }), h('dd', null, e.event.key, h('span', { class: 'o', text: ` · 束 ${e.event.n}` }))] : null,
+      e.case && arr(e.case.hits).length ? [h('dt', { text: '当たった語' }), h('dd', { class: 'hits' }, arr(e.case.hits).map((w, i) => [i ? '・' : '', lk(w, () => searchFor(w), `「${w}」で探す`)]))] : null));
+
+  // the sheaf of photos: never cropped; the outlet, the time and the link stay with each; the small arrow brings the next one up
+  const pics = picsOf(e);
   const fig = (p) => h('figure', { class: 'pfig' },
     extLink(p.link || '#', { class: 'pimg', title: `${p.outlet} の記事を開く` }, h('img', { src: p.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer',
       on: { error: (ev) => { ev.target.closest('figure').classList.add('noimg'); ev.target.replaceWith(h('span', { class: 'pcard', text: p.outlet })); } } })),
     h('figcaption', null, h('b', { text: p.outlet }), p.via ? ' · Google ニュース経由' : '', isNum(p.ts) ? ` ${fmtClock(p.ts)}` : ''));
   let photo = null;
   if (pics.length) {
-    let shown = fig(pics[0]);
-    const thumbs = pics.slice(0, 8).map((p, i) => h('button', { type: 'button', class: 'pth', title: p.outlet, 'aria-label': `${p.outlet} の写真`, 'aria-pressed': String(i === 0),
-      on: { click: (ev) => { const nf = fig(p); shown.replaceWith(nf); shown = nf; for (const b of ev.currentTarget.parentElement.children) b.setAttribute('aria-pressed', String(b === ev.currentTarget)); } } },
-      h('img', { src: p.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => { ev.target.closest('button').hidden = true; } } })));
-    photo = h('section', { class: 'cb cb-photo' }, h('h3', null, '写真', h('span', { class: 'n', text: pics.length })), shown, pics.length > 1 ? h('div', { class: 'strip' }, thumbs) : null);
+    let at = 0;
+    const count = h('small', { class: 'num' });
+    const frame = h('div', { class: 'pstack' });
+    const paint = () => {
+      const backs = [2, 1].filter((k) => k < pics.length).map((k) => h('span', { class: `pback b${k}` }, h('img', { src: pics[(at + k) % pics.length].url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => ev.target.remove() } })));
+      frame.replaceChildren(...backs, fig(pics[at]));
+      count.textContent = `${at + 1} / ${pics.length}`;
+    };
+    paint();
+    photo = h('section', { class: 'dcard t-photo' }, frame, pics.length > 1 ? h('div', { class: 'pnav' }, count, dossier.go('次の写真', () => { at = (at + 1) % pics.length; paint(); })) : null);
   }
 
-  // every report: time, delay from the first, outlet, type, the headline as published, the AI's focus line
+  // the small figures, and the two short versions
   const angles = new Map(e.ai ? arr(e.ai.angles).filter(isObj).map((a) => [a.item_id, str(a.focus_ja)]) : []);
+  const new6h = newsFresh() && e.exact && isNum(e.case.n_new6h) ? e.case.n_new6h : null;
+  const figs = h('div', { class: 'figs' }, dossier.biasTile(biasOf(e), { open: !!state.biasOpen, onToggle: (o) => { state.biasOpen = o; } }), dossier.homeTile(m, act), dossier.typeTile(m, act, typeWho(e)), dossier.timeTile(m, lanes(e), new6h),
+    dossier.divergeTile(m, act), dossier.overlapTile(m, act));
+
+  // every report: time, delay from the first, outlet, type, the headline as published, the AI's focus line; narrowed by a press on a card
   const t0 = first && isNum(first.ts) ? first.ts : null;
-  const members = h('section', { class: 'cb cb-members' },
-    h('h3', null, '全報道', h('span', { class: 'n', text: ms.length })),
-    h('ol', { class: 'mem' }, sorted.map((it, i) => {
-      const link = safeUrl(it.link);
-      const title = typeof it.title === 'string' && it.title.trim() ? it.title : null;
-      return h('li', { class: i === 0 && isNum(it.ts) ? 'first' : null },
-        h('span', { class: 'mt' }, isNum(it.ts) ? fmtClock(it.ts) : '—', h('small', { text: isNum(it.ts) && t0 != null ? plusH(it.ts - t0) : '時刻不明' })),
-        h('span', { class: 'mb' },
-          h('span', { class: 'mo' }, h('b', { text: outletOf(it) }), h('span', { text: ` ${str(it.type)}${it.home === 'intl' ? '・海外' : ''}` }), viaGN(it) ? h('span', { class: 'via', text: ' · Google ニュース経由' }) : null),
-          link ? extLink(link, { class: 'mh', lang: it.lang === 'en' ? 'en' : null }, title ? `「${title}」` : outletOf(it) || hostOf(link)) : h('span', { class: 'mh', text: title ? `「${title}」` : '—' }),
-          descOf(it, link),
-          angles.get(it.id) ? h('span', { class: 'mf' }, h('span', { class: 'aimk', text: 'AI' }), angles.get(it.id)) : null));
-    })));
+  const memHead = h('h3'), memList = h('ol', { class: 'mem' });
+  const memRow = (it) => {
+    const link = safeUrl(it.link);
+    const title = typeof it.title === 'string' && it.title.trim() ? it.title : null;
+    const name = outletOf(it);
+    return h('li', { class: it === first && isNum(it.ts) ? 'first' : null, data: { side: it.type === GOV ? 'gov' : it.home === 'intl' ? 'intl' : 'jp' } },
+      h('span', { class: 'mt' }, isNum(it.ts) ? fmtClock(it.ts) : '—', h('small', { text: isNum(it.ts) && t0 != null ? plusH(it.ts - t0) : '時刻不明' })),
+      h('span', { class: 'mb' },
+        h('span', { class: 'mo' }, name ? lk(h('b', { text: name }), () => searchFor(name), `${name} の出来事を探す`) : null,
+          ' ', str(it.type) ? lk(str(it.type), () => paintMem({ type: it.type }), `${it.type} の報道だけ見る`, 'mty') : null, it.home === 'intl' ? h('span', { text: '・海外' }) : null, viaGN(it) ? h('span', { class: 'via', text: ' · Google ニュース経由' }) : null),
+        link ? extLink(link, { class: 'mh', lang: it.lang === 'en' ? 'en' : null }, title ? `「${title}」` : name || hostOf(link)) : h('span', { class: 'mh', text: title ? `「${title}」` : '—' }),
+        descOf(it, link),
+        angles.get(it.id) ? h('span', { class: 'mf' }, h('span', { class: 'aimk', text: 'AI' }), angles.get(it.id)) : null));
+  };
+  const members = h('section', { class: 'cb cb-members' }, memHead, memList);
+  const sd = sidesOf(e);
+  paintMem = (f, quiet) => {
+    const list = f && f.home ? sd[f.home] : f && f.type ? sorted.filter((it) => it.type === f.type) : sorted;
+    const label = f && f.home ? (SIDES.find(([k]) => k === f.home) || [])[2] : f && f.type ? f.type : '';
+    memHead.replaceChildren('全報道', h('span', { class: 'n', text: label ? `${list.length} / ${ms.length}` : ms.length }),
+      label ? h('span', { class: 'mem-f' }, h('b', { text: label }), ' だけ ', lk('全部に戻す', () => paintMem({}), '全部の報道に戻す')) : null);
+    memList.replaceChildren(...list.map(memRow));
+    if (!quiet) members.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
+  };
+  paintMem({}, true);
 
   // the outlets whose feeds reach back to the first report and do not show it (js/absent.js); never "did not carry".
   // The related headlines and the sources stand under the event (renderUnder)
   members.append(absentOf(e));
 
-  // the side: timing by type, counts by type, labels, why grouped, radius, same words
+  // the side: the one white paper, labels, why grouped, radius, same words
+  const pick = paperPick(ms, e.heading.text);
+  const paperCard = pick ? dossier.paper(pick, descOf(pick, safeUrl(pick.link))) : null;
   const flags = e.ruleFlags.map((f) => { const t = flagText(f); return t ? h('li', { class: 'flag-row', title: t.tip }, h('span', { class: 'flag', text: t.ja }), h('span', { class: 'rl', text: '自動' })) : null; });
   const ae = e.case && state.board ? arr(state.board.asymmetry).find((a) => isObj(a) && a.sid === e.case.sid) : null;
-  const al = ae && str(ae.label_ja) ? { ja: ae.label_ja, rule: str(((state.board.asym_labels || {})[ae.kind] || {}).rule) } : null;
+  const al = ae && str(ae.label_ja) ? { ja: plainWord(ae.label_ja), rule: str(((state.board.asym_labels || {})[ae.kind] || {}).rule) } : null;
   if (isObj(al)) flags.unshift(h('li', { class: 'flag-row', title: str(al.rule) }, h('span', { class: 'flag', text: str(al.ja) }), h('span', { class: 'rl', text: '自動' })));
   if (e.topics.length) flags.unshift(h('li', { class: 'flag-row' }, h('span', { class: 'tpf', text: e.topics.map(flagJa).join('・') }), h('span', { class: 'rl', text: '自動' })));
   const vetoed = [];   // the AI does not label (A4): what the rules removed from an AI's labels is not shown
   const b = e.basis;
+  const wordLinks = (words) => words.map((w, i) => [i ? '、' : '', lk(w, () => searchFor(w), `「${w}」で探す`)]);
   const basis = b ? h('dl', { class: 'kv' },
     h('dt', { text: 'まとめた手' }), h('dd', { text: b.by === 'ai' ? 'AI' : '規則（語の重なり）' }),
-    h('dt', { text: '共通の語' }), h('dd', { text: arr(b.words).length ? arr(b.words).join('、') : '—' }),
-    h('dt', { text: '地名' }), h('dd', { text: arr(b.places).length ? arr(b.places).map(pj).join('、') : '—' }),
+    h('dt', { text: '共通の語' }), h('dd', null, arr(b.words).length ? wordLinks(arr(b.words)) : '—'),
+    h('dt', { text: '地名' }), h('dd', null, arr(b.places).length ? wordLinks(arr(b.places).map(pj)) : '—'),
     h('dt', { text: '時刻の幅' }), h('dd', { text: fmtSpan(b.time_span) })) : h('p', { class: 'empty', text: ms.length < 2 ? '一つの報道' : '—' });
   const hz = state.haz;
   let radius;
@@ -929,23 +1056,159 @@ function renderCase() {
   const lin = e.exact && Array.isArray(e.case.lineage) ? e.case.lineage.filter(isObj) : null;
   const terms = e.case ? arr(e.case.key_terms).filter((x) => typeof x === 'string') : [];
   const side = h('section', { class: 'cb cb-side' },
-    h('h3', null, '経過'), lanes(e),
-    h('h3', null, '種類ごとの本数', h('span', { class: 'n', text: types.length })), byType(e),
+    paperCard,
     flags.filter(Boolean).length || vetoed.filter(Boolean).length ? h('h3', null, 'ラベル', h('span', { class: 'n', text: noteJa() })) : null,
     flags.filter(Boolean).length || vetoed.filter(Boolean).length ? h('ul', { class: 'flags' }, flags, vetoed) : null,
     h('h3', null, 'まとめた理由'), basis,
-    terms.length ? h('p', { class: 'terms' }, h('span', { class: 'k', text: '鍵語' }), terms.join('、')) : null,
+    terms.length ? h('p', { class: 'terms' }, h('span', { class: 'k', text: '鍵語' }), wordLinks(terms)) : null,
     h('h3', null, `半径 ${RADIUS_KM} km`), radius,
     lin ? h('h3', null, '系譜', h('span', { class: 'n', text: lin.length })) : null,
     lin ? (lin.length ? h('ul', { class: 'near' }, lin.map((x) => h('li', null, `${fmtShort(x.first_ts)}〜${fmtShort(x.last_ts)} · ${x.n_outlets}媒体 · ${arr(x.shared).join('・')}`)))
       : h('p', { class: 'empty', text: `0 件（${histNote()}）` })) : null);
 
-  const node = h('div', { class: 'case-in' }, h('header', { class: 'ch' }, place, head, facts, aiLines), h('div', { class: 'cbody' + (photo ? '' : ' nophoto') }, photo, members, side));
-  box.replaceChildren(node);
-  renderUnder(e, sorted);
-  if (!reduced()) { node.classList.add('enter'); }
-  renderStatus();
-  renderTasks();
+  const node = h('div', { class: 'case-in' },
+    h('div', { class: 'dos' + (photo ? ' has-photo' : '') },
+      h('header', { class: 'ch dcard t-place' }, place, head), photo, status,
+      aiLines.length ? h('div', { class: 't-ai' }, aiLines) : null, figs, dossier.sides(m, angles, act)),
+    h('div', { class: 'cbody nophoto' }, members, side));
+  return node;
+}
+
+// ---------------------------------------------------------------- how many at a time, and how they are laid out (js/wall.js)
+let wall = null;
+const wallList = () => shownPri().filter((x) => !x.hid);
+const anglesOf = (e) => new Map(e.ai ? arr(e.ai.angles).filter(isObj).map((a) => [a.item_id, str(a.focus_ja)]) : []);
+const describeOf = (e) => { const it = [...e.members].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity)).find((x) => typeof x.desc === 'string' && x.desc.trim()); return it ? descOf(it, safeUrl(it.link)) : null; };
+const relatedOf = (e) => related(e).slice(0, 6).map((x) => ({ key: x.o.key, text: x.o.heading.text, lang: x.o.heading.lang || null, n: x.o.n, near: x.place }));
+/** the events the pages run over: every event, or in the main-subject layout those round the main subject */
+function pageList(v, main) { const l = wallList(); return v.layout === 'bundle' ? l.filter((x) => x !== main) : l; }
+const othersCount = (c) => (c === 'many' ? 'many' : String(Math.max(0, Number(c) - 1)));
+function pageState(v, main) {
+  const l = pageList(v, main);
+  if (v.layout === 'bundle' && othersCount(v.count) === '0') return { items: [], page: 0, pages: 1, from: 0, to: 0, total: l.length };
+  return pageOf(l, v.layout === 'bundle' ? othersCount(v.count) : v.count, state.wallPage);
+}
+function pressWall(key) {
+  if (narrow() || state.sel === key) { select(key, true); openSheet('case'); return; }
+  select(key, true);
+}
+function renderWall() {
+  const box = $('wall');
+  if (!box || $('board').dataset.wall !== '1' || !state.data) return;
+  wall = wall || createWall({ h, lk, dossier, lineIcon, headNode, measureOf, photoOf: entryPhoto, picsOf, fmtAge, fmtClock, genreShort, describe: describeOf, relatedOf, lanes, typeWho,
+    new6hOf: (e) => (newsFresh() && e.exact && isNum(e.case.n_new6h) ? e.case.n_new6h : null), outletOf, safeUrl, extLink, biasOf, genreIcon,
+    flashOf: (e) => (newsFresh() && e.exact && isNum(e.case.n_new6h) && isNum(e.case.since_first_h) ? { new6h: e.case.n_new6h, sinceH: e.case.since_first_h } : null),
+    onPress: pressWall, onOpen: (k) => { select(k, true); openSheet('case'); }, onGenre: setGenre, onWord: searchFor, onPage: turnPage });
+  const v = state.vwNow, c = cur(), all = wallList();
+  const main = v.layout === 'bundle' ? (c && all.includes(c) ? c : all[0] || c) : null;
+  const pg = pageState(v, main);
+  state.wallPage = pg.page;
+  const keep = box.scrollTop;
+  wall.render(box, { layout: v.layout, count: v.count, page: pg, cur: c, main, total: all.length, strip: all.slice(0, 24), angles: anglesOf, othersLevel: v.count === 'many' || Number(v.count) > 4 ? 'xs' : 's' });
+  box.scrollTop = state.wallKeep ? keep : 0;
+  state.wallKeep = false;
+  renderViewBar();
+}
+/** the page holds the event in focus */
+function followWall() {
+  if ($('board').dataset.wall !== '1' || !state.vwNow) return;
+  const v = state.vwNow;
+  if (v.layout !== 'bundle') { const p = pageHolding(wallList(), state.sel, v.count); if (p != null) state.wallPage = p; } else state.wallPage = 0;
+  const on = document.querySelector(`#wall .wg .wt[data-key="${CSS.escape(String(state.sel))}"]`);
+  if (on) {   // the same page: only the mark moves, the scroll stays
+    for (const el of document.querySelectorAll('#wall .wt.sel')) el.classList.remove('sel');
+    on.classList.add('sel');
+    return;
+  }
+  renderWall();
+}
+function turnPage(d) {
+  if ($('board').dataset.wall !== '1') return false;
+  const c = cur(), all = wallList(), v = state.vwNow, main = v.layout === 'bundle' ? (c && all.includes(c) ? c : all[0] || c) : null;
+  const pg = pageState(v, main), n = pg.page + (Number(d) < 0 ? -1 : 1);
+  if (n < 0 || n >= pg.pages) return false;
+  state.wallPage = n;
+  renderWall();
+  return true;
+}
+function viewEl() {
+  if (state.viewEl) return state.viewEl;
+  state.viewEl = h('span', { class: 'vwb' });
+  return state.viewEl;
+}
+const phoneBar = window.matchMedia('(max-width: 760px)');
+/** a phone: the search, the buttons, the range and the choice of count and layout move behind one button (表示); the bar keeps the name and one line of state */
+function placeBar() {
+  const tb = $('tb'), menu = $('tb-menu'), al = $('ai-line'), r = document.querySelector('.tb-r');
+  if (phoneBar.matches) menu.append(al, r);
+  else { tb.insertBefore(r, menu); tb.after(al); menu.hidden = true; $('view-btn').setAttribute('aria-expanded', 'false'); }
+  if (state.data) renderAiLine();
+}
+function renderViewBar() {
+  const v = state.vwNow, el = viewEl();
+  if (!v) return;
+  const seg = (label, list, ja, cur2, fn) => h('span', { class: 'vw' }, h('span', { class: 'k', text: label }), h('span', { class: 'seg', role: 'group', 'aria-label': label },
+    list.map((x) => h('button', { type: 'button', 'aria-pressed': String(x === cur2), data: { v: x }, on: { click: () => fn(x) } }, ja[x]))));
+  const on = $('board').dataset.wall === '1';
+  const c = cur(), all = wallList(), main = v.layout === 'bundle' ? (c && all.includes(c) ? c : all[0] || c) : null;
+  const pg = on ? pageState(v, main) : null;
+  el.replaceChildren(seg('件数', countsFor(window.innerWidth, window.innerHeight), COUNT_JA, v.count, setCount), seg('並べ方', LAYOUTS, LAYOUT_JA, v.layout, setLayout),
+    pg && pg.pages > 1 ? h('span', { class: 'vw vw-p' }, h('button', { type: 'button', 'aria-label': '前へ', disabled: pg.page <= 0 ? true : null, on: { click: () => turnPage(-1) } }, '‹'),
+      h('span', { text: `${pg.from}–${pg.to} / ${pg.total}` }), h('button', { type: 'button', 'aria-label': '次へ', disabled: pg.page >= pg.pages - 1 ? true : null, on: { click: () => turnPage(1) } }, '›')) : null);
+}
+/** what the choice means on this screen, now: a phone offers fewer counts; the whole map keeps the middle */
+function applyView() {
+  const allowed = countsFor(window.innerWidth, window.innerHeight);
+  state.vwNow = { layout: state.vw.layout, count: countIn(state.vw.count, allowed) };
+  const mode = state.floor ? state.floor.mode() : 'case';
+  const on = wallOn(state.vwNow, mode), b = $('board');
+  b.dataset.wall = on ? '1' : '0';
+  b.dataset.layout = state.vwNow.layout;
+  $('app').dataset.layout = state.vwNow.layout;
+  renderViewBar();
+  if (on) renderWall();
+  if (state.panel && setOpen()) state.panel.render();
+}
+function setCount(c) {
+  const list = countsFor(window.innerWidth, window.innerHeight);
+  const asked = String(c) === '多い' ? 'many' : String(c);
+  const want = COUNTS.includes(asked) ? asked : nextOf(list, state.vwNow ? state.vwNow.count : state.vw.count);
+  state.vw = { ...state.vw, count: want };
+  saveView(store, state.vw);
+  state.wallPage = 0;
+  applyView();
+  followWall();
+  return true;
+}
+function setLayout(l) {
+  const byJa = LAYOUTS.find((k) => LAYOUT_JA[k] === l);
+  const want = LAYOUTS.includes(l) ? l : byJa || nextOf(LAYOUTS, state.vw.layout);
+  state.vw = { ...state.vw, layout: want };
+  saveView(store, state.vw);
+  state.wallPage = 0;
+  applyView();
+  followWall();
+  return true;
+}
+
+// ---------------------------------------------------------------- the news under the map (js/mapnews.js)
+let mapNews = null;
+function renderMapNews() {
+  const box = $('p-mapnews');
+  if (!box || !state.floor) return;
+  const on = state.floor.mode() === 'map' || window.matchMedia('(max-width: 1100px)').matches;
+  box.dataset.on = on ? '1' : '0';
+  if (!on) return;
+  mapNews = mapNews || createMapNews({ h, lk, headNode, fmtAge, fmtClock, genreShort,
+    ratioOf: (e) => dossier.ratioBar(measureOf(e)), photoOf: entryPhoto,
+    onSelect: (k) => { state.mapLead = k; select(k, true); renderMapNews(); }, onGenre: setGenre, onScope: (x) => { state.mapScope = x; renderMapNews(); },
+    onDetails: (k) => { select(k, true); if (state.floor.mode() === 'map') state.floor.setMode('case'); else $('p-case').scrollIntoView({ block: 'start' }); },
+    describe: (e) => { const it = [...e.members].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity)).find((x) => typeof x.desc === 'string' && x.desc.trim()); return it ? descOf(it, safeUrl(it.link)) : null; },
+    relatedOf: (e) => related(e).slice(0, 4).map((x) => ({ key: x.o.key, text: x.o.heading.text, lang: x.o.heading.lang || null, n: x.o.n, near: x.place })),
+    videoOf: (e) => { const v = videosOf(videosOfEvent(e), STATIONS, 1)[0]; if (!v) return null; const st = STATIONS.find((x) => x.id === v.station); return { v, name: st ? st.name : '', src: embedSrc(playOfVideo(v), { auto: true, sound: false }) }; },
+  });
+  const view = newsView({ events: state.es.filter(matchesQ), pri: shownPri().filter((x) => !x.hid), cur: cur(), picked: state.mapPick, scope: state.mapScope, leadKey: state.mapLead, km: RADIUS_KM, nearby });
+  mapNews.render(box, view);
 }
 
 // ---------------------------------------------------------------- the simple view (js/entry.js): six cards, three columns
@@ -1026,7 +1289,7 @@ function scene() {
   const pri = new Set(state.pri.map((x) => x.key));
   const at = new Map();
   for (const x of state.es) {
-    if (!x.geo || !vis(x)) continue;
+    if (!x.geo || !vis(x) || (state.mapUi && !state.mapUi.inTheme(x))) continue;
     const k = `${x.geo.lat.toFixed(1)},${x.geo.lon.toFixed(1)}`;
     const a = at.get(k) || { lat: x.geo.lat, lon: x.geo.lon, n: 0, pri: false, name: x.geo.name, ref: x.key, best: 0, country: !!x.geo.country };
     a.n++; if (pri.has(x.key)) a.pri = true;
@@ -1094,7 +1357,8 @@ function renderMap(animate) {
   const lit = LAYERS.filter(([id]) => on(id));
   $('layer-sum').textContent = `${lit.length} 層・印 ${lit.reduce((a, [id]) => a + (isNum(n[id]) && id !== 'pri' ? n[id] : 0), 0).toLocaleString('en-US')}`;
   const e = cur();
-  $('map-read').textContent = e && e.geo ? `${e.geo.name} ${Math.abs(e.geo.lat).toFixed(1)}°${e.geo.lat >= 0 ? 'N' : 'S'} ${Math.abs(e.geo.lon).toFixed(1)}°${e.geo.lon >= 0 ? 'E' : 'W'} · ${e.geo.prec}` : e ? '地名なし' : '';
+  $('map-read').textContent = e && e.geo ? `${e.geo.name} ${Math.abs(e.geo.lat).toFixed(1)}°${e.geo.lat >= 0 ? 'N' : 'S'} ${Math.abs(e.geo.lon).toFixed(1)}°${e.geo.lon >= 0 ? 'E' : 'W'} · ${e.geo.prec}` : '';
+  if (state.mapUi) state.mapUi.update();
 }
 function toggleLayer(arg) {
   const [id, want] = String(arg || '').split(':');
@@ -1105,6 +1369,7 @@ function toggleLayer(arg) {
   return true;
 }
 function onMapPick(hit) {
+  if (hit.kind === 'event' && hit.p) window.dispatchEvent(new CustomEvent('parallax:map-select', { detail: { place: hit.p.name, lat: hit.p.lat, lon: hit.p.lon, country: !!hit.p.country } }));
   if (hit.kind === 'event' && hit.p.ref) select(hit.p.ref, true);
   else if (hit.kind === 'quake') openUrl(hit.q.url);
   else if (hit.kind === 'typhoon') openUrl(hit.t.url);
@@ -1118,14 +1383,15 @@ function renderCount() {
   const es = state.es;
   const cn = counts();
   if (cn && isObj(cn.headlines)) {
-    $('count-h').textContent = '取得した見出し';
+    $('count-h').textContent = '集めた見出し';
     roll($('count-n'), cn.headlines.fetched);
+    const go = { 窓の見出し: () => openSheet('hours', $('p-count')), '2 媒体以上': () => openSheet('pri', $('p-count')), 国内と海外: () => setTopic('cross') };
     const f = [['窓の見出し', cn.headlines.in_window], ['2 媒体以上', cn.multi_outlet], ['国内と海外', isObj(cn.home) ? cn.home.both : null]];
-    $('count-f').replaceChildren(...f.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', null, num(isNum(v) ? v : null))]));
+    $('count-f').replaceChildren(...f.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', null, lk(num(isNum(v) ? v : null), go[k], `${k} を開く`, 'cnt'))]));
     return;
   }
   if (x) {
-    $('count-h').textContent = '取得した見出し';
+    $('count-h').textContent = '集めた見出し';
     roll($('count-n'), x.fetched_items);
     const f = [['窓の見出し', x.in_window], ['2 媒体以上', x.multi_outlet], ['一次資料', x.primary_items]];
     $('count-f').replaceChildren(...f.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', null, num(isNum(v) ? v : null))]));
@@ -1144,20 +1410,31 @@ function renderHaz() {
   $('haz-c').replaceChildren(`地震 ${hz.quakes.length} · 台風 ${hz.typhoons.length} · 災害 ${hz.disasters.length}`);
   const tsu = arr(hz.tsunami).filter(isObj).map((t) => h('li', { class: 'tsu' }, h('b', { text: str(t.title) || '津波の情報' }), ` ${fmtShort(t.issued)} `,
     arr(t.areas).filter(isObj).slice(0, 4).map((a) => `${str(a.name)} ${str(a.level)} ${str(a.max_height)}`).join('、')));
-  const ty = hz.typhoons.map((t) => h('li', { class: 'ty', on: { click: () => openUrl(t.url) } },
-    h('span', { class: 'tyn' }, h('b', { text: t.name || '台風' }), h('span', { text: ` ${t.intensity || ''}${t.scale ? '・' + t.scale : ''} ${t.src && t.src !== 'JMA' ? t.src : ''}` })),
-    h('span', { class: 'tyv', text: [isNum(t.pressure) ? `${t.pressure} hPa` : '', isNum(t.windMs) ? `最大 ${t.windMs} m/s` : '', t.location, [t.course, isNum(t.speedKmh) ? `${t.speedKmh} km/h` : ''].filter(Boolean).join(' ')].filter(Boolean).join(' · ') || '値の発表なし' }),
-    h('span', { class: 'tyv', text: [t.stormKm ? `暴風域 ${t.stormKm} km` : '', t.galeKm ? `強風域 ${t.galeKm} km` : '', t.forecast.length ? `予報 ${t.forecast.length}` : '', t.cone && t.cone.length ? '予報の範囲' : '', fmtShort(t.ts)].filter(Boolean).join(' · ') })));
+  const ty = hz.typhoons.map((t) => {
+    const vals = [isNum(t.pressure) ? `${t.pressure} hPa` : '', isNum(t.windMs) ? `最大 ${t.windMs} m/s` : '', t.location, [t.course, isNum(t.speedKmh) ? `${t.speedKmh} km/h` : ''].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+    const more = [t.stormKm ? `暴風域 ${t.stormKm} km` : '', t.galeKm ? `強風域 ${t.galeKm} km` : '', t.forecast.length ? `予報 ${t.forecast.length}` : '', t.cone && t.cone.length ? '予報の範囲' : '', fmtShort(t.ts)].filter(Boolean).join(' · ');
+    return h('li', { class: 'ty', title: more || null, on: { click: () => openUrl(t.url) } },
+      h('span', { class: 'tyn' }, h('b', { text: t.name || '台風' }), h('span', { text: ` ${t.intensity || ''}${t.scale ? '・' + t.scale : ''} ${t.src && t.src !== 'JMA' ? t.src : ''}` })),
+      h('span', { class: 'tyv', text: vals || more || '値の発表なし' }));
+  });
   const hot = (q) => q.mag >= 5 || ['4', '5-', '5+', '6-', '6+', '7'].includes(q.shindo);
   const qs = [...hz.quakes].sort((a, b2) => (b2.src === 'jma' ? 1 : 0) - (a.src === 'jma' ? 1 : 0) || b2.ts - a.ts);
   const pick = [...qs.filter(hot), ...qs.filter((q) => !hot(q))].slice(0, 14).sort((a, b2) => b2.ts - a.ts);
   const quakes = pick.map((q) => h('li', { class: hot(q) ? 'hot' : null, on: { click: () => openUrl(q.url) } },
-    h('span', { class: 'qt', text: fmtClock(q.ts) }), h('span', { class: 'qm', text: `M${q.mag.toFixed(1)}` }), h('span', { class: 'qs', text: q.shindo ? `震度${shindoJa(q.shindo)}` : '' }),
-    h('span', { class: 'qp', text: q.place || '—' }), h('span', { class: 'qd', text: isNum(q.depthKm) ? `${Math.round(q.depthKm)}km` : '' })));
+    h('span', { class: 'qt', text: fmtClock(q.ts) }), h('span', { class: 'qm', text: `M${q.mag.toFixed(1)}` }),
+    h('span', { class: 'qp' }, q.shindo ? h('span', { class: 'qs', text: `震度${shindoJa(q.shindo)} ` }) : null, q.place || '—'), h('span', { class: 'qd', text: isNum(q.depthKm) ? `${Math.round(q.depthKm)}km` : '' })));
   const dis = hz.disasters.filter((x) => x.alert === 'Red' || x.alert === 'Orange').slice(0, 6).map((x) => h('li', { class: 'hot', on: { click: () => openUrl(x.url) } },
     h('span', { class: 'qm wide', text: x.typeJa || disasterJa(x.type) }), h('span', { class: 'qp', text: `${x.name} ${x.alert === 'Red' ? '赤' : '橙'}` })));
   const stv = (k, ja) => { const v = hz.status && hz.status[k]; return isObj(v) ? h('span', { class: v.ok ? null : 'bad', title: str(v.err), text: `${ja} ${v.ok ? (isNum(v.n) ? v.n : '—') : '取得できず'}` }) : null; };
+  const bigQ = [...hz.quakes].filter((q) => isNum(q.mag)).sort((a, c) => c.mag - a.mag)[0];
+  const lowT = hz.typhoons.filter((t) => isNum(t.pressure)).sort((a, c) => a.pressure - c.pressure)[0];
+  const meter = (title, node, name, url) => h('button', { type: 'button', class: 'hz-g', title: name, on: { click: () => openUrl(url) } }, node, h('span', { class: 'hz-k', text: title }), h('span', { class: 'hz-n', text: name }));
+  const meters = bigQ || lowT ? h('div', { class: 'hz-ms' },
+    bigQ ? meter('最大の地震', dossier.halfGauge(bigQ.mag, { min: 0, max: 9, label: 'マグニチュード', text: `M${bigQ.mag.toFixed(1)}` }), bigQ.place || '—', bigQ.url) : null,
+    // lower pressure is the stronger storm: the scale runs from 1010 hPa down to 900 hPa
+    lowT ? meter('台風の中心気圧', dossier.halfGauge(1010 - lowT.pressure, { min: 0, max: 110, label: '中心気圧', text: `${lowT.pressure}` }), `${lowT.name || lowT.nameEn || '台風'} hPa`, lowT.url) : null) : null;
   b.replaceChildren(
+    meters,
     tsu.length ? h('ul', { class: 'haz' }, tsu) : null,
     ty.length ? h('ul', { class: 'haz ty-l' }, ty) : null,
     h('ul', { class: 'haz' }, quakes.length ? quakes : h('li', { class: 'empty', text: '地震 0 件' })),
@@ -1241,7 +1518,7 @@ function tvPlay(ls) {
   const m = state.tv && ls.find((x) => x.id === state.tv);
   if (m) return playOfStation(m);
   if (state.tvAuto && ls.includes(state.tvAuto.st)) return state.tvAuto;
-  return playFor([], [], 'jp', ls);
+  return playFor([], [], 'jp', tvWilling(ls));
 }
 function renderTv() {
   const box = $('tv-b');
@@ -1257,7 +1534,7 @@ function renderTv() {
   if (!f) { f = h('div', { class: 'tv-f' }); box.replaceChildren(h('p', { class: 'tv-t' }), f, h('div', { class: 'tv-v', role: 'group', 'aria-label': 'この出来事の映像' }), h('div', { class: 'tv-ch', role: 'group', 'aria-label': '局' }), h('p', { class: 'pfoot tv-n' })); }
   const src = embedSrc(p, { auto: state.set.tv.auto, sound: state.set.tv.sound });
   const fr = f.querySelector('iframe');
-  if (!fr || fr.dataset.src !== src) f.replaceChildren(h('iframe', { src, title: `${st.name}（YouTube）${p.kind === 'video' ? ' ' + d.title : ''}`, loading: 'lazy', allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, referrerpolicy: 'strict-origin-when-cross-origin', data: { src } }));
+  if (!fr || fr.dataset.src !== src) f.replaceChildren(h('iframe', { src, on: { load: (ev) => { try { ev.target.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1, channel: 'widget' }), new URL(src).origin); } catch { /* the player only stays silent */ } } }, title: `${st.name}（YouTube）${p.kind === 'video' ? ' ' + d.title : ''}`, loading: 'lazy', allow: 'autoplay; encrypted-media; picture-in-picture; fullscreen', allowfullscreen: true, referrerpolicy: 'strict-origin-when-cross-origin', data: { src } }));
   // the first line: which channel and what is playing (the title is a quotation: channel, time, link)
   const url = d.url && safeUrl(d.url);
   box.querySelector('.tv-t').replaceChildren(h('b', { class: 'tv-tn', text: st.name }), url ? extLink(url, { class: 'tv-tl', title: d.title }, d.title) : h('span', { class: 'tv-tl', text: d.title }), d.ts ? h('span', { class: 'tv-ts', text: fmtShort(d.ts) }) : '');
@@ -1271,16 +1548,29 @@ function renderTv() {
       `${sx ? sx.short : v.station}${same.length > 1 ? ' ' + (same.indexOf(v) + 1) : ''}`);
   }));
   box.querySelector('.tv-ch').replaceChildren(...ls.map((x) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(p.kind !== 'video' && x.id === st.id), on: { click: () => { state.tv = x.id; state.tvV = null; renderTv(); } } }, x.short)));
-  const what = p.kind === 'video' ? '出来事の映像' : p.kind === 'live' ? 'ライブ（ニュースの常時配信）' : '最新の投稿';
+  const what = p.kind === 'video' ? '出来事の映像' : p.kind === 'live' ? 'ニュースのライブ' : '最新の投稿';
   box.querySelector('.tv-n').textContent = `${what}・公式・${state.set.tv.sound ? '音あり' : '消音'}${state.set.tv.auto ? '' : '・押して再生'}`;
 }
 // a new event selected by hand: its video, else the latest of a channel that reported it, else the news stream; a channel or video pressed before is let go
+// a video or a channel that will not play inside a page (the stream has ended, or it allows no embedding) gives way to the next, unless it was pressed by hand
+const tvRefused = new Set();
+const tvWilling = (ls) => { const ok = ls.filter((x) => !tvRefused.has(x.id)); return ok.length ? ok : ls; };
+window.addEventListener('message', (ev) => {
+  const fr = document.querySelector('#tv-b iframe');
+  if (!fr || ev.source !== fr.contentWindow || state.tv || state.tvV) return;
+  let d = null;
+  try { d = JSON.parse(ev.data); } catch { return; }
+  if (!d || d.event !== 'onError') return;
+  const ls = tvList(), p = tvPlay(ls), e = cur();
+  tvRefused.add(p.kind === 'video' && p.video ? p.video.id : p.st.id);
+  if (e) followTv(e); else { state.tvAuto = playFor([], [], 'jp', tvWilling(ls)); renderTv(); }
+});
 function followTv(e) {
   if (!e) return;
   const ls = tvList();
   if (!ls.length) return;
   state.tv = null; state.tvV = null;
-  state.tvAuto = playFor(videosOfEvent(e), e.members.map(outletOf), e.cover, ls);
+  state.tvAuto = playFor(videosOfEvent(e).filter((v) => !tvRefused.has(v.id)), e.members.map(outletOf), e.cover, tvWilling(ls));
   state.tvVids = arr(state.tvAuto.videos);
   renderTv();
 }
@@ -1317,7 +1607,7 @@ function aboutEl() {
   aboutNode = h('div', { class: 'about' },
     h('div', { class: 'sheet-h' }, h('h2', { text: 'データと AI' }), h('button', { type: 'button', class: 'tbb', text: '閉じる', on: { click: closeAbout } })),
     h('ul', { class: 'floor' }, h('li', { text: '見出しとリンクは各媒体に帰属。画像は各記事の元の場所から表示' }), h('li', { text: '媒体に左右のラベルを付けない' }),
-      h('li', { text: '見出しの真偽は判定しない' }), h('li', { text: '「見当たらない」は取得した配信の中での話' }), h('li', { text: AI_NOTE }), h('li', null, extLink(ISSUES, null, '掲載の停止の依頼'), `・${STOP_NOTE}`)),
+      h('li', { text: '見出しの真偽は判定しない' }), h('li', { text: '「見当たらない」は集めたニュースの中での話' }), h('li', { text: AI_NOTE }), h('li', null, extLink(ISSUES, null, '掲載の停止の依頼'), `・${STOP_NOTE}`)),
     det('ab-scope', '取得の範囲', true), det('ab-ai', 'AI の実行'), det('ab-eval', '検査'), det('ab-src', '媒体の一覧'), det('ab-byok', '自分の鍵で AI を回す（任意）'));
   aboutNode.querySelector('#ab-byok-i').append(
     h('p', { class: 'lead', text: '鍵はこのタブのメモリだけに置き、送り先は Google だけ' }),
@@ -1339,9 +1629,9 @@ function renderAbout() {
   const kv = (rows) => h('dl', { class: 'kv' }, rows.flatMap(([k, v, cls]) => [h('dt', { text: k }), v instanceof Node ? h('dd', { class: cls || null }, v) : h('dd', { class: cls || null, text: v })]));
   const rows = arr(d.sources).filter(isObj);
   const fails = rows.filter((r) => r.ok !== true).length;
-  q1('#ab-scope-s').textContent = `${rows.length} 配信`;
+  q1('#ab-scope-s').textContent = `${rows.length} 媒体`;
   q1('#ab-scope-i').replaceChildren(kv([['組んだ時刻', h('span', { 'data-host': '' }, fmtFull(d.generated_at), ' ', ageEl(d.generated_at, SIX_H))],
-    ['時間の幅', `${isNum(d.window_h) ? d.window_h : 36} 時間`], ['配信', `${rows.length}（取れた ${rows.length - fails}・届かなかった ${fails}）`, fails ? 'err' : null],
+    ['時間の幅', `${isNum(d.window_h) ? d.window_h : 36} 時間`], ['媒体', `${rows.length}（取れた ${rows.length - fails}・届かなかった ${fails}）`, fails ? 'err' : null],
     ['引用の扱い', str(d.rights_mode) === 'strict' ? '利用条件を確かめた媒体だけ見出しを表示' : '全ての媒体の見出しを引用（媒体名・時刻・リンク付き）']]));
   const run = isObj(d.ai_run) ? d.ai_run : {};
   const kept = state.snap ? state.snap.kept : null;
@@ -1517,7 +1807,7 @@ function select(key, byHand) {
   for (const el of document.querySelectorAll(`.rows .r[data-key="${CSS.escape(key)}"]`)) el.classList.add('sel');
   const inPri = document.querySelector(`#pri-b .r[data-key="${CSS.escape(key)}"]`);
   if (inPri && !byHand) inPri.scrollIntoView({ block: 'nearest' });
-  if (changed) { renderCase(); renderSources(); renderHours(); renderMap(true); if (byHand) followTv(state.byKey.get(key)); }
+  if (changed) { renderCase(); renderSources(); renderHours(); renderMap(true); renderMapNews(); followWall(); if (byHand) followTv(state.byKey.get(key)); }
   syncAutoLine();
   return true;
 }
@@ -1619,6 +1909,7 @@ function syncAutoLine() {
 function autoStep() {
   if (narrow() || state.about || state.sheet || state.stopped || (state.tour && state.tour.isOpen()) || !state.set.motion.cases || setOpen() || document.hidden) return;
   if (state.floor && state.floor.mode() === 'map') return;     // the whole map is being read: the event in focus stays
+  if ($('board').dataset.wall === '1') return;                 // several events are being read: nothing moves by itself
   const now = Date.now();
   if (now < state.pausedUntil) return;
   const line = document.querySelector('#pri-b .r.sel .autoline');
@@ -1686,7 +1977,7 @@ async function loadSide() {
 }
 
 // ---------------------------------------------------------------- sheets: a pane opened toward the viewer — one big number, the facts, then everything
-const SHEETS = { src: '媒体', hours: '時間ごとの見出し', pri: '注目', anom: '一部の媒体だけ', mkt: '市場', pol: '政治', haz: '災害' };
+const SHEETS = { case: '出来事', src: '媒体', hours: '時間ごとの見出し', pri: '注目', anom: '一部の媒体だけ', mkt: '市場', pol: '政治', haz: '災害' };
 const SHEET_PANE = { src: 'p-src', hours: 'p-hours', pri: 'p-pri', anom: 'p-anom', mkt: 'p-mkt', pol: 'p-pol', haz: 'p-haz' };
 const SHEET_ALIAS = { 源: 'src', ソース: 'src', 情報源: 'src', 媒体: 'src', 時間ごと: 'hours', 時間: 'hours', 注目: 'pri', 非対称: 'anom', 一部の媒体だけ: 'anom', 市場: 'mkt', 政治: 'pol', 災害: 'haz' };
 const sheetKind = (k) => { const x = String(k || '').trim(); return SHEETS[x] ? x : SHEET_ALIAS[x] || null; };
@@ -1716,6 +2007,7 @@ function heatSvg(rows, n, label) {
   return svg;
 }
 const SHEET_BODY = {
+  case() { const e = cur(); return { bare: true, body: e ? [caseNode(e)] : [h('p', { class: 'empty big', text: '出来事 0 件' })] }; },
   src() {
     const b = state.board, d = state.data;
     const rows = b && Array.isArray(b.sources) ? b.sources.filter(isObj) : arr(d.sources).filter(isObj).map((r) => ({ ...r, h48: r.n }));
@@ -1739,8 +2031,8 @@ const SHEET_BODY = {
         td(fmtN(r.h1), 'r'), td(fmtN(r.h6), 'r'), td(fmtN(r.h48), 'r'), td(isNum(r.age_h) ? `${r.age_h}時間前` : '—', 'r dim opt'), ...(anyDrop ? [td(fmtN(dropOf(r)), 'r dim opt')] : [])))));
     }
     return { big: fmtN(live), unit: `/ ${rows.length} 届いた媒体`, bad: live < rows.length * 0.8,
-      facts: cn && isObj(cn.headlines) ? [['取得した見出し', fmtN(cn.headlines.fetched)], ['窓の見出し', fmtN(cn.headlines.in_window)], ['出来事', fmtN(cn.bundles && cn.bundles.events)], ['2 媒体以上', fmtN(cn.multi_outlet)],
-        [staleJa, fmtN(stale.size), stale.size ? 'err' : ''], ['事件の層', fmtN(cn.incidents)]] : [['取得した見出し', fmtN(x.fetched_items)], ['窓の見出し', fmtN(x.in_window)], ['出来事', fmtN(x.stories)], ['2 媒体以上', fmtN(x.multi_outlet)], ['一次資料', fmtN(x.primary_items)],
+      facts: cn && isObj(cn.headlines) ? [['集めた見出し', fmtN(cn.headlines.fetched)], ['窓の見出し', fmtN(cn.headlines.in_window)], ['出来事', fmtN(cn.bundles && cn.bundles.events)], ['2 媒体以上', fmtN(cn.multi_outlet)],
+        [staleJa, fmtN(stale.size), stale.size ? 'err' : ''], ['事件の層', fmtN(cn.incidents)]] : [['集めた見出し', fmtN(x.fetched_items)], ['窓の見出し', fmtN(x.in_window)], ['出来事', fmtN(x.stories)], ['2 媒体以上', fmtN(x.multi_outlet)], ['一次資料', fmtN(x.primary_items)],
         [staleJa, fmtN(stale.size), stale.size ? 'err' : ''], ['事件の層', isNum(x.events) ? `${x.events}・畳んだ束 ${fmtN(x.stories_folded)}` : '—']], body };
   },
   hours() {
@@ -1844,7 +2136,7 @@ function renderSheet() {
   box.replaceChildren(
     h('header', { class: 'ds-h' },
       h('div', { class: 'ds-t' }, h('h2', { id: 'ds-title', text: SHEETS[k] }), h('button', { type: 'button', class: 'ds-x', on: { click: closeSheet } }, '閉じる', h('kbd', { text: 'esc' }))),
-      h('div', { class: 'ds-head' },
+      r.bare ? null : h('div', { class: 'ds-head' },
         h('div', { class: 'ds-big' + (r.bad ? ' stale' : '') }, h('b', { class: 'num', text: r.big }), h('span', { class: 'u', text: r.unit })),
         h('dl', { class: 'ds-facts' }, (r.facts || []).filter(Boolean).flatMap(([dt, dd, cls]) => [h('dt', { text: dt }), h('dd', { class: cls || null, text: dd })])))),
     h('div', { class: 'ds-b' }, ...(r.body || [])),
@@ -2044,7 +2336,7 @@ function settingsInfo() {
 
 // ---------------------------------------------------------------- start
 const api = {
-  step, find, setView, setTopic, setField: (f) => setField(f, true), toggleLayer,
+  setCount, setLayout, turnPage, step, find, setView, setTopic, setField: (f) => setField(f, true), toggleLayer,
   mapCase: () => { if (state.map) state.map.reset(); return true; },
   mapMode: () => (state.floor ? state.floor.toggle() : false),
   mapWorld: () => { if (!state.map) return false; state.map.show({ ...scene(), focus: null }, true); return true; },
@@ -2073,6 +2365,7 @@ async function main() {
   if (!hashView && state.set.news.view !== 'auto') state.view = state.set.news.view;
   state.panel = createSettingsPanel({ root: $('set-layer'), get: () => state.set, set: (n) => applySettings(n), info: settingsInfo,
     watch: { get: () => state.watch, set: (l) => setWatch(l) },
+    view: { get: () => ({ count: (state.vwNow || state.vw).count, layout: state.vw.layout, counts: countsFor(window.innerWidth, window.innerHeight).map((c) => [c, COUNT_JA[c]]), layouts: LAYOUTS.map((l) => [l, LAYOUT_JA[l]]) }), setCount, setLayout },
     ai: {
       get: () => state.own,
       set: (c) => {   // the choice is kept apart from the settings; the case pane is drawn again only when what is asked of changes
@@ -2123,6 +2416,12 @@ async function main() {
     canOpen(ph, SHEETS[k], () => openSheet(k, $(id)));
   }
   canOpen($('p-count').querySelector('.ph'), SHEETS.src, () => openSheet('src', $('p-count')));
+  const goes = (id, fn, tip) => { const el = $(id); el.classList.add('lkm'); if (!el.title) el.title = tip; el.tabIndex = 0; el.setAttribute('role', 'button'); el.addEventListener('click', fn); el.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); fn(); } }); };
+  goes('m-src', () => openSheet('src', $('p-src')), '媒体の一覧を開く');
+  goes('m-gen', () => openAbout(), 'データについて');
+  goes('m-ai', () => openAbout(), 'AI について');
+  goes('count-n', () => openSheet('src', $('p-count')), '媒体の一覧を開く');
+  goes('hours-b', () => openSheet('hours', $('p-hours')), '時間ごとの見出しを開く');
   $('about-wrap').addEventListener('click', (ev) => { if (ev.target === $('about-wrap')) closeAbout(); });
   window.addEventListener('hashchange', () => { const x = location.hash.replace('#', ''); if (state.ix && (x === 'ai' || x === 'rules') && x !== state.view) setView(x); });
   for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) window.addEventListener(ev, pause, { capture: true, passive: true });
@@ -2136,7 +2435,7 @@ async function main() {
     if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
     const k = ev.key;
     if (k === ',') { ev.preventDefault(); actions.run('settings'); return; }
-    const map = { ArrowDown: ['case_next'], ArrowUp: ['case_prev'], j: ['case_next'], k: ['case_prev'], Escape: ['close'], a: ['view_ai'], r: ['view_rules'], m: ['map_mode'], w: ['map_world'], o: ['open_article'], i: ['about'], t: ['task_add'], '+': ['map_in'], '-': ['map_out'], v: ['__voice'] };
+    const map = { ArrowDown: ['case_next'], ArrowUp: ['case_prev'], j: ['case_next'], k: ['case_prev'], Escape: ['close'], a: ['view_ai'], r: ['view_rules'], m: ['map_mode'], w: ['map_world'], o: ['open_article'], i: ['about'], t: ['task_add'], '+': ['map_in'], '-': ['map_out'], v: ['__voice'], n: ['view_count', '次'], l: ['view_layout', '次'], '[': ['view_page', '-1'], ']': ['view_page', '1'] };
     if (map[k] && map[k][0] === '__voice') { if (!$('voice-btn').hidden) startVoice(); return; }
     if (k === '/') { ev.preventDefault(); $('q').focus(); return; }
     const gi = Number(k);
@@ -2145,16 +2444,41 @@ async function main() {
   });
   state.map = createMap($('map'), {
     onPick: onMapPick, wheel: false,
+    onPress: (hit, at) => (state.mapUi ? state.mapUi.press(hit, at) : false),
     local: (x, y) => (state.floor ? state.floor.local(x, y) : null),
-    onPaint: (info) => { if (state.floor) state.floor.paint(info); },
+    onPaint: (info) => { if (state.floor) state.floor.paint(info); if (state.mapUi) state.mapUi.paint(info); },
   });
-  state.floor = createFloor({ map: state.map, board: $('board'), onMode: () => { applyPanes(); state.map.resize(); renderMap(true); } });
+  state.floor = createFloor({ map: state.map, board: $('board'), onMode: () => { applyPanes(); state.map.resize(); renderMap(true); renderMapNews(); applyView(); } });
+  state.vw = loadView(store);
+  state.wallPage = 0;
+  placeBar();
+  phoneBar.addEventListener('change', placeBar);
+  $('view-btn').addEventListener('click', () => { const m = $('tb-menu'); m.hidden = !m.hidden; $('view-btn').setAttribute('aria-expanded', String(!m.hidden)); });
+  document.addEventListener('click', (ev) => { const m = $('tb-menu'); if (!m.hidden && !ev.target.closest('#tb-menu, #view-btn, .pop')) { m.hidden = true; $('view-btn').setAttribute('aria-expanded', 'false'); } });
+  applyView();
+  window.addEventListener('parallax:map-select', (ev) => {
+    const d = isObj(ev.detail) ? ev.detail : {};
+    state.mapPick = str(d.place) || isNum(d.lat) ? { place: str(d.place), lat: d.lat, lon: d.lon, country: !!d.country } : null;
+    state.mapScope = 'near';
+    state.mapLead = null;
+    renderMapNews();
+  });
+  // the card on the map was closed: no place any more, the section goes back to the priority list
+  window.addEventListener('parallax:map-clear', () => { state.mapPick = null; state.mapLead = null; state.mapScope = 'pri'; renderMapNews(); });
+  // what stands on the map: the card of a place, the theme's colouring, the 3D floor (js/mapui.js)
+  state.mapUi = createMapUi({ map: state.map, floor: state.floor, theater: $('theater'), genres: [...FIELDS, OTHER_FIELD], genre: () => state.genre, setGenre,
+    events: () => state.es.filter((e) => vis(e) && !e.foldedInto),
+    theme: () => (state.q ? { label: `「${state.q}」`, match: matchesQ } : state.genre !== GENRE_ALL ? { label: state.genre, match: inGenre } : null),
+    describe: (e) => ({ title: str(e.heading && e.heading.text), age: fmtAge(e.last) }),
+    focus: () => { const e = cur(); return e && e.geo ? { lat: e.geo.lat, lon: e.geo.lon } : null; },
+    open: (key) => { state.map.pin(true); select(key, true); state.map.pin(false); if (state.floor.mode() === 'map' && typeof renderMapNews !== 'function') state.floor.setMode('case'); },
+  });
   // the board answers a touch: a press and a switch make a quiet sound by default, a hover only when chosen (js/feel.js)
   state.feel = createFeel({ press: () => state.set.motion.sound !== false, hover: () => state.set.motion.hoverSound === true });
   // a list that does not fit scrolls itself (the event list follows the event in focus, so its own move takes over there)
   startAutoScroll('#src-b, #fields-b, #pri-b, #anom-b, #haz-b, #mkt-b, #pol-b', { held: () => !!(state.about || state.sheet) || setOpen() || !state.set.motion.scroll || !$('task-pop').hidden || !$('watch-pop').hidden });
   let rt = 0;
-  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => state.map && state.map.resize(), 160); });
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (state.map) state.map.resize(); applyView(); }, 160); });
   window.addEventListener('parallax-theme', () => { if (state.map) state.map.resize(); });   // the map's ground is drawn in the page's tones
   initLandscape();   // phones held sideways: the list on the left, one pane on the right
   initDial();        // phones: two rings under the thumb to step through the topics and the events

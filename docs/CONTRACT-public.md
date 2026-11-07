@@ -359,6 +359,18 @@ validator. The result is written to `data/recorded.json` with `ai_run.status = "
 - No true/false and no left/right labels are added by the settings, and nothing is called unreported.
 - Export and import: one JSON file (`parallax-settings/1`: `settings` and the watched words); reset to the defaults keeps the watched words.
 
+### 6.2 The event's cards, the news under the map, and how many at a time (decided 2026-11-08)
+
+- The event opens as a sheaf of cards (`js/dossier.js`): the place flag, the share of Japan, abroad and the ministries (the three sides of `js/entry.js`), kinds of media, the time lanes, the two
+  short versions (the side's first headline, the AI's focus with the AI mark, else the words of its headlines by the rule of 18.11), one report on a white paper. Only counts over the headlines on the
+  page: no left or right on any outlet, nothing about truth, no article body (the description of 14.1 at most).
+- バイアス度 (`js/bias.js`, decided 2026-11-08 by the author, replacing the earlier "no stance card"): one event, 0 to 100, the plain mean of the terms that can be measured: the outlets' region against the outlets collected, the concentration of kinds of media and the volume abroad against the headlines collected (each held against what chance alone gives with that many, so a small story is not high for being small), the gap between the two sides' first reports (a day or more counts in full), and how little the words of same-language headlines overlap; a term that reads the AI's lines carries the AI mark and is left out when there is none. A press opens every term with its formula. Fewer than 3 reports or 2 outlets: no number, `記事が少なく測れません`. It measures coverage, not truth: no outlet is labelled, nothing says a high value means wrong.
+- Each kind of information has its own form: a share a ring, the run of time an area on a time axis, Japan against abroad bars that swing left and right, which outlet used which word a matrix of dots, the index and a disaster's scale a half gauge, elections a row of events on a time axis, markets a line and a change. A figure whose data is not there is left out (no seat counts and no weather are carried in this version, so no seat chart and no weather band are drawn). A card takes its shape from what it holds (an announcement a paper, a video a large picture, several reports just now a band, an amount printed in the headline a large number).
+- A row that is pressed opens in place: the whole headline and the quoted description. Words, numbers, fields and outlets go to the list or the page they count.
+- The news under the map (`js/mapnews.js`): the map says what was pressed with a window event, `parallax:map-select`, detail `{ place, lat, lon, country }`; the events of that place come first, then those within the radius.
+- How many at a time and how they are laid out (`js/wall.js`, kept in `localStorage` `parallax.view.v1` by `js/prefs.js`): 1, 2, 4, 6, 9 or many; 標準, 主役, 一覧; a phone offers fewer counts. Fewer events, more of each;
+  the order, the filters and the headlines stay those of the priority list. Buttons in the line under the bar, the settings (盤の欄), keys `n`, `l`, `[`, `]`. The whole map keeps the middle while it is open.
+
 ## 7. Editions
 
 **Since the rights decision of 2026-11-04 the default `rights_mode` is `quote` (section 14): everything below that withholds a title, a focus or a sentence applies in `strict` only.**

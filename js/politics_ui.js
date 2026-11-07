@@ -128,12 +128,25 @@ export function createPolitics(d) {
     out.push(h('h4', null, '会議録', h('span', { class: 'n', text: k ? ` ${k.length}` : ' —' })), k && k.length ? h('ul', { class: 'pol' }, k.slice(0, 4).map((m) => h('li', null, h('span', { class: 'po', text: str(m.date).slice(5) }), link(m.url, `${str(m.house)} ${str(m.meeting)}`, 'pt'), h('span', { class: 'pa', text: str(m.issue) })))) : empty(k ? '0 件' : '取得できず'));
     return out;
   }
+  /** the elections as a row of events on a time axis: one mark for each, the name in its tooltip; only when two or more have a date */
+  function eventRail(list) {
+    const pts = list.map((r) => ({ r, t: dayTs(str(r.date)) })).filter((x) => x.t != null).sort((a, b) => a.t - b.t);
+    if (pts.length < 2) return null;
+    const t0 = pts[0].t, t1 = pts[pts.length - 1].t, W = 240, H = 26, X = (t) => 6 + ((t - t0) / Math.max(1, t1 - t0)) * (W - 12);
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'rail', role: 'img', 'aria-label': `選挙 ${pts.length} 件の投票日の並び` });
+    svg.append(s('line', { x1: 6, x2: W - 6, y1: 9, y2: 9, class: 'rl' }));
+    for (const { r, t } of pts) svg.append(s('circle', { cx: X(t).toFixed(1), cy: 9, r: 3.5, class: 'rd' }, s('title', {}, document.createTextNode(`${md(r.date)} ${r.name}`))));
+    svg.append(s('text', { x: 6, y: H - 2, class: 'ax' }, document.createTextNode(md(pts[0].r.date))), s('text', { x: W - 6, y: H - 2, class: 'ax end' }, document.createTextNode(md(pts[pts.length - 1].r.date))));
+    return svg;
+  }
   function paneElections(p, scene) {
     const v = electionsView(p);
     const out = [head('選挙', v.missing ? '—' : v.recent.length + v.upcoming.length)];
     if (v.missing) return [...out, empty('選挙のデータが無い')];
     if (!v.ok && !v.recent.length && !v.upcoming.length) return [...out, empty('取得できず'), elecSrc(v)];
     const li = (r) => h('li', { title: [KIND_JA[r.kind], str(r.winner_ja) || str(r.winner)].filter(Boolean).join('・') }, h('span', { class: 'po', text: md(r.date) }), link(r.url, r.name, 'pt'), h('span', { class: 'pa', text: kindOf(r) }));
+    const rail = eventRail([...v.recent, ...v.upcoming]);
+    if (rail) out.push(rail);
     if (v.upcoming.length) out.push(h('p', { class: 'pk', text: '今後の投票日' }), h('ul', { class: 'pol' }, v.upcoming.slice(0, 4).map(li)));
     if (v.recent.length) out.push(h('p', { class: 'pk', text: '直近の結果（投票日）' }), h('ul', { class: 'pol' }, v.recent.slice(0, scene === 'election' ? 6 : 3).map(li)));
     else out.push(empty(nothingJa(v) + (scene === 'election' ? '。場面は見出しの語で判定（海外の選挙を含む）' : '')));

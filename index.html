@@ -36,10 +36,11 @@
       <button type="button" id="v-ai" aria-pressed="true">AI</button>
       <button type="button" id="v-rules" aria-pressed="false">自動</button>
     </div>
+    <button type="button" class="tbb" id="view-btn" aria-expanded="false" aria-controls="tb-menu">表示</button>
     <div class="state" id="state" role="status" aria-live="polite">読込中</div>
     <div class="meters">
       <span class="meter" id="m-src" data-host><span class="k">媒体</span><b class="num" id="src-live">—</b><span class="sl">/</span><span id="src-total">—</span></span>
-      <span class="meter" id="m-gen" data-host><span class="k">取得</span><b id="gen-at">—</b><time id="gen-age"></time></span>
+      <span class="meter" id="m-gen" data-host><span class="k">更新</span><b id="gen-at">—</b><time id="gen-age"></time></span>
       <span class="meter" id="m-ai" data-host><span class="k">AI</span><b id="ai-who">—</b><time id="ai-age"></time></span>
       <span class="meter" id="m-new" hidden><span class="k">前回から</span><b class="num" id="new-n">—</b></span>
     </div>
@@ -57,6 +58,7 @@
       <button type="button" class="tbb" id="tour-btn">使い方</button>
       <button type="button" class="tbb" id="set-btn" aria-haspopup="dialog" title="設定（,）">設定</button>
     </div>
+    <div class="tbm" id="tb-menu" hidden></div>
   </header>
   <p class="ailine" id="ai-line" role="status"></p>
   <p class="note-bar" id="snap-note" role="status" hidden></p>
@@ -119,11 +121,13 @@
           <div class="pb" id="basis-b"></div>
         </section>
       </div>
+      <section class="wall" id="wall" aria-label="ニュース"></section>
+      <section class="mapnews" id="p-mapnews" aria-label="地図の下のニュース" data-on="0"></section>
     </div>
 
     <div class="col c4">
       <section class="pane count" id="p-count" aria-labelledby="count-h">
-        <header class="ph"><h2 id="count-h">取得した見出し</h2></header>
+        <header class="ph"><h2 id="count-h">集めた見出し</h2></header>
         <div class="pb"><b class="big num" id="count-n">—</b><dl class="kv tight" id="count-f"></dl></div>
       </section>
       <section class="pane" id="p-haz" aria-labelledby="haz-h">
@@ -172,7 +176,7 @@
       <input id="watch-in" type="text" maxlength="40" placeholder="語・地名" aria-label="追う語・地名">
       <button type="submit" class="tbb">足す</button>
     </form>
-    <div class="suggest" id="watch-suggest" aria-label="この取得に多い地名"></div>
+    <div class="suggest" id="watch-suggest" aria-label="今回多い地名"></div>
   </div>
   <div class="pop tpop" id="task-pop" hidden>
     <ul class="tasks" id="task-list"></ul>

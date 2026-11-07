@@ -54,7 +54,7 @@ export function entryEvents(pri, n = CARDS) {
 export function pickFirst(list) {
   const es = (Array.isArray(list) ? list : []).filter(Boolean);
   const k = (e) => { const s = sides(e); return (s.jp.length > 0) + (s.intl.length > 0) + (s.gov.length > 0); };
-  return es.find((e) => k(e) === 3) || es.find((e) => k(e) === 2) || es[0] || null;
+  return es.find((e) => k(e) === 3) || es.find((e) => k(e) === 2 && e.members.length >= 3) || es.find((e) => k(e) === 2) || es[0] || null;   // three reports and up can be measured
 }
 
 export function sides(e) {
@@ -166,7 +166,7 @@ export function renderEntry(root, o) {
   const col = ([k, title], list) => h('section', { class: 'en-col', data: { side: k } },
     h('h3', null, lineIcon(k), h('span', { text: title }), h('span', { class: 'n', text: list.length })),
     list.length ? h('ol', { class: 'en-list' }, list.slice(0, PER_COL).map(item))
-      : h('p', { class: 'en-none' }, '取得した配信には見当たりません', h('button', { type: 'button', class: 'en-to', on: { click: go('.cb-absent') } }, '見当たらない媒体へ')),
+      : h('p', { class: 'en-none' }, '集めたニュースには見当たりません', h('button', { type: 'button', class: 'en-to', on: { click: go('.cb-absent') } }, '見当たらない媒体へ')),
     list.length > PER_COL ? h('p', { class: 'en-rest', text: `残り ${list.length - PER_COL} 件` }) : null);
 
   root.replaceChildren(head, cards,

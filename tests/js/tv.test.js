@@ -21,7 +21,7 @@ test('a video of the event plays first: newest first, a channel of the list, at 
   assert.equal(p.video.id, ID2);
   assert.equal(p.st.id, 'aje');
   assert.deepEqual(p.videos.map((v) => v.id), [ID2, ID3, ID1]);
-  assert.match(embedSrc(p), new RegExp(`embed/${ID2}\\?autoplay=1&mute=1&playsinline=1&rel=0&loop=1&playlist=${ID2}$`));
+  assert.match(embedSrc(p), new RegExp(`embed/${ID2}\\?autoplay=1&mute=1&playsinline=1&rel=0&loop=1&enablejsapi=1&playlist=${ID2}$`));
 });
 
 test('a video of a channel the visitor turned off is not shown; the next one is', () => {

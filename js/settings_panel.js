@@ -46,7 +46,7 @@ function icon(paths) {
 }
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
-export function createSettingsPanel({ root, get, set, info, watch, ai }) {
+export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
   let sec = 'tv', open = false, msg = null, resetArm = 0, back = null, aiMsg = null, aiBusy = false;
   const file = h('input', { type: 'file', accept: 'application/json,.json', hidden: true, tabindex: '-1', 'aria-hidden': 'true' });
   file.addEventListener('change', onFile);
@@ -156,7 +156,11 @@ export function createSettingsPanel({ root, get, set, info, watch, ai }) {
     },
     panes(s) {
       const off = new Set(s.panes.off);
-      return [group('', PANES.map(([id, ja]) => row(ja, id === 'tv' ? '隠している間は読み込まない' : null,
+      const pick = (f, label, value, opts, fn) => h('div', { class: 'seg', role: 'group', 'aria-label': label },
+        opts.map(([v, ja]) => h('button', { type: 'button', 'aria-pressed': String(value === v), data: { f: `${f}-${v}` }, on: { click: () => { fn(v); render(); } } }, ja)));
+      const vw = view ? view.get() : null;
+      return [vw ? group('一度に見るニュース', [row('件数', null, pick('v-count', '件数', vw.count, vw.counts, view.setCount)), row('並べ方', null, pick('v-layout', '並べ方', vw.layout, vw.layouts, view.setLayout))]) : null,
+        group('', PANES.map(([id, ja]) => row(ja, id === 'tv' ? '隠している間は読み込まない' : null,
         sw(`p-${id}`, !off.has(id), ja, (n, v) => { n.panes.off = v ? n.panes.off.filter((x) => x !== id) : [...n.panes.off, id]; }))), '出来事と注目の欄は常に出す')];
     },
     ai() {

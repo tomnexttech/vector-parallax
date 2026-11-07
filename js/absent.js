@@ -59,10 +59,10 @@ export function absentBlock(res, { h, when, windowH, major = MAJOR_TYPES }) {
   const list = (gs, withN) => h('dl', { class: 'ab-list' }, gs.flatMap((g) => [h('dt', null, g.type, withN ? h('span', { class: 'n', text: g.names.length }) : null), h('dd', { text: g.names.join('・') })]));
   return h('div', { class: 'cb-absent' },
     h('h3', null, '見当たらない媒体', h('span', { class: 'n', text: res.absent.length })),
-    h('p', { class: 'ab-sum', text: `取得した ${res.total} 配信（${isNum(windowH) ? windowH : '—'} 時間の窓・${when.at} 取得）のうち、初報（${when.first}）まで遡れる配信は ${res.reach}。` }),
+    h('p', { class: 'ab-sum', text: `集めた ${res.total} 媒体（${isNum(windowH) ? windowH : '—'} 時間分・${when.at} 時点）のうち、初報（${when.first}）まで遡れる媒体は ${res.reach}。` }),
     named.length ? list(named, true) : h('p', { class: 'empty', text: '主要な種類では 0' }),
     rest.length ? h('details', { class: 'ab-more' }, h('summary', { text: rest.map((g) => `${g.type} ${g.names.length}`).join('・') }), list(rest, false)) : null,
-    nUnknown > 0 ? h('details', { class: 'ab-more' }, h('summary', { text: `判定できない ${nUnknown} 配信` }),
+    nUnknown > 0 ? h('details', { class: 'ab-more' }, h('summary', { text: `判定できない ${nUnknown} 媒体` }),
       h('dl', { class: 'ab-list' }, Object.keys(WHY_JA).flatMap((k) => { const xs = res.unknown.filter((u) => u.why === k); return xs.length ? [h('dt', { text: WHY_JA[k] }), h('dd', { text: xs.map((u) => u.outlet).join('・') })] : []; }))) : null,
     h('p', { class: 'ab-note', text: CAVEAT }));
 }

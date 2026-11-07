@@ -5,7 +5,10 @@
  *   addWatch(list, term) -> [term]        trimmed, at most 40 characters, no duplicates (NFKC, case-insensitive), at most 20
  *   removeWatch(list, term) -> [term]
  *   hitsOf(list, text) -> [term]          the watched terms found in a text
- *   terms(list, max, len) -> [term]       the same cleaning for any list of words (js/settings.js uses it for the muted words) */
+ *   terms(list, max, len) -> [term]       the same cleaning for any list of words (js/settings.js uses it for the muted words)
+ *   cleanView(x) / loadView(storage) / saveView(storage, v)   how many events at a time and how they are laid out: { count, layout }
+ *   countsFor(width, height) -> [count]   the counts a screen of this size offers; countIn(count, allowed) -> the nearest it can show
+ *   nextOf(list, v) -> the next choice, round again at the end */
 
 export const WATCH_KEY = 'parallax.watch.v1';
 export const MAX_TERMS = 20;
@@ -57,4 +60,46 @@ export function hitsOf(list, text) {
   const t = fold(text);
   if (!t) return [];
   return clean(list).filter((x) => t.includes(fold(x)));
+}
+
+// ---------------------------------------------------------------- how many at a time, and how they are laid out (js/wall.js)
+export const VIEW_KEY = 'parallax.view.v1';
+export const COUNTS = ['1', '2', '4', '6', '9', 'many'];
+export const LAYOUTS = ['board', 'bundle', 'list'];
+export const COUNT_JA = { 1: '1', 2: '2', 4: '4', 6: '6', 9: '9', many: '多い' };
+export const LAYOUT_JA = { board: '標準', bundle: '主役', list: '一覧' };
+
+export function cleanView(x) {
+  const o = x && typeof x === 'object' ? x : {};
+  const c = String(o.count);
+  return { count: COUNTS.includes(c) ? c : '1', layout: LAYOUTS.includes(o.layout) ? o.layout : 'board' };
+}
+export function loadView(storage) {
+  try {
+    const raw = storage ? storage.getItem(VIEW_KEY) : null;
+    return cleanView(raw ? JSON.parse(raw) : null);
+  } catch { return cleanView(null); }
+}
+export function saveView(storage, v) {
+  try {
+    if (!storage) return false;
+    storage.setItem(VIEW_KEY, JSON.stringify(cleanView(v)));
+    return true;
+  } catch { return false; }
+}
+/** a phone held upright: up to 4; held sideways: up to 6; else everything */
+export function countsFor(width, height) {
+  if (width <= 560) return COUNTS.slice(0, 3);
+  if (height <= 500) return COUNTS.slice(0, 4);
+  return COUNTS;
+}
+export function countIn(count, allowed) {
+  if (allowed.includes(count)) return count;
+  const i = COUNTS.indexOf(count);
+  for (let k = i; k >= 0; k--) if (allowed.includes(COUNTS[k])) return COUNTS[k];
+  return allowed[0];
+}
+export function nextOf(list, v) {
+  const i = list.indexOf(v);
+  return list[(i + 1) % list.length];
 }

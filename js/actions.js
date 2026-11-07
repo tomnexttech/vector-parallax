@@ -17,6 +17,9 @@ export const CATALOG = [
   { id: 'map_case', ja: '地図を表示中の出来事の地域へ戻す', param: '' },
   { id: 'map_world', ja: '地図を世界の全体にする', param: '' },
   { id: 'map_mode', ja: '地図を欄いっぱいに広げる・出来事の表示に戻す', param: '' },
+  { id: 'view_count', ja: '一度に見るニュースの数を替える', param: '1・2・4・6・9・多い・次' },
+  { id: 'view_layout', ja: 'ニュースの並べ方を替える', param: '標準・主役・一覧・次' },
+  { id: 'view_page', ja: '次の・前のニュースへ送る', param: '1 か -1' },
   { id: 'map_in', ja: '地図を拡大する', param: '' },
   { id: 'map_out', ja: '地図を縮小する', param: '' },
   { id: 'layer', ja: '地図の層を出す・消す（出来事・注目・半径・地震・台風・災害）', param: 'layer' },
@@ -44,6 +47,7 @@ export function createActions(api) {
     quakes: () => api.sayQuakes(), typhoons: () => api.sayTyphoons(),
     watch_add: (t) => api.watchAdd(t), watch_remove: (t) => api.watchRemove(t),
     open_article: () => api.openArticle(), about: () => api.openAbout(), settings: () => api.openSettings(), close: () => api.close(),
+    view_count: (c) => api.setCount(c), view_layout: (l) => api.setLayout(l), view_page: (d) => api.turnPage(d),
     sheet: (k) => api.openSheet(k), task_add: () => api.taskAdd(), tasks: () => api.openTasks(),
     auto_stop: () => api.autoStop(), auto_start: () => api.autoStart(),
   };
