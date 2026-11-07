@@ -16,7 +16,8 @@
  *                                                  absent(e), full(), detail(key, { bias }), measure(e) (js/dossier.js), bias(e) (js/bias.js),
  *                                                  dossier (ratioBar, areaSvg, biasMini), photo(e) -> { url, outlet, ts, link, kind?, id? } | null,
  *                                                  videos(e) -> stories[].videos, oneSide: [{ side, ja, events }] (js/sections.js),
- *                                                  oneSideTitle, oneSideNote, more(side), outlet(name) -> one outlet's page }
+ *                                                  oneSideTitle, oneSideNote, more(side), outlet(name) -> one outlet's page,
+ *                                                  speak(e) -> the button that reads the news aloud (js/speak.js) }
  *
  * Neutral by rule: no side gets a rank or a label of right or wrong. The three sides carry a line symbol and a hue only so that a
  * card's counts lead to their column: the same weight for each, never red or green. Headlines are shown as published, with the
@@ -248,7 +249,7 @@ export function renderEntry(root, o) {
   root.replaceChildren(head, pick,
     h('section', { class: 'en-sel', data: { genre: f }, 'aria-label': '選んだニュースの伝え方' },
       h('div', { class: 'en-top' + (headFig ? '' : ' nop') },
-        h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut} 媒体・${m.n} 件` }), ais),
+        h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut} 媒体・${m.n} 件` }), ais, o.speak ? o.speak(sel) : null),
         headFig),
       h('h3', { class: 'en-sub' }, '伝え方の違い'),
       h('div', { class: 'en-figs' }, share, time, words),

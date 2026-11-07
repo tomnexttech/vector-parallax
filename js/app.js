@@ -26,7 +26,10 @@ import { createActions } from './actions.js';
 import { loadTasks, saveTasks, addTask, toggleTask, removeTask, hasTask, loadReads, saveReads, clearReads, noteRead, readMix } from './tasks.js';
 import { speechSupported, listen, route as voiceRoute } from './voice.js';
 import { absentOutlets, absentBlock, outletProfile } from './absent.js';
-import { entryEvents, renderEntry, pickFirst, lineIcon, sides as sidesOf, SIDES, original } from './entry.js';
+import { entryEvents, renderEntry, pickFirst, lineIcon, sides as sidesOf, SIDES, original, firstLine } from './entry.js';
+import { STORY, TL_CAP, timeline, sourcesOf } from './story.js';
+import { readLines, createReader } from './speak.js';
+import { uiLang, watch as watchWords } from './i18n.js';
 import { tidyGovTitles } from './tidy.js';
 import { detect, bannerText, sceneOf } from './scenes.js';
 import { createPolitics } from './politics_ui.js';
@@ -952,6 +955,8 @@ function caseNode(e) {
       e.field ? lk(e.field, () => setGenre(e.field), `${e.field} の出来事だけ見る`, 'fd', { genre: e.field }) : null,
       h('button', { type: 'button', class: 'addtask', 'aria-pressed': String(hasTask(state.tasks, saveId(e))), on: { click: () => toggleSave(e) } }, hasTask(state.tasks, saveId(e)) ? '保存済み' : '保存'),
       h('button', { type: 'button', class: 'addtask share', on: { click: () => shareEvent(e) } }, '共有'),
+      h('button', { type: 'button', class: 'addtask share img', on: { click: () => shareImage(e) } }, '画像で共有'),
+      speakBtn(e, 'tool'),
       extLink(`${ISSUES}/new?title=${encodeURIComponent('掲載の停止の依頼')}`, { class: 'stopreq', title: STOP_NOTE }, '掲載の停止')));
   const head = h('div', { class: 'ch-main' },
     h('div', { class: 'ch-title' },
@@ -1015,7 +1020,7 @@ function caseNode(e) {
     return h('li', { class: it === first && isNum(it.ts) ? 'first' : null, data: { side: it.type === GOV ? 'gov' : it.home === 'intl' ? 'intl' : 'jp' } },
       h('span', { class: 'mt' }, isNum(it.ts) ? fmtClock(it.ts) : '—', h('small', { text: isNum(it.ts) && t0 != null ? plusH(it.ts - t0) : '時刻不明' })),
       h('span', { class: 'mb' },
-        h('span', { class: 'mo' }, name ? lk(h('b', { text: name }), () => searchFor(name), `${name} の出来事を探す`) : null,
+        h('span', { class: 'mo' }, name ? lk(h('b', { text: name }), () => openOutlet(name), 'このメディアのページ') : null,
           ' ', str(it.type) ? lk(str(it.type), () => paintMem({ type: it.type }), `${it.type} の報道だけ見る`, 'mty') : null, it.home === 'intl' ? h('span', { text: '・海外' }) : null, viaGN(it) ? h('span', { class: 'via', text: ' · Google ニュース経由' }) : null),
         link ? extLink(link, { class: 'mh', lang: it.lang === 'en' ? 'en' : null }, title ? `「${title}」` : name || hostOf(link)) : h('span', { class: 'mh', text: title ? `「${title}」` : '—' }),
         descOf(it, link),
@@ -1082,10 +1087,52 @@ function caseNode(e) {
     lin ? (lin.length ? h('ul', { class: 'near' }, lin.map((x) => h('li', null, `${fmtShort(x.first_ts)}〜${fmtShort(x.last_ts)} · ${x.n_outlets}媒体 · ${arr(x.shared).join('・')}`)))
       : h('p', { class: 'empty', text: `0 件（${histNote()}）` })) : null);
 
+  // the story (js/story.js): the point, how it went, each side's headlines, the sources; the same reports in the order of a story
+  const SHORT = Object.fromEntries(SIDES.map(([k, , short]) => [k, short]));
+  const toOutlet = (name) => h('button', { type: 'button', class: 'en-mo', title: 'このメディアのページ', on: { click: () => openOutlet(name) } }, name);
+  const stH = (id, ja, n) => h('h3', { class: 'st-h', data: { st: id } }, ja, n != null ? h('span', { class: 'n', text: n }) : null);
+  const jump = (id) => { const t = node.querySelector(`.st-h[data-st="${id}"]`); if (t) t.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' }); };
+  const nav = h('nav', { class: 'st-nav', 'aria-label': 'このニュースの節' }, STORY.map(([id, ja]) => h('button', { type: 'button', on: { click: () => jump(id) } }, ja)));
+  const fl = firstLine(sd, fmtClock);
+  const point = aiLines.length ? h('div', { class: 't-ai' }, aiLines) : fl ? h('p', { class: 't-ai st-fl', text: fl }) : null;
+  const tl = timeline(ms);
+  const t1 = tl.length && isNum(tl[0].it.ts) ? tl[0].it.ts : null;
+  const days = t1 != null && tl.some((r) => isNum(r.it.ts) && r.it.ts - t1 > 18 * 3600);
+  const tlRow = (r) => {
+    const it = r.it, link = safeUrl(it.link), t = str(it.title).trim(), name = outletOf(it);
+    return h('li', { class: r.gap ? 'gap' : null, data: { side: r.side } },
+      h('span', { class: 'tl-t num' }, isNum(it.ts) ? (days ? fmtShort(it.ts) : fmtClock(it.ts)) : '—', r.off ? h('small', { text: plusH(r.off) }) : null),
+      h('span', { class: 'tl-ax', 'aria-hidden': 'true' }),
+      h('span', { class: 'tl-b' },
+        h('span', { class: 'tl-m' }, name ? toOutlet(name) : null, h('span', { text: SHORT[r.side] }), str(it.type) && it.type !== GOV ? h('span', { text: it.type }) : null),
+        link ? extLink(link, { class: 'tl-hl', lang: it.lang === 'en' ? 'en' : null }, t ? `「${t}」` : hostOf(link)) : h('span', { class: 'tl-hl', text: t ? `「${t}」` : '—' })));
+  };
+  const tlList = h('ol', { class: 'tl' });
+  const paintTl = (all) => {
+    const rows = (all ? tl : tl.slice(0, TL_CAP)).map(tlRow);
+    if (rows.length) rows[rows.length - 1].classList.add('last');
+    tlList.replaceChildren(...rows);
+    if (!all && tl.length > TL_CAP) tlList.append(h('li', { class: 'tl-more' }, h('button', { type: 'button', class: 'en-rest', on: { click: () => paintTl(true) } }, `残り ${tl.length - TL_CAP} 件を見る`)));
+  };
+  paintTl(false);
+  const tlCard = h('section', { class: 'dcard t-tl' },
+    h('p', { class: 'tl-lg' }, SIDES.map(([k, , short]) => (sd[k].length ? h('span', { data: { side: k } }, h('i', { 'aria-hidden': 'true' }), short, h('b', { class: 'num', text: sd[k].length })) : null))), tlList);
+  const src = sourcesOf(ms, { outletOf });
+  const srcCard = h('section', { class: 'dcard t-src' }, h('ul', { class: 'st-src' }, src.map((x) => {
+    const link = safeUrl(x.first.link);
+    return h('li', { data: { side: x.side } }, h('i', { class: 'dot', 'aria-hidden': 'true' }), toOutlet(x.name),
+      h('span', { class: 'ty', text: [SHORT[x.side], x.type !== GOV ? x.type : ''].filter(Boolean).join('・') }),
+      h('span', { class: 'sn num', text: `${x.n} 件` }),
+      link ? extLink(link, { class: 'lk sl', title: `${x.name} の最初の記事を開く` }, '記事を開く') : null);
+  })));
+
   const node = h('div', { class: 'case-in' },
     h('div', { class: 'dos' + (photo ? ' has-photo' : '') },
-      h('header', { class: 'ch dcard t-place' }, place, head), photo, status,
-      aiLines.length ? h('div', { class: 't-ai' }, aiLines) : null, figs, dossier.sides(m, angles, act)),
+      h('header', { class: 'ch dcard t-place' }, place, head), photo, status, nav,
+      stH('pt', '要点'), point, figs,
+      stH('tl', '経過', tl.length), tlCard,
+      stH('sd', '各側の見出し'), dossier.sides(m, angles, act),
+      stH('src', '出典の一覧', src.length), srcCard),
     h('div', { class: 'cbody nophoto' }, members, side));
   return node;
 }
@@ -1233,12 +1280,30 @@ function absentOf(e) {
   const first = e.members.filter((it) => isNum(it.ts)).sort((a, b) => a.ts - b.ts)[0], gen = state.data.generated_at;
   return absentBlock(absentOutlets({ members: e.members, first: first && first.ts }, arr(state.data.sources), gen), { h, when: { at: fmtShort(gen), first: fmtShort(first && first.ts) }, windowH: state.data.window_h });
 }
+// reading aloud (js/speak.js): the point and each side's headlines, with the device's own voice; the same button stops it.
+// No Japanese voice on the device: the buttons stay hidden (they appear when the voices arrive late)
+const reader = createReader(window);
+const pointOf = (e) => (e.summary && str(e.summary.text_ja).trim() ? { text: str(e.summary.text_ja).trim(), ai: true, outlet: '' } : { ...original(e), ai: false });
+const SPEAK_I = { on: '<path d="M3.5 7.8h3l4-3.3v11l-4-3.3h-3z"/><path d="M13.6 7.4a3.8 3.8 0 0 1 0 5.2M15.7 5.3a6.8 6.8 0 0 1 0 9.4"/>', off: '<rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/>' };
+function paintSpeak(b) {
+  const on = reader.key() != null && String(reader.key()) === b.dataset.k;
+  b.hidden = !reader.can();
+  b.setAttribute('aria-pressed', String(on));
+  const ic = document.createElementNS(SVGNS, 'svg'); ic.setAttribute('viewBox', '0 0 20 20'); ic.setAttribute('aria-hidden', 'true'); ic.innerHTML = on ? SPEAK_I.off : SPEAK_I.on;
+  b.replaceChildren(ic, h('span', { text: on ? '止める' : '読み上げる' }));
+}
+function speakBtn(e, cls) {
+  const b = h('button', { type: 'button', class: 'speak' + (cls ? ' ' + cls : ''), data: { k: e.key }, on: { click: () => reader.toggle(e.key, readLines(e, { sides: sidesOf, point: pointOf, outletOf })) } });
+  paintSpeak(b);
+  return b;
+}
+reader.onChange(() => { for (const b of document.querySelectorAll('button.speak')) paintSpeak(b); });
 function renderEntryView() {
   if (state.ui !== 'simple' || !state.data) return;
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
   renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
     fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => setUi('full'),
-    detail: entryDetail, measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)),
+    detail: entryDetail, measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
     oneSide: sideGroups(true), oneSideTitle: ONE_SIDE_TITLE, oneSideNote: ONE_SIDE_NOTE, more: entryMore });
   const hd = $('entry').querySelector('.en-head');
   if (hd) hd.after(genreEl()); else $('entry').prepend(genreEl());
@@ -2578,10 +2643,22 @@ function applyPanes() {
   if (off.has('map') && state.floor && state.floor.mode() === 'map') state.floor.setMode('case');
 }
 /** a change from the settings window: kept in this browser, then applied to the board at once (no reload) */
+// the page's own words in English (js/i18n.js): headlines, descriptions and the AI's lines stay as published. Back to Japanese: the page
+// is drawn again from the start, so that not one character of the Japanese page comes from a translation
+let wordsOff = null;
+function applyUiLang() {
+  const l = uiLang(state.set.look.ui, navigator.languages && navigator.languages.length ? [...navigator.languages] : [navigator.language]);
+  if (l === 'en' && !wordsOff) { document.documentElement.lang = 'en'; wordsOff = watchWords(document.body); }
+  else if (l === 'ja' && wordsOff) { wordsOff(); wordsOff = null; document.documentElement.lang = 'ja'; location.reload(); return; }
+  else if (l === 'ja') document.documentElement.lang = 'ja';
+  const b = $('lang-btn');
+  if (b) { b.textContent = l === 'en' ? '日本語' : 'English'; b.lang = l === 'en' ? 'ja' : 'en'; b.dataset.to = l === 'en' ? 'ja' : 'en'; }
+}
 function applySettings(next) {
   const prev = state.set;
   state.set = cleanSettings(next);
   state.setSaved = saveSettings(store, state.set);
+  if (!prev || prev.look.ui !== state.set.look.ui) applyUiLang();
   document.documentElement.toggleAttribute('data-calm', state.set.motion.calm === 'on');
   if (window.parallaxTheme) window.parallaxTheme.apply(state.set.look.theme);
   document.documentElement.dataset.size = state.set.look.size;
@@ -2643,6 +2720,8 @@ async function main() {
   state.tasks = loadTasks(store);
   state.reads = loadReads(store);
   state.set = loadSettings(store);
+  applyUiLang();
+  $('lang-btn').addEventListener('click', () => applySettings({ ...state.set, look: { ...state.set.look, ui: $('lang-btn').dataset.to || 'en' } }));
   state.own = loadOwnAI(store); state.ownAsk = new Map();
   document.documentElement.toggleAttribute('data-calm', state.set.motion.calm === 'on');
   if (window.parallaxTheme) window.parallaxTheme.apply(state.set.look.theme);

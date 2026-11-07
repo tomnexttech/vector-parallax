@@ -152,7 +152,8 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
       ];
     },
     look(s) {
-      return [group('', [row('外観', null, seg('look-theme', '外観', s.look.theme, [['dark', 'ダーク'], ['light', 'ライト']], (n, v) => { n.look.theme = v; })), row('字の大きさ', null, seg('look-size', '字の大きさ', s.look.size, [['m', '標準'], ['l', '大きい']], (n, v) => { n.look.size = v; }))])];
+      return [group('', [row('外観', null, seg('look-theme', '外観', s.look.theme, [['dark', 'ダーク'], ['light', 'ライト']], (n, v) => { n.look.theme = v; })), row('字の大きさ', null, seg('look-size', '字の大きさ', s.look.size, [['m', '標準'], ['l', '大きい']], (n, v) => { n.look.size = v; })),
+        row('言語', null, seg('look-ui', '言語', s.look.ui, [['auto', 'ブラウザに合わせる'], ['ja', '日本語'], ['en', 'English']], (n, v) => { n.look.ui = v; }))])];
     },
     panes(s) {
       const off = new Set(s.panes.off);

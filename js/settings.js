@@ -42,6 +42,7 @@ export const VIEWS = ['auto', 'ai', 'rules'];
 export const LANGS = ['ja', 'en', 'orig'];
 export const CALM = ['system', 'on'];
 export const SIZES = ['m', 'l'];         // the size of the type, normal or large
+export const UIS = ['auto', 'ja', 'en'];   // the language of the page's own words: the browser's, Japanese, English (js/i18n.js)
 export const THEMES = ['dark', 'light'];   // the appearance, dark unless chosen; js/theme_boot.js reads look.theme before the first paint
 
 export function defaults() {
@@ -51,7 +52,7 @@ export function defaults() {
     mute: { words: [], outlets: [] },
     motion: { cases: true, scroll: true, calm: 'system', sound: true, hoverSound: false },
     panes: { off: [] },
-    look: { theme: 'dark', size: 'm' },
+    look: { theme: 'dark', size: 'm', ui: 'ja' },   // Japanese unless the reader chooses: the English words do not yet cover every pane
   };
 }
 
@@ -77,7 +78,7 @@ export function cleanSettings(x) {
     motion: { cases: bool(motion.cases, d.motion.cases), scroll: bool(motion.scroll, d.motion.scroll), calm: pick(motion.calm, CALM, d.motion.calm),
       sound: bool(motion.sound, d.motion.sound), hoverSound: bool(motion.hoverSound, d.motion.hoverSound) },
     panes: { off: subset(panes.off, PANE_IDS) },
-    look: { theme: pick(look.theme, THEMES, d.look.theme), size: pick(look.size, SIZES, d.look.size) },
+    look: { theme: pick(look.theme, THEMES, d.look.theme), size: pick(look.size, SIZES, d.look.size), ui: pick(look.ui, UIS, d.look.ui) },
   };
 }
 
