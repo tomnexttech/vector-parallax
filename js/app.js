@@ -1229,14 +1229,23 @@ function renderEntryView() {
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
   renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
     fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => setUi('full'),
-    photo: entryPhoto, img: (it) => { const im = imageOf(it); return im ? im.url : null; }, videos: videosOfEvent });
+    detail: entryDetail, measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent });
   const hd = $('entry').querySelector('.en-head');
   if (hd) hd.after(genreEl()); else $('entry').prepend(genreEl());
 }
+// a press on a card: the news under the strip changes, and the page brings its title up unless it is already near the top
 function pickEntry(k) {
   state.entrySel = k; renderEntryView();
-  const s = $('entry').querySelector('.en-sel');
-  if (s) s.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
+  const s = $('entry').querySelector('.en-sel'), c = $('entry').querySelector('.en-card[aria-pressed="true"]'), how = reduced() ? 'auto' : 'smooth';
+  if (c) { const st = c.parentElement, r = c.getBoundingClientRect(), b = st.getBoundingClientRect(); if (r.left < b.left || r.right > b.right) st.scrollBy({ left: r.left - b.left - 16, behavior: how }); }
+  const top = s ? s.getBoundingClientRect().top : 0;
+  if (s && (top < 0 || top > window.innerHeight * 0.4)) s.scrollIntoView({ block: 'start', behavior: how });
+}
+// the same news on the detailed screen: the board with this news chosen (and the parts of バイアス度 open when asked)
+function entryDetail(k, opt = {}) {
+  if (opt.bias) state.biasOpen = true;
+  setUi('full'); select(k, true); renderCase();
+  if (narrow() || $('board').dataset.wall === '1') openSheet('case');
 }
 // the photo of an event in the simple view: the one the board chose (CONTRACT 20.5), else the earliest report that carries one
 function entryPhoto(e) {
