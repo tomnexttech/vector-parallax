@@ -29,10 +29,10 @@ test('?tour=0 never, ?tour=1 always, else only before it was seen', () => {
 });
 
 test('five short cards: hello first, the settings last, the words neutral', () => {
-  assert.ok(STEPS.length >= 4 && STEPS.length <= 5);
+  assert.ok(STEPS.length >= 4 && STEPS.length <= 6);
   assert.match(STEPS[0].title, /^はじめまして/);
   assert.deepEqual(STEPS[0].at, []);
-  assert.deepEqual(STEPS.map((s) => s.id), ['hello', 'simple', 'absent', 'ai', 'settings']);
+  assert.deepEqual(STEPS.map((s) => s.id), ['hello', 'sects', 'simple', 'absent', 'ai', 'settings']);
   for (const s of STEPS) {
     assert.ok(s.title.length <= 12, s.title);
     assert.ok(s.text.length <= 80, `${s.id} ${s.text.length}`);

@@ -32,6 +32,20 @@
       <svg class="mark" viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7.5h10M7.5 12.5h10"/></svg>
       <span class="app-name">Parallax</span>
     </div>
+    <nav class="sects" id="sects" aria-label="区画">
+      <a href="#home" data-s="home"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1.2"/><rect x="11" y="3" width="6" height="6" rx="1.2"/><rect x="3" y="11" width="6" height="6" rx="1.2"/><rect x="11" y="11" width="6" height="6" rx="1.2"/></svg><span>ホーム</span></a>
+      <a href="#news" data-s="news"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3.5" width="14" height="13" rx="2"/><path d="M6 7.5h8M6 10.5h8M6 13.5h5"/></svg><span>ニュース</span><i class="n" id="sect-new"></i></a>
+      <a href="#map" data-s="map"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 5.2l4.6-1.6 4.8 1.8L17 3.8v11l-4.6 1.6-4.8-1.8L3 16.2zM7.6 3.6v11M12.4 5.4v11"/></svg><span>地図</span></a>
+      <div class="sects-2">
+        <a href="#market" data-s="market"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 14.5l4-5 3 3 6.5-8M3 17h14"/></svg><span>市場</span></a>
+        <a href="#politics" data-s="politics"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 8l7-4.2L17 8M4.8 8.5v6M8.4 8.5v6M11.6 8.5v6M15.2 8.5v6M3 16.5h14"/></svg><span>政治</span></a>
+        <a href="#disaster" data-s="disaster"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.2l7.6 13.3H2.4zM10 8.3v4M10 14.4v.1"/></svg><span>災害</span></a>
+        <a href="#video" data-s="video"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="M8.5 8v4l3.4-2z"/></svg><span>映像</span></a>
+        <div class="sects-x"><button type="button" id="more-q"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg><span>検索</span></button><button type="button" id="more-set"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.8v2.4M10 14.8v2.4M2.8 10h2.4M14.8 10h2.4M4.9 4.9l1.7 1.7M13.4 13.4l1.7 1.7M15.1 4.9l-1.7 1.7M6.6 13.4l-1.7 1.7"/></svg><span>設定</span></button></div>
+      </div>
+      <a href="#saved" data-s="saved"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5.5 3.2h9v13.6l-4.5-3.3-4.5 3.3z"/></svg><span>保存</span><i class="n" id="task-n"></i></a>
+      <button type="button" id="sects-more" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4.5" cy="10" r="1.2"/><circle cx="10" cy="10" r="1.2"/><circle cx="15.5" cy="10" r="1.2"/></svg><span id="sects-more-t">その他</span></button>
+    </nav>
     <div class="seg" role="group" aria-label="まとめ方">
       <button type="button" id="v-ai" aria-pressed="true">AI</button>
       <button type="button" id="v-rules" aria-pressed="false">自動</button>
@@ -45,17 +59,12 @@
       <span class="meter" id="m-new" hidden><span class="k">前回から</span><b class="num" id="new-n">—</b></span>
     </div>
     <div class="tb-r">
-      <label class="search">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg>
-        <input id="q" type="search" placeholder="検索" aria-label="出来事・語・地名・媒体で検索" autocomplete="off" spellcheck="false">
-      </label>
+      <button type="button" class="search" id="cmd-btn" aria-haspopup="dialog" title="検索と操作（Ctrl+K）"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg><span id="cmd-t">検索</span><kbd id="cmd-kbd">Ctrl K</kbd></button>
       <button type="button" class="tbb icon" id="voice-btn" hidden aria-label="声で操作" title="声で操作（v）"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.5" y="2.5" width="5" height="9.5" rx="2.5"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>
       <button type="button" class="tbb" id="entry-btn" aria-pressed="false">かんたん表示</button>
-      <button type="button" class="tbb" id="task-btn" aria-expanded="false" aria-controls="task-pop">タスク<span class="n" id="task-n"></span></button>
-      <button type="button" class="tbb" id="watch-btn" aria-expanded="false" aria-controls="watch-pop">追う<span class="n" id="watch-n"></span></button>
-      <button type="button" class="tbb" id="about-btn">データと AI</button>
+      <button type="button" class="tbb tx-i" id="about-btn" title="データと AI（i）"><span class="ic">i</span><span class="tx">データと AI</span></button>
       <button type="button" class="tbb icon" id="theme-btn" aria-label="外観 ダーク" title="外観"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" stroke="none"/></svg></button>
-      <button type="button" class="tbb" id="tour-btn">使い方</button>
+      <button type="button" class="tbb tx-i" id="tour-btn" title="使い方"><span class="ic">?</span><span class="tx">使い方</span></button>
       <button type="button" class="tbb" id="set-btn" aria-haspopup="dialog" title="設定（,）">設定</button>
     </div>
     <div class="tbm" id="tb-menu" hidden></div>
@@ -71,6 +80,26 @@
   <div class="gwrap genre-strip" id="genre-strip"></div>
 
   <section class="entry" id="entry" aria-label="かんたん表示" hidden></section>
+  <section class="sect" id="sect" hidden></section>
+  <section class="sect sv" id="sect-saved" aria-label="保存" hidden>
+    <div class="sc-in">
+      <header class="sc-h"><h1>保存</h1><div class="ds-head"><div class="ds-big"><b class="num" id="sv-n">0</b><span class="u">保存したニュース</span></div></div></header>
+      <div class="sv-cols">
+        <section class="sv-c"><h2>保存したニュース</h2><ul class="tasks" id="task-list"></ul><p class="pop-f">このブラウザだけに保存します</p></section>
+        <section class="sv-c">
+          <h2>フォローする言葉</h2>
+          <ul class="watch" id="watch-list"></ul>
+          <form class="watch-add" id="watch-form" autocomplete="off">
+            <input id="watch-in" type="text" maxlength="40" placeholder="言葉・地名" aria-label="フォローする言葉・地名">
+            <button type="submit" class="tbb">足す</button>
+          </form>
+          <div class="suggest" id="watch-suggest" aria-label="今回多い地名"></div>
+          <h2>フォローに当たるニュース</h2>
+          <ul class="rows" id="sv-hits"></ul>
+        </section>
+      </div>
+    </div>
+  </section>
 
   <main class="board" id="board">
     <div class="col c1">
@@ -151,12 +180,12 @@
             <i class="ftrk" id="ftrk" hidden></i>
             <i class="fcn tl"></i><i class="fcn tr"></i><i class="fcn br"></i><i class="fcn bl"></i>
           </div>
-          <div class="mpanel" id="mpanel"><span class="mp-h"><b>LAYERS</b><small id="layer-sum"></small></span><div class="layers" id="layers" role="group" aria-label="地図の層"></div></div>
+          <div class="mpanel" id="mpanel"><span class="mp-h"><b>表示</b><small id="layer-sum"></small></span><div class="layers" id="layers" role="group" aria-label="地図の層"></div></div>
           <div class="mhud" aria-hidden="true"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i><i class="ret"></i><i class="sw"></i><span class="rd" id="mread"></span><span class="trk" id="mtrack" hidden></span></div>
           <p class="flegend" aria-hidden="true"><i class="p"></i>注目<i class="n"></i>出来事<i class="q"></i>地震<i class="r"></i>半径 500 km</p>
           <p class="map-read" id="map-read"></p>
           <p class="map-credit">© OpenStreetMap contributors · OpenMapTiles · OpenFreeMap · 標高 AWS Terrain Tiles · Natural Earth · 気象庁 · USGS · GDACS</p>
-          <div class="modebar" id="modebar"><b class="mtag" id="mtag">CASE</b><span class="mtabs" role="group" aria-label="地図の表示（m）"><button type="button" data-m="case" aria-pressed="true">CASE</button><button type="button" data-m="map" aria-pressed="false">MAP</button></span></div>
+          <div class="modebar" id="modebar"><b class="mtag" id="mtag" hidden>CASE</b><span class="mtabs" role="group" aria-label="地図の表示（m）"><button type="button" data-m="case" aria-pressed="true">出来事</button><button type="button" data-m="map" aria-pressed="false">地図</button></span></div>
         </div>
       </section>
     </div>
@@ -166,22 +195,15 @@
     <a class="sb-src" id="sb-src" target="_blank" rel="noopener noreferrer"></a>
     <div class="sb-tick" id="sb-tick" aria-live="polite"></div>
     <div class="sb-r">
-      <a href="https://github.com/tomnexttech/vector-parallax/issues" target="_blank" rel="noopener noreferrer">掲載の停止の依頼</a>
+      <a href="https://github.com/tomnexttech/vector-parallax/issues" target="_blank" rel="noopener noreferrer">記事掲載の停止を依頼する</a>
     </div>
   </footer>
-
-  <div class="pop" id="watch-pop" hidden>
-    <ul class="watch" id="watch-list"></ul>
-    <form class="watch-add" id="watch-form" autocomplete="off">
-      <input id="watch-in" type="text" maxlength="40" placeholder="語・地名" aria-label="追う語・地名">
-      <button type="submit" class="tbb">足す</button>
-    </form>
-    <div class="suggest" id="watch-suggest" aria-label="今回多い地名"></div>
-  </div>
-  <div class="pop tpop" id="task-pop" hidden>
-    <ul class="tasks" id="task-list"></ul>
-    <p class="pop-f">このブラウザだけに保存</p>
-  </div>
+  <div class="cmd-layer" id="cmd" hidden><section class="cmd" role="dialog" aria-modal="true" aria-label="検索と操作">
+    <label class="cmd-f"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg><input id="q" type="search" placeholder="ニュース・分野・メディア・区画・操作" aria-label="ニュース・分野・メディア・区画・操作を探す" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="cmd-l"></label>
+    <ul class="cmd-l" id="cmd-l" role="listbox" aria-label="結果"></ul>
+    <p class="cmd-k">↑ ↓ で選ぶ　Enter で開く　Esc で閉じる</p>
+  </section></div>
+  <p class="toast" id="toast" role="status" aria-live="polite" hidden></p>
   <div class="pop vpop" id="voice-pop" hidden role="status" aria-live="polite"></div>
   <div class="sheet-layer" id="sheet" hidden><section class="dsheet" role="dialog" aria-modal="true" aria-labelledby="ds-title"></section></div>
   <div class="sheet-wrap" id="about-wrap" hidden></div>

@@ -1,4 +1,4 @@
-/* tour — the first visit's short tour. Five cards, one at a time: a heading of one line, a line or two of text, and the part of the
+/* tour — the first visit's short tour. Six cards, one at a time: a heading of one line, a line or two of text, and the part of the
  * page it speaks of outlined while the rest is dimmed. 次へ / 戻る / とばす, the last card ends with はじめる; Esc or a press outside the
  * card closes it. Once finished or skipped it does not come again (localStorage, this browser only; a storage that cannot be read only
  * means it may come again). 使い方 in the bar opens it at any time.
@@ -22,14 +22,16 @@ const GAP = 12, EDGE = 16, PAD = 6;
 export const STEPS = [
   { id: 'hello', at: [], title: 'はじめまして',
     text: 'Parallax は、同じニュースを国内外のメディアや官公庁がどう伝えているかを、並べて比べられるサイトです。' },
+  { id: 'sects', at: ['#sects'], title: '画面を切り替える',
+    text: 'ニュース・地図・市場・政治・災害・映像・保存を、この列で切り替えます。ホームは全部を一度に見る画面です。' },
   { id: 'simple', at: ['#entry .en-card[aria-pressed="true"]', '#entry .en-card', '#entry-btn'], title: 'かんたん表示',
-    text: 'ニュースを一つ選ぶと、国内メディア・海外メディア・官公庁の発表が三列に並びます。上の「かんたん表示」ボタンで、詳しい画面と切り替えられます。' },
-  { id: 'absent', at: ['#entry .cb-absent', '#entry .en-cols'], title: '見当たらない媒体',
+    text: 'ニュースを一つ選ぶと、国内メディア・海外メディア・官公庁の発表が三列に並びます。' },
+  { id: 'absent', at: ['#entry .cb-absent', '#entry .en-cols'], title: '見つからなかった媒体',
     text: '集めた記事の中で、このニュースが見つからなかったメディアです。あくまで集めた範囲での結果です。' },
   { id: 'ai', at: ['#entry .en-sel .en-ai', '#v-ai'], title: 'AI のまとめ',
     text: '言語が違っても、同じニュースの見出しを AI がひとまとめにします。AI が書いた文には「AI」マークが付きます。内容の真偽は判定しません。' },
-  { id: 'settings', at: ['#set-btn'], title: '設定',
-    text: 'ダーク・ライトの切り替え、ミュートしたい言葉、自分の AI の接続はここから。この使い方は、上の「使い方」ボタンからもう一度見られます。' },
+  { id: 'settings', at: ['#cmd-btn', '#sects-more'], title: '探す・設定',
+    text: 'ニュースも操作も、この欄から探せます（Ctrl+K）。字の大きさやダーク・ライトは設定で替えられます。' },
 ];
 
 export function tourSeen(storage) {
@@ -109,7 +111,10 @@ export function createTour({ doc, win, storage, onEnd } = {}) {
     card.style.left = ''; card.style.top = '';
     const cr = card.getBoundingClientRect();
     let p;
-    if (dock) p = { hole: holeOf(t.getBoundingClientRect(), v, cr.top - GAP) };
+    // the target at the foot of the screen (the phone's tabs): the card goes to the top instead of covering it
+    const up = dock && t.getBoundingClientRect().top > v.height * 0.6;
+    card.classList.toggle('dock-top', up);
+    if (dock) p = { hole: up ? holeOf(t.getBoundingClientRect(), v) : holeOf(t.getBoundingClientRect(), v, card.getBoundingClientRect().top - GAP) };
     else {
       p = place(t ? t.getBoundingClientRect() : null, { width: cr.width, height: cr.height }, v);
       card.style.left = `${p.left}px`; card.style.top = `${p.top}px`;

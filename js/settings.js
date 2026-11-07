@@ -31,7 +31,7 @@ const IMPORT_MAX = 200000;        // characters of a settings file
 
 /** the panes a visitor may turn off; the event and the priority list always stay */
 export const PANES = [
-  ['src', '源'], ['hours', '時間ごとの見出し'], ['fields', '分野'], ['anom', '非対称'], ['map', '地図'],
+  ['src', '媒体'], ['hours', '時間ごとの見出し'], ['fields', '分野'], ['anom', '一部の媒体だけ'], ['map', '地図'],
   ['count', '集めた見出し'], ['tv', '映像'], ['haz', '災害'], ['mkt', '市場'], ['pol', '政治'],
 ];
 const PANE_IDS = PANES.map(([id]) => id);
@@ -41,6 +41,7 @@ export const SCOPES = ['all', 'jp', 'intl'];
 export const VIEWS = ['auto', 'ai', 'rules'];
 export const LANGS = ['ja', 'en', 'orig'];
 export const CALM = ['system', 'on'];
+export const SIZES = ['m', 'l'];         // the size of the type, normal or large
 export const THEMES = ['dark', 'light'];   // the appearance, dark unless chosen; js/theme_boot.js reads look.theme before the first paint
 
 export function defaults() {
@@ -50,7 +51,7 @@ export function defaults() {
     mute: { words: [], outlets: [] },
     motion: { cases: true, scroll: true, calm: 'system', sound: true, hoverSound: false },
     panes: { off: [] },
-    look: { theme: 'dark' },
+    look: { theme: 'dark', size: 'm' },
   };
 }
 
@@ -76,7 +77,7 @@ export function cleanSettings(x) {
     motion: { cases: bool(motion.cases, d.motion.cases), scroll: bool(motion.scroll, d.motion.scroll), calm: pick(motion.calm, CALM, d.motion.calm),
       sound: bool(motion.sound, d.motion.sound), hoverSound: bool(motion.hoverSound, d.motion.hoverSound) },
     panes: { off: subset(panes.off, PANE_IDS) },
-    look: { theme: pick(look.theme, THEMES, d.look.theme) },
+    look: { theme: pick(look.theme, THEMES, d.look.theme), size: pick(look.size, SIZES, d.look.size) },
   };
 }
 
@@ -135,10 +136,10 @@ export function hiddenBy(s, ev) {
 /** the words of a reason, for a folded row and the count */
 export function reasonJa(r) {
   if (!r) return '';
-  return r.k === 'word' ? `語「${r.v}」` : r.k === 'outlet' ? `媒体「${r.v}」` : r.k === 'type' ? `源の型「${r.v}」`
+  return r.k === 'word' ? `語「${r.v}」` : r.k === 'outlet' ? `媒体「${r.v}」` : r.k === 'type' ? `媒体の種類「${r.v}」`
     : r.k === 'field' ? `分野「${r.v}」` : r.v === 'intl' ? '海外の出来事' : '国内の出来事';
 }
-export const KIND_JA = { word: '語', outlet: '媒体', type: '源の型', field: '分野', scope: '国内と海外' };
+export const KIND_JA = { word: '語', outlet: '媒体', type: '媒体の種類', field: '分野', scope: '国内と海外' };
 
 // ------------------------------------------------------------ the viewer's own AI (a key of their own, optional)
 export const OWN_AI_KEY = 'parallax.ownai.v1';

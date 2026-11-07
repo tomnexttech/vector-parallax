@@ -321,7 +321,7 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
   // COVERAGE HEAT of the earlier board: one number on red (what came new in the last six hours), the lanes, and the first report of each side
   function timeTile(m, lanes, new6h) {
     const firstLink = (id) => {
-      const it = m.firstOf[id], ja = `${short[id]}の初報`;
+      const it = m.firstOf[id], ja = `${short[id]}で最初の報道`;
       if (!it) return h('span', { class: 'tl-f off' }, h('span', { class: 'kl', text: ja }), ' —');
       const link = safeUrl(it.link), inner = [h('span', { class: 'kl', text: ja }), h('b', { class: 'num', text: fmtClock(it.ts) })];
       return link ? extLink(link, { class: 'tl-f', data: { side: id }, title: `${outletOf(it)} の記事を開く` }, ...inner) : h('span', { class: 'tl-f', data: { side: id } }, ...inner);

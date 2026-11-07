@@ -8,7 +8,7 @@
  *   genreIcon(field)                                            -> the field's line symbol, an <svg> (the simple view's cards use it)
  */
 export const GENRE_ALL = 'all';
-const SHORT = { 国内政治: '政治', 安全保障: '安保' };
+const SHORT = { 国内政治: '政治' };
 // 20 x 20, strokes only (the page sets stroke and width)
 const ICON = {
   [GENRE_ALL]: '<rect x="3.5" y="3.5" width="5" height="5" rx="1.2"/><rect x="11.5" y="3.5" width="5" height="5" rx="1.2"/><rect x="3.5" y="11.5" width="5" height="5" rx="1.2"/><rect x="11.5" y="11.5" width="5" height="5" rx="1.2"/>',

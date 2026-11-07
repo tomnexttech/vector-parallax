@@ -42,6 +42,8 @@ import { createDossier, measure, paperPick } from './dossier.js';
 import { biasOf as biasIndex, sourceBase } from './bias.js';
 import { newsView, createMapNews } from './mapnews.js';
 import { createWall, wallOn, pageOf, pageHolding, perOf } from './wall.js';
+import { SECTIONS, NEWS_TABS, parseHash, hashOf, paperOf, nextSeen, shareUrl, ruleJa } from './sections.js';
+import { createPalette } from './palette.js';
 
 const DEFAULT_DATA = 'data/latest.json';
 const POLL_MS = 5 * 60 * 1000;
@@ -62,7 +64,7 @@ const MODEL_RE = /^[A-Za-z0-9._-]{1,80}$/;
 let defaultModel = '';
 
 const FLAG_FALLBACK = {
-  overseas_only: { ja: '海外の媒体だけ', tip_ja: '取得した媒体のうち、海外の媒体だけに出ていて、日本に関わる出来事' },
+  overseas_only: { ja: '海外の媒体だけ', tip_ja: '集めた媒体のうち、海外の媒体だけに出ていて、日本に関わる出来事' },
   jp_main_not_found: { ja: '集めた国内の主要 {n} 媒体に見当たらない', tip_ja: '集めた国内の主要な媒体には見当たらない' },
   primary_only: { ja: '官公庁の資料だけ', tip_ja: '政府・中央銀行などの一次の資料だけに出ている' },
 };
@@ -71,7 +73,7 @@ const ERR_TEXT = {
   quota: 'Gemini の利用上限（429）に当たりました。少し時間を空けてやり直してください。', auth: '鍵が通りませんでした（401/403）。鍵を確かめてください。',
   blocked: 'Gemini が応答を止めました。', truncated: '応答が長さの上限で切れました。', http: 'Gemini が誤りを返しました。', timeout: '時間内に応答がありませんでした。',
   network: 'Google へ届きませんでした（通信）。', json: '応答が JSON として読めませんでした。', shape: '応答の形が崩れていました。', nokey: '鍵がありません。',
-  missing: '記録済みの答えがありません。', budget: '1 回の取得での AI の呼び数の上限に達しました。',
+  missing: '記録済みの答えがありません。', budget: '1 回の更新での AI の呼び数の上限に達しました。',
 };
 const TERMS_TEXT = { ok: '再表示可', nc: '非商用のみ', no: '再配布不可', unknown: '未確認' };
 const LAYERS = [['events', '出来事'], ['pri', '注目'], ['radius', '半径'], ['quakes', '地震'], ['typhoons', '台風'], ['disasters', '災害']];
@@ -360,7 +362,8 @@ function shownPriAll() {
   return t === 'all' ? state.pri : t === 'watch' ? state.pri.filter((e) => e.hits.length) : state.pri.filter((e) => e.topics.includes(t));
 }
 const cur = () => state.byKey.get(state.sel) || null;
-const flagJa = (id) => (state.board && isObj(state.board.flag_labels) && isObj(state.board.flag_labels[id]) && str(state.board.flag_labels[id].ja)) || topicJa(id) || id;
+const FLAG_PLAIN = { 公金: 'お金・税金', '法・人事': '法律・人事', 安保: '安全保障', AI統治: 'AI のルール', 政治と人事: '政治・人事' };   // everyday words on the screen; the data keeps its own
+const flagJa = (id) => { const x = (state.board && isObj(state.board.flag_labels) && isObj(state.board.flag_labels[id]) && str(state.board.flag_labels[id].ja)) || topicJa(id) || id; return FLAG_PLAIN[x] || x; };
 const typeLead = (type) => { const t = state.labels && isObj(state.labels.types) ? state.labels.types[type] : null; return isObj(t) && t.lead && str(t.short) ? str(t.short) : ''; };
 const outletOf = (it) => (isObj(it) ? str(it.media) || str(it.outlet) : '');
 const viaGN = (it) => isObj(it) && it.via === 'gnews';
@@ -424,7 +427,7 @@ function renderBar() {
   // since the last visit
   $('m-new').hidden = !state.prevSeen;
   roll($('new-n'), state.newKeys.size);
-  $('watch-n').textContent = state.watch.length ? String(state.watch.length) : '';
+  renderSectNav();
   renderSnapNote();
   renderAiLine();
 }
@@ -446,7 +449,7 @@ function renderSnapNote() {
   el.classList.add('tags');
   el.append(tag(p.lead[0], p.lead[1]), tag(p.ai, fmtShort(kept.aiAt), ageEl(kept.aiAt, SIX_H)), ...(p.why ? [tag(p.why[0], p.why[1], null, true)] : []), tag(p.rules[0], p.rules[1]));
   const old = isOld(kept.aiAt, nowS());
-  done({ tone: kept.reason === 'error' ? 'bad' : old ? 'warn' : 'ok', text: old ? `AI ${fmtAge(kept.aiAt)}の取得` : 'AI 前回の結果', old });
+  done({ tone: kept.reason === 'error' ? 'bad' : old ? 'warn' : 'ok', text: old ? `AI ${fmtAge(kept.aiAt)}のまとめ` : 'AI 前回の結果', old });
 }
 /** the state of what is on screen as small dots and a word each, at the end of the line above the board; a press opens the bar below */
 function statEl() { return state.statEl || (state.statEl = h('span', { class: 'stat', id: 'stat' })); }
@@ -479,7 +482,7 @@ function renderAiLine() {
   state.alView = state.view;
   const n = (v, on) => h('b', { class: 'num' + (on ? ' on' : '') + (on && flash && !reduced() ? ' flash' : ''), text: fmtN(v) });
   const parts = [h('span', { class: 'al-h', text: '国内と海外の両方' })];
-  if (state.hasAI && ai != null) { parts.push(h('span', { class: 'al-k', text: 'AI' }), n(ai, state.view === 'ai')); if (ch.of === 'snapshot') parts.push(h('span', { class: 'al-u', text: '前回の取得' })); }
+  if (state.hasAI && ai != null) { parts.push(h('span', { class: 'al-k', text: 'AI' }), n(ai, state.view === 'ai')); if (ch.of === 'snapshot') parts.push(h('span', { class: 'al-u', text: '前回のまとめ' })); }
   else if (!state.stSnap) parts.push(h('span', { class: 'al-k off', text: 'AI 停止中' }));   // with a dot at the end of the line, the word is said once
   if (both != null) parts.push(h('i', { class: 'al-sep', 'aria-hidden': 'true' }), h('span', { class: 'al-k', text: '自動' }), n(both, state.view === 'rules'));
   parts.push(h('button', { type: 'button', class: 'al-go', on: { click: () => { if (state.hasAI && ai != null && state.view !== 'ai') setView('ai'); setTopic('cross'); if (narrow()) $('p-pri').scrollIntoView({ block: 'start' }); } } }, '一覧'));
@@ -598,7 +601,7 @@ function row(e, opt = {}) {
   const li = h('li', {
     class: ['r', state.sel === e.key ? 'sel' : '', fresh ? 'fresh' : '', e.hits.length ? 'watched' : '', state.openRow === e.key ? 'open' : ''].filter(Boolean).join(' '),
     data: { key: e.key }, tabindex: '-1',
-    on: { click: () => pressRow(e.key) },
+    on: { click: () => (opt.press ? opt.press(e.key) : pressRow(e.key)) },
   });
   const tag = opt.flag ? h('span', { class: 'flag', title: opt.flag.tip, text: opt.flag.ja }) : null;
   li.append(...kids(
@@ -650,8 +653,8 @@ function pressRow(key) {
 }
 /** to the list of every report of the event in focus */
 function goMembers() {
-  if (state.floor && state.floor.mode() === 'map') state.floor.setMode('case');
-  const el = document.querySelector('#case .cb-members');
+  if (!state.sheet && (state.sect !== 'home' || $('board').dataset.wall === '1')) openSheet('case');
+  const el = document.querySelector(state.sheet ? '.dsheet .cb-members' : '#case .cb-members');
   if (el) el.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' });
 }
 /** the search box takes a word from anywhere on the board; the lists narrow to it */
@@ -668,7 +671,7 @@ function searchFor(w) {
   if (p && (narrow() || !p.offsetParent)) p.scrollIntoView({ block: 'start' });
   else if ($('pri-b')) $('pri-b').scrollTop = 0;
 }
-function clearSearch() { $('q').value = ''; state.q = ''; renderPri(); renderAnom(); renderFields(); }
+function clearSearch() { $('q').value = ''; state.q = ''; renderPri(); renderAnom(); renderFields(); paintCmdBtn(); }
 /** the field icons: at the head of the priority list (PC), as a strip above the board (phones), and in the simple view */
 function genreEl() {
   return genreBar({ fields: [...FIELDS, OTHER_FIELD], counts: genreCounts(state.pri), total: state.pri.length, active: state.genre, onPick: setGenre });
@@ -692,16 +695,17 @@ function setGenre(g) {
   if (state.mapUi) state.mapUi.update();
   return true;
 }
+function priChips() {
+  const pri = state.pri;
+  const n = new Map(TOPICS.map((t) => [t.id, pri.filter((e) => e.topics.includes(t.id)).length]));
+  const chips = [['all', '全て', pri.length], ...TOPICS.map((t) => [t.id, flagJa(t.id), n.get(t.id)])];
+  if (state.watch.length) chips.push(['watch', 'フォロー', pri.filter((e) => e.hits.length).length]);
+  chips.push(['cross', '国内と海外', state.es.filter((e) => !e.foldedInto && e.cover === 'both').length]);
+  return chips.map(([id, ja, c]) => h('button', { type: 'button', class: 'chip', 'aria-pressed': String(!state.q && state.topic === id), disabled: state.q ? true : null, on: { click: () => setTopic(id) } }, ja, h('span', { class: 'n', text: c })));
+}
 function renderPri() {
   renderGenres();
-  const pri = state.pri;
-  const counts = new Map(TOPICS.map((t) => [t.id, pri.filter((e) => e.topics.includes(t.id)).length]));
-  const chips = [['all', '全て', pri.length], ...TOPICS.map((t) => [t.id, flagJa(t.id), counts.get(t.id)])];
-  if (state.watch.length) chips.push(['watch', '追う', pri.filter((e) => e.hits.length).length]);
-  chips.push(['cross', '国内と海外', state.es.filter((e) => !e.foldedInto && e.cover === 'both').length]);
-  $('pri-chips').replaceChildren(...chips.map(([id, ja, n]) => h('button', {
-    type: 'button', class: 'chip', 'aria-pressed': String(!state.q && state.topic === id), disabled: state.q ? true : null,
-    on: { click: () => setTopic(id) } }, ja, h('span', { class: 'n', text: n }))));
+  $('pri-chips').replaceChildren(...priChips());
   const list = shownPri();
   $('pri-h').textContent = state.q ? '検索' : state.topic === 'cross' ? '国内と海外' : narrow() ? '今日の注目' : '注目';
   roll($('pri-c'), list.length);
@@ -714,6 +718,7 @@ function renderPri() {
   syncAutoLine();
   renderMapNews();
   if (state.vwNow) { renderWall(); renderViewBar(); }
+  if (state.sect === 'news') renderSect();
 }
 function anomRows() {
   const es = state.es.filter((e) => !e.foldedInto && matchesQ(e) && vis(e));
@@ -727,7 +732,7 @@ function anomRows() {
       const e = isObj(a) && byCase.get(a.sid);
       const L = isObj(a) && labels[a.kind];
       const ja = isObj(a) ? str(a.label_ja) || (isObj(L) ? str(L.ja) : '') : '';
-      if (e && ja) rows.push({ e, k: a.kind, ja: plainWord(ja), tip: isObj(L) ? plainWord(L.rule) : '' });
+      if (e && ja) rows.push({ e, k: a.kind, ja: plainWord(ja), tip: ruleJa(a.kind, isObj(L) ? plainWord(L.rule) : '') });
     }
   }
   if (!(b && Array.isArray(b.asymmetry))) for (const e of es) for (const f of e.ruleFlags) { const t = flagText(f); if (t) rows.push({ e, k: 'rule-' + f, ja: t.ja, tip: t.tip }); }
@@ -745,7 +750,8 @@ function renderAnom() {
   $('anom-sum').replaceChildren(...[...by.entries()].map(([k, n]) => h('button', { type: 'button', class: 'ak', 'aria-pressed': String(state.anomKind === k),
     on: { click: () => { state.anomKind = state.anomKind === k ? null : k; renderAnom(); } } }, h('span', { class: 'akn num', text: n }), h('span', { class: 'akl', text: k }))));
   const shown = state.anomKind ? rows.filter((r) => r.ja === state.anomKind) : rows;
-  $('anom-b').replaceChildren(shown.length
+  const ruleNow = state.anomKind && shown[0] ? shown[0].tip : '';
+  $('anom-b').replaceChildren(...(ruleNow ? [h('p', { class: 'anom-rule', text: `${ruleNow}。` })] : []), shown.length
     ? h('ul', { class: 'rows' }, shown.slice(0, 80).map((r) => row(r.e, { flag: { ja: r.ja, tip: `自動・${r.tip}${r.tip ? '。' : ''}${noteJa()}` } })))
     : h('p', { class: 'empty', text: ast && ast.complete === false ? '主な媒体の一部が取れず、今回はラベルを付けない' : '0 件' }), h('p', { class: 'pfoot', text: `自動のラベル・${noteJa()}` }));
 }
@@ -935,7 +941,8 @@ function caseNode(e) {
     h('span', { class: 'ch-tools' },
       e.topics.length ? h('span', { class: 'tp' }, e.topics.map((id, i) => [i ? '・' : '', lk(flagJa(id), () => setTopic(id), `${flagJa(id)} の出来事だけ見る`)])) : null,
       e.field ? lk(e.field, () => setGenre(e.field), `${e.field} の出来事だけ見る`, 'fd', { genre: e.field }) : null,
-      h('button', { type: 'button', class: 'addtask', 'aria-pressed': 'false', on: { click: () => actions.run('task_add') } }, 'タスクに足す'),
+      h('button', { type: 'button', class: 'addtask', 'aria-pressed': String(hasTask(state.tasks, saveId(e))), on: { click: () => toggleSave(e) } }, hasTask(state.tasks, saveId(e)) ? '保存済み' : '保存'),
+      h('button', { type: 'button', class: 'addtask share', on: { click: () => shareEvent(e) } }, '共有'),
       extLink(`${ISSUES}/new?title=${encodeURIComponent('掲載の停止の依頼')}`, { class: 'stopreq', title: STOP_NOTE }, '掲載の停止')));
   const head = h('div', { class: 'ch-main' },
     h('div', { class: 'ch-title' },
@@ -955,13 +962,13 @@ function caseNode(e) {
   const gen = state.data.generated_at, windowS = (isNum(state.data.window_h) ? state.data.window_h : 36) * 3600;
   const since = isNum(gen) && isNum(e.first) ? Math.max(0, gen - e.first) : null;
   const status = h('div', { class: 't-status' },
-    h('b', { class: 'st-k', text: '初報から' }), h('i', { class: 'st-l' }, since != null ? h('i', { style: `width:${Math.min(100, (since / windowS) * 100).toFixed(1)}%` }) : null),
+    h('b', { class: 'st-k', text: '最初の報道から' }), h('i', { class: 'st-l' }, since != null ? h('i', { style: `width:${Math.min(100, (since / windowS) * 100).toFixed(1)}%` }) : null),
     h('small', { class: 'st-v', text: `${since != null ? fmtSpan(since) : '—'}・${e.n}媒体` }),
     h('dl', { class: 'facts' },
-      h('dt', { text: '初報' }), h('dd', null, `${fmtClock(first && first.ts)} `, linkTo(first, str(first && outletOf(first)))),
+      h('dt', { text: '最初に報じた' }), h('dd', null, `${fmtClock(first && first.ts)} `, linkTo(first, str(first && outletOf(first)))),
       h('dt', { text: '最新' }), h('dd', null, last ? linkTo(last, fmtClock(last.ts)) : '—'),
       e.event ? [h('dt', { text: '事件' }), h('dd', null, e.event.key, h('span', { class: 'o', text: ` · 束 ${e.event.n}` }))] : null,
-      e.case && arr(e.case.hits).length ? [h('dt', { text: '当たった語' }), h('dd', { class: 'hits' }, arr(e.case.hits).map((w, i) => [i ? '・' : '', lk(w, () => searchFor(w), `「${w}」で探す`)]))] : null));
+      e.case && arr(e.case.hits).length ? [h('dt', { text: '共通する言葉' }), h('dd', { class: 'hits' }, arr(e.case.hits).map((w, i) => [i ? '・' : '', lk(w, () => searchFor(w), `「${w}」で探す`)]))] : null));
 
   // the sheaf of photos: never cropped; the outlet, the time and the link stay with each; the small arrow brings the next one up
   const pics = picsOf(e);
@@ -1196,13 +1203,13 @@ let mapNews = null;
 function renderMapNews() {
   const box = $('p-mapnews');
   if (!box || !state.floor) return;
-  const on = state.floor.mode() === 'map' || window.matchMedia('(max-width: 1100px)').matches;
+  const on = state.floor.mode() === 'map' || state.sect === 'map' || window.matchMedia('(max-width: 1100px)').matches;
   box.dataset.on = on ? '1' : '0';
   if (!on) return;
   mapNews = mapNews || createMapNews({ h, lk, headNode, fmtAge, fmtClock, genreShort,
     ratioOf: (e) => dossier.ratioBar(measureOf(e)), photoOf: entryPhoto,
     onSelect: (k) => { state.mapLead = k; select(k, true); renderMapNews(); }, onGenre: setGenre, onScope: (x) => { state.mapScope = x; renderMapNews(); },
-    onDetails: (k) => { select(k, true); if (state.floor.mode() === 'map') state.floor.setMode('case'); else $('p-case').scrollIntoView({ block: 'start' }); },
+    onDetails: (k) => { select(k, true); if (state.sect === 'map') openSheet('case'); else $('p-case').scrollIntoView({ block: 'start' }); },
     describe: (e) => { const it = [...e.members].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity)).find((x) => typeof x.desc === 'string' && x.desc.trim()); return it ? descOf(it, safeUrl(it.link)) : null; },
     relatedOf: (e) => related(e).slice(0, 4).map((x) => ({ key: x.o.key, text: x.o.heading.text, lang: x.o.heading.lang || null, n: x.o.n, near: x.place })),
     videoOf: (e) => { const v = videosOf(videosOfEvent(e), STATIONS, 1)[0]; if (!v) return null; const st = STATIONS.find((x) => x.id === v.station); return { v, name: st ? st.name : '', src: embedSrc(playOfVideo(v), { auto: true, sound: false }) }; },
@@ -1260,6 +1267,7 @@ function applyScene(id) {
   applyPanes();
   renderPol();
   if (state.sheet === 'pol') renderSheet();
+  if (state.sect === 'politics') renderSect();
 }
 function sceneTick() {
   if (!state.scenes || !state.data || !state.ix) return;
@@ -1270,7 +1278,7 @@ function sceneTick() {
   }
   const r = state.sceneRes || { id: 'calm', reasons: [] }, manual = state.sceneMode === 'manual';
   if ($('app').dataset.scene !== r.id) applyScene(r.id);
-  const text = manual ? '場面 平時（手動）' : bannerText(state.scenes, r, state.sceneMode, fmtClock);
+  const text = manual ? '表示 平時（手動）' : bannerText(state.scenes, r, state.sceneMode, fmtClock);
   const go = (mode, res) => () => { state.sceneMode = mode; if (res) state.sceneRes = res; sceneTick(); };
   const bar = $('scene-bar'), sc = sceneOf(state.scenes, r.id) || {};
   const SCENE_TONE = { disaster: ['bad', '災害'], election: ['', '国内政治'], world: ['', '国際'], live: ['warn', ''] };
@@ -1425,7 +1433,7 @@ function renderHaz() {
     h('span', { class: 'qp' }, q.shindo ? h('span', { class: 'qs', text: `震度${shindoJa(q.shindo)} ` }) : null, q.place || '—'), h('span', { class: 'qd', text: isNum(q.depthKm) ? `${Math.round(q.depthKm)}km` : '' })));
   const dis = hz.disasters.filter((x) => x.alert === 'Red' || x.alert === 'Orange').slice(0, 6).map((x) => h('li', { class: 'hot', on: { click: () => openUrl(x.url) } },
     h('span', { class: 'qm wide', text: x.typeJa || disasterJa(x.type) }), h('span', { class: 'qp', text: `${x.name} ${x.alert === 'Red' ? '赤' : '橙'}` })));
-  const stv = (k, ja) => { const v = hz.status && hz.status[k]; return isObj(v) ? h('span', { class: v.ok ? null : 'bad', title: str(v.err), text: `${ja} ${v.ok ? (isNum(v.n) ? v.n : '—') : '取得できず'}` }) : null; };
+  const stv = (k, ja) => { const v = hz.status && hz.status[k]; return isObj(v) ? h('span', { class: v.ok ? null : 'bad', title: str(v.err), text: `${ja} ${v.ok ? (isNum(v.n) ? v.n : '—') : '読めず'}` }) : null; };
   const bigQ = [...hz.quakes].filter((q) => isNum(q.mag)).sort((a, c) => c.mag - a.mag)[0];
   const lowT = hz.typhoons.filter((t) => isNum(t.pressure)).sort((a, c) => a.pressure - c.pressure)[0];
   const meter = (title, node, name, url) => h('button', { type: 'button', class: 'hz-g', title: name, on: { click: () => openUrl(url) } }, node, h('span', { class: 'hz-k', text: title }), h('span', { class: 'hz-n', text: name }));
@@ -1439,7 +1447,7 @@ function renderHaz() {
     ty.length ? h('ul', { class: 'haz ty-l' }, ty) : null,
     h('ul', { class: 'haz' }, quakes.length ? quakes : h('li', { class: 'empty', text: '地震 0 件' })),
     dis.length ? h('ul', { class: 'haz' }, dis) : null,
-    h('p', { class: 'pfoot src', 'data-host': '' }, hz.from === 'live' ? '閲覧時に取得 ' : '', isNum(hz.at) ? `${fmtShort(hz.at)} ` : '', isNum(hz.at) ? ageEl(hz.at, SIX_H) : null, ' ',
+    h('p', { class: 'pfoot src', 'data-host': '' }, hz.from === 'live' ? '閲覧時に更新 ' : '', isNum(hz.at) ? `${fmtShort(hz.at)} ` : '', isNum(hz.at) ? ageEl(hz.at, SIX_H) : null, ' ',
       stv('jma_quake', '気象庁 地震'), stv('jma_typhoon', '台風'), stv('jma_tsunami', '津波'), stv('usgs', 'USGS'), stv('gdacs_events', 'GDACS'), stv('gdacs', 'GDACS')));
 }
 function pickRows(x) {
@@ -1467,7 +1475,7 @@ function renderMkt() {
   for (const g of groups) {
     parts.push(h('h4', { text: GROUP[g] || g }));
     parts.push(h('ul', { class: 'mk' }, m.series.filter((x) => isObj(x) && x.group === g).map((x) => {
-      if (!x.ok) return h('li', { class: 'old' }, h('span', { class: 'mn', text: str(x.name_ja) }), h('span', { class: 'mv', text: '—' }), h('span', { class: 'mp', text: '' }), h('span', { class: 'mt', title: str(x.err), text: '取得できず' }));
+      if (!x.ok) return h('li', { class: 'old' }, h('span', { class: 'mn', text: str(x.name_ja) }), h('span', { class: 'mv', text: '—' }), h('span', { class: 'mp', text: '' }), h('span', { class: 'mt', title: str(x.err), text: '読めず' }));
       const rate = x.unit === '%';
       const ch = rate ? x.chg_bp : x.chg_pct;
       const ta = isObj(x.ta) && x.ta.ok ? x.ta : null;
@@ -1608,7 +1616,7 @@ function aboutEl() {
     h('div', { class: 'sheet-h' }, h('h2', { text: 'データと AI' }), h('button', { type: 'button', class: 'tbb', text: '閉じる', on: { click: closeAbout } })),
     h('ul', { class: 'floor' }, h('li', { text: '見出しとリンクは各媒体に帰属。画像は各記事の元の場所から表示' }), h('li', { text: '媒体に左右のラベルを付けない' }),
       h('li', { text: '見出しの真偽は判定しない' }), h('li', { text: '「見当たらない」は集めたニュースの中での話' }), h('li', { text: AI_NOTE }), h('li', null, extLink(ISSUES, null, '掲載の停止の依頼'), `・${STOP_NOTE}`)),
-    det('ab-scope', '取得の範囲', true), det('ab-ai', 'AI の実行'), det('ab-eval', '検査'), det('ab-src', '媒体の一覧'), det('ab-byok', '自分の鍵で AI を回す（任意）'));
+    det('ab-scope', '集めた範囲', true), det('ab-ai', 'AI の実行'), det('ab-eval', '検査'), det('ab-src', '媒体の一覧'), det('ab-byok', '自分の鍵で AI を回す（任意）'));
   aboutNode.querySelector('#ab-byok-i').append(
     h('p', { class: 'lead', text: '鍵はこのタブのメモリだけに置き、送り先は Google だけ' }),
     h('p', { class: 'msg', id: 'byok-req' }),
@@ -1643,7 +1651,7 @@ function renderAbout() {
   const aiRows = [['状態', (state.live ? '閲覧者の鍵 · ' : '') + (kept ? `前回を保持 · ${kept.reason || '—'}` : st), st === 'error' || st === 'partial' ? 'err' : null],
     ['書いた AI', [str(src.provider), str(src.model)].filter(Boolean).join(' · ') || '—'],
     ['時刻', isNum(at) ? h('span', { 'data-host': '' }, fmtFull(at), ' ', ageEl(at, SIX_H)) : '—']];
-  if (kept) aiRows.push(['まとめた取得', fmtFull(kept.fetchedAt)]);
+  if (kept) aiRows.push(['まとめた時刻', fmtFull(kept.fetchedAt)]);
   aiRows.push(['指示の版', str(src.prompt_version) || '—'], ['呼び', `${n(src.calls)}（失敗 ${n(src.calls_failed)}）`, src.calls_failed > 0 ? 'err' : null],
     ['塊', `${n(src.blocks_ok)} / ${n(src.blocks_sent)}`], ['併合・分割', `${n(src.merges)} · ${n(src.splits)}`], ['外した文', `見出しの写し ${n(src.quoted_fields)}`]);
   const errs = arr(run.errors).filter((x) => typeof x === 'string');
@@ -1659,7 +1667,7 @@ function renderAbout() {
     const ts = TERMS_TEXT[r.terms_status] ? r.terms_status : 'unknown';
     ol.append(h('li', { class: failed || old ? 'bad' : null, 'data-host': '', data: { bad: failed || old ? '1' : '0' } },
       h('span', { class: 'sn', text: str(r.name) || str(r.id) }), h('span', { class: 'st', text: [str(r.type), r.home === 'jp' ? '国内' : '海外'].join('・') }),
-      h('span', { class: 'si', text: isNum(r.n) ? `${r.n}` : '—' }), isNum(r.fetched_at) ? ageEl(r.fetched_at, SIX_H) : h('span', { class: 'err-t', text: '未取得' }),
+      h('span', { class: 'si', text: isNum(r.n) ? `${r.n}` : '—' }), isNum(r.fetched_at) ? ageEl(r.fetched_at, SIX_H) : h('span', { class: 'err-t', text: '未着' }),
       terms ? extLink(terms, { class: 'stm' }, TERMS_TEXT[ts]) : h('span', { class: 'stm', text: TERMS_TEXT[ts] }),
       failed ? h('span', { class: 'err-t', text: str(r.err) || '届かなかった' }) : null));
   }
@@ -1783,7 +1791,7 @@ function renderWatch() {
   const counts = new Map();
   for (const e of es) for (const p of e.places) counts.set(p, (counts.get(p) || 0) + 1);
   const names = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => pj(k)).filter((n) => !state.watch.includes(n)).slice(0, 8);
-  $('watch-suggest').replaceChildren(...names.map((n) => h('button', { type: 'button', class: 'chip', text: n, 'aria-label': `${n} を追う`, on: { click: () => setWatch(addWatch(state.watch, n)) } })));
+  $('watch-suggest').replaceChildren(...names.map((n) => h('button', { type: 'button', class: 'chip', text: n, 'aria-label': `${n} をフォロー`, on: { click: () => setWatch(addWatch(state.watch, n)) } })));
 }
 function setWatch(list) { state.watch = list; saveWatch(store, list); renderAll(); return true; }
 
@@ -1807,7 +1815,7 @@ function select(key, byHand) {
   for (const el of document.querySelectorAll(`.rows .r[data-key="${CSS.escape(key)}"]`)) el.classList.add('sel');
   const inPri = document.querySelector(`#pri-b .r[data-key="${CSS.escape(key)}"]`);
   if (inPri && !byHand) inPri.scrollIntoView({ block: 'nearest' });
-  if (changed) { renderCase(); renderSources(); renderHours(); renderMap(true); renderMapNews(); followWall(); if (byHand) followTv(state.byKey.get(key)); }
+  if (changed) { renderCase(); renderSources(); renderHours(); renderMap(true); renderMapNews(); followWall(); paintNewsCase(); if (byHand) followTv(state.byKey.get(key)); }
   syncAutoLine();
   return true;
 }
@@ -1884,6 +1892,7 @@ function renderAll() {
     if (state.panel) state.panel.render();
     if (state.about) renderAbout();
     if (state.sheet) renderSheet();
+    renderSect();
     tick();
   } catch (err) {
     showFatal(`表示に失敗しました: ${err && err.message ? err.message : String(err)}`);
@@ -1908,7 +1917,7 @@ function syncAutoLine() {
 }
 function autoStep() {
   if (narrow() || state.about || state.sheet || state.stopped || (state.tour && state.tour.isOpen()) || !state.set.motion.cases || setOpen() || document.hidden) return;
-  if (state.floor && state.floor.mode() === 'map') return;     // the whole map is being read: the event in focus stays
+  if (state.sect !== 'home') return;                           // another screen is being read: the event in focus stays
   if ($('board').dataset.wall === '1') return;                 // several events are being read: nothing moves by itself
   const now = Date.now();
   if (now < state.pausedUntil) return;
@@ -1926,25 +1935,23 @@ function tickerStep() {
 // ---------------------------------------------------------------- since the last visit, and live updates
 function keysOf(d) { return arr(d && d.stories).map((x) => memberKey(x.member_ids)); }
 function loadSeen() { try { const j = store ? JSON.parse(store.getItem(SEEN_KEY) || 'null') : null; return isObj(j) && Array.isArray(j.keys) ? j : null; } catch { return null; } }
-function saveSeen(d) { try { store && store.setItem(SEEN_KEY, JSON.stringify({ gen: d.generated_at, keys: keysOf(d).slice(0, 3000) })); } catch { /* this visit only */ } }
-function markNew(prevKeys) {
-  const before = new Set(prevKeys);
-  state.newKeys = new Set(keysOf(state.base).filter((k) => !before.has(k)));
+function seeData(d) {
+  const sn = nextSeen(loadSeen(), d.generated_at, keysOf(d), Date.now());
+  state.prevSeen = sn.prev; state.seenSince = sn.since; state.newKeys = new Set(sn.fresh);
   state.tickQ = []; state.tickI = 0; state.tickAt = Date.now();
+  try { store && store.setItem(SEEN_KEY, JSON.stringify(sn.save)); } catch { /* this visit only */ }
 }
 async function poll() {
   if (document.hidden) return;
   const d = await getJson(state.dataPath);
   if (!looksLikeData(d) || !state.base || d.generated_at === state.base.generated_at) return;
-  if (state.live) { state.pending = d; setState(`新しい取得 ${fmtShort(d.generated_at)}・記録済みに戻すと読込`); return; }
-  const prev = keysOf(state.base);
+  if (state.live) { state.pending = d; setState(`新しいデータ ${fmtShort(d.generated_at)}・記録済みに戻すと読込`); return; }
   const board = await getJson(dataDir() + 'board.json');
   if (isObj(board) && board.schema === 'parallax-board/1') state.board = board;
   tidyGovTitles(d);
   state.base = d; state.data = d;
-  markNew(prev);
+  seeData(d);
   state.flashed.clear();
-  saveSeen(d);
   renderAll();
   state.tickQ = state.pri.filter((e) => state.newKeys.has(e.mk));
   renderTicker(true);
@@ -1964,6 +1971,7 @@ async function loadHaz() {
   renderHaz(); renderMap(false);
   if (cur()) renderCase();
   if (state.sheet === 'haz') renderSheet();
+  if (state.sect === 'disaster') renderSect();
 }
 async function loadSide() {
   const [m, p, hs, cr] = await Promise.all([getJson(dataDir() + 'markets.json'), getJson(dataDir() + 'politics.json'), getJson(dataDir() + 'history.json'), getJson(dataDir() + 'critical.json')]);
@@ -1974,10 +1982,11 @@ async function loadSide() {
   renderMkt(); renderPol();
   if (cur()) renderCase();
   if (state.sheet === 'mkt' || state.sheet === 'pol') renderSheet();
+  if (state.sect === 'market' || state.sect === 'politics') renderSect();
 }
 
 // ---------------------------------------------------------------- sheets: a pane opened toward the viewer — one big number, the facts, then everything
-const SHEETS = { case: '出来事', src: '媒体', hours: '時間ごとの見出し', pri: '注目', anom: '一部の媒体だけ', mkt: '市場', pol: '政治', haz: '災害' };
+const SHEETS = { keys: 'キーの一覧', case: '出来事', src: '媒体', hours: '時間ごとの見出し', pri: '注目', anom: '一部の媒体だけ', mkt: '市場', pol: '政治', haz: '災害' };
 const SHEET_PANE = { src: 'p-src', hours: 'p-hours', pri: 'p-pri', anom: 'p-anom', mkt: 'p-mkt', pol: 'p-pol', haz: 'p-haz' };
 const SHEET_ALIAS = { 源: 'src', ソース: 'src', 情報源: 'src', 媒体: 'src', 時間ごと: 'hours', 時間: 'hours', 注目: 'pri', 非対称: 'anom', 一部の媒体だけ: 'anom', 市場: 'mkt', 政治: 'pol', 災害: 'haz' };
 const sheetKind = (k) => { const x = String(k || '').trim(); return SHEETS[x] ? x : SHEET_ALIAS[x] || null; };
@@ -2006,6 +2015,27 @@ function heatSvg(rows, n, label) {
   });
   return svg;
 }
+/** the market as small figures, each on its own scale, for the whole screen: the last 90 days, one line, with the value of a day under the pointer */
+function mktGrid(ok) {
+  const card = (x) => {
+    const pts = arr(x.spark).filter((p) => Array.isArray(p) && isNum(p[1]));
+    if (pts.length < 2) return null;
+    const rate = x.unit === '%', val = (v) => `${v.toLocaleString('ja-JP', { maximumFractionDigits: rate ? 3 : 2 })}${rate ? '%' : ''}`;
+    const vs = pts.map((p) => p[1]), lo = Math.min(...vs), hi = Math.max(...vs), W = 280, H = 64, step = W / (pts.length - 1);
+    const Y = (v) => (hi === lo ? H / 2 : 3 + (1 - (v - lo) / (hi - lo)) * (H - 6));
+    const day = (t) => { const p = tparts(t); return `${Number(p.month)}/${Number(p.day)}`; };
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'mk-s', role: 'img', preserveAspectRatio: 'none', 'aria-label': `${str(x.name_ja)} 90 日` },
+      s('path', { d: pts.map((p, i) => `${i ? 'L' : 'M'}${(i * step).toFixed(1)} ${Y(p[1]).toFixed(1)}`).join(''), 'vector-effect': 'non-scaling-stroke' }));
+    pts.forEach((p, i) => svg.append(s('rect', { class: 'h', x: (i * step - step / 2).toFixed(1), y: 0, width: step.toFixed(1), height: H }, s('title', {}, document.createTextNode(`${day(p[0])} ${val(p[1])}`)))));
+    const c = rate ? x.chg_bp : x.chg_pct;
+    return h('figure', { class: 'mk-c' },
+      h('figcaption', null, h('span', { class: 'mk-n', text: str(x.name_ja) }), h('b', { class: 'num', text: isNum(x.last) ? val(x.last) : '—' }), h('span', { class: 'mk-d num', text: isNum(c) ? `${c > 0 ? '+' : ''}${rate ? c.toFixed(1) + 'bp' : c.toFixed(2) + '%'}` : '—' })),
+      svg, h('div', { class: 'mk-a num' }, h('span', { text: day(pts[0][0]) }), h('span', { text: `${val(lo)} 〜 ${val(hi)}` }), h('span', { text: day(pts[pts.length - 1][0]) })));
+  };
+  return h('div', { class: 'mk-g' }, ok.map(card));
+}
+const KEYS = [['Ctrl K・/', '検索と操作'], ['Alt 1〜8', '画面を切り替える'], ['j k ↑ ↓', '次の・前のニュース'], ['n', '一度に見る数'], ['l', '並べ方'], ['[ ]', '前の・次のページ'], ['m', '地図を開く・戻る'], ['w', '世界の地図'], ['+ -', '地図の拡大・縮小'],
+  ['o', '最初の記事を開く'], ['t', '保存'], ['c', '共有'], ['a r', 'AI・自動のまとめ'], ['1〜7', 'ラベルで絞る'], ['v', '声で操作'], ['i', 'データと AI'], [',', '設定'], ['?', 'この一覧'], ['Esc', '閉じる']];
 const SHEET_BODY = {
   case() { const e = cur(); return { bare: true, body: e ? [caseNode(e)] : [h('p', { class: 'empty big', text: '出来事 0 件' })] }; },
   src() {
@@ -2048,7 +2078,7 @@ const SHEET_BODY = {
     bins.forEach((v, i) => {
       const ago = n - 1 - i, hh = (v / max) * H;
       svg.append(s('rect', { x: (i * bw + 1).toFixed(1), y: (H - hh).toFixed(1), width: (bw - 2).toFixed(1), height: Math.max(0.5, hh).toFixed(1), class: priAgo.has(ago) ? 'pri' : '' },
-        s('title', {}, document.createTextNode(`${fmtShort(from + i * 3600)}〜 ${v} 件${priAgo.has(ago) ? `・注目の初報 ${priAgo.get(ago)}` : ''}`))));
+        s('title', {}, document.createTextNode(`${fmtShort(from + i * 3600)}〜 ${v} 件${priAgo.has(ago) ? `・注目の最初の報道 ${priAgo.get(ago)}` : ''}`))));
       if (i % 6 === 0) svg.append(s('text', { x: i * bw + 1, y: H + 16, class: 'ax' }, document.createTextNode(fmtShort(from + i * 3600))));
     });
     const bt = isObj(vol.by_type) ? vol.by_type : {};
@@ -2056,16 +2086,16 @@ const SHEET_BODY = {
     const body = [sec('時間ごと', `${n} 時間`), svg, sec('種類 × 時間', types.length), heatSvg(types.map((t) => [t, [...bt[t]].reverse()]), n, '種類ごとの時間ごとの数')];
     if (b.slab && Array.isArray(b.slab.cats) && Array.isArray(b.slab.grid)) body.push(sec('分野 × 時間', b.slab.cats.length), heatSvg(b.slab.cats.map((c, i) => [c, [...arr(b.slab.grid[i])].reverse()]), n, '分野ごとの時間ごとの数'));
     return { big: fmtN(bins[n - 1]), unit: '直近 1 時間の見出し',
-      facts: [[`${n}時間`, fmtN(bins.reduce((a, v) => a + v, 0))], ['最多', `${fmtN(max)}・${fmtShort(from + peak * 3600)}`], ['注目の初報', `${priAgo.size} 時間帯`], ['種類', fmtN(types.length)]], body };
+      facts: [[`${n}時間`, fmtN(bins.reduce((a, v) => a + v, 0))], ['最多', `${fmtN(max)}・${fmtShort(from + peak * 3600)}`], ['注目の最初の報道', `${priAgo.size} 時間帯`], ['種類', fmtN(types.length)]], body };
   },
   pri() {
     const list = shownPri();
     const rows = list.map((e, i) => h('tr', { class: 'go' + (e.key === state.sel ? ' sel' : ''), on: { click: () => { closeSheet(); select(e.key, true); } } },
       td(String(i + 1), 'r dim'), td(e.topics.map(flagJa).join('・') || '—', 'flagc'), folded(e) ? td(`隠した・${reasonJa(e.hid)}に当たる`, 'dim') : td(e.heading.text, 'tt'), td(`${e.n}`, 'r'), td(e.field, 'dim opt'),
       td(e.case ? arr(e.case.hits).slice(0, 4).join('・') : '', 'dim opt'), td(fmtAge(e.last), 'r dim')));
-    return { big: fmtN(list.length), unit: state.q ? `「${state.q}」の一致` : state.topic === 'all' ? '注目の出来事' : `注目・${state.topic === 'watch' ? '追う' : state.topic === 'cross' ? '国内と海外' : flagJa(state.topic)}`,
+    return { big: fmtN(list.length), unit: state.q ? `「${state.q}」の一致` : state.topic === 'all' ? '注目の出来事' : `注目・${state.topic === 'watch' ? 'フォロー' : state.topic === 'cross' ? '国内と海外' : flagJa(state.topic)}`,
       facts: TOPICS.map((t) => [flagJa(t.id), fmtN(state.pri.filter((e) => e.topics.includes(t.id)).length)]),
-      body: [tbl([['', 'r'], ['旗'], ['見出し'], ['媒体', 'r'], ['分野', 'opt'], ['当たった語', 'opt'], ['最新', 'r']], rows)], foot: '旗は公開した自動のラベル' };
+      body: [tbl([['', 'r'], ['旗'], ['見出し'], ['媒体', 'r'], ['分野', 'opt'], ['共通する言葉', 'opt'], ['最新', 'r']], rows)], foot: '旗は公開した自動のラベル' };
   },
   anom() {
     const rows = anomRows();
@@ -2073,7 +2103,7 @@ const SHEET_BODY = {
     const body = [];
     for (const k of kinds) {
       const rs = rows.filter((r) => r.ja === k);
-      body.push(sec(k, rs.length), tbl([['見出し'], ['媒体', 'r'], ['種類', 'opt'], ['最新', 'r']], rs.map((r) => h('tr', { class: 'go', on: { click: () => { closeSheet(); select(r.e.key, true); } } },
+      body.push(sec(k, rs.length), rs[0].tip ? h('p', { class: 'anom-rule', text: `${rs[0].tip}。` }) : null, tbl([['見出し'], ['媒体', 'r'], ['種類', 'opt'], ['最新', 'r']], rs.map((r) => h('tr', { class: 'go', on: { click: () => { closeSheet(); select(r.e.key, true); } } },
         td(r.e.heading.text, 'tt'), td(`${r.e.n}`, 'r'), td(uniq(r.e.members.map((it) => it.type)).join('・'), 'dim opt'), td(fmtAge(r.e.last), 'r dim')))));
     }
     return { big: fmtN(rows.length), unit: '一部の媒体だけが報じた出来事', facts: kinds.map((k) => [k, fmtN(rows.filter((r) => r.ja === k).length)]), body: body.length ? body : [h('p', { class: 'empty', text: '0 件' })], foot: `自動のラベル・${noteJa()}` };
@@ -2086,7 +2116,7 @@ const SHEET_BODY = {
     const chg = (x) => { const rate = x.unit === '%', c = rate ? x.chg_bp : x.chg_pct; return isNum(c) ? `${c > 0 ? '+' : ''}${rate ? c.toFixed(1) + 'bp' : c.toFixed(2) + '%'}` : '—'; };
     const top = [...ok].sort((a, b2) => mv(b2) - mv(a))[0];
     const GROUP = { rates: '金利', fx: '為替', commodity: '商品' };
-    const body = [];
+    const body = state.sect === 'market' && !state.sheet ? [mktGrid(ok)] : [];
     for (const g of uniq(m.series.filter(isObj).map((x) => x.group))) {
       const rs = m.series.filter((x) => isObj(x) && x.group === g);
       body.push(sec(GROUP[g] || g, rs.length), tbl([['名'], ['90 日', 'opt'], ['値', 'r'], ['前日比', 'r'], ['1か月', 'r opt'], ['RSI', 'r opt'], ['基調', 'opt'], ['値の日付', 'r'], ['出典', 'opt']], rs.map((x) => {
@@ -2100,7 +2130,11 @@ const SHEET_BODY = {
       })));
     }
     return { big: top ? chg(top) : '—', unit: top ? `${str(top.name_ja)}・最大の動き` : '', bad: false,
-      facts: [['系列', `${ok.length} / ${m.series.length}`], ['取得', fmtShort(m.generated_at)], ['国債の日付', str(m.jgb && m.jgb.date) || '—']], body, foot: str(m.note_ja) || '売買の推奨ではありません' };
+      facts: [['系列', `${ok.length} / ${m.series.length}`], ['更新', fmtShort(m.generated_at)], ['国債の日付', str(m.jgb && m.jgb.date) || '—']], body, foot: str(m.note_ja) || '売買の推奨ではありません' };
+  },
+  keys() {
+    return { bare: true, body: [tbl([['キー'], ['すること']], KEYS.map(([k, ja]) => h('tr', null, td(h('kbd', { text: k })), td(ja)))),
+      h('p', { class: 'keys-go' }, h('button', { type: 'button', class: 'tbb', on: { click: () => { closeSheet(); $('tour-btn').click(); } } }, '使い方をもう一度見る'))] };
   },
   pol() { return politics().sheet(state.pol, state.crit, sceneNow()); },
   haz() {
@@ -2122,10 +2156,13 @@ const SHEET_BODY = {
       td(x.alert === 'Red' ? '赤' : x.alert === 'Orange' ? '橙' : x.alert === 'Green' ? '緑' : str(x.alert), x.alert === 'Red' || x.alert === 'Orange' ? 'hot' : 'dim'), td(x.typeJa || disasterJa(x.type), 'dim'), td(str(x.name), 'tt')))) : h('p', { class: 'empty sm', text: '0 件' })];
     return { big: fmtN(qs.length), unit: '24 時間の地震',
       facts: [['最大', big ? `M${big.mag.toFixed(1)}・${big.place || '—'}` : '—', big && hot(big) ? 'err' : ''], ['最大の震度', shMax ? `${shindoJa(shMax.shindo)}・${shMax.place || '—'}` : '—'], ['台風', fmtN(hz.typhoons.length)],
-        ['災害（橙・赤）', fmtN(dis.filter((x) => x.alert === 'Red' || x.alert === 'Orange').length)], ['津波', fmtN(arr(hz.tsunami).length)], ['取得', isNum(hz.at) ? fmtShort(hz.at) : '—']],
+        ['災害（橙・赤）', fmtN(dis.filter((x) => x.alert === 'Red' || x.alert === 'Orange').length)], ['津波', fmtN(arr(hz.tsunami).length)], ['更新', isNum(hz.at) ? fmtShort(hz.at) : '—']],
       body: [h('div', { class: 'ds-cols' }, h('div', null, quakes), h('div', null, right))], foot: '気象庁・USGS・GDACS' };
   },
 };
+const headBits = (r) => h('div', { class: 'ds-head' },
+  h('div', { class: 'ds-big' + (r.bad ? ' stale' : '') }, h('b', { class: 'num', text: r.big }), h('span', { class: 'u', text: r.unit })),
+  h('dl', { class: 'ds-facts' }, (r.facts || []).filter(Boolean).flatMap(([dt, dd, cls]) => [h('dt', { text: dt }), h('dd', { class: cls || null, text: dd })])));
 function renderSheet() {
   const k = state.sheet;
   if (!k) return;
@@ -2136,9 +2173,7 @@ function renderSheet() {
   box.replaceChildren(
     h('header', { class: 'ds-h' },
       h('div', { class: 'ds-t' }, h('h2', { id: 'ds-title', text: SHEETS[k] }), h('button', { type: 'button', class: 'ds-x', on: { click: closeSheet } }, '閉じる', h('kbd', { text: 'esc' }))),
-      r.bare ? null : h('div', { class: 'ds-head' },
-        h('div', { class: 'ds-big' + (r.bad ? ' stale' : '') }, h('b', { class: 'num', text: r.big }), h('span', { class: 'u', text: r.unit })),
-        h('dl', { class: 'ds-facts' }, (r.facts || []).filter(Boolean).flatMap(([dt, dd, cls]) => [h('dt', { text: dt }), h('dd', { class: cls || null, text: dd })])))),
+      r.bare ? null : headBits(r)),
     h('div', { class: 'ds-b' }, ...(r.body || [])),
     r.foot ? h('p', { class: 'ds-f', text: r.foot }) : null);
   if (keep) box.querySelector('.ds-b').scrollTop = keep;
@@ -2188,18 +2223,21 @@ function closeSheet() {
 }
 
 // ---------------------------------------------------------------- the visitor's own tasks (this browser only)
+function saveId(e) { return e.case ? e.case.sid : e.key; }
 function renderTasks() {
-  $('task-n').textContent = state.tasks.filter((t) => !t.done).length || '';
+  renderSectNav();
   const e = cur();
-  const btn = document.querySelector('#case .addtask');
-  if (btn && e) { const on = hasTask(state.tasks, e.case ? e.case.sid : e.key); btn.setAttribute('aria-pressed', String(on)); btn.textContent = on ? 'タスクにある' : 'タスクに足す'; }
-  if ($('task-pop').hidden) return;
+  if (e) for (const btn of document.querySelectorAll('.addtask:not(.share)')) { const on = hasTask(state.tasks, saveId(e)); btn.setAttribute('aria-pressed', String(on)); btn.textContent = on ? '保存済み' : '保存'; }
+  if (state.sect !== 'saved') return;
+  $('sv-n').textContent = String(state.tasks.length);
+  const reopen = (t) => { if ((t.sid && find(t.sid)) || find(t.title)) openSheet('case'); else openUrl(t.link); };
   $('task-list').replaceChildren(...(state.tasks.length ? state.tasks.map((t) => h('li', { class: t.done ? 'done' : null },
-    h('input', { type: 'checkbox', checked: t.done ? true : null, 'aria-label': '済み', on: { change: () => setTasks(toggleTask(state.tasks, t.id)) } }),
-    h('span', null, h('button', { type: 'button', class: 'tt', text: t.title, on: { click: () => { if (!(t.sid && find(t.sid)) && !find(t.title)) openUrl(t.link); } } }),
-      h('span', { class: 'ta', text: `${fmtShort(Math.floor(t.at / 1000))} に足した` })),
-    h('button', { type: 'button', class: 'wx', 'aria-label': '外す', text: '外す', on: { click: () => setTasks(removeTask(state.tasks, t.id)) } })))
-    : [h('li', { class: 'empty', text: '0 件' })]));
+    h('input', { type: 'checkbox', checked: t.done ? true : null, 'aria-label': '読んだ', title: '読んだ', on: { change: () => setTasks(toggleTask(state.tasks, t.id)) } }),
+    h('span', null, h('button', { type: 'button', class: 'tt', text: t.title, on: { click: () => reopen(t) } }),
+      h('span', { class: 'ta', text: `${fmtShort(Math.floor(t.at / 1000))} に保存` })),
+    h('span', { class: 'sv-b' }, h('button', { type: 'button', class: 'wx', text: '共有', on: { click: () => shareLink(t.title, shareUrl(location, { sid: t.sid, title: t.title })) } }),
+      h('button', { type: 'button', class: 'wx', 'aria-label': `${t.title} を外す`, text: '外す', on: { click: () => setTasks(removeTask(state.tasks, t.id)) } }))))
+    : [h('li', { class: 'empty', text: 'ニュースを開いて「保存」を押すと、ここに並びます。' })]));
 }
 function setTasks(list) { state.tasks = list; saveTasks(store, list); renderTasks(); return true; }
 function taskAdd() {
@@ -2208,12 +2246,160 @@ function taskAdd() {
   const link = e.members.map((it) => safeUrl(it.link)).find(Boolean) || '';
   return setTasks(addTask(state.tasks, { title: e.heading.text, sid: e.case ? e.case.sid : e.key, link }, Date.now()));
 }
-function openTasks() {
-  const p = $('task-pop');
-  p.hidden = false; $('task-btn').setAttribute('aria-expanded', 'true');
-  renderTasks();
+function openTasks() { return setSect('saved'); }
+function toggleSave(e) {
+  if (!e) return false;
+  const t = state.tasks.find((x) => x.sid === saveId(e));
+  if (t) return setTasks(removeTask(state.tasks, t.id));
+  return setTasks(addTask(state.tasks, { title: e.heading.text, sid: saveId(e), link: e.members.map((it) => safeUrl(it.link)).find(Boolean) || '' }, Date.now()));
+}
+let toastT = 0;
+function toast(text) { const el = $('toast'); el.textContent = text; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, 2600); }
+async function shareLink(title, url) {
+  if (navigator.share) { try { await navigator.share({ title, url }); return true; } catch (err) { if (err && err.name === 'AbortError') return true; } }
+  try { await navigator.clipboard.writeText(url); toast('リンクをコピーしました'); } catch { toast(url); }
   return true;
 }
+function shareEvent(e) {
+  if (!e) return false;
+  const sid = e.case ? str(e.case.sid) : e.kind === 'story' && isObj(e.obj) ? str(e.obj.sid) : '';
+  shareLink(e.heading.text, shareUrl(location, { sid, title: e.heading.text }));
+  return true;
+}
+
+// ---------------------------------------------------------------- the screens: the board's panes opened whole; the address says which (js/sections.js)
+const PAGE_SHEET = { market: 'mkt', politics: 'pol', disaster: 'haz' };
+const SECOND = new Set(['market', 'politics', 'disaster', 'video']);
+const isPage = (id) => id === 'news' || id === 'saved' || !!PAGE_SHEET[id] || (id === 'map' && state.set.panes.off.includes('map')) || (id === 'video' && state.set.panes.off.includes('tv'));
+const stacked = () => window.matchMedia('(max-width: 1100px)').matches;
+function renderSectNav() {
+  for (const a of document.querySelectorAll('#sects a[data-s]')) { if (a.dataset.s === state.sect) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
+  const sec = SECOND.has(state.sect);
+  $('sects-more').classList.toggle('on', sec);
+  $('sects-more-t').textContent = sec ? SECTIONS.find((x) => x.id === state.sect).ja : 'その他';
+  $('sect-new').textContent = state.newKeys.size ? String(state.newKeys.size) : '';
+  $('task-n').textContent = state.tasks.filter((t) => !t.done).length || '';
+}
+function moreOpen(on) { const n = $('sects'); if (on) n.dataset.more = '1'; else delete n.dataset.more; $('sects-more').setAttribute('aria-expanded', String(!!on)); }
+function setSect(id, tab, fromHash) {
+  const sc = SECTIONS.some((x) => x.id === id) ? id : 'home', prev = state.sect;
+  state.sect = sc;
+  if (sc === 'news' && tab) state.newsTab = tab;
+  if (!fromHash) { const want = hashOf(sc, state.newsTab); if (location.hash !== want && !(sc === 'home' && !location.hash)) location.hash = want; }
+  applySect(prev);
+  return true;
+}
+function applySect(prev) {
+  const sc = state.sect, root = document.documentElement;
+  root.dataset.sect = sc;
+  root.dataset.page = isPage(sc) ? '1' : '0';
+  moreOpen(false);
+  if (state.sheet) closeSheet();
+  if (state.palette) state.palette.close();
+  // the whole map and the video need the board itself; home comes back the way it was left
+  if ((sc === 'map' || sc === 'video') && state.ui === 'simple') { state.uiBack = 'simple'; setUi('full'); } else if (sc === 'home' && state.uiBack) { const b = state.uiBack; state.uiBack = null; setUi(b); }
+  if (state.floor && prev !== sc) { if (sc === 'map') state.floor.setMode('map'); else if (prev === 'map') state.floor.setMode('case'); }
+  $('sect').hidden = !isPage(sc) || sc === 'saved';
+  $('sect-saved').hidden = sc !== 'saved';
+  renderSectNav();
+  renderSect();
+  window.scrollTo(0, 0);
+  if (state.map && state.data && !isPage(sc)) requestAnimationFrame(() => { state.map.resize(); renderMap(false); renderMapNews(); applyView(); window.scrollTo(0, 0); });
+}
+function paintNewsCase() {
+  const b = $('nw-case');
+  if (!b || state.sect !== 'news') return;
+  const e = cur();
+  b.replaceChildren(e ? caseNode(e) : h('p', { class: 'empty big', text: '0 件' }));
+  b.scrollTop = 0;
+}
+const openCase = (key) => { select(key, true); openSheet('case'); };
+function pressNews(key) {
+  if (stacked()) { openCase(key); return; }
+  select(key, true);
+}
+function newsNow() {
+  const list = shownPri().filter((e) => !e.hid);
+  const c = cur();
+  if (list.length && !stacked() && !(c && list.includes(c))) state.sel = list[0].key;
+  return { bare: !state.q, big: fmtN(list.length), unit: state.q ? `「${state.q}」の一致` : '', facts: [], fill: true, body: [h('div', { class: 'nw' },
+    h('div', { class: 'nw-l' }, genreEl(), h('div', { class: 'chips' }, priChips()),
+      state.q ? h('p', { class: 'q-out' }, h('span', { text: `「${state.q}」で探している` }), lk('解除', clearSearch, '検索をやめて全部に戻す', 'r-a')) : null,
+      list.length ? h('ul', { class: 'rows' }, list.map((e) => row(e, { press: pressNews }))) : h('p', { class: 'empty', text: state.q ? '一致 0 件' : '0 件' })),
+    stacked() ? null : h('div', { class: 'nw-r', id: 'nw-case' }, cur() ? caseNode(cur()) : null))] };
+}
+function newsPaper() {
+  const groups = paperOf(shownPri().filter((e) => !e.hid), { outletOf });
+  const body = groups.length ? [h('div', { class: 'ppr' }, groups.map((g) => h('section', { class: 'ppr-c' },
+    h('h3', null, g.label, h('span', { class: 'n num', text: g.n })),
+    h('ol', null, g.rows.map(({ e, it, outlet }) => { const l = safeUrl(it.link); return h('li', null,
+      h('button', { type: 'button', class: 'lk ppr-t', lang: it.lang === 'en' ? 'en' : null, text: it.title, title: 'このニュースを開く', on: { click: () => openCase(e.key) } }),
+      h('span', { class: 'ppr-m' }, l ? extLink(l, {}, outlet || hostOf(l)) : outlet, h('span', { text: fmtAge(it.ts) }), h('span', { text: `${e.n}媒体` }))); })))))] : [h('p', { class: 'empty big', text: '0 件' })];
+  return { big: fmtN(groups.reduce((a, g) => a + g.rows.length, 0)), unit: '見出し', facts: groups.map((g) => [g.label, fmtN(g.n)]), body, foot: '官公庁の資料、全国紙、通信社、経済紙、公共放送の順。それぞれの中は注目の順です。' };
+}
+function newsDiff() {
+  const list = state.es.filter((e) => !e.foldedInto && vis(e) && state.newKeys.has(e.mk)).sort((a, b) => b.n - a.n || b.last - a.last);
+  const since = isNum(state.seenSince) ? Math.floor(state.seenSince / 1000) : null;
+  return { big: fmtN(list.length), unit: since ? `${fmtShort(since)} に見た時から増えたニュース` : '前回から増えたニュース', facts: [],
+    body: [list.length ? h('ul', { class: 'rows' }, list.map((e) => row(e, { press: openCase }))) : h('p', { class: 'empty big', text: state.prevSeen ? '前回から増えたニュースはありません。' : '次に開いた時から、増えたニュースをここに並べます。' })] };
+}
+function pageOff(k) {
+  const ja = SECTIONS.find((x) => x.id === k).ja;
+  return { bare: true, body: [h('p', { class: 'empty big' }, `設定で「${ja}」を隠しています。`, h('button', { type: 'button', class: 'tbb', on: { click: () => openSettings('panes') } }, '設定を開く'))] };
+}
+function renderSect() {
+  const k = state.sect;
+  if (k === 'saved') { renderTasks(); renderWatch(); renderSavedHits(); return; }
+  if (k === 'video') renderTvEvents();
+  if (!isPage(k)) return;
+  const box = $('sect');
+  if (!state.data) { box.replaceChildren(h('p', { class: 'empty big', text: '読込中' })); return; }
+  const keep = box.scrollTop;
+  let r;
+  try {
+    if (k === 'news') { const t = state.newsTab; r = t === 'paper' ? newsPaper() : t === 'diff' ? newsDiff() : t === 'now' ? newsNow() : SHEET_BODY[t](); } else if (PAGE_SHEET[k]) r = SHEET_BODY[PAGE_SHEET[k]](); else r = pageOff(k);
+  } catch (err) { r = { bare: true, body: [h('p', { class: 'empty', text: `表示に失敗しました: ${err && err.message ? err.message : String(err)}` })] }; }
+  const title = SECTIONS.find((x) => x.id === k).ja;
+  const tabs = k === 'news' ? h('div', { class: 'sc-tabs', role: 'group', 'aria-label': 'ニュースの見方' }, NEWS_TABS.map(([id, ja]) => h('a', { href: hashOf('news', id), class: 'sc-tab', 'aria-current': id === state.newsTab ? 'page' : null }, ja,
+    id === 'diff' && state.newKeys.size ? h('span', { class: 'n num', text: state.newKeys.size }) : null))) : null;
+  box.replaceChildren(h('div', { class: 'sc-in' + (r.fill ? ' fill' : '') },
+    h('header', { class: 'sc-h' }, h('h1', { text: title }), r.bare ? null : headBits(r)),
+    tabs,
+    h('div', { class: 'sc-b ds-b' + (r.fill ? ' fill' : '') }, ...(r.body || [])),
+    r.foot ? h('p', { class: 'ds-f', text: r.foot }) : null));
+  box.scrollTop = keep;
+  renderTasks();
+}
+function renderSavedHits() {
+  const list = state.es.filter((e) => e.hits.length && !e.foldedInto && vis(e)).sort((a, b) => b.n - a.n).slice(0, 40);
+  $('sv-hits').replaceChildren(...(list.length ? list.map((e) => row(e, { press: openCase })) : [h('li', { class: 'empty', text: state.watch.length ? '今は当たるニュースがありません。' : '言葉を足すと、当たるニュースがここに並びます。' })]));
+}
+function renderTvEvents() {
+  const box = $('tv-b');
+  if (!box || !box.querySelector('.tv-f')) return;
+  let b = box.querySelector('.tv-ev');
+  if (!b) { b = h('div', { class: 'tv-ev' }); box.append(b); }
+  const list = state.pri.filter((e) => !e.hid).map((e) => [e, videosOfEvent(e)]).filter(([, v]) => v.length).slice(0, 14);
+  b.hidden = !list.length;
+  b.replaceChildren(h('h3', { class: 'ds-sec' }, '映像のあるニュース', h('span', { class: 'n', text: list.length })), h('ul', null, list.map(([e, v]) => h('li', null,
+    h('button', { type: 'button', class: 'lk tv-e' + (e.key === state.sel ? ' sel' : ''), on: { click: () => { select(e.key, true); renderTvEvents(); } } }, headNode(e, 'tv-et'), h('span', { class: 'tv-en num', text: `${v.length} 本・${e.n}媒体` }))))));
+}
+/** everything the one field can reach */
+function paletteItems() {
+  const go = (id, tab) => () => setSect(id, tab);
+  const items = SECTIONS.map((x) => ({ kind: '画面', label: x.ja, first: true, run: go(x.id) }));
+  for (const [id, ja] of NEWS_TABS) if (id !== 'now') items.push({ kind: 'ニュース', label: ja, first: id === 'paper' || id === 'diff', run: go('news', id) });
+  const c = genreCounts(state.pri);
+  for (const f of [...FIELDS, OTHER_FIELD]) items.push({ kind: '分野', label: f, hint: isNum(c.get(f)) ? `${c.get(f)} 件` : '', run: () => { setGenre(f); setSect('news', 'now'); } });
+  for (const o of uniq(arr(state.data && state.data.sources).filter(isObj).map((r) => str(r.outlet) || str(r.name)).filter(Boolean))) items.push({ kind: 'メディア', label: o, run: () => { searchFor(o); setSect('news', 'now'); } });
+  const toTheme = () => { applySettings({ ...state.set, look: { ...state.set.look, theme: state.set.look.theme === 'light' ? 'dark' : 'light' } }); };
+  const ops = [['かんたん表示', () => { setSect('home'); setUi('simple'); }], ['ダークとライトを切り替える', toTheme], ['字の大きさを切り替える', () => applySettings({ ...state.set, look: { ...state.set.look, size: state.set.look.size === 'l' ? 'm' : 'l' } })],
+    ['使い方を見る', () => $('tour-btn').click()], ['キーの一覧', () => openSheet('keys')], ['設定', () => openSettings()], ['データと AI', () => openAbout()], ['表示中のニュースを保存', () => toggleSave(cur())], ['表示中のニュースを共有', () => shareEvent(cur())], ['世界の地図', () => { setSect('map'); actions.run('map_world'); }]];
+  for (const [ja, run] of ops) items.push({ kind: '操作', label: ja, first: ja === 'キーの一覧' || ja === '設定', run });
+  for (const e of state.es) if (!e.foldedInto && vis(e)) items.push({ kind: 'ニュース', label: e.heading.text, hint: `${e.n}媒体`, hay: e.hay, run: () => openCase(e.key) });
+  return items;
+}
+function paintCmdBtn() { $('cmd-t').textContent = state.q ? `「${state.q}」` : '検索'; }
 
 // ---------------------------------------------------------------- voice: the browser's recogniser -> the closed list (js/voice.js)
 let voiceKey = '';     // the visitor's own key for the AI step; memory only, this visit only
@@ -2250,7 +2436,7 @@ function startVoice() {
       onError: (e) => voiceSay([h('p', { class: 'vr bad', text: e === 'not-allowed' ? 'マイクを使えない' : '聞き取れず' })]),
       onEnd: () => { voiceStop = null; $('voice-btn').classList.remove('on'); },
     });
-  } catch { voiceStop = null; $('voice-btn').classList.remove('on'); voiceSay([h('p', { class: 'vr bad', text: '声の取得を始められない' })]); }
+  } catch { voiceStop = null; $('voice-btn').classList.remove('on'); voiceSay([h('p', { class: 'vr bad', text: '声の聞き取りを始められない' })]); }
   return true;
 }
 
@@ -2304,6 +2490,7 @@ function applySettings(next) {
   state.setSaved = saveSettings(store, state.set);
   document.documentElement.toggleAttribute('data-calm', state.set.motion.calm === 'on');
   if (window.parallaxTheme) window.parallaxTheme.apply(state.set.look.theme);
+  document.documentElement.dataset.size = state.set.look.size;
   if (state.set.motion.cases && !prev.motion.cases) state.autoNext = Date.now() + AUTO_MS;
   const panesChanged = prev.panes.off.join() !== state.set.panes.off.join();
   if (panesChanged) applyPanes();
@@ -2339,16 +2526,17 @@ function settingsInfo() {
 const api = {
   setCount, setLayout, turnPage, step, find, setView, setTopic, setField: (f) => setField(f, true), toggleLayer,
   mapCase: () => { if (state.map) state.map.reset(); return true; },
-  mapMode: () => (state.floor ? state.floor.toggle() : false),
+  mapMode: () => setSect(state.sect === 'map' ? 'home' : 'map'),
   mapWorld: () => { if (!state.map) return false; state.map.show({ ...scene(), focus: null }, true); return true; },
   mapZoom: (k) => !!(state.map && state.map.zoom(k)),
   sayQuakes: () => { const q = state.haz && state.haz.quakes; if (!q) return '地震のデータは読込中'; const top = [...q].sort((a, b) => b.mag - a.mag)[0]; return top ? `24 時間で ${q.length} 件。最大は ${top.place} の M${top.mag.toFixed(1)}` : '24 時間で 0 件'; },
   sayTyphoons: () => { const t = state.haz && state.haz.typhoons; if (!t) return '台風のデータは読込中'; return t.length ? t.map((x) => `台風 ${x.name} ${x.location} ${x.pressure} hPa 最大 ${x.windMs} m/s`).join('。') : '台風 0 件'; },
   watchAdd: (t) => setWatch(addWatch(state.watch, t)), watchRemove: (t) => setWatch(removeWatch(state.watch, t)),
   openArticle: () => { const e = cur(); const l = e && e.members.map((it) => safeUrl(it.link)).find(Boolean); if (!l) return false; openUrl(l); return true; },
-  openSheet: (k) => openSheet(k), taskAdd, openTasks,
+  openSheet: (k) => openSheet(k), taskAdd, openTasks, share: () => shareEvent(cur()), openPalette: () => state.palette.open(),
+  openSect: (x) => { const t = SECTIONS.find((o) => o.id === x || o.ja === x); return t ? setSect(t.id) : false; },
   openAbout, openSettings: (k) => openSettings(k),
-  close: () => { if (setOpen()) return state.panel.close(); if (state.sheet) return closeSheet(); if (!$('task-pop').hidden) { $('task-pop').hidden = true; $('task-btn').setAttribute('aria-expanded', 'false'); return true; } if (!$('voice-pop').hidden) { $('voice-pop').hidden = true; return true; } if (state.about) return closeAbout(); if (!$('watch-pop').hidden) { $('watch-pop').hidden = true; $('watch-btn').setAttribute('aria-expanded', 'false'); return true; } return false; },
+  close: () => { if (state.palette && state.palette.close()) return true; if (setOpen()) return state.panel.close(); if (state.sheet) return closeSheet(); if (!$('voice-pop').hidden) { $('voice-pop').hidden = true; return true; } if (state.about) return closeAbout(); return false; },
   autoStop: () => { state.stopped = true; syncAutoLine(); return true; }, autoStart: () => { state.stopped = false; state.autoNext = Date.now() + AUTO_MS; syncAutoLine(); return true; },
 };
 export const actions = createActions(api);
@@ -2363,6 +2551,7 @@ async function main() {
   state.own = loadOwnAI(store); state.ownAsk = new Map();
   document.documentElement.toggleAttribute('data-calm', state.set.motion.calm === 'on');
   if (window.parallaxTheme) window.parallaxTheme.apply(state.set.look.theme);
+  document.documentElement.dataset.size = state.set.look.size;
   if (!hashView && state.set.news.view !== 'auto') state.view = state.set.news.view;
   state.panel = createSettingsPanel({ root: $('set-layer'), get: () => state.set, set: (n) => applySettings(n), info: settingsInfo,
     watch: { get: () => state.watch, set: (l) => setWatch(l) },
@@ -2390,24 +2579,36 @@ async function main() {
 
   $('v-rules').addEventListener('click', () => actions.run('view_rules'));
   $('v-ai').addEventListener('click', () => actions.run('view_ai'));
-  let qt = 0;
-  $('q').addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(() => { state.q = $('q').value.trim(); renderPri(); renderAnom(); renderFields(); }, 120); });
-  $('watch-btn').addEventListener('click', () => { const p = $('watch-pop'); p.hidden = !p.hidden; $('watch-btn').setAttribute('aria-expanded', String(!p.hidden)); if (!p.hidden) { renderWatch(); $('watch-in').focus(); } });
+  state.palette = createPalette({ root: $('cmd'), input: $('q'), list: $('cmd-l'), items: paletteItems, onClose: () => { $('q').value = state.q; },
+    free: (q) => ({ kind: '検索', label: `「${q}」でニュースを絞る`, run: () => { searchFor(q); setSect('news', 'now'); paintCmdBtn(); } }) });
+  $('cmd-btn').addEventListener('click', () => { if (state.q) { clearSearch(); paintCmdBtn(); } state.palette.open(); });
+  if (/Mac|iPhone|iPad/.test(navigator.platform || '')) $('cmd-kbd').textContent = '⌘K';
+  state.sect = 'home'; state.newsTab = 'now';
+  const h0 = parseHash(location.hash);
+  if (h0) { state.sect = h0.sect; if (h0.tab) state.newsTab = h0.tab; }
+  document.documentElement.dataset.sect = state.sect;
+  document.documentElement.dataset.page = isPage(state.sect) ? '1' : '0';
+  $('sect').hidden = !isPage(state.sect) || state.sect === 'saved';
+  $('sect-saved').hidden = state.sect !== 'saved';
+  $('sects').addEventListener('click', (ev) => { if (ev.target.closest('a[data-s]')) moreOpen(false); });
+  $('sects-more').addEventListener('click', () => moreOpen(!$('sects').dataset.more));
+  $('more-q').addEventListener('click', () => { moreOpen(false); state.palette.open(); });
+  $('more-set').addEventListener('click', () => { moreOpen(false); actions.run('settings'); });
+  document.addEventListener('click', (ev) => { if ($('sects').dataset.more && !ev.target.closest('#sects')) moreOpen(false); });
   $('watch-form').addEventListener('submit', (ev) => { ev.preventDefault(); const v = $('watch-in').value; $('watch-in').value = ''; if (v.trim()) setWatch(addWatch(state.watch, v)); });
   $('about-btn').addEventListener('click', () => actions.run('about'));
   $('set-btn').addEventListener('click', () => actions.run('settings'));
   // the appearance in the bar: the same value as 外観 in the settings
   const themeLabel = () => $('theme-btn').setAttribute('aria-label', `外観 ${state.set.look.theme === 'light' ? 'ライト' : 'ダーク'}`);
-  $('theme-btn').addEventListener('click', () => { applySettings({ ...state.set, look: { theme: state.set.look.theme === 'light' ? 'dark' : 'light' } }); themeLabel(); });
+  $('theme-btn').addEventListener('click', () => { applySettings({ ...state.set, look: { ...state.set.look, theme: state.set.look.theme === 'light' ? 'dark' : 'light' } }); themeLabel(); });
   themeLabel();
-  $('entry-btn').addEventListener('click', () => setUi(state.ui === 'simple' ? 'full' : 'simple'));
+  $('entry-btn').addEventListener('click', () => { const was = state.sect === 'home' ? state.ui : 'full'; setSect('home'); setUi(was === 'simple' ? 'full' : 'simple'); });
   if (new URLSearchParams(location.search).get('m') === 'simple') setUi('simple');
   // the first visit: a short tour over the simple view, which stays open after it (js/tour.js); 使い方 in the bar shows it again
   state.tour = createTour({ doc: document, win: window, storage: store, onEnd: () => { setUi('simple'); $('entry').scrollTop = 0; window.scrollTo(0, 0); } });
-  $('tour-btn').addEventListener('click', () => { setUi('simple'); state.tour.open(); });
+  $('tour-btn').addEventListener('click', () => { setSect('home'); setUi('simple'); state.tour.open(); });
   state.sceneMode = 'auto';
   getJson(dataDir() + 'scenes.json').then((c) => { state.scenes = isObj(c) && c.schema === 'parallax-scenes/1' ? c : null; sceneTick(); });
-  $('task-btn').addEventListener('click', () => { const p = $('task-pop'); if (p.hidden) openTasks(); else { p.hidden = true; $('task-btn').setAttribute('aria-expanded', 'false'); } });
   if (speechSupported()) { $('voice-btn').hidden = false; $('voice-btn').addEventListener('click', startVoice); }
   $('sheet').addEventListener('click', (ev) => { if (ev.target === $('sheet')) closeSheet(); });
   // every pane head opens its sheet toward the viewer
@@ -2424,7 +2625,12 @@ async function main() {
   goes('count-n', () => openSheet('src', $('p-count')), '媒体の一覧を開く');
   goes('hours-b', () => openSheet('hours', $('p-hours')), '時間ごとの見出しを開く');
   $('about-wrap').addEventListener('click', (ev) => { if (ev.target === $('about-wrap')) closeAbout(); });
-  window.addEventListener('hashchange', () => { const x = location.hash.replace('#', ''); if (state.ix && (x === 'ai' || x === 'rules') && x !== state.view) setView(x); });
+  window.addEventListener('hashchange', () => {
+    const x = location.hash.replace('#', '');
+    if (state.ix && (x === 'ai' || x === 'rules') && x !== state.view) { setView(x); return; }
+    const p = parseHash(location.hash);
+    if (p && (p.sect !== state.sect || (p.sect === 'news' && (p.tab || 'now') !== state.newsTab))) setSect(p.sect, p.tab || 'now', true);
+  });
   for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) window.addEventListener(ev, pause, { capture: true, passive: true });
   let pmAt = 0;   // moving the pointer alone also holds the sending (at most one hold per 400 ms)
   window.addEventListener('pointermove', (ev) => { if (ev.pointerType === 'touch') return; const n = Date.now(); if (n - pmAt > 400) { pmAt = n; pause(); } }, { capture: true, passive: true });
@@ -2432,13 +2638,17 @@ async function main() {
     const t = ev.target;
     // the settings window is modal: it takes every key, and Esc closes it even from a field
     if (setOpen()) { if (ev.key === 'Escape') { ev.preventDefault(); state.panel.close(); } return; }
+    if ((ev.metaKey || ev.ctrlKey) && !ev.altKey && (ev.key === 'k' || ev.key === 'K')) { ev.preventDefault(); state.palette.toggle(); return; }
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) { if (ev.key === 'Escape') t.blur(); return; }
+    if (ev.altKey && !ev.metaKey && !ev.ctrlKey && /^Digit[1-8]$/.test(ev.code)) { ev.preventDefault(); setSect(SECTIONS[Number(ev.code.slice(5)) - 1].id); return; }
     if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
     const k = ev.key;
+    if (k === '?') { ev.preventDefault(); openSheet('keys'); return; }
+    if (k === 'c') { ev.preventDefault(); actions.run('share'); return; }
     if (k === ',') { ev.preventDefault(); actions.run('settings'); return; }
     const map = { ArrowDown: ['case_next'], ArrowUp: ['case_prev'], j: ['case_next'], k: ['case_prev'], Escape: ['close'], a: ['view_ai'], r: ['view_rules'], m: ['map_mode'], w: ['map_world'], o: ['open_article'], i: ['about'], t: ['task_add'], '+': ['map_in'], '-': ['map_out'], v: ['__voice'], n: ['view_count', '次'], l: ['view_layout', '次'], '[': ['view_page', '-1'], ']': ['view_page', '1'] };
     if (map[k] && map[k][0] === '__voice') { if (!$('voice-btn').hidden) startVoice(); return; }
-    if (k === '/') { ev.preventDefault(); $('q').focus(); return; }
+    if (k === '/') { ev.preventDefault(); state.palette.open(); return; }
     const gi = Number(k);
     if (gi >= 1 && gi <= TOPICS.length + 1) { actions.run('topic', gi === 1 ? 'all' : TOPICS[gi - 2].id); return; }
     if (map[k]) { ev.preventDefault(); actions.run(...map[k]); }
@@ -2449,7 +2659,8 @@ async function main() {
     local: (x, y) => (state.floor ? state.floor.local(x, y) : null),
     onPaint: (info) => { if (state.floor) state.floor.paint(info); if (state.mapUi) state.mapUi.paint(info); },
   });
-  state.floor = createFloor({ map: state.map, board: $('board'), onMode: () => { applyPanes(); state.map.resize(); renderMap(true); renderMapNews(); applyView(); } });
+  state.floor = createFloor({ map: state.map, board: $('board'), onMode: (m) => { applyPanes(); state.map.resize(); renderMap(true); renderMapNews(); applyView(); if (m === 'map' && state.sect !== 'map') setSect('map'); } });
+  $('modebar').addEventListener('click', (ev) => { const b = ev.target.closest('[data-m]'); if (b && b.dataset.m === 'case' && state.sect === 'map') setSect('home'); });
   state.vw = loadView(store);
   state.wallPage = 0;
   placeBar();
@@ -2477,9 +2688,9 @@ async function main() {
   // the board answers a touch: a press and a switch make a quiet sound by default, a hover only when chosen (js/feel.js)
   state.feel = createFeel({ press: () => state.set.motion.sound !== false, hover: () => state.set.motion.hoverSound === true });
   // a list that does not fit scrolls itself (the event list follows the event in focus, so its own move takes over there)
-  startAutoScroll('#src-b, #fields-b, #pri-b, #anom-b, #haz-b, #mkt-b, #pol-b', { held: () => !!(state.about || state.sheet) || setOpen() || !state.set.motion.scroll || !$('task-pop').hidden || !$('watch-pop').hidden });
+  startAutoScroll('#src-b, #fields-b, #pri-b, #anom-b, #haz-b, #mkt-b, #pol-b', { held: () => !!(state.about || state.sheet) || setOpen() || !state.set.motion.scroll || state.sect !== 'home' });
   let rt = 0;
-  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (state.map) state.map.resize(); applyView(); }, 160); });
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (state.sect === 'map' && state.floor && state.floor.mode() === 'case') state.floor.setMode('map'); if (state.map) state.map.resize(); applyView(); if (state.sect === 'news') renderSect(); }, 160); });
   window.addEventListener('parallax-theme', () => { if (state.map) state.map.resize(); });   // the map's ground is drawn in the page's tones
   initLandscape();   // phones held sideways: the list on the left, one pane on the right
   initDial();        // phones: two rings under the thumb to step through the topics and the events
@@ -2502,17 +2713,20 @@ async function main() {
   state.board = isObj(board) && board.schema === 'parallax-board/1' ? board : null;
   if (!(isObj(state.labels) && isObj(state.labels.flags))) state.labels = null;
   if (!hashView) state.view = state.set.news.view === 'auto' ? defaultView(data) : state.set.news.view;
-  state.prevSeen = loadSeen();
-  if (state.prevSeen && state.prevSeen.gen !== data.generated_at) markNew(state.prevSeen.keys);
-  saveSeen(data);
+  seeData(data);
   renderAll();
+  applySect(null);
   state.tickQ = state.pri.filter((e) => state.newKeys.has(e.mk));
   renderTicker(false);
   const first = firstShown();
   if (first) { select(first.key, false); followTv(first); }
-  const askSid = new URLSearchParams(location.search).get('sid');   // a link to a story; a folded one opens its event
-  if (askSid) find(askSid);
-  if (wantTour(store, location.search)) { setUi('simple'); state.tour.open(); }
+  // a link to one event: it opens over the home screen, whichever view holds it
+  const qs = new URLSearchParams(location.search), askSid = qs.get('sid'), askT = qs.get('t');
+  if (askSid || askT) {
+    let hit = (askSid && find(askSid)) || (askT && find(askT));
+    if (!hit && askSid && state.view === 'ai') { setView('rules'); hit = find(askSid); }
+    if (hit) openSheet('case');
+  } else if (state.sect === 'home' && wantTour(store, location.search)) { setUi('simple'); state.tour.open(); }
   state.autoNext = Date.now() + AUTO_MS;
   loadHaz(); loadSide(); loadEval(); loadDefaultModel();
   setInterval(tick, 30000);

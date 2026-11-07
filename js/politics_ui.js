@@ -113,7 +113,7 @@ export function createPolitics(d) {
   function paneDiet(p) {
     const out = [];
     const lk = (r) => link(r.link, str(r.title), 'pt');
-    const rows = (title, list, fmt, n) => { const r = arr(list).filter(isObj); out.push(head(title, r.length)); out.push(r.length ? h('ul', { class: 'pol' }, r.slice(0, n || 4).map(fmt)) : empty(p.failed && p.failed[title] ? '取得できず' : '0 件')); };
+    const rows = (title, list, fmt, n) => { const r = arr(list).filter(isObj); out.push(head(title, r.length)); out.push(r.length ? h('ul', { class: 'pol' }, r.slice(0, n || 4).map(fmt)) : empty(p.failed && p.failed[title] ? '読めず' : '0 件')); };
     const counts = isObj(p.bills) && isObj(p.bills.counts) ? p.bills.counts : {};
     const top = (o) => Object.entries(isObj(o) ? o : {}).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} ${v}`).join(' · ');
     out.push(h('h4', { text: '議案' }), h('p', { class: 'polc' }, h('b', { text: '衆 ' }), top(counts.shugiin) || '—'), h('p', { class: 'polc' }, h('b', { text: '参 ' }), top(counts.sangiin) || '—'));
@@ -125,7 +125,7 @@ export function createPolitics(d) {
     const parties = arr(p.parties).filter(isObj);
     out.push(head('各党の発信', parties.length), h('ul', { class: 'pol' }, parties.map((x) => { const r = arr(x.items).filter(isObj).sort((a, b) => (b.ts || 0) - (a.ts || 0))[0] || {}; return h('li', null, h('span', { class: 'po', text: str(x.outlet) }), lk(r), h('span', { class: 'pa', text: fmtAge(r.ts) })); })));
     const k = isObj(p.kokkai) ? arr(p.kokkai.meetings).filter(isObj) : null;
-    out.push(h('h4', null, '会議録', h('span', { class: 'n', text: k ? ` ${k.length}` : ' —' })), k && k.length ? h('ul', { class: 'pol' }, k.slice(0, 4).map((m) => h('li', null, h('span', { class: 'po', text: str(m.date).slice(5) }), link(m.url, `${str(m.house)} ${str(m.meeting)}`, 'pt'), h('span', { class: 'pa', text: str(m.issue) })))) : empty(k ? '0 件' : '取得できず'));
+    out.push(h('h4', null, '会議録', h('span', { class: 'n', text: k ? ` ${k.length}` : ' —' })), k && k.length ? h('ul', { class: 'pol' }, k.slice(0, 4).map((m) => h('li', null, h('span', { class: 'po', text: str(m.date).slice(5) }), link(m.url, `${str(m.house)} ${str(m.meeting)}`, 'pt'), h('span', { class: 'pa', text: str(m.issue) })))) : empty(k ? '0 件' : '読めず'));
     return out;
   }
   /** the elections as a row of events on a time axis: one mark for each, the name in its tooltip; only when two or more have a date */
@@ -143,7 +143,7 @@ export function createPolitics(d) {
     const v = electionsView(p);
     const out = [head('選挙', v.missing ? '—' : v.recent.length + v.upcoming.length)];
     if (v.missing) return [...out, empty('選挙のデータが無い')];
-    if (!v.ok && !v.recent.length && !v.upcoming.length) return [...out, empty('取得できず'), elecSrc(v)];
+    if (!v.ok && !v.recent.length && !v.upcoming.length) return [...out, empty('読めず'), elecSrc(v)];
     const li = (r) => h('li', { title: [KIND_JA[r.kind], str(r.winner_ja) || str(r.winner)].filter(Boolean).join('・') }, h('span', { class: 'po', text: md(r.date) }), link(r.url, r.name, 'pt'), h('span', { class: 'pa', text: kindOf(r) }));
     const rail = eventRail([...v.recent, ...v.upcoming]);
     if (rail) out.push(rail);
@@ -157,7 +157,7 @@ export function createPolitics(d) {
     const v = pollsView(p);
     const out = [head('内閣支持', v.missing ? '—' : `${v.series.length}社`)];
     if (v.missing) return [...out, empty('支持率のデータが無い')];
-    if (!v.ok) return [...out, empty('取得できず')];
+    if (!v.ok) return [...out, empty('読めず')];
     const li = (x) => h('li', null, link(x.url, x.name, 'pn'), h('span', { class: 'pd', text: md(x.end) }), h('b', { class: 'pvv', text: pct(x.approve) }), h('b', { class: 'pvv', text: pct(x.disapprove) }));
     const top = h('li', { class: 'pvh', 'aria-hidden': 'true' }, h('span', { text: '各社の最新' }), h('span', { class: 'pd', text: '最終日' }), h('span', { class: 'pvv', text: '支持' }), h('span', { class: 'pvv', text: '不支持' }));
     return [...out, h('div', { class: 'pch' }, chart(v, 300, 96, false)), legend(), h('ul', { class: 'pv' }, top, v.latest.slice(0, 4).map(li)), pollSrc(v)];
@@ -169,7 +169,7 @@ export function createPolitics(d) {
     if (!v.featured.length) return [...out, empty(v.n ? '—' : '0 件')];
     const li = ({ ja, it }) => h('li', { title: [str(it.source), str(it.who), it.theme ? `検索語 ${it.theme}` : ''].filter(Boolean).join('\n') },
       h('span', { class: 'po', text: ja }), link(it.url, [str(it.title), str(it.who)].filter(Boolean).join('　'), 'pt'), h('span', { class: 'pa', text: md(it.date) }));
-    return [...out, h('ul', { class: 'pol' }, v.featured.map(li)), note('種類ごとに1件。種類は源の性質の札で、内容の評価ではない')];
+    return [...out, h('ul', { class: 'pol' }, v.featured.map(li)), note('種類ごとに1件。種類は媒体の性質のラベルで、内容の評価ではない')];
   }
   function pane(p, c, scene) {
     if (!p) return [empty('政治のデータを読めない')];
@@ -189,13 +189,13 @@ export function createPolitics(d) {
     const out = [sec('選挙', v.recent.length + v.upcoming.length), note(v.covers || '都道府県知事選挙と指定都市市長選挙のみ。国政選挙は含まない')];
     out.push(h('p', { class: 'pk', text: '今後の投票日' }), v.upcoming.length ? table(v.upcoming) : note(`${v.name}の頁に今後の投票日の予定表は無い。一覧に今日以降の日付がある時だけここに出る`));
     out.push(h('p', { class: 'pk', text: `直近の結果（${v.days || 60}日）` }), v.recent.length ? table(v.recent) : empty(nothingJa(v) + (scene === 'election' ? '。場面は見出しの語で判定（海外の選挙を含む）' : '')));
-    if (!v.ok) out.push(empty('一覧の一部を取得できず'));
+    if (!v.ok) out.push(empty('一覧の一部を読めず'));
     return [...out, elecSrc(v)];
   }
   function sheetPolls(p) {
     const v = pollsView(p);
     if (v.missing) return [sec('内閣支持', '—'), empty('支持率のデータが無い')];
-    if (!v.ok) return [sec('内閣支持', '—'), empty('取得できず')];
+    if (!v.ok) return [sec('内閣支持', '—'), empty('読めず')];
     return [sec('内閣支持', `${v.series.length}社`), chart(v, 560, 210, true), legend(),
       tbl([['会社'], ['調査日', 'opt'], ['支持', 'r'], ['不支持', 'r'], ['回答', 'r opt']], v.latest.map((x) => h('tr', null, td(link(x.url, x.name), 'tt'),
         td(x.start && x.start !== x.end ? `${md(x.start)}–${md(x.end)}` : md(x.end), 'dim opt'), td(pct(x.approve), 'r'), td(pct(x.disapprove), 'r'), td(isNum(x.sample) ? fmtN(x.sample) : '—', 'r dim opt')))),
@@ -209,7 +209,7 @@ export function createPolitics(d) {
       td([link(it.url, str(it.title)), who(it) ? h('span', { class: 'psub2', text: who(it) }) : null], 'tt'), td(md(it.date), 'r dim'))))];
     const cols = v.groups.map((g) => h('div', null, sec(g.ja, g.items.length), tbl([['出どころ'], ['件名'], ['日付', 'r']], g.items.slice(0, 10).map((it) => h('tr', null, td(str(it.source), 'dim'),
       td([link(it.url, str(it.title)), who(it) ? h('span', { class: 'psub2', text: who(it) }) : null], 'tt'), td(md(it.date), 'r dim'))))));
-    return [h('div', null, ...out), h('div', { class: 'ds-cols' }, ...cols), note(v.note), v.credit.length ? note(`検索 ${v.credit.join(' · ')}`) : null, v.failed.length ? note(`取得できず ${v.failed.join(' · ')}`) : null];
+    return [h('div', null, ...out), h('div', { class: 'ds-cols' }, ...cols), note(v.note), v.credit.length ? note(`検索 ${v.credit.join(' · ')}`) : null, v.failed.length ? note(`読めず ${v.failed.join(' · ')}`) : null];
   }
   function sheet(p, c, scene) {
     if (!p) return { big: '—', unit: '政治のデータを読めない', facts: [], body: [] };
@@ -228,7 +228,7 @@ export function createPolitics(d) {
     const diet = h('div', { class: 'ds-cols' }, h('div', null, left), h('div', null, right));
     const front = h('div', { class: 'ds-cols' }, h('div', null, sheetElections(p, scene)), h('div', null, sheetPolls(p)));
     const facts = [['会期', st ? str(st.text) || '—' : '—'], ['選挙', ev.missing ? '—' : fmtN(ev.recent.length + ev.upcoming.length)], ['内閣支持', pv.ok ? `${pv.series.length}社` : '—'],
-      ['官邸', fmtN(arr(p.office).length)], ['各党', fmtN(parties.length)], ['会議', fmtN(k.length)], ['取得', fmtShort(p.generated_at)]];
+      ['官邸', fmtN(arr(p.office).length)], ['各党', fmtN(parties.length)], ['会議', fmtN(k.length)], ['更新', fmtShort(p.generated_at)]];
     return {
       big: el && !ev.missing ? fmtN(ev.recent.length + ev.upcoming.length) : fmtN(pending),
       unit: el && !ev.missing ? `知事・指定都市市長の選挙（直近${ev.days || 60}日・${ev.name}）` : '審議中の議案（衆・参）',

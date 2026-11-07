@@ -86,7 +86,7 @@ export function firstLine(s, clock) {
   const part = (k, it) => (it && isNum(it.ts) ? `${k} ${outletOf(it)} ${clock(it.ts)}` : '');
   const gap = a && b && isNum(a.ts) && isNum(b.ts) ? `（差 ${Math.round(Math.abs(b.ts - a.ts) / 60)} 分）` : '';
   const ps = [part('国内', a), part('海外', b)].filter(Boolean);
-  return ps.length ? `初報 ${ps.join('／')}${gap}` : '';
+  return ps.length ? `最初に報じた ${ps.join('／')}${gap}` : '';
 }
 
 export function lineIcon(k, cls = '') {
@@ -118,7 +118,7 @@ export function renderEntry(root, o) {
   const titleEl = (t, cls, tag = 'span') => h(tag, { class: cls }, t.ai ? h('span', { class: 'aimk', text: 'AI' }) : null, t.ai ? t.text : `「${t.text}」`,
     !t.ai && t.outlet ? h('span', { class: 'en-o', text: `（${t.outlet}）` }) : null);
   const counts = (s, e) => h('span', { class: 'en-c' }, SIDES.map(([k, , short]) => h('span', { class: 'en-k', data: { side: k } }, lineIcon(k), short, h('b', { text: s[k].length }))),
-    isNum(e.first) && isNum(o.gen) ? h('span', { class: 'en-t', text: `初報から ${fmt.span(o.gen - e.first)}` }) : null);
+    isNum(e.first) && isNum(o.gen) ? h('span', { class: 'en-t', text: `最初の報道から ${fmt.span(o.gen - e.first)}` }) : null);
 
   const head = h('header', { class: 'en-head' },
     h('div', { class: 'en-ttl' }, h('h2', null, '今日の出来事', h('span', { class: 'n', text: events.length })), h('p', { class: 'en-lead', text: LEAD })),

@@ -152,7 +152,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
       ];
     },
     look(s) {
-      return [group('', [row('外観', null, seg('look-theme', '外観', s.look.theme, [['dark', 'ダーク'], ['light', 'ライト']], (n, v) => { n.look.theme = v; }))])];
+      return [group('', [row('外観', null, seg('look-theme', '外観', s.look.theme, [['dark', 'ダーク'], ['light', 'ライト']], (n, v) => { n.look.theme = v; })), row('字の大きさ', null, seg('look-size', '字の大きさ', s.look.size, [['m', '標準'], ['l', '大きい']], (n, v) => { n.look.size = v; }))])];
     },
     panes(s) {
       const off = new Set(s.panes.off);
@@ -200,9 +200,9 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
       const armed = Date.now() < resetArm;
       return [
         group('', [
-          row('書き出す', '設定と追う語を一つの JSON に（鍵は入れない）', h('button', { type: 'button', class: 'tbb', data: { f: 'd-exp' }, on: { click: onExport } }, 'JSON を書き出す')),
+          row('書き出す', '設定とフォローする言葉を一つの JSON に（鍵は入れない）', h('button', { type: 'button', class: 'tbb', data: { f: 'd-exp' }, on: { click: onExport } }, 'JSON を書き出す')),
           row('読み込む', '書き出した JSON から戻す', h('button', { type: 'button', class: 'tbb', data: { f: 'd-imp' }, on: { click: () => file.click() } }, 'JSON を読み込む')),
-          row('既定に戻す', '追う語と自分の AI は残す', h('button', { type: 'button', class: 'tbb' + (armed ? ' warn' : ''), data: { f: 'd-reset' }, on: { click: onReset } }, armed ? 'もう一度押すと戻す' : '既定に戻す')),
+          row('既定に戻す', 'フォローする言葉と自分の AI は残す', h('button', { type: 'button', class: 'tbb' + (armed ? ' warn' : ''), data: { f: 'd-reset' }, on: { click: onReset } }, armed ? 'もう一度押すと戻す' : '既定に戻す')),
         ]),
         msg ? h('p', { class: 'set-msg' + (msg.err ? ' err' : ''), role: 'status', text: msg.text }) : null,
       ];
@@ -282,7 +282,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
     if (!r.ok) { msg = { err: true, text: r.error === 'big' ? '読み込めない（大きすぎる・空）' : r.error === 'json' ? '読み込めない（JSON ではない）' : '読み込めない（この盤の設定ではない）' }; render(); return; }
     set(r.settings);
     if (r.watch) watch.set(r.watch);
-    msg = { text: `読み込んだ${r.watch ? `（追う語 ${r.watch.length}）` : ''}` }; render();
+    msg = { text: `読み込んだ${r.watch ? `（フォローする言葉 ${r.watch.length}）` : ''}` }; render();
   }
   function onReset() {
     if (Date.now() >= resetArm) { resetArm = Date.now() + 4000; render(); setTimeout(() => { if (open && sec === 'data') render(); }, 4100); return; }
