@@ -1241,10 +1241,13 @@ function viewEl() {
   return state.viewEl;
 }
 const phoneBar = window.matchMedia('(max-width: 760px)');
-/** a phone: the search, the buttons, the range and the choice of count and layout move behind one button (表示); the bar keeps the name and one line of state */
+/** a tablet held upright (761-1100px wide, not the short landscape of a phone): the same fold as a phone, but the tabs stay in the bar */
+const foldBar = window.matchMedia('(max-width: 760px), (min-width: 761px) and (max-width: 1100px) and (min-height: 501px)');
+/** folded (phone or tablet): the search, the buttons, the range and the choice of count and layout move behind one button (表示); the bar keeps the name, the switch and one line of state.
+ *  A phone also moves the AI line behind the button; a tablet leaves it under the bar. */
 function placeBar() {
   const tb = $('tb'), menu = $('tb-menu'), al = $('ai-line'), r = document.querySelector('.tb-r');
-  if (phoneBar.matches) menu.append(al, r);
+  if (foldBar.matches) { if (phoneBar.matches) menu.append(al, r); else { menu.append(r); tb.after(al); } }
   else { tb.insertBefore(r, menu); tb.after(al); menu.hidden = true; $('view-btn').setAttribute('aria-expanded', 'false'); }
   if (state.data) renderAiLine();
 }
@@ -2975,6 +2978,7 @@ async function main() {
   state.wallPage = 0;
   placeBar();
   phoneBar.addEventListener('change', placeBar);
+  foldBar.addEventListener('change', placeBar);
   $('view-btn').addEventListener('click', () => { const m = $('tb-menu'); m.hidden = !m.hidden; $('view-btn').setAttribute('aria-expanded', String(!m.hidden)); });
   document.addEventListener('click', (ev) => { const m = $('tb-menu'); if (!m.hidden && !ev.target.closest('#tb-menu, #view-btn, .pop')) { m.hidden = true; $('view-btn').setAttribute('aria-expanded', 'false'); } });
   applyView();

@@ -2150,7 +2150,7 @@ a.wt-o:hover { color: var(--cyan); }
   .tb { position: relative; flex-wrap: wrap; row-gap: 2px; padding: 5px 10px 4px; }
   #view-btn { display: inline-block; order: 2; margin-left: auto; }
   #view-btn { min-height: 44px; min-width: 44px; }   /* the one way to the search, the buttons and the look: a thumb-sized target */
-  .tabs button { min-height: 32px; }
+  .tabs button { min-height: 44px; }   /* the tabs of a field: a thumb-sized target (v2c) */
   .tb > .tb-r { display: none; }   /* before js/app.js placeBar moves it into the menu, the row of buttons must not be drawn (it ran off the right edge) */
   .tb .meters { order: 3; flex: 1 1 100%; flex-wrap: nowrap; align-items: center; gap: 10px; overflow-x: auto; scrollbar-width: none; font-size: var(--fs-2); }
   .tb .meters .meter { flex: none; }
@@ -2761,7 +2761,7 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
   --hs-fill: linear-gradient(148deg, rgba(255, 255, 255, .14) 0%, rgba(255, 255, 255, .035) 42%, rgba(255, 255, 255, .075) 100%), rgba(14, 18, 30, .62); --hs-edge: rgba(255, 255, 255, .16); --hs-hi: inset 0 1px 0 rgba(255, 255, 255, .2); --hs-shadow: 0 28px 64px rgba(0, 0, 0, .4);
   --hs-blur: blur(26px) saturate(165%); --hp-blur: blur(20px) saturate(160%);
   --hc-fill: rgba(255, 255, 255, .07); --hc-edge: rgba(255, 255, 255, .13); --hc-hi: inset 0 1px 0 rgba(255, 255, 255, .14); --hc-hover: rgba(255, 255, 255, .12); --hc-on: rgba(255, 255, 255, .17);
-  --h-ink3: #bcbcc4; --hk: rgba(255, 255, 255, .1);
+  --h-ink3: #cfcfd6; --hk: rgba(255, 255, 255, .1);
 }
 :root[data-theme="light"] {
   --hg-ground: #e7edf8;
@@ -2968,3 +2968,46 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
   :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-detail { background: var(--pane); }
 }
 @media (prefers-reduced-motion: reduce) { .home-detail, .home-open, .rows .r { transition: none !important; } .sk, .pb::before, .pb::after { animation: none !important; } }
+
+
+/* ---- v2c (2026-11-08): the tablet's bar is two lines, the targets are thumb-sized, the small letters hold on the glass ---- */
+
+/* a tablet held upright (761-1100px): the search and the buttons fold behind one button as on a phone (js/app.js placeBar); the bar keeps the name, the switch, the count of outlets and the tabs */
+@media (min-width: 761px) and (max-width: 1100px) and (min-height: 501px) {
+  .tb { flex-wrap: wrap; align-items: center; gap: 0 10px; padding: 4px 12px 0; }
+  #view-btn { display: inline-block; order: 3; margin-left: 0; min-height: 44px; min-width: 44px; }
+  .tb > .tb-r { display: none; }
+  .tb .meters { order: 2; flex: 1 1 0; width: auto; margin-left: auto; justify-content: flex-end; flex-wrap: nowrap; }
+  .tb .sects { order: 5; flex: 1 1 100%; height: 40px; margin: 0 -8px; }
+  .tb .sects a[aria-current="page"]::after { bottom: 0; }
+  .tbm:not([hidden]) { display: flex; flex-direction: column; gap: 8px; position: absolute; left: 0; right: 0; top: 100%; z-index: 40; max-height: 80vh; overflow: auto; padding: 8px 12px 12px; background: var(--tb); border-bottom: 1px solid var(--edge); box-shadow: var(--shadow-pop); }
+  .tbm .tb-r { display: flex; flex-wrap: wrap; overflow: visible; order: 0; width: 100%; gap: 6px; }
+  .tbm .tb-r .search { flex: 1 1 100%; width: auto; }
+  .tbm .vwb { margin-left: 0; }
+}
+
+/* a phone or an upright tablet: the field chips are one row (as on a phone), and the switch AI / auto and every chip are 44px high; what is drawn stays small */
+@media (max-width: 760px), (min-width: 761px) and (max-width: 1100px) and (min-height: 501px) {
+  .tb > .seg { position: relative; padding: 0; border: 0; background: none; }
+  .tb > .seg::before { content: ""; position: absolute; inset: 7px 0; border-radius: 7px; border: 1px solid var(--line); background: var(--seg-bg); pointer-events: none; }
+  .tb > .seg button { position: relative; z-index: 1; min-width: 44px; min-height: 44px; padding: 0 12px; background: none; box-shadow: none; }
+  .tb > .seg button::before { content: ""; position: absolute; inset: 9px 2px; z-index: -1; border-radius: 5px; }
+  .tb > .seg button[aria-pressed="true"] { background: none; box-shadow: none; }
+  .tb > .seg button[aria-pressed="true"]::before { background: var(--cyan-a); box-shadow: inset 0 0 0 .5px var(--cyan-l); }
+  .genre-strip .genres { flex-wrap: nowrap; gap: 4px; padding: 0 8px; overflow-x: auto; scrollbar-width: none; }
+  .genre-strip .gn { display: inline-flex; flex: none; flex-direction: row; align-items: center; gap: 4px; width: auto; min-height: 44px; padding: 0 5px; }
+  .genre-strip .gn .gi { width: 22px; height: 22px; }
+  .genre-strip .gn svg { width: 13px; height: 13px; }
+  .genre-strip .gn .gl { font-size: var(--fs-2); }
+  .tabs button { min-height: 44px; }
+}
+
+/* the small letters on the glass. The words stay; what is behind them gets quieter: a dark tag, a darker head band, a darker ink on the light ground */
+:root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-place .banner { background: rgba(6, 8, 20, .5); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16); }
+:root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-big .u { display: inline-block; margin: 6px -6px 0 0; padding: 1px 6px 2px; border-radius: 999px; background: rgba(6, 8, 20, .42); }
+:root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:not(#p-case):not(#p-pri) .ph { border-radius: 24px 24px 0 0; background: linear-gradient(rgba(6, 8, 20, .42), rgba(6, 8, 20, 0)); }
+:root[data-theme="light"][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-place .banner { background: rgba(255, 255, 255, .78); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); }
+:root[data-theme="light"][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-rn { color: #1d1d1f; }
+:root[data-theme="light"][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-rank .ph .pc { color: #00587a; }
+:root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-lead { color: #dcdce2; }
+:root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-rn { color: var(--ink); }
