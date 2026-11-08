@@ -76,6 +76,8 @@ jobs:
         continue-on-error: true
         run: python -m parallax.extras
 
+      # Also CONTRACT 21: s/<sid>.html for each event, feed.xml / feed-oneside.xml / feed-<field>.xml, and data/archive/ (seven days). The archive of the
+      # last deploy is read back from the public address (not from git, not from the cache); when it cannot be read the site carries today only. Counts only in the log.
       - name: Assemble the site (page + data)
         run: python tools/assemble_site.py --out _site
 

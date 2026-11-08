@@ -29,6 +29,7 @@ parallax/og.py                                og:image of an article, with limit
 parallax/gnews.py keyterms.py                Google News rows (19.2); the big words of a headline (18.5, 18.11)
 parallax/politics.py critical.py             Diet, elections, approval series (18.9); scrutiny (18.12)
 parallax/build.py ai.py validate.py           pipeline, Gemini caller, validator (stdlib only)
+parallax/site.py                              the page of each event, the feeds and the seven-day archive (21), called by tools/assemble_site.py
 tests/                                        python -m unittest; node tests/js/*.test.js
 .github/workflows/update.yml                  schedule + commit data/latest.json
 ```
@@ -1164,3 +1165,68 @@ need only write the article's URL. **The workflow log never prints a headline** 
 
 The rules decide which flags an event has. The AI may **remove** a rule flag (it leaves it out of `flags` while the rules raise it) and may never add one. `ai.flags_removed` = `[{ "flag", "why": "ai_left_out" }]` is kept so the removal can be read; a
 flag the AI proposes that the rules do not raise is vetoed as before (`flags_dropped`, 4.4). The page shows the rule flags; an AI removal is shown as removed, with its reason, not silently.
+
+## 21. The page of each event, the feeds and the seven-day archive (decided 2026-11-08)
+
+Made by `parallax/site.py`, called by `tools/assemble_site.py` after the data are copied (`--base-url`, default `https://tomnexttech.github.io/vector-parallax/`;
+`--no-archive-fetch`; `--no-pages`). Everything here is a build product of the Pages artifact, never committed (20.1). A failure here is printed (the type of the error, no headline)
+and the site is deployed without these files: it never stops the page. The log line `site pages: ...` prints counts and seconds only.
+
+**Event.** One per `board.cases[sid]` whose story is in `latest.stories` (so the sid is the page's own `?sid=`); the lead of an event (18.11) carries the reports of the stories it folded.
+Sides as the page counts them (`js/entry.js` `sides`): `gov` = type `政府一次`, `intl` = `home == "intl"`, `jp` = the rest. The title is **the headline as published**: the representative
+headline `rep_id` (18.11), else the earliest titled report, else the outlets' names (never the AI's title). Photo: `board.cases[sid].photo` only (20.5), never copied.
+
+**Counts line** (the description of a page and of a feed item): the sides that have reports, `国内 4・海外 2`, then `最初に報じたのは海外 1時間27分先` when two sides or more have a time
+(`最初の報道は同じ分` under one minute), else `最初の報道 11月8日 6:12` (JST). A side without a report is **not named** anywhere (no "0", nothing that says it did not report).
+
+### 21.1 `s/<sid>.html`
+
+A static page, no script, light and dark by `prefers-color-scheme`. Head: `<title>`, `description`, `link rel=canonical`, `og:type article`, `og:site_name`, `og:locale ja_JP`, `og:title` (the
+headline as published), `og:description` (the counts line), `og:url` (= canonical), `og:image` (the event's photo, else `assets/icons/icon-512.png`), `twitter:card` (`summary_large_image`
+with a photo, else `summary`), `twitter:title`, `twitter:description`, `twitter:image` (with a photo), `article:published_time` (the first report), `link rel=alternate` to `../feed.xml`.
+Body: the headline and its outlet, the field (`cases[sid].cat`), the counts line, outlets / reports / first and newest time, a link **`../?sid=<sid>&t=<headline, 60 chars>`** into the page
+(`js/app.js` opens `sid`, else finds `t`), the photo whole with `写真：<outlet>`, then each side that has reports: time, outlet, type, the headline linked to the article (`rel="noopener nofollow"`,
+`Google ニュース経由` for 20.7 rows) and the feed's description quoted (14.1) when carried; 40 reports at most. No article text.
+
+Pages are made for every event of this build and for every event of the archive (21.3) that this build does not have: an archived sid whose event goes on under a new sid (same first
+report, or half the kept headlines shared) gets the current page with `canonical` pointing to the new sid; others are made from the archive entry (no descriptions) and say
+`<日> 時点の控えです`. A link in a feed therefore stays alive for seven days although a sid changes when a report joins the event.
+
+### 21.2 Feeds (RSS 2.0, with `atom:link rel=self`)
+
+| file | items (30 at most) | order |
+|---|---|---|
+| `feed.xml` | today's big news: `board.priority`, events with reports from two sides or three outlets and more (`js/entry.js` `entryEvents`) | priority |
+| `feed-oneside.xml` | the news of one side only: reports from one of the three sides and two outlets or more there (`js/sections.js` `oneSideOf`); the description starts `国内の報道だけ・` / `海外の報道だけ・` / `官公庁の資料だけ・`; the channel's description is `ONE_SIDE_NOTE` | outlets on that side, then newest |
+| `feed-politics.xml` `feed-world.xml` `feed-economy.xml` `feed-security.xml` `feed-tech.xml` `feed-markets.xml` `feed-other.xml` | events of the field 国内政治 / 国際 / 経済 / 安全保障 / 技術 / 市場 / その他 (`cases[sid].cat`) | `score`, then newest |
+
+Item: `title` = the headline as published, `link` = `<base>s/<sid>.html`, `description` = the counts line, `category` = the field, `pubDate` = the first report,
+`guid isPermaLink="false"` = `parallax:<id of the event's first report>` (stays the same while reports join). A feed with no event is still a valid feed with no item.
+
+### 21.3 `data/archive/` (seven days)
+
+At each build the archive of the **last deploy** is read from `<base>data/archive/index.json` and the day files it lists (10 s each, 4 MB at most). What is read is data: the shape is
+checked, strings are cut, links must be `http(s)`, sids must match `s` + 12 hex, and `data/withheld.json` (20.9) is applied again (a withheld report is removed, a withheld headline stops
+being the title, a withheld photo is cleared). When the index cannot be read (the first run, the network, a wrong shape), the archive holds today only and the build goes on.
+Days are JST dates; the seven days ending today are kept, an older day is dropped.
+
+```jsonc
+// data/archive/index.json
+{ "schema": "parallax-archive/1", "updated_at": 1762225200,
+  "days": [ { "date": "2026-11-08", "n_top": 14, "n_events": 122, "updated_at": 1762225200 } ] }      // newest first, 7 at most
+// data/archive/YYYY-MM-DD.json
+{ "schema": "parallax-archive-day/1", "date": "2026-11-08", "updated_at": 1762225200,   // the last build that wrote this day
+  "top": ["<sid>", ...],               // the day's big news, best rank of the day first (30 at most)
+  "events": [ Entry ],                  // the big news first, then every other event a feed linked that day (200 at most)
+  "alias": { "<old sid>": "<sid>" } }   // an event whose sid changed during the day: the old sid points to the entry kept
+// Entry
+{ "sid", "title", "title_none", "outlet", "title_id", "cat", "n_items", "n_outlets",
+  "sides": {"jp": 4, "intl": 2, "gov": 0}, "side_outlets": {"jp": 3, "intl": 2, "gov": 0},
+  "first": {"jp": 1762200000, "intl": 1762194780, "gov": null}, "first_ts", "last_ts", "first_id",
+  "photo": null | {"url", "outlet", "id"}, "rank": 1 | null,          // rank in the day's big news (best of the day), null if it was only in another feed
+  "heads": [ {"id", "src", "side", "outlet", "type", "ts", "title", "link", "via"?} ] }     // 12 at most, by time, no description
+```
+
+Within one day the entries of this build replace those of earlier builds; an earlier entry is the same event as a new one when they share the first report or half the kept headlines,
+and then only the new one is kept (its rank is the best of the two) and the old sid goes to `alias`. A page that shows a past day reads these files (`top` in order, each entry's counts
+and its link `s/<sid>.html`); it never needs that day's `latest.json`. `sides` with 0 are data for the page's figures; the page must not turn a 0 into "did not report".

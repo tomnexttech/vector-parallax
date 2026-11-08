@@ -20,6 +20,15 @@ export function uiLang(pref, langs) {
 export const SKIP = '[data-i18n-skip],.en-w,.en-ws,.hits,.terms,.tl-hl,.mh,.en-at,.en-q,.ch-ai,.en-ai-t,h1,.en-st,.en-h,.en-ost,.pp-t,.mf,.en-vh,.en-mo,.mo,.en-o,.st-src .en-mo,.r .t,.rel,.near,.en-firsts .o,.facts dd,.kv dd,.op-lk,script,style,textarea,input,select option[data-raw]';
 
 export const EN = {
+  // the figures' heads and the news site's own parts (rankings, breaking line, local news, the narrowed search)
+  '件数の比': 'Share of reports', '媒体の種類': 'Types of outlet', '国内と海外の語': 'Words in Japan and abroad', '媒体と語の重なり': 'Outlets and shared words', '時間の流れ': 'Over time', '0〜100': '0-100', '着目した語': 'Words in focus',
+  '速報': 'Breaking', '報道が急増': 'Reports rising fast', '速報を閉じる': 'Close the breaking line', '災害の画面を開く': 'Open the disaster screen', 'このニュースを開く': 'Open this news',
+  'ランキング': 'Rankings', 'よく報じられている': 'Most reported', 'よく報じられている順': 'Most reported', '伸びている順': 'Rising', '6 時間の新着': 'New in 6 h', '6 時間': '6 h', '24 時間': '24 h',
+  '全部': 'All', '期間': 'Period', '側': 'Side', '並べ替え': 'Order', '媒体の多い順': 'Most outlets', '新しい順': 'Newest', 'すべてのメディア': 'All outlets',
+  '地元のニュース': 'Local news', '選ばない': 'None', '都道府県': 'Prefectures', '国': 'Countries',
+  'ホームとかんたん表示に、選んだ地名が出るニュースの欄を出す。選びはこのブラウザだけに残す': 'Shows the news that name the chosen place on the home screen and in the simple view. The choice stays in this browser',
+  '集めた見出しの数で並べています。': 'Ordered by the number of collected headlines.', '6 時間の新着はありません。': 'Nothing new in the last 6 hours.',
+  '6 時間より前に集めたニュースなので、伸びている順は出せません。': 'These headlines were collected more than 6 hours ago, so there is no rising order.',
   // the band, the screens and the tabs
   'ホーム': 'Home', 'ニュース': 'News', '地図': 'Map', '市場': 'Markets', '政治': 'Politics', '災害': 'Disasters', '映像': 'Video', '保存': 'Saved',
   'その他': 'More', '検索': 'Search', '設定': 'Settings', '表示': 'View', '自動': 'Rules', '媒体': 'Outlets', '更新': 'Updated', '前回から': 'Since last visit',
@@ -105,6 +114,13 @@ const map = (x) => (Object.prototype.hasOwnProperty.call(EN, x) ? EN[x] : null);
 const sub = (x) => { const t = map(x); return t == null ? x : t; };
 const SIDE = { 国内: 'Japan', 海外: 'Abroad', 官公庁: 'Ministries' };
 const PAT = [
+  [/^地元のニュース（(.+)）$/, (m) => `Local news (${m[1]})`],
+  [/^(.+)のニュースは今はありません。$/, (m) => `No news on ${m[1]} now.`],
+  [/^震度(\d)([強弱]?) (.+)$/, (m) => `Shindo ${m[1]}${m[2] === '強' ? '+' : m[2] === '弱' ? '-' : ''} ${m[3]}`],
+  [/^(.+)・6 時間で (\d+) 件・(\d+)媒体$/, (m) => `${m[1]} · ${m[2]} in 6 h · ${m[3]} outlets`],
+  [/^(\d+) 種類$/, (m) => `${m[1]} types`],
+  [/^(\d+) 媒体 × (\d+) 語$/, (m) => `${m[1]} outlets × ${m[2]} words`],
+  [/^(\d+) 件$/, (m) => `${m[1]} ${m[1] === '1' ? 'report' : 'reports'}`],
   [/^(\d[\d,.]*) 件$/, (m) => m[1]],
   [/^(\d[\d,.]*) ?媒体$/, (m) => `${m[1]} outlets`],
   [/^(\d[\d,.]*) 媒体・(\d[\d,.]*) 件$/, (m) => `${m[1]} outlets · ${m[2]} reports`],
@@ -168,12 +184,15 @@ export function tr(text) {
 }
 
 const ATTRS = ['title', 'aria-label', 'placeholder'];
+const GL_SHORT = { 技術: 'Tech', 安全保障: 'Security', 経済: 'Economy', 国内政治: 'Politics', 政治: 'Politics' };
 const FIELD = '[data-genre],.gn,.en-g,.fd,.en-osm,.tp';
 function doText(n) {
   const p = n.parentElement;
   if (!p || p.closest(SKIP)) return;
   const v = n.nodeValue;
   if (v.trim() === 'その他' && p.closest(FIELD)) { n.nodeValue = v.replace('その他', 'Other'); return; }
+  // the labels under the round field buttons are 34 px wide: the long words take their short forms
+  if (GL_SHORT[v.trim()] && p.closest('.gl')) { n.nodeValue = v.replace(v.trim(), GL_SHORT[v.trim()]); return; }
   const t = tr(v);
   if (t !== v) n.nodeValue = t;
 }

@@ -17,6 +17,7 @@
  *                                                  dossier (ratioBar, areaSvg, biasMini), photo(e) -> { url, outlet, ts, link, kind?, id? } | null,
  *                                                  videos(e) -> stories[].videos, oneSide: [{ side, ja, events }] (js/sections.js),
  *                                                  oneSideTitle, oneSideNote, more(side), outlet(name) -> one outlet's page,
+ *                                                  local: { name, events } | null -> the reader's local news under the cards,
  *                                                  speak(e) -> the button that reads the news aloud (js/speak.js) }
  *
  * Neutral by rule: no side gets a rank or a label of right or wrong. The three sides carry a line symbol and a hue only so that a
@@ -112,7 +113,8 @@ export function lineIcon(k, cls = '') {
 export function renderEntry(root, o) {
   const { h, events, fmt } = o;
   const os = Array.isArray(o.oneSide) ? o.oneSide.filter((g) => g && Array.isArray(g.events) && g.events.length) : [];
-  const sel = [...events, ...os.flatMap((g) => g.events)].find((e) => e.key === o.sel) || events[0] || null;
+  const loc = o.local && typeof o.local === 'object' && Array.isArray(o.local.events) ? o.local : null;
+  const sel = [...events, ...os.flatMap((g) => g.events), ...(loc ? loc.events : [])].find((e) => e.key === o.sel) || events[0] || null;
   const fieldOf = (e) => str(e.field) || 'その他';
   const photo = (e) => (o.photo ? o.photo(e) : null);
   const credit = (p) => `${p.kind === 'video' ? '映像' : '写真'}：${p.outlet || '—'}${isNum(p.ts) ? `・${fmt.clock(p.ts)}` : ''}`;
@@ -246,7 +248,14 @@ export function renderEntry(root, o) {
         titleEl(titleOf(e), 'en-ost'), h('span', { class: 'en-osm' }, h('span', { text: genreShort(fieldOf(e)) }), h('span', { class: 'num', text: `${nOf(e)} 媒体` })))))),
       g.events.length > OS_CAP && o.more ? h('button', { type: 'button', class: 'en-rest', on: { click: () => o.more(g.side) } }, `残り ${g.events.length - OS_CAP} 件を一覧で見る`) : null)))) : null;
 
-  root.replaceChildren(head, pick,
+  // ---- the reader's local news (settings: local.place): the news that name the place, a press shows it below as a card does
+  const locEl = loc ? h('section', { class: 'en-os en-loc', 'aria-label': '地元のニュース' },
+    h('h3', { class: 'en-sub' }, `地元のニュース（${str(loc.name)}）`, h('span', { class: 'n', text: loc.events.length })),
+    loc.events.length ? h('ul', { class: 'en-osl' }, loc.events.map((e) => h('li', null, h('button', { type: 'button', class: 'en-osb', 'aria-pressed': String(e === sel), on: { click: () => o.pick(e.key) } },
+      titleEl(titleOf(e), 'en-ost'), h('span', { class: 'en-osm' }, h('span', { text: genreShort(fieldOf(e)) }), h('span', { class: 'num', text: `${nOf(e)} 媒体` }))))))
+      : h('p', { class: 'en-osn', text: `${str(loc.name)}のニュースは今はありません。` })) : null;
+
+  root.replaceChildren(head, pick, locEl,
     h('section', { class: 'en-sel', data: { genre: f }, 'aria-label': '選んだニュースの伝え方' },
       h('div', { class: 'en-top' + (headFig ? '' : ' nop') },
         h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut} 媒体・${m.n} 件` }), ais, o.speak ? o.speak(sel) : null),

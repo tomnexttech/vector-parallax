@@ -20,7 +20,7 @@ export const SECTIONS = [
   { id: 'home', ja: 'ホーム' }, { id: 'news', ja: 'ニュース' }, { id: 'map', ja: '地図' }, { id: 'market', ja: '市場' },
   { id: 'politics', ja: '政治' }, { id: 'disaster', ja: '災害' }, { id: 'video', ja: '映像' }, { id: 'saved', ja: '保存' },
 ];
-export const NEWS_TABS = [['now', '今の順'], ['paper', '紙面'], ['diff', '前回から'], ['anom', '一部の媒体だけ'], ['hours', '時間ごと'], ['src', '媒体']];
+export const NEWS_TABS = [['now', '今の順'], ['rank', 'ランキング'], ['paper', '紙面'], ['diff', '前回から'], ['anom', '一部の媒体だけ'], ['hours', '時間ごと'], ['src', '媒体']];
 const SECT_IDS = new Set(SECTIONS.map((x) => x.id));
 const TAB_IDS = new Set(NEWS_TABS.map(([id]) => id));
 

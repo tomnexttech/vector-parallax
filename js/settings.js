@@ -19,6 +19,7 @@
 import { STATIONS } from './tv.js';
 import { fold, terms } from './prefs.js';
 import { KINDS, PROVIDERS, MODEL_RE } from './provider.js';
+import { cleanPlace } from './newsdesk.js';
 
 export const SETTINGS_KEY = 'parallax.settings.v1';
 export const SETTINGS_SCHEMA = 'parallax-settings/1';
@@ -53,6 +54,7 @@ export function defaults() {
     motion: { cases: true, scroll: true, calm: 'system', sound: true, hoverSound: false },
     panes: { off: [] },
     look: { theme: 'dark', size: 'm', ui: 'ja' },   // Japanese unless the reader chooses: the English words do not yet cover every pane
+    local: { place: '' },   // the reader's prefecture or country for the local news (js/newsdesk.js PLACE_CHOICES); '' = no local news
   };
 }
 
@@ -65,7 +67,7 @@ export function cleanSettings(x) {
   const d = defaults();
   const o = isObj(x) ? x : {};
   const tv = isObj(o.tv) ? o.tv : {}, news = isObj(o.news) ? o.news : {}, mute = isObj(o.mute) ? o.mute : {};
-  const motion = isObj(o.motion) ? o.motion : {}, panes = isObj(o.panes) ? o.panes : {}, look = isObj(o.look) ? o.look : {};
+  const motion = isObj(o.motion) ? o.motion : {}, panes = isObj(o.panes) ? o.panes : {}, look = isObj(o.look) ? o.look : {}, local = isObj(o.local) ? o.local : {};
   const order = [...new Set((Array.isArray(tv.order) ? tv.order : []).filter((id) => STATION_IDS.includes(id)))];
   for (const id of STATION_IDS) if (!order.includes(id)) order.push(id);
   return {
@@ -79,6 +81,7 @@ export function cleanSettings(x) {
       sound: bool(motion.sound, d.motion.sound), hoverSound: bool(motion.hoverSound, d.motion.hoverSound) },
     panes: { off: subset(panes.off, PANE_IDS) },
     look: { theme: pick(look.theme, THEMES, d.look.theme), size: pick(look.size, SIZES, d.look.size), ui: pick(look.ui, UIS, d.look.ui) },
+    local: { place: cleanPlace(local.place) },
   };
 }
 

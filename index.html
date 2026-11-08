@@ -14,6 +14,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <title>Parallax</title>
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="alternate" type="application/rss+xml" title="Parallax 今日の大きなニュース" href="feed.xml">
+<link rel="alternate" type="application/rss+xml" title="Parallax 片方の側だけのニュース" href="feed-oneside.xml">
 <link rel="icon" href="assets/icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/icons/icon-180.png">
 <script src="js/theme_boot.js"></script>
@@ -70,6 +72,7 @@
     </div>
     <div class="tbm" id="tb-menu" hidden></div>
   </header>
+  <div class="flash" id="flash" role="status" hidden></div>
   <p class="ailine" id="ai-line" role="status"></p>
   <p class="note-bar" id="snap-note" role="status" hidden></p>
   <div class="note-bar hid-bar" id="hid-bar" aria-live="polite" hidden></div>
@@ -126,6 +129,14 @@
         <div class="gwrap" id="pri-genres"></div>
         <div class="chips" id="pri-chips" role="group" aria-label="論点で絞る"></div>
         <div class="pb" id="pri-b"></div>
+      </section>
+      <section class="pane" id="p-local" aria-labelledby="local-h" hidden>
+        <header class="ph"><h2 id="local-h">地元のニュース</h2><span class="pc num" id="local-c"></span></header>
+        <div class="pb" id="local-b"></div>
+      </section>
+      <section class="pane" id="p-rank" aria-labelledby="rank-h">
+        <header class="ph"><h2 id="rank-h">よく報じられている</h2><a class="pc rk-all" href="#news/rank">ランキング</a></header>
+        <div class="pb" id="rank-b"></div>
       </section>
       <section class="pane" id="p-anom" aria-labelledby="anom-h">
         <header class="ph"><h2 id="anom-h">一部の媒体だけ</h2><b class="pc num" id="anom-c">—</b></header>

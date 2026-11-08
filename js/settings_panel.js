@@ -12,6 +12,7 @@ import { STATIONS } from './tv.js';
 import { PANES, MUTE_WORDS, MUTE_OUTLETS, NAME_LEN, KIND_JA, addTerm, removeTerm, cleanSettings, defaults, exportSettings, importSettings, cleanOwnAI, keyOk, modelOk } from './settings.js';
 import { KINDS, PROVIDERS } from './provider.js';
 import { errJa } from './ownai.js';
+import { PLACE_CHOICES } from './newsdesk.js';
 
 const SECTIONS = [
   ['tv', '映像', '<rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="M8.5 8v4l3.4-2z"/>'],
@@ -119,6 +120,9 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
           row('最初に開く見方', '自動は AI のまとめがあれば AI。上の帯でいつでも替えられる', seg('view', '最初に開く見方', s.news.view, [['auto', '自動'], ['ai', 'AI'], ['rules', '自動']], (n, v) => { n.news.view = v; })),
           row('見出しの言語', 'AI の題が無い出来事は、報じた媒体の見出しを出す', seg('lang', '見出しの言語', s.news.lang, [['ja', '日本語'], ['en', 'English'], ['orig', '元の見出し']], (n, v) => { n.news.lang = v; })),
           row('国内と海外', '両方で報じられた出来事は常に出す', seg('scope', '国内と海外', s.news.scope, [['all', '両方'], ['jp', '国内'], ['intl', '海外']], (n, v) => { n.news.scope = v; })),
+          row('地元のニュース', 'ホームとかんたん表示に、選んだ地名が出るニュースの欄を出す。選びはこのブラウザだけに残す', h('select', { class: 'set-sel', 'aria-label': '地元のニュース', data: { f: 'local' }, on: { change: (ev) => { const v = ev.target.value; change((n) => { n.local.place = v; }); } } },
+            h('option', { value: '', selected: !s.local.place ? true : null }, '選ばない'),
+            ['都道府県', '国'].map((g) => h('optgroup', { label: g }, PLACE_CHOICES.filter((x) => x.group === g).map((x) => h('option', { value: x.key, selected: s.local.place === x.key ? true : null }, x.ja)))))),
         ]),
         group('媒体の種類', inf.types.map(([t, k]) => row(t, null, [h('span', { class: 'set-k', text: `媒体 ${k}` }), sw(`ty-${t}`, !tOff.has(t), t, (n, v) => { n.news.types_off = v ? n.news.types_off.filter((x) => x !== t) : [...n.news.types_off, t]; })])),
           '表示する種類の媒体が一つでも報じた出来事は出す', allOn('types', '全て表示', 'ty-all')),

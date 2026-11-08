@@ -45,6 +45,7 @@ import { createDossier, measure, paperPick, drawShareCard, CARD_W, CARD_H } from
 import { biasOf as biasIndex, sourceBase } from './bias.js';
 import { newsView, createMapNews } from './mapnews.js';
 import { createWall, wallOn, pageOf, pageHolding, perOf } from './wall.js';
+import { breakingOf, breakingText, keepOff, rankBy, localOf, placeName, searchOf, outletsOf, SPANS, SEARCH_SIDES, SORTS, QF0 } from './newsdesk.js';
 import { SECTIONS, NEWS_TABS, parseHash, hashOf, paperOf, nextSeen, shareUrl, ruleJa, oneSideOf, ONE_SIDE_TITLE, ONE_SIDE_NOTE } from './sections.js';
 import { createPalette } from './palette.js';
 
@@ -82,6 +83,7 @@ const TERMS_TEXT = { ok: '再表示可', nc: '非商用のみ', no: '再配布�
 const LAYERS = [['events', '出来事'], ['pri', '注目'], ['radius', '半径'], ['quakes', '地震'], ['typhoons', '台風'], ['disasters', '災害']];
 
 const state = {
+  qf: { ...QF0 },   // the search narrowed: span, side, outlet, order (js/newsdesk.js searchOf)
   base: null, data: null, live: false, view: 'ai', q: '', watch: [], sel: null, about: false, ix: null, snap: null, busy: false, sumBy: null,
   pending: null, evalData: null, dataPath: DEFAULT_DATA, labels: null, es: [], byKey: new Map(), pri: [], topic: 'all', genre: GENRE_ALL, genreKey: '', field: null, fieldAt: 0,
   newKeys: new Set(), flashed: new Set(), prevSeen: null, autoNext: 0, pausedUntil: 0, stopped: false, haz: null, mkt: undefined, pol: undefined, crit: undefined,
@@ -359,7 +361,7 @@ const folded = (e) => !!e.hid && !state.showHid && !state.unfold.has(e.key);
 const inGenre = (e) => state.genre === GENRE_ALL || e.field === state.genre;
 function shownPri() { return shownPriAll().filter(inGenre); }
 function shownPriAll() {
-  if (state.q) return state.es.filter((e) => !e.foldedInto && matchesQ(e)).sort((a, b) => b.n - a.n || (b.last || 0) - (a.last || 0)).slice(0, 200);
+  if (state.q) return searchOf(state.es.filter((e) => !e.foldedInto && matchesQ(e)), { ...state.qf, now: nowS(), sideN: (e, k) => measureOf(e)[k].length, outletOf }).slice(0, 200);
   const t = state.topic;
   if (t === 'cross') return state.es.filter((e) => !e.foldedInto && e.cover === 'both').sort((a, b) => b.n - a.n || (b.last || 0) - (a.last || 0)).slice(0, 200);
   return t === 'all' ? state.pri : t === 'watch' ? state.pri.filter((e) => e.hits.length) : state.pri.filter((e) => e.topics.includes(t));
@@ -666,6 +668,7 @@ function searchFor(w) {
   if (!t) return;
   if (state.sheet) closeSheet();
   $('q').value = t;
+  if (t !== state.q) state.qf = { ...state.qf, outlet: '' };
   state.q = t;
   pause();
   if (state.floor && state.floor.mode() === 'map' && !state.mapPick) state.mapScope = 'pri';
@@ -674,7 +677,17 @@ function searchFor(w) {
   if (p && (narrow() || !p.offsetParent)) p.scrollIntoView({ block: 'start' });
   else if ($('pri-b')) $('pri-b').scrollTop = 0;
 }
-function clearSearch() { $('q').value = ''; state.q = ''; renderPri(); renderAnom(); renderFields(); paintCmdBtn(); }
+/** the search narrowed: when, which side, which outlet, and the order (js/newsdesk.js) */
+function qBar() {
+  const f = state.qf, set = (k, v) => { state.qf = { ...state.qf, [k]: v }; renderPri(); renderAnom(); };
+  const seg = (k, label, opts) => h('div', { class: 'qf-g', role: 'group', 'aria-label': label }, h('span', { class: 'qf-l', text: label }),
+    opts.map(([v, ja]) => h('button', { type: 'button', class: 'qf-b', 'aria-pressed': String(f[k] === v), on: { click: (ev) => { ev.stopPropagation(); set(k, v); } } }, ja)));
+  const outs = outletsOf(state.es.filter((e) => !e.foldedInto && matchesQ(e)), outletOf).slice(0, 120);
+  const sel = h('select', { class: 'qf-s', 'aria-label': 'メディア', on: { change: (ev) => set('outlet', ev.target.value) } },
+    h('option', { value: '' }, 'すべてのメディア'), outs.map((o) => h('option', { value: o.name, selected: f.outlet === o.name ? true : null, data: { raw: '1' } }, `${o.name}（${o.n}）`)));
+  return h('div', { class: 'qf' }, seg('span', '期間', SPANS), seg('side', '側', SEARCH_SIDES), h('div', { class: 'qf-g' }, h('span', { class: 'qf-l', text: 'メディア' }), sel), seg('sort', '並べ替え', SORTS));
+}
+function clearSearch() { $('q').value = ''; state.q = ''; state.qf = { ...QF0 }; renderPri(); renderAnom(); renderFields(); paintCmdBtn(); }
 /** the field icons: at the head of the priority list (PC), as a strip above the board (phones), and in the simple view */
 function genreEl() {
   return genreBar({ fields: [...FIELDS, OTHER_FIELD], counts: genreCounts(state.pri), total: state.pri.length, active: state.genre, onPick: setGenre });
@@ -712,7 +725,7 @@ function renderPri() {
   const list = shownPri();
   $('pri-h').textContent = state.q ? '検索' : state.topic === 'cross' ? '国内と海外' : narrow() ? '今日の注目' : '注目';
   roll($('pri-c'), list.length);
-  const qOut = state.q ? h('p', { class: 'q-out' }, h('span', { text: `「${state.q}」で探している` }), lk('解除', clearSearch, '検索をやめて全部に戻す', 'r-a')) : null;
+  const qOut = state.q ? [h('p', { class: 'q-out' }, h('span', { text: `「${state.q}」で探している` }), lk('解除', clearSearch, '検索をやめて全部に戻す', 'r-a')), qBar()] : null;
   const fold = narrow() && !state.priAll && !state.q && list.length > 5;
   const showN = fold ? list.slice(0, 5) : list;
   $('pri-b').replaceChildren(qOut, showN.length ? h('ul', { class: 'rows' }, showN.map((e) => row(e))) : h('p', { class: 'empty', text: state.q ? '一致 0 件' : '0 件' }),
@@ -1304,7 +1317,8 @@ function renderEntryView() {
   renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
     fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => setUi('full'),
     detail: entryDetail, measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
-    oneSide: sideGroups(true), oneSideTitle: ONE_SIDE_TITLE, oneSideNote: ONE_SIDE_NOTE, more: entryMore });
+    oneSide: sideGroups(true), oneSideTitle: ONE_SIDE_TITLE, oneSideNote: ONE_SIDE_NOTE, more: entryMore,
+    local: state.set.local.place ? { name: placeName(state.set.local.place), events: localList().slice(0, 5) } : null });
   const hd = $('entry').querySelector('.en-head');
   if (hd) hd.after(genreEl()); else $('entry').prepend(genreEl());
 }
@@ -1975,6 +1989,7 @@ function renderAll() {
     renderCase(); renderMap(false);
     renderCount(); renderHaz(); renderMkt(); renderPol(); renderTv();
     renderTicker(false); renderWatch(); renderHid(); renderEntryView(); sceneTick();
+    renderFlash(); renderRankHome(); renderLocal();
     if (state.panel) state.panel.render();
     if (state.about) renderAbout();
     if (state.sheet) renderSheet();
@@ -2054,7 +2069,7 @@ async function loadHaz() {
   state.hazSeen = new Set(ids.map((q) => q.id));
   state.haz = hz;
   sceneTick();
-  renderHaz(); renderMap(false);
+  renderHaz(); renderMap(false); renderFlash();
   if (cur()) renderCase();
   if (state.sheet === 'haz') renderSheet();
   if (state.sect === 'disaster') renderSect();
@@ -2426,6 +2441,70 @@ function shareEvent(e) {
   return true;
 }
 
+// ---------------------------------------------------------------- a news site's own parts: the breaking line, the rankings, the local news (js/newsdesk.js)
+const FLASH_KEY = 'parallax.flash.off.v1';
+function loadOff() { try { const j = store ? JSON.parse(store.getItem(FLASH_KEY) || '[]') : []; return Array.isArray(j) ? j.filter((x) => typeof x === 'string').slice(-200) : []; } catch { return []; } }
+function saveOff(list) { try { if (store) store.setItem(FLASH_KEY, JSON.stringify(list.slice(-200))); } catch { /* this visit only */ } }
+function flashList() {
+  const hz = state.haz || {};
+  const evs = newsFresh() ? state.pri.filter((e) => e.exact && !e.hid).map((e) => ({ key: e.key, id: str(e.case.sid), title: e.heading.text, new6h: e.case.n_new6h, sinceH: e.case.since_first_h, n: e.n })) : [];
+  return breakingOf({ quakes: hz.quakes, tsunami: hz.tsunami, events: evs, now: nowS() });
+}
+function renderFlash() {
+  const bar = $('flash');
+  if (!bar || !state.data) return;
+  const all = flashList();
+  let off = loadOff();
+  if (state.haz) { const k = keepOff(off, all); if (k.length !== off.length) { off = k; saveOff(off); } }   // what has ended is forgotten
+  const b = all.find((x) => !off.includes(x.id));
+  bar.hidden = !b;
+  if (!b) { bar.replaceChildren(); delete bar.dataset.kind; return; }
+  const t = breakingText(b, fmtClock);
+  const go = () => { if (b.kind === 'surge') { setSect('news'); select(b.key, true); if (stacked()) openSheet('case'); } else setSect('disaster'); };
+  bar.dataset.kind = b.kind;
+  bar.replaceChildren(
+    h('button', { type: 'button', class: 'fl-go', title: b.kind === 'surge' ? 'このニュースを開く' : '災害の画面を開く', on: { click: go } },
+      h('span', { class: 'fl-tag' }, h('b', { text: '速報' }), h('span', { text: t.tag })), h('span', { class: 'fl-t', text: t.text })),
+    h('button', { type: 'button', class: 'fl-x', 'aria-label': '速報を閉じる', title: '閉じる', on: { click: () => { saveOff([...loadOff(), b.id]); renderFlash(); } } },
+      s('svg', { viewBox: '0 0 12 12', 'aria-hidden': 'true' }, s('path', { d: 'M2.5 2.5l7 7M9.5 2.5l-7 7' }))));
+}
+const rankPool = () => state.es.filter((e) => !e.foldedInto && vis(e) && !e.hid);
+const upOf = (e) => (e.exact && isNum(e.case.n_new6h) ? e.case.n_new6h : 0);
+function rankList(list, kind, press) {
+  return h('ol', { class: 'rk-l' + (kind === 'up' ? ' up' : '') }, list.map(({ e, rank, v }) => {
+    const m = measureOf(e);
+    return h('li', { class: 'rk-r' + (rank <= 3 ? ' top' : '') + (e.key === state.sel ? ' sel' : ''), tabindex: '0', data: { key: e.key }, title: 'このニュースを開く',
+      on: { click: () => press(e.key), keydown: (ev) => { if (ev.key === 'Enter') press(e.key); } } },
+      h('span', { class: 'rk-n num', text: rank }), headNode(e, 'rk-t'),
+      h('span', { class: 'rk-v' }, h('b', { class: 'num', text: kind === 'up' ? `+${v}` : String(e.n) }), h('small', { text: kind === 'up' ? '6 時間' : '媒体' })),
+      h('span', { class: 'rk-m', title: SIDES.map(([k, , sh]) => `${sh} ${m[k].length}`).join('・') }, dossier.ratioBar(m), h('small', { class: 'num', text: `${m.n} 件` })));
+  }));
+}
+function newsRank() {
+  const pool = rankPool(), fresh = newsFresh();
+  const top = rankBy(pool, (e) => e.n, { cap: 20 }), up = fresh ? rankBy(pool, upOf, { cap: 20 }) : [];
+  return { bare: true, foot: '集めた見出しの数で並べています。', body: [h('div', { class: 'rk' },
+    h('section', { class: 'rk-c' }, h('h3', null, 'よく報じられている順'), top.length ? rankList(top, 'n', openCase) : h('p', { class: 'empty', text: '0 件' })),
+    h('section', { class: 'rk-c' }, h('h3', null, '伸びている順', h('small', { text: '6 時間の新着' })),
+      up.length ? rankList(up, 'up', openCase) : h('p', { class: 'empty', text: fresh ? '6 時間の新着はありません。' : '6 時間より前に集めたニュースなので、伸びている順は出せません。' })))] };
+}
+function renderRankHome() {
+  const b = $('rank-b');
+  if (b) b.replaceChildren(rankList(rankBy(rankPool(), (e) => e.n, { cap: 5 }), 'n', pressRow));
+}
+function localList() { const k = state.set.local.place; return k ? localOf(rankPool(), k) : []; }
+function renderLocal() {
+  const k = state.set.local.place, p = $('p-local');
+  if (!p) return;
+  p.hidden = !k;
+  if (!k) { $('local-b').replaceChildren(); return; }
+  const list = localList(), name = placeName(k);
+  $('local-h').textContent = `地元のニュース（${name}）`;
+  $('local-c').textContent = list.length ? String(list.length) : '';
+  $('local-b').replaceChildren(list.length ? h('ul', { class: 'rows' }, list.slice(0, 6).map((e) => row(e, { compact: true })))
+    : h('p', { class: 'empty', text: `${name}のニュースは今はありません。` }));
+}
+
 // ---------------------------------------------------------------- the screens: the board's panes opened whole; the address says which (js/sections.js)
 const PAGE_SHEET = { market: 'mkt', politics: 'pol', disaster: 'haz' };
 const SECOND = new Set(['market', 'politics', 'disaster', 'video']);
@@ -2484,6 +2563,7 @@ function newsNow() {
   return { bare: !state.q, big: fmtN(list.length), unit: state.q ? `「${state.q}」の一致` : '', facts: [], fill: true, body: [h('div', { class: 'nw' },
     h('div', { class: 'nw-l' }, genreEl(), h('div', { class: 'chips' }, priChips()),
       state.q ? h('p', { class: 'q-out' }, h('span', { text: `「${state.q}」で探している` }), lk('解除', clearSearch, '検索をやめて全部に戻す', 'r-a')) : null,
+      state.q ? qBar() : null,
       list.length ? h('ul', { class: 'rows' }, list.map((e) => row(e, { press: pressNews }))) : h('p', { class: 'empty', text: state.q ? '一致 0 件' : '0 件' })),
     stacked() ? null : h('div', { class: 'nw-r', id: 'nw-case' }, cur() ? caseNode(cur()) : null))] };
 }
@@ -2516,7 +2596,7 @@ function renderSect() {
   const keep = box.scrollTop;
   let r;
   try {
-    if (k === 'news') { const t = state.newsTab; r = t === 'paper' ? newsPaper() : t === 'diff' ? newsDiff() : t === 'now' ? newsNow() : SHEET_BODY[t](); } else if (PAGE_SHEET[k]) r = SHEET_BODY[PAGE_SHEET[k]](); else r = pageOff(k);
+    if (k === 'news') { const t = state.newsTab; r = t === 'rank' ? newsRank() : t === 'paper' ? newsPaper() : t === 'diff' ? newsDiff() : t === 'now' ? newsNow() : SHEET_BODY[t](); } else if (PAGE_SHEET[k]) r = SHEET_BODY[PAGE_SHEET[k]](); else r = pageOff(k);
   } catch (err) { r = { bare: true, body: [h('p', { class: 'empty', text: `表示に失敗しました: ${err && err.message ? err.message : String(err)}` })] }; }
   const title = SECTIONS.find((x) => x.id === k).ja;
   const tabs = k === 'news' ? h('div', { class: 'sc-tabs', role: 'group', 'aria-label': 'ニュースの見方' }, NEWS_TABS.map(([id, ja]) => h('a', { href: hashOf('news', id), class: 'sc-tab', 'aria-current': id === state.newsTab ? 'page' : null }, ja,
