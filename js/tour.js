@@ -20,18 +20,18 @@ export const NARROW = 600;
 const GAP = 12, EDGE = 16, PAD = 6;
 
 export const STEPS = [
-  { id: 'hello', at: [], title: 'はじめまして',
-    text: 'Parallax は、同じニュースを国内外のメディアや官公庁がどう伝えているかを、並べて比べられるサイトです。' },
-  { id: 'sects', at: ['#sects'], title: '画面を切り替える',
-    text: 'ニュース・地図・市場・政治・災害・映像・保存を、この列で切り替えます。ホームは全部を一度に見る画面です。' },
-  { id: 'simple', at: ['#entry .en-cards', '#entry .en-card', '#entry-btn'], title: 'かんたん表示',
-    text: 'ニュースを一つ押すと、件数の割合・最初に報じた時刻・使った言葉の違いと、各メディアの見出しが並びます。' },
-  { id: 'absent', at: ['#entry .cb-absent', '#entry .en-cols'], title: '見つからなかった媒体',
-    text: '集めた記事の中で、このニュースが見つからなかったメディアです。あくまで集めた範囲での結果です。' },
+  { id: 'hello', at: [], title: 'はじめに',
+    text: 'ニュースごとに、国内、海外、官公庁の見出しを並べて見られます。' },
+  { id: 'sects', at: ['#sects'], title: '画面の切り替え',
+    text: 'ニュース、地図、市場、政治、災害、映像、保存はこの列で切り替えます。' },
+  { id: 'simple', at: ['#entry .en-cards', '#entry .en-card', '#sc-simple'], title: '比べる',
+    text: 'ニュースを一つ選ぶと、国内と海外の件数、最初の報道の時刻、見出しの違いが並びます。' },
+  { id: 'absent', at: ['#entry .cb-absent', '#entry .en-cols'], title: '見当たらないメディア',
+    text: '集めた記事の中に、このニュースが見当たらなかったメディアです。' },
   { id: 'ai', at: ['#entry .en-sel .en-ai', '#v-ai'], title: 'AI のまとめ',
-    text: '言語が違っても、同じニュースの見出しを AI がひとまとめにします。AI が書いた文には「AI」マークが付きます。内容の真偽は判定しません。' },
-  { id: 'settings', at: ['#cmd-btn', '#sects-more'], title: '探す・設定',
-    text: 'ニュースも操作も、この欄から探せます（Ctrl+K）。字の大きさやダーク・ライトは設定で替えられます。' },
+    text: 'AI が、言語の違う見出しを同じニュースにまとめています。AI の文には「AI」の印が付きます。真偽は判定しません。' },
+  { id: 'settings', at: ['#cmd-btn', '#sects-more'], title: '検索と設定',
+    text: 'Ctrl+K でニュースも操作も探せます。字の大きさとダーク・ライトは設定で変えられます。' },
 ];
 
 export function tourSeen(storage) {

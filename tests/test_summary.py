@@ -78,7 +78,7 @@ class Validator(unittest.TestCase):
             {"eid": "e2", "summary_ja": "二つ目は採らない"}]}, ensure_ascii=False)
         out = validate.validate_summaries(self.req(), raw, PROMPT)
         self.assertEqual(out["summaries"], {"sB": "沿岸の港が嵐で閉鎖された"})
-        self.assertEqual(out["counts"], {"quoted_fields": 1, "empty": 0, "unknown_eid": 1, "missing": 0})
+        self.assertEqual({k: out["counts"][k] for k in ("quoted_fields", "empty", "unknown_eid", "missing")}, {"quoted_fields": 1, "empty": 0, "unknown_eid": 1, "missing": 0})
         out = validate.validate_summaries(self.req(), json.dumps({"summaries": []}), PROMPT)
         self.assertEqual((out["summaries"], out["counts"]["missing"]), ({}, 2))
 
@@ -148,14 +148,14 @@ class PublicSafety(unittest.TestCase):
 
 
 class CallLimits(unittest.TestCase):
-    def test_batches_of_45_and_at_most_15_calls(self):
+    def test_batches_of_the_batch_size_and_at_most_15_calls(self):
         stories, items = synth(800)
         sp = sfake(budget=ai.CallBudget(build.SUMMARY_CALL_LIMIT))
         run, reqs = stage(stories, items, sp, build.empty_cache())
         self.assertEqual((len(sp.calls), len(reqs)), (15, 15))
-        self.assertTrue(all(len(r["eids"]) == 45 for r in reqs))
-        self.assertEqual((run["summarized"], run["left_out"]), (15 * 45, 800 - 15 * 45))   # 上位から数で決める
-        self.assertEqual([s["sid"] for s in stories if "summary" in s], [s["sid"] for s in stories[:675]])
+        self.assertTrue(all(len(r["eids"]) == build.SUMMARY_BATCH for r in reqs))
+        self.assertEqual((run["summarized"], run["left_out"]), (15 * build.SUMMARY_BATCH, 800 - 15 * build.SUMMARY_BATCH))   # 上位から数で決める
+        self.assertEqual([s["sid"] for s in stories if "summary" in s], [s["sid"] for s in stories[:15 * build.SUMMARY_BATCH]])
 
     def test_a_retry_counts_as_a_call(self):
         stories, items = synth(800)
@@ -223,7 +223,7 @@ class Cache(unittest.TestCase):
         sp2 = sfake()
         d2, _ = run_build(fake(), sp2, cache, now=NOW + 60)
         self.assertEqual(sp2.calls, [])
-        self.assertEqual(d2["ai_run"]["summary"]["cache_hits"], n)
+        self.assertEqual(d2["ai_run"]["summary"]["cache_hits"], sum(1 for s in d1["stories"] if s.get("n_outlets", 0) >= 2))   # 詳しい要約の段は AI の見出しのある出来事も頼む（§13.1）
         for s in d2["stories"]:
             if "summary" in s:
                 self.assertEqual(s["summary"]["made_at"], NOW)           # 頁の「AI の時刻」は作った時刻
@@ -414,7 +414,8 @@ class RecordedPath(unittest.TestCase):
             cache = json.loads((td / "summary_cache.json").read_text(encoding="utf-8"))
             n = sum(len(r["eids"]) for r in d1["summary_requests"] and [{"eids": {e["eid"]: 1 for e in doc_of(x["user_text"])["events"]}}
                                                                         for x in d1["summary_requests"]])
-            self.assertEqual(stats["ai"]["summarized"], n)
+            self.assertEqual(stats["ai"]["summarized"], sum(1 for s in latest["stories"] if "summary" in s))
+            self.assertGreater(stats["ai"]["summarized"], 0)
             self.assertEqual((stats["ai"]["summary"]["provider"], stats["ai"]["summary"]["status"]), ("claude-recorded", "recorded"))
             self.assertEqual({s["summary"]["provider"] for s in latest["stories"] if "summary" in s}, {"claude-recorded"})
             self.assertEqual({s["summary"]["made_at"] for s in latest["stories"] if "summary" in s}, {NOW - 10})

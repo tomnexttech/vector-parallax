@@ -43,3 +43,27 @@ test('the committed data: every summary on a story reads back, and one file hold
   for (const s of withSummary) assert.ok(summaryOf(s), s.sid);
   assert.ok(new Set(withSummary.map((s) => s.summary.provider)).size <= 1);
 });
+
+// 詳しい要約（story.brief）。無い・古い形・壊れた形では null で、頁は今までの表示のまま
+import { briefOf, briefIndex, BRIEF_UNKNOWN } from '../../js/summary.js';
+const brief = (o = {}) => ({ what_ja: '港で船が座礁した。', background_ja: BRIEF_UNKNOWN, views_ja: '', next_ja: '', made_at: 5, provider: 'gemini', model: 'm', ...o });
+
+test('briefOf: four rows at most, empty rows left out, the unknown phrase marked', () => {
+  const b = briefOf({ brief: brief() });
+  assert.deepEqual(b.rows.map((r) => r.key), ['what_ja', 'background_ja']);
+  assert.equal(b.rows[1].unknown, true);
+  assert.equal(b.rows[0].unknown, false);
+  assert.deepEqual([b.provider, b.model, b.madeAt], ['gemini', 'm', 5]);
+});
+
+test('briefOf: no brief, an old story, a brief without what_ja or who wrote it: null', () => {
+  for (const st of [null, {}, { brief: null }, { brief: 'x' }, { brief: brief({ what_ja: '  ' }) }, { brief: brief({ made_at: 'x' }) }, { brief: brief({ provider: '' }) }]) {
+    assert.equal(briefOf(st), null);
+  }
+});
+
+test('briefIndex: by the members, so a re-run that regroups keeps the briefs of the groups that stayed', () => {
+  const m = briefIndex([{ member_ids: ['b', 'a'], brief: brief() }, { member_ids: ['c'] }]);
+  assert.equal(m.size, 1);
+  assert.ok(m.get('a|b'));
+});

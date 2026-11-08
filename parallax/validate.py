@@ -247,11 +247,67 @@ def validate(request, raw_text, prompt, items):
 
 
 # ---------------------------------------------------------------- 要約（CONTRACT §13）
+BRIEF_FIELDS = ("what_ja", "background_ja", "views_ja", "next_ja")
+_NUM_RE = re.compile(r"\d[\d,]*(?:\.\d+)?")
+_LATIN_RE = re.compile(r"[a-z][a-z0-9.\-]+")
+_KANA_RE = re.compile(r"[\u30a1-\u30fa\u30fc]{3,}")
+
+
+def _material(doc_event):
+    """一つの出来事の材料（見出し・配信の説明・媒体名を除いた時刻）を一つの折り畳んだ文字列にする。-> (text, 媒体名の list, 数として許す文字列の set)"""
+    parts, outlets, sides = [], [], set()
+    for it in doc_event.get("items", []):
+        if not isinstance(it, dict):
+            continue
+        for k in ("title", "desc", "at"):
+            if isinstance(it.get(k), str):
+                parts.append(it[k])
+        if isinstance(it.get("outlet"), str) and it["outlet"]:
+            outlets.append(it["outlet"])
+        if isinstance(it.get("side"), str):
+            sides.add(it["side"])
+    text = unicodedata.normalize("NFKC", chr(10).join(parts)).lower()
+    n_items = len([it for it in doc_event.get("items", []) if isinstance(it, dict)])
+    allowed = {str(n) for n in range(0, n_items + 1)} | {str(len(set(outlets))), str(len(sides)), "3"}
+    return text, outlets, allowed
+
+
+def ungrounded(text, material, allowed_numbers, generic_katakana=()):
+    """文の中の、材料に無い数・英字の語・カタカナの語。材料に無い事を書いた徴（CONTRACT §13）。-> 材料に無かった語の list
+    数は材料にそのまま在るか、材料の件数・媒体数・側の数。カタカナは 3 字以上の連なりで、材料に在るか generic_katakana の語。
+    漢字の名前（人名・組織名）はここでは見ない（指示文で縛る）。"""
+    t = unicodedata.normalize("NFKC", text).lower()
+    nums = {m.replace(",", "") for m in _NUM_RE.findall(material)}
+    bad = []
+    for m in _NUM_RE.findall(t):
+        m = m.replace(",", "").rstrip(".")
+        if m not in nums and m not in allowed_numbers and m not in material.replace(",", ""):
+            bad.append(m)
+    for m in _LATIN_RE.findall(t):
+        if m not in material:
+            bad.append(m)
+    gen = [unicodedata.normalize("NFKC", g).lower() for g in generic_katakana]
+    for m in _KANA_RE.findall(t):
+        if m not in material and not any(m == g or m in g for g in gen):
+            bad.append(m)
+    return bad
+
+
+def names_outlet(text, outlets):
+    """文が、その出来事の材料にある媒体の名を挙げているか。"""
+    f = fold(text)
+    return any(len(fold(o)) >= 2 and fold(o) in f for o in set(outlets))
+
+
 def validate_summaries(request, raw_text, prompt):
-    """要約の答えの検査。request = {"doc": JSON 文字列 {"events":[{"eid","items":[{"outlet","lang","title"}]}]}, "eids": {eid: sid}}。
-    -> {"summaries": {sid: 文}, "counts": {"quoted_fields","empty","unknown_eid","missing"}, "errors": ["json"|"shape"]}
-    見出しの丸写し（4.3 と同じ折り畳み）は捨てる。頼んでいない eid・同じ eid の二つ目は無視。答えの無かった event は missing に数える。"""
-    out = {"summaries": {}, "counts": {"quoted_fields": 0, "empty": 0, "unknown_eid": 0, "missing": 0}, "errors": []}
+    """要約の答えの検査。request = {"doc": JSON 文字列 {"events":[{"eid","items":[{"outlet","lang","title","side","at","desc"}]}]}, "eids": {eid: sid}}。
+    -> {"summaries": {sid: 文}, "briefs": {sid: {what_ja, background_ja, views_ja, next_ja}},
+        "counts": {"quoted_fields","empty","unknown_eid","missing","brief_fields_dropped","ungrounded","named_outlets"}, "errors": ["json"|"shape"]}
+    見出し・説明の丸写し（4.3 と同じ折り畳み）は捨てる。頼んでいない eid・同じ eid の二つ目は無視。答えの無かった event は missing に数える。
+    brief（詳しい要約）は欄ごとに検査する: 丸写し・「報じなかった」系の語・媒体名・材料に無い数や語は、その欄だけを落とす。
+    what_ja が残らなければ brief は付けない。brief の無い答え（古い形）は、要約だけが残る。"""
+    out = {"summaries": {}, "briefs": {}, "counts": {"quoted_fields": 0, "empty": 0, "unknown_eid": 0, "missing": 0,
+                                                        "brief_fields_dropped": 0, "ungrounded": 0, "named_outlets": 0}, "errors": []}
     try:
         answer = _parse(raw_text)
     except ValueError as e:
@@ -262,9 +318,11 @@ def validate_summaries(request, raw_text, prompt):
         return out
     doc = json.loads(request["doc"])
     eids = request.get("eids") or {}
-    titles = [fold(it["title"]) for ev in doc.get("events", []) for it in ev.get("items", [])
-              if isinstance(it, dict) and isinstance(it.get("title"), str)]
-    limit = prompt["summary"]["limits"]["summary_ja"]
+    events = {ev.get("eid"): ev for ev in doc.get("events", []) if isinstance(ev, dict)}
+    limits = prompt["summary"]["limits"]
+    limit = limits["summary_ja"]
+    unknown = (prompt["summary"].get("unknown_ja") or "").strip()
+    generic = prompt["summary"].get("generic_katakana") or []
     seen, counts = set(), out["counts"]
     for entry in answer["summaries"]:
         if not isinstance(entry, dict):
@@ -276,6 +334,12 @@ def validate_summaries(request, raw_text, prompt):
         if eid in seen:
             continue
         seen.add(eid)
+        ev = events.get(eid) or {}
+        titles = [fold(it["title"]) for it in ev.get("items", [])
+                  if isinstance(it, dict) and isinstance(it.get("title"), str)]
+        descs = [fold(it["desc"]) for it in ev.get("items", [])
+                 if isinstance(it, dict) and isinstance(it.get("desc"), str)]
+        material, outlets, allowed = _material(ev)
         text = clean(entry.get("summary_ja"), limit)
         if not text:
             counts["empty"] += 1
@@ -283,5 +347,35 @@ def validate_summaries(request, raw_text, prompt):
             counts["quoted_fields"] += 1
         else:
             out["summaries"][eids[eid]] = text
+        br = entry.get("brief")
+        if isinstance(br, dict) and prompt["summary"].get("brief_version"):
+            fields = {}
+            for k in BRIEF_FIELDS:
+                v = clean(br.get(k), limits.get(k, 140))
+                if not v:
+                    fields[k] = ""
+                    continue
+                if unknown and v == unknown:
+                    fields[k] = v if k != "what_ja" else ""        # 材料に無い、と言う決まった言い方（what_ja には使えない）
+                    continue
+                if copies(v, titles + descs):
+                    counts["quoted_fields"] += 1
+                    counts["brief_fields_dropped"] += 1
+                    fields[k] = ""
+                elif silence_hit(v, prompt):
+                    counts["brief_fields_dropped"] += 1
+                    fields[k] = ""
+                elif names_outlet(v, outlets):
+                    counts["named_outlets"] += 1
+                    counts["brief_fields_dropped"] += 1
+                    fields[k] = ""
+                elif ungrounded(v, material, allowed, generic):
+                    counts["ungrounded"] += 1
+                    counts["brief_fields_dropped"] += 1
+                    fields[k] = ""
+                else:
+                    fields[k] = v
+            if fields["what_ja"]:
+                out["briefs"][eids[eid]] = fields
     counts["missing"] = len(eids) - len(seen)
     return out

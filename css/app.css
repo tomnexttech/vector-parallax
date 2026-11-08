@@ -3011,3 +3011,14 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
 :root[data-theme="light"][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-rank .ph .pc { color: #00587a; }
 :root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-lead { color: #dcdce2; }
 :root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-rn { color: var(--ink); }
+
+/* the AI's brief of an event (CONTRACT 13.1): four rows, empty rows left out */
+.ch-brief { margin: 0 0 var(--sp-2); }
+.ch-brief dl { margin: 0; }
+.ch-brief dt { margin-top: 10px; font-size: var(--fs-2); color: var(--ink-2); }
+.ch-brief dt:first-child { margin-top: 0; }
+.ch-brief dd { margin: 2px 0 0; font-size: var(--fs-4); line-height: 1.6; color: var(--ink); }
+.ch-brief dd.none { color: var(--ink-2); }
+.ch-brief .ch-ai { margin: 8px 0 0; }
+.ch-brief .ch-ai > span:last-child { margin-left: 8px; }
+.ch-brief.en-ai { margin-bottom: var(--sp-3); }

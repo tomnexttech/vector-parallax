@@ -35,7 +35,7 @@ test('the words of the line', () => {
   const clock = () => '10:07';
   assert.deepEqual(breakingText({ kind: 'quake', shindo: '5-', mag: 5.24, place: '千葉県北東部', at: NOW }, clock), { tag: '地震', text: '震度5弱 千葉県北東部 M5.2・10:07' });
   assert.equal(breakingText({ kind: 'tsunami', title: '津波注意報', place: '伊豆諸島', at: NOW }, clock).text, '津波注意報 伊豆諸島・10:07');
-  assert.equal(breakingText({ kind: 'surge', title: '見出し', new6h: 14, n: 11 }).text, '見出し・6 時間で 14 件・11媒体');
+  assert.equal(breakingText({ kind: 'surge', title: '見出し', new6h: 14, n: 11 }).text, '見出し・6 時間で 14 件・11社');
 });
 
 test('ranks: highest first, equal values share a rank, nothing for zero', () => {

@@ -211,13 +211,13 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
       return h('button', { type: 'button', class: 'tl-k', data: { side: id }, disabled: n ? null : true, title: n ? `${ja}の ${n} 件を一覧で見る` : `${ja} 0 件`, on: { click: () => act.home(id) } },
         lineIcon(id), h('span', { class: 'kl', text: ja }), h('b', { class: 'num', text: n }), h('small', { text: pct(n) }));
     };
-    return tile('t-home', '国内と海外', '件数の比', h('div', { class: 'tl-b' }, ring(m), h('div', { class: 'tl-keys' }, key('jp'), key('intl'), m.gov.length ? key('gov') : null)), go('全部の報道を見る', () => act.all()));
+    return tile('t-home', '国内と海外', '件数の比', h('div', { class: 'tl-b' }, ring(m), h('div', { class: 'tl-keys' }, key('jp'), key('intl'), m.gov.length ? key('gov') : null)), go('すべての報道を見る', () => act.all()));
   }
 
   // DATA SOURCE of the earlier board: the type's name over its bar, the count beside it; who and how late in the tooltip
   function typeTile(m, act, who) {
     const top = m.types.slice(0, 6), max = Math.max(1, ...top.map((t) => t.n)), rest = m.types.length - top.length;
-    return tile('t-types', '媒体の種類', `${m.types.length} 種類`, h('div', { class: 'tl-bars' },
+    return tile('t-types', 'メディアの種類', `${m.types.length} 種類`, h('div', { class: 'tl-bars' },
       top.map((t) => {
         const names = who && who.get(t.type);
         return h('button', { type: 'button', class: 'tl-bar', title: names && names.length ? names.join('、') : `${t.type} ${t.n} 件`, on: { click: () => act.type(t.type) } },
@@ -253,7 +253,7 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
         h('span', { class: 'bi-n' }, t.ai ? h('span', { class: 'aimk', text: 'AI' }) : null, t.ja), h('span', { class: 'bi-b' }, h('i', { style: `width:${t.value}%` })), h('b', { class: 'num', text: t.value }), h('small', { class: 'bi-f', text: t.formula })))),
       b.skipped.length ? h('p', { class: 'bi-s', text: `外した項：${b.skipped.map((t) => `${t.ja}（${t.why}）`).join('、')}` }) : null,
       h('p', { class: 'bi-eq', text: `バイアス度 = ${b.formula}` }),
-      h('p', { class: 'bi-note', text: '報じ方の偏りを測った数です。内容の真偽や媒体の立場を示しません。' }));
+      h('p', { class: 'bi-note', text: '報じ方の偏りを測った数です。内容の真偽は示しません。' }));
     const paint = (isOpen) => {
       box.classList.toggle('open', isOpen);
       box.replaceChildren(h('header', { class: 'tl-h' }, h('h3', { text: 'バイアス度' }), h('small', { text: '0〜100' })), h('i', { class: 'tl-u' }),
@@ -312,8 +312,8 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
     const x = wordMatrix(m);
     if (x && x.outlets.length < 3) return null;   // a matrix needs more than two rows to show a pattern
     if (!x) return null;
-    return tile('t-over', '媒体と語の重なり', `${x.outlets.length} 媒体 × ${x.words.length} 語`, h('div', { class: 'mx', style: `--c:${x.words.length}` },
-      h('span', { class: 'mx-0' }), x.words.map((w, i) => h('button', { type: 'button', class: 'mx-w', title: `「${w}」で探す・${x.shared[i]} 媒体`, on: { click: () => act.word(w) } }, h('span', { text: w }))),
+    return tile('t-over', '媒体と語の重なり', `${x.outlets.length}社 × ${x.words.length} 語`, h('div', { class: 'mx', style: `--c:${x.words.length}` },
+      h('span', { class: 'mx-0' }), x.words.map((w, i) => h('button', { type: 'button', class: 'mx-w', title: `「${w}」で探す・${x.shared[i]}社`, on: { click: () => act.word(w) } }, h('span', { text: w }))),
       x.outlets.flatMap((o) => [h('span', { class: 'mx-o', data: { side: o.side }, text: o.name, title: o.name }),
         ...x.words.map((w) => (x.has(o.name, w) ? h('i', { class: 'mx-d', data: { side: o.side }, title: `${o.name}・${w}` }) : h('i', { class: 'mx-e' })))])), null);
   }
@@ -328,7 +328,7 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
     };
     const lag = isNum(m.lag) ? Math.abs(m.lag) : null;
     const big = isNum(new6h)
-      ? h('div', { class: 'tl-big' }, h('i', { text: new6h > 0 ? '▲' : '▶' }), h('b', { class: 'num', text: new6h > 0 ? `+${new6h}` : '0' }), h('small', { text: '6 時間の新着' }))
+      ? h('div', { class: 'tl-big' }, h('i', { text: new6h > 0 ? '▲' : '▶' }), h('b', { class: 'num', text: new6h > 0 ? `+${new6h}` : '0' }), h('small', { text: '新着' }))
       : null;
     return tile('t-time', '時間の流れ', m.first && m.last && m.last.ts > m.first.ts ? `+${fmtSpan(m.last.ts - m.first.ts)}` : null, h('div', { class: 'tl-b col' }, big, h('div', { class: 'tl-tw' }, areaSvg(m), lanes),
       h('div', { class: 'tl-firsts' }, firstLink('jp'), firstLink('intl'), lag != null ? h('span', { class: 'tl-f lag' }, h('span', { class: 'kl', text: '差' }), h('b', { class: 'num', text: lag < 60 ? '1分未満' : fmtSpan(lag) })) : null)), null);

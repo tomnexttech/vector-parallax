@@ -31,10 +31,9 @@ import { STATIONS, videosOf, playOfVideo, embedSrc } from './tv.js';
 export const GOV = '政府一次';
 export const CARDS = 6;
 export const PER_COL = 5;
-export const LEAD = '同じニュースを、国内と海外のメディア、官公庁がどう伝えたか並べて比べるサイトです。';
-export const HINT = 'ニュースを押すと、下に伝え方の違いが出ます';
-export const AI_NOTE = 'AI の文は誤りうる';
-export const SIDES = [['jp', '国内の報道', '国内'], ['intl', '海外の報道', '海外'], ['gov', '官公庁の資料', '官公庁']];
+export const HINT = 'ニュースを選ぶと、下に見出しが並びます';
+export const AI_NOTE = 'AI の文は間違うことがあります';
+export const SIDES = [['jp', '国内の報道', '国内'], ['intl', '海外の報道', '海外'], ['gov', '官公庁の発表', '官公庁']];
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 // 20 x 20, strokes only (the page sets the stroke): a house for Japan, an aeroplane for abroad, a page for the ministries' papers
@@ -152,13 +151,12 @@ export function renderEntry(root, o) {
   const counts = (m) => h('span', { class: 'en-c' }, SIDES.map(([k, , short]) => h('span', { class: m[k].length ? 'en-k' : 'en-k zero', data: { side: k } }, lineIcon(k), short, h('b', { text: m[k].length }))));
 
   const head = h('header', { class: 'en-head' },
-    h('h2', null, '今日の大きなニュース', h('span', { class: 'n', text: `${events.length} 件` })),
-    h('button', { type: 'button', class: 'tbb en-full', id: 'full-btn', 'aria-label': '詳しい画面へ', on: { click: o.full } }, h('span', { class: 'w', text: '詳しい画面へ' }), h('span', { class: 's', text: '詳しく' }), lineIcon('right')),
-    h('p', { class: 'en-lead', text: LEAD }));
+    h('h2', null, '今日の注目ニュース', h('span', { class: 'n', text: `${events.length} 件` })),
+    h('button', { type: 'button', class: 'tbb en-full', id: 'full-btn', 'aria-label': '詳しく見る', on: { click: o.full } }, h('span', { class: 'w', text: '詳しく見る' }), h('span', { class: 's', text: '詳しく' }), lineIcon('right')));
   if (!sel) { root.replaceChildren(head, h('p', { class: 'empty big', text: 'ニュース 0 件' })); return; }
 
   const prev = root.querySelector('.en-cards'), keep = prev ? prev.scrollLeft : null;   // the strip stays where the visitor left it
-  const cards = h('div', { class: 'en-cards', role: 'group', 'aria-label': '今日の大きなニュース' }, events.map((e) => {
+  const cards = h('div', { class: 'en-cards', role: 'group', 'aria-label': '今日の注目ニュース' }, events.map((e) => {
     const p = photo(e), m = meas(e), on = e === sel;
     return h('button', { type: 'button', class: 'en-card', data: { genre: fieldOf(e) }, 'aria-pressed': String(on), on: { click: () => o.pick(e.key) } },
       fig(e, p, 'card', true, on), p ? h('span', { class: 'en-cr', text: credit(p) }) : null, titleEl(titleOf(e), 'en-h'), h('span', { class: 'en-bar' }, ratio(m)), counts(m));
@@ -171,7 +169,9 @@ export function renderEntry(root, o) {
   // the AI's lines: each in its own box with who wrote it, when, and that it can be wrong
   const aiBox = (text, by, at) => h('div', { class: 'en-ai' }, h('p', { class: 'en-ai-t', text }), h('p', { class: 'en-ai-n' }, o.aiTag(by, at), h('span', { text: AI_NOTE })));
   const sm = sel.summary && str(sel.summary.text_ja).trim(), ct = sel.ai && str(sel.ai.contrast_ja).trim();
-  const ais = [sm ? aiBox(sm, [str(sel.summary.provider), str(sel.summary.model)], sel.summary.made_at) : null, ct ? aiBox(ct, o.aiBy || [], o.aiAt) : null].filter(Boolean);
+  const bf = sel.brief && o.briefBox ? o.briefBox(sel) : null;
+  if (bf) bf.classList.add('en-ai');
+  const ais = [bf, sm && !bf ? aiBox(sm, [str(sel.summary.provider), str(sel.summary.model)], sel.summary.made_at) : null, ct ? aiBox(ct, o.aiBy || [], o.aiAt) : null].filter(Boolean);
 
   // ---- the three figures: only what the headlines can count; a figure without its data is left out
   const tile = (cls, title, body) => h('section', { class: `en-fg ${cls}` }, h('h4', { class: 'en-fh', text: title }), body);
@@ -181,7 +181,7 @@ export function renderEntry(root, o) {
     h('span', { class: 'en-bigbar' }, ratio(m)),
     h('ul', { class: 'en-lg' }, SIDES.map(([k, , short]) => h('li', { class: m[k].length ? null : 'zero', data: { side: k } },
       lineIcon(k), h('span', { class: 'kl', text: short }), h('b', { class: 'num', text: m[k].length }), h('span', { class: 'u', text: '件' }), h('span', { class: 'pc num', text: pct(m[k].length) })))),
-    b && b.ok && o.dossier && o.detail ? h('button', { type: 'button', class: 'en-bias', title: 'バイアス度の内訳を詳しい画面で見る', on: { click: () => o.detail(sel.key, { bias: true }) } }, o.dossier.biasMini(b), lineIcon('right')) : null));
+    b && b.ok && o.dossier && o.detail ? h('button', { type: 'button', class: 'en-bias', title: 'バイアス度の内訳を見る', on: { click: () => o.detail(sel.key, { bias: true }) } }, o.dossier.biasMini(b), lineIcon('right')) : null));
   const firsts = SIDES.filter(([k]) => m.firstOf && m.firstOf[k]);
   const lag = isNum(m.lag) ? Math.abs(m.lag) : null;
   const area = o.dossier && o.dossier.areaSvg ? o.dossier.areaSvg(m) : null;
@@ -218,7 +218,7 @@ export function renderEntry(root, o) {
   const col = ([k, title]) => h('section', { class: 'en-col', data: { side: k } },
     h('h4', null, lineIcon(k), h('span', { text: title }), h('span', { class: 'n', text: s[k].length })),
     h('ol', { class: 'en-list' }, s[k].slice(0, PER_COL).map(item)),
-    s[k].length > PER_COL && o.detail ? h('button', { type: 'button', class: 'en-rest', on: { click: () => o.detail(sel.key) } }, `残り ${s[k].length - PER_COL} 件を詳しい画面で見る`) : null);
+    s[k].length > PER_COL && o.detail ? h('button', { type: 'button', class: 'en-rest', on: { click: () => o.detail(sel.key) } }, `残り ${s[k].length - PER_COL} 件を見る`) : null);
   const missEl = miss.length ? h('p', { class: 'en-miss' }, miss.map(([k, title]) => h('span', { class: 'en-mk', data: { side: k } }, lineIcon(k), title)),
     h('span', { text: 'は、集めたニュースには見当たりません' }), h('button', { type: 'button', class: 'en-to', on: { click: go('.cb-absent') } }, '見当たらない媒体へ')) : null;
 
@@ -246,7 +246,7 @@ export function renderEntry(root, o) {
   const foot = h('div', { class: 'en-foot' },
     h('button', { type: 'button', class: 'en-btn', on: { click: go('.en-pick') } }, lineIcon('up'), 'ほかのニュースを選ぶ'),
     o.shareImage ? h('button', { type: 'button', class: 'en-btn en-img', on: { click: () => o.shareImage(sel.key) } }, '画像で共有') : null,
-    o.detail ? h('button', { type: 'button', class: 'en-btn pri', on: { click: () => o.detail(sel.key) } }, 'このニュースを詳しい画面で見る', lineIcon('right')) : null);
+    o.detail ? h('button', { type: 'button', class: 'en-btn pri', on: { click: () => o.detail(sel.key) } }, '詳しく見る', lineIcon('right')) : null);
 
   // ---- the news of one side only (js/sections.js oneSideOf): a press shows it above, as a card does
   const nOf = (e) => new Set((Array.isArray(e.members) ? e.members : []).filter((it) => it && typeof it === 'object').map(outletOf).filter(Boolean)).size;
@@ -256,20 +256,20 @@ export function renderEntry(root, o) {
     h('div', { class: 'en-osc', style: `--n:${os.length}` }, os.map((g) => h('section', { class: 'en-osg', data: { side: g.side } },
       h('h4', null, lineIcon(g.side), h('span', { text: g.ja }), h('span', { class: 'n', text: g.events.length })),
       h('ul', { class: 'en-osl' }, g.events.slice(0, OS_CAP).map((e) => h('li', null, h('button', { type: 'button', class: 'en-osb', 'aria-pressed': String(e === sel), on: { click: () => o.pick(e.key) } },
-        titleEl(titleOf(e), 'en-ost'), h('span', { class: 'en-osm' }, h('span', { text: genreShort(fieldOf(e)) }), h('span', { class: 'num', text: `${nOf(e)} 媒体` })))))),
+        titleEl(titleOf(e), 'en-ost'), h('span', { class: 'en-osm' }, h('span', { text: genreShort(fieldOf(e)) }), h('span', { class: 'num', text: `${nOf(e)}社` })))))),
       g.events.length > OS_CAP && o.more ? h('button', { type: 'button', class: 'en-rest', on: { click: () => o.more(g.side) } }, `残り ${g.events.length - OS_CAP} 件を一覧で見る`) : null)))) : null;
 
   // ---- the reader's local news (settings: local.place): the news that name the place, a press shows it below as a card does
   const locEl = loc ? h('section', { class: 'en-os en-loc', 'aria-label': '地元のニュース' },
     h('h3', { class: 'en-sub' }, `地元のニュース（${str(loc.name)}）`, h('span', { class: 'n', text: loc.events.length })),
     loc.events.length ? h('ul', { class: 'en-osl' }, loc.events.map((e) => h('li', null, h('button', { type: 'button', class: 'en-osb', 'aria-pressed': String(e === sel), on: { click: () => o.pick(e.key) } },
-      titleEl(titleOf(e), 'en-ost'), h('span', { class: 'en-osm' }, h('span', { text: genreShort(fieldOf(e)) }), h('span', { class: 'num', text: `${nOf(e)} 媒体` }))))))
+      titleEl(titleOf(e), 'en-ost'), h('span', { class: 'en-osm' }, h('span', { text: genreShort(fieldOf(e)) }), h('span', { class: 'num', text: `${nOf(e)}社` }))))))
       : h('p', { class: 'en-osn', text: `${str(loc.name)}のニュースは今はありません。` })) : null;
 
   root.replaceChildren(head, pick, locEl,
     h('section', { class: 'en-sel', data: { genre: f }, 'aria-label': '選んだニュースの伝え方' },
       h('div', { class: 'en-top' + (headFig ? '' : ' nop') },
-        h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut} 媒体・${m.n} 件` }), ais, o.speak ? o.speak(sel) : null),
+        h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut}社・${m.n} 件` }), ais, o.speak ? o.speak(sel) : null),
         headFig),
       h('h3', { class: 'en-sub' }, '伝え方の違い'),
       h('div', { class: 'en-figs' }, share, time, words),

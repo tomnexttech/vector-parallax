@@ -20,7 +20,7 @@ export const SECTIONS = [
   { id: 'home', ja: 'ホーム' }, { id: 'news', ja: 'ニュース' }, { id: 'map', ja: '地図' }, { id: 'market', ja: '市場' },
   { id: 'politics', ja: '政治' }, { id: 'disaster', ja: '災害' }, { id: 'video', ja: '映像' }, { id: 'saved', ja: '保存' },
 ];
-export const NEWS_TABS = [['now', '今の順'], ['rank', 'ランキング'], ['paper', '紙面'], ['diff', '前回から'], ['anom', '一部の媒体だけ'], ['hours', '時間ごと'], ['src', '媒体']];
+export const NEWS_TABS = [['now', '注目ニュース'], ['rank', '注目度ランキング'], ['paper', '紙面'], ['diff', '前回からの新着'], ['anom', '片側だけのニュース'], ['hours', '時間別'], ['src', 'メディア']];
 const SECT_IDS = new Set(SECTIONS.map((x) => x.id));
 const TAB_IDS = new Set(NEWS_TABS.map(([id]) => id));
 
@@ -34,7 +34,7 @@ export function parseHash(hash) {
 export const hashOf = (sect, tab) => `#${SECT_IDS.has(sect) ? sect : 'home'}${sect === 'news' && tab && tab !== 'now' && TAB_IDS.has(tab) ? '/' + tab : ''}`;
 
 export const PAPER_ORDER = ['政府一次', '全国紙', '通信社', '経済紙', '公共放送'];
-const PAPER_JA = { 政府一次: '官公庁の資料' };
+const PAPER_JA = { 政府一次: '官公庁の発表' };
 
 export function paperOf(events, { outletOf = (it) => it.outlet, order = PAPER_ORDER, cap = 8 } = {}) {
   const out = [];
@@ -82,12 +82,12 @@ export function shareUrl(loc, { sid = '', title = '' } = {}) {
 /* the news of one side only: the reports of an event come from one of Japan, abroad and the ministries, and from two outlets or more
  * (one outlet alone says nothing about a side). Counted on the collected headlines only; the other sides may carry it in other words. */
 export const ONE_SIDE = [
-  { side: 'jp', ja: '国内の報道だけ', short: '国内だけ', rule: '集めたニュースのうち、国内のメディアの見出しだけにあるニュース（2 媒体以上）' },
-  { side: 'intl', ja: '海外の報道だけ', short: '海外だけ', rule: '集めたニュースのうち、海外のメディアの見出しだけにあるニュース（2 媒体以上）' },
-  { side: 'gov', ja: '官公庁の資料だけ', short: '官公庁だけ', rule: '集めたニュースのうち、官公庁の資料だけにあるニュース（2 か所以上）' },
+  { side: 'jp', ja: '国内だけ', short: '国内だけ', rule: '国内のメディアだけが載せているニュース（2 社以上）' },
+  { side: 'intl', ja: '海外だけ', short: '海外だけ', rule: '海外のメディアだけが載せているニュース（2 社以上）' },
+  { side: 'gov', ja: '官公庁だけ', short: '官公庁だけ', rule: '官公庁の発表だけにあるニュース（2 か所以上）' },
 ];
-export const ONE_SIDE_TITLE = '片方の側だけのニュース';
-export const ONE_SIDE_NOTE = 'ほかの側の見出しに無いことは、その側が扱わなかったことを意味しません。別の言い方の見出しはまとめの規則で拾えないことがあります。';
+export const ONE_SIDE_TITLE = '片側だけのニュース';
+export const ONE_SIDE_NOTE = 'ほかの側に見出しが無くても、扱っていないとは限りません。言い回しの違う見出しは拾えないことがあります。';
 
 /** oneSideOf(events, { sidesOf, outletOf, min }) -> [{ side, ja, short, rule, events }] the sides that have such news, most outlets first */
 export function oneSideOf(events, { sidesOf, outletOf = (it) => it.media || it.outlet, min = 2 } = {}) {
@@ -104,9 +104,9 @@ export function oneSideOf(events, { sidesOf, outletOf = (it) => it.media || it.o
 }
 
 const RULE_JA = {
-  primary_only: 'この話題を伝えているのがすべて政府や中央銀行で、お金か法律のラベルが付いている時に付きます',
-  periphery_only: '政党の機関紙・週刊誌・地方紙だけ（官公庁・海外・専門の媒体を含むことがあります）が伝えていて、お金・法律・安全保障のラベルが付いている時に付きます',
-  overseas_only: '海外の媒体だけが伝えていて、見出しに日本のことが出てくる時に付きます',
-  mainstream_only: '国内の主要な媒体と官公庁だけ（4 媒体以上）が伝えていて、お金・法律・安全保障のラベルが付いている時に付きます',
+  primary_only: '伝えているのが政府と中央銀行だけで、お金か法律のラベルが付く時に付きます',
+  periphery_only: '政党の機関紙、週刊誌、地方紙だけが伝え、お金、法律、安全保障のラベルが付く時に付きます',
+  overseas_only: '海外のメディアだけが伝え、見出しに日本のことが出てくる時に付きます',
+  mainstream_only: '国内の主要メディアと官公庁だけ（4 社以上）が伝え、お金、法律、安全保障のラベルが付く時に付きます',
 };
 export const ruleJa = (kind, en) => RULE_JA[kind] || (typeof en === 'string' ? en : '');

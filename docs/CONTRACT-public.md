@@ -122,6 +122,10 @@ sources.MAINSTREAM_TYPES (公共放送, 通信社, 全国紙, 民放), among the
     "made_at": 1762225200,              // when this line was made
     "provider": "gemini" | "claude-recorded", "model": "..."   // who wrote it
   },
+  "brief": absent | {                   // 13.1: the AI's detailed summary of an event of two outlets or more, with or without an AI headline
+    "what_ja": "...", "background_ja": "...", "views_ja": "...", "next_ja": "...",   // what happened / the course / how the sides put it / what is next ("" = the row is not shown)
+    "made_at": 1762225200, "provider": "gemini" | "claude-recorded", "model": "..."
+  },
   "videos": absent | [ { "id": "...", "title": "...", "ts": 1762225200, "station": "ann" } ],   // 18.14: the broadcasters' own videos that fit this event (<= 3, newest first)
   "basis": null | {                     // why these headlines were put together (8); null for a single member
     "by": "rule" | "ai",                // rule = word overlap of one rule cluster; ai = the AI grouped it
@@ -570,7 +574,7 @@ them for one run. The free-tier limits of each model are in the README ("AI cost
 **What it does.** After the bundling, every story with at least two outlets (`n_outlets >= 2`) and without an AI headline (`ai == null`) gets `summary`; an event with one outlet never gets one (it would only paraphrase a single headline; `check_output` refuses it): one Japanese line
 (at most `prompt.summary.limits.summary_ja` characters) that says what happened in the event as a whole. A story that has an AI
 headline gets none: its `headline_ja` is already that line. The order is the order of `stories` (the page order). Events go out in
-batches of 45 (`SUMMARY_BATCH`), at most 15 batches (`SUMMARY_CALL_LIMIT`): at most 675 events per build, counted from the top.
+batches of 30 (`SUMMARY_BATCH`, 45 before 13.1), at most 15 batches (`SUMMARY_CALL_LIMIT`): at most 450 events per build, counted from the top.
 Events that do not fit are left without a line (`ai_run.summary.left_out`). The bundling itself is unchanged (2 calls). **Free-tier check (2026-11-05, with the fallback chains).** 8 builds a day (one every 3 hours). Per model, at the very most: `gemini-3.6-flash` (the main bundling model) 8 x 2 = 16 of its 20 requests a day; `gemini-3.5-flash-lite` (the main summary model, 8 x 15 = 120, plus the first step of the bundling chain, 8 x 4 = 32) = 152 of its 500; `gemini-3.1-flash-lite` (the last step of both chains: bundling 8 x 4 = 32, summary 8 x 20 = 160) = 192. The fallback budget is one for the whole chain of a job, so each model is counted with all of it (4 and 20). The free-tier count of `gemini-3.1-flash-lite` is shown only on the signed-in AI Studio rate-limit page, which was not read (2026-11-05): 192 is held under 500, the count of the other Flash-Lite model, as an ASSUMPTION; `ai.merge` and `ai.summary` in `data/stats.json` and the 429 lines of the build log show if it is wrong. Counts are taken to be kept per model (README, "AI cost"). The limits of 15 per build (main) and 20 per build (fallback) are therefore kept.
 
 ```jsonc
@@ -624,6 +628,28 @@ status is `partial`. The workflow runs one build at a time (`concurrency`), so a
 `{status: ok|partial|error|recorded|off|nokey|none, provider, model, at, prompt_version, targets, cache_hits, summarized, calls, calls_failed,
 calls_skipped, attempts, call_limit, fallback_attempts, fallback_limit, left_out, errors, quoted_fields, empty, missing, shown_provider, note_ja}`. `at` is the newest `made_at` shown.
 
+### 13.1 The detailed summary (`story.brief`, decided 2026-11-09)
+
+The page of an event and its sheet say what happened without sending the reader to the outlets. The material is only what is already public data here: the headlines, the times, the number of outlets, and the description each feed attached to its own item (14.1, a quotation of 140 characters at most). **No article body is read or carried.**
+
+**One call, more fields.** The summary call (13) already runs for events of two outlets or more. Its answer grows from `{eid, summary_ja}` to `{eid, summary_ja, brief}`; the number of calls does not change (at most 15, batches of 30 so the answer fits `summary.max_output_tokens`). The set of events grows by the ones that have an AI headline: they get `brief` and still no `summary` (a story never carries both `ai` and `summary`; `check_output` refuses it). An event of one outlet gets neither.
+
+**Time.** The answer is longer, so one summary call waits 120 s (`SUMMARY_TIMEOUT_S`; 90 s before 13.1); the workflow's 30 minutes and the 15-call budget are unchanged.
+
+**Request.** Each item of `doc.events[].items[]` is `{outlet, lang, title, side, at, desc?}`: `side` is `国内` / `海外` / `官公庁` (the page's own count of sides, 21), `at` is `YYYY-MM-DD HH:MM` (JST), `desc` only when `desc_of` carries it (14.1: never for a Google News row, never with a fixed word, in the strict public edition only for a source that allows it).
+
+**Answer.** `brief` = `{what_ja, background_ja, views_ja, next_ja}`: what happened (when, where, who, as the material says it), the course or background, how the three sides put it differently (named by side, never by outlet), and what the material itself says is next (a scheduled announcement, a vote, an investigation under way). Limits in `prompt.summary.limits` (140, 140, 160, 100). The model writes only from the material of that event. When the material does not say, it writes exactly `伝えられていない` (`prompt.summary.unknown_ja`) in `background_ja`, `next_ja` or `views_ja` (the last one when two sides or more are present and show no difference; `""` when fewer than two sides are present). `what_ja` is never the unknown phrase.
+
+**Validation (`validate.validate_summaries`), field by field.** A field is dropped (becomes `""`) when it: copies a whole headline or description of the event (4.3 fold); says an outlet did not report (4.7); names an outlet of the event; or is **not grounded**: a number that is not in the material (the material's digits, plus the counts of items, outlets and sides), a Latin word that is not in the material, or a katakana run of three characters or more that is neither in the material nor in `prompt.summary.generic_katakana`. If `what_ja` does not survive there is no `brief`. A mechanical check cannot see a made-up kanji name or a wrong date written in words; those are bound by the instruction only, and the page says on every brief that the AI can be wrong and shows who wrote it and when. `ai_run.summary` counts `briefed`, `brief_fields_dropped`, `ungrounded`, and `quoted_fields` / `named_outlets` include brief fields.
+
+**Cache.** An entry gets `brief_v` (= `prompt.summary.brief_version`, now 1) and `brief`; an entry without `brief_v` (made before 13.1) is not a hit and the event is asked again once. An answer without a valid brief still stores `brief_v` (the same material is not asked again). `summary_ok: false` marks an entry whose `text_ja` is only a copy of `what_ja` (the line itself was refused): it gives a brief and no `summary`. The kept previous AI view (12) keeps the briefs of its stories.
+
+**Old data and failures.** `prompt.summary.brief_version` absent: the stage behaves as before 13.1. A call that fails, a call that is skipped by the budget, an answer in the old form, or data written before 13.1: the story has no `brief`, and the page shows what it showed before (nothing is replaced by a placeholder). A build that fails `check_output` still never overwrites the published data. `check_output` refuses a `brief` of the wrong shape, one on an event of a single outlet, and briefs of more than one provider in one file.
+
+**Name gate (17) and the withheld list (20.9).** A brief with a fixed word is dropped as a whole (`gate_names_in_stories`); in the public edition one that names a `no` / `nc` outlet is dropped too. An archived entry (21.3) keeps `brief`; the entry read back is cleaned (strings cut at 300 characters, the shape checked) and loses it when a withheld source or article removes a headline.
+
+**Page.** The sheet of an event (`js/summary.js` `briefOf`, `js/app.js` `briefBox`) and `s/<sid>.html` (21.1) show the four rows (a row with `""` is left out, the unknown phrase is shown in a muted colour), the AI mark with provider, model and time, and the note that the AI can be wrong.
+
 ## 14. Rights mode (`prompt.rights_mode`, decided 2026-11-04)
 
 `data/prompt.json` has `"rights_mode": "quote"` (default) or `"strict"`; `--rights quote|strict` (or the environment variable `PARALLAX_RIGHTS`) overrides
@@ -649,7 +675,7 @@ The body of an article is never read or carried. What is carried is the descript
 
 - **What.** The first paragraph of the item's `description`, else its `summary`, else its `content` (`content:encoded`): tags removed, entities decoded, white space collapsed (`feeds.first_paragraph`; paragraphs end at `</p>`, `</div>`, `<hr>`, two `<br>` or a blank line; an empty paragraph, such as an image only, is skipped). At most 140 characters (`sources.DESC_MAX`, the ellipsis counts). A shorter text is carried as it is. A longer text is cut at the last full stop (`。` `！` `？` `!` `?` or a full stop followed by a space) inside the 140 characters if that stop comes after the 20th character; otherwise at a word boundary, or after 139 characters, followed by `…`. The words are never changed, added or paraphrased (`sources.make_desc`).
 - **Not carried** (the field is absent): empty; shorter than 10 characters; the same as the headline, or the headline with only the outlet's name or a date added; a line that only invites the reader to go on or is an advertisement or a feed's boilerplate (`続きを読む`, `Read more`, `Sponsored`, `The post ... appeared first on ...`, `Article URL: ...`); a bare link. A trailing `続きを読む` / `Read more` / `[...]` is taken off and the rest is kept.
-- **Not read.** A feed read through Google News (`via`): its description is the relay's text, not the outlet's. The government pages that have no feed (19). `desc` is never sent to the model (4.1), and the model never writes it.
+- **Not read.** A feed read through Google News (`via`): its description is the relay's text, not the outlet's. The government pages that have no feed (19). `desc` is not sent in the bundling calls (4.1). The summary stage sends it, with the headlines, for the detailed summary (13.1); the model never writes it as a field of its own.
 - **Rights (14).** `quote`: every source. `strict`: in the public edition only for a source whose `terms_status` is `ok` (the same rule as `title`); the local edition carries it.
 - **Name gate (17).** A description that carries a fixed word is not carried (a title cannot be left out, a description can). `name_gate.desc_carried` and `name_gate.desc_blanked` count them.
 - **Withheld list (20.9).** A withheld source or article is removed from the fetch as a whole, so its description goes with it. The previous good version that is kept loses it the same way, and a kept public snapshot drops the description of an item the rules no longer allow.
@@ -1176,17 +1202,18 @@ and the site is deployed without these files: it never stops the page. The log l
 Sides as the page counts them (`js/entry.js` `sides`): `gov` = type `政府一次`, `intl` = `home == "intl"`, `jp` = the rest. The title is **the headline as published**: the representative
 headline `rep_id` (18.11), else the earliest titled report, else the outlets' names (never the AI's title). Photo: `board.cases[sid].photo` only (20.5), never copied.
 
-**Counts line** (the description of a page and of a feed item): the sides that have reports, `国内 4・海外 2`, then `最初に報じたのは海外 1時間27分先` when two sides or more have a time
-(`最初の報道は同じ分` under one minute), else `最初の報道 11月8日 6:12` (JST). A side without a report is **not named** anywhere (no "0", nothing that says it did not report).
+**Counts line** (the description of a page and of a feed item): the sides that have reports, `国内4件、海外2件`, then `。海外が国内より1時間27分早く報じた` when two sides or more have a time
+(`。最初の報道は同じ分` under one minute), else `。最初の報道 11月8日 6:12` (JST). A side without a report is **not named** anywhere (no "0", nothing that says it did not report). (Before 2026-11-09 the line was `国内 4・海外 2・最初に報じたのは海外 1時間27分先`.)
 
 ### 21.1 `s/<sid>.html`
 
 A static page, no script, light and dark by `prefers-color-scheme`. Head: `<title>`, `description`, `link rel=canonical`, `og:type article`, `og:site_name`, `og:locale ja_JP`, `og:title` (the
 headline as published), `og:description` (the counts line), `og:url` (= canonical), `og:image` (the event's photo, else `assets/icons/icon-512.png`), `twitter:card` (`summary_large_image`
 with a photo, else `summary`), `twitter:title`, `twitter:description`, `twitter:image` (with a photo), `article:published_time` (the first report), `link rel=alternate` to `../feed.xml`.
-Body: the headline and its outlet, the field (`cases[sid].cat`), the counts line, outlets / reports / first and newest time, a link **`../?sid=<sid>&t=<headline, 60 chars>`** into the page
-(`js/app.js` opens `sid`, else finds `t`), the photo whole with `写真：<outlet>`, then each side that has reports: time, outlet, type, the headline linked to the article (`rel="noopener nofollow"`,
-`Google ニュース経由` for 20.7 rows) and the feed's description quoted (14.1) when carried; 40 reports at most. No article text.
+Body (2026-11-09: readable without leaving the page): the headline and its outlet, the field (`cases[sid].cat`), `N社が報道・N件・最初の報道・最新の報道`, the counts line, a link **`../?sid=<sid>&t=<headline, 60 chars>`** into the page
+(`js/app.js` opens `sid`, else finds `t`; the button says `比べて見る`), the photo whole with `写真：<outlet>`, **the AI's detailed summary `要点` (13.1) when the story has one** (four rows, the AI mark, provider, model and time),
+then each side that has reports (`国内の報道` / `海外の報道` / `官公庁の発表`): time, outlet, type, the headline as text, the feed's description quoted (14.1) when carried, and the link to the article as `元の記事` (`rel="noopener nofollow"`,
+`Google ニュース経由` for 20.7 rows); then `時系列` (time, side, outlet, headline; 16 rows at most); 40 reports at most. No article text. An event without a brief (old data, a failed call, an archived page) shows the page without `要点`.
 
 Pages are made for every event of this build and for every event of the archive (21.3) that this build does not have: an archived sid whose event goes on under a new sid (same first
 report, or half the kept headlines shared) gets the current page with `canonical` pointing to the new sid; others are made from the archive entry (no descriptions) and say
@@ -1197,7 +1224,7 @@ report, or half the kept headlines shared) gets the current page with `canonical
 | file | items (30 at most) | order |
 |---|---|---|
 | `feed.xml` | today's big news: `board.priority`, events with reports from two sides or three outlets and more (`js/entry.js` `entryEvents`) | priority |
-| `feed-oneside.xml` | the news of one side only: reports from one of the three sides and two outlets or more there (`js/sections.js` `oneSideOf`); the description starts `国内の報道だけ・` / `海外の報道だけ・` / `官公庁の資料だけ・`; the channel's description is `ONE_SIDE_NOTE` | outlets on that side, then newest |
+| `feed-oneside.xml` | the news of one side only: reports from one of the three sides and two outlets or more there (`js/sections.js` `oneSideOf`); the description starts `国内だけ。` / `海外だけ。` / `官公庁だけ。`; the channel's description is `ONE_SIDE_NOTE` | outlets on that side, then newest |
 | `feed-politics.xml` `feed-world.xml` `feed-economy.xml` `feed-security.xml` `feed-tech.xml` `feed-markets.xml` `feed-other.xml` | events of the field 国内政治 / 国際 / 経済 / 安全保障 / 技術 / 市場 / その他 (`cases[sid].cat`) | `score`, then newest |
 
 Item: `title` = the headline as published, `link` = `<base>s/<sid>.html`, `description` = the counts line, `category` = the field, `pubDate` = the first report,

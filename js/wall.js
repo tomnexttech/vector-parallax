@@ -57,7 +57,7 @@ export function createWall({ h, lk, dossier, lineIcon, headNode, measureOf, phot
   // the numbers of a card: the bar, the outlets, and at the larger sizes each side with its symbol
   function nums(e, m, level) {
     const each = (id) => (m[id].length ? h('span', { class: 'wt-k', data: { side: id } }, lineIcon(id), h('b', { class: 'num', text: m[id].length })) : null);
-    return h('span', { class: 'nt-f' }, dossier.ratioBar(m), h('b', { class: 'num', text: e.n }), h('small', { text: '媒体' }),
+    return h('span', { class: 'nt-f' }, dossier.ratioBar(m), h('b', { class: 'num', text: e.n }), h('small', { text: '社' }),
       level === 'xs' ? null : h('span', { class: 'wt-ks' }, each('jp'), each('intl'), each('gov')),
       biasChip(e),
       level === 'xs' ? null : dossier.go('詳しく見る', () => onOpen(e.key)));
@@ -67,7 +67,7 @@ export function createWall({ h, lk, dossier, lineIcon, headNode, measureOf, phot
   const biasChip = (e) => { const b = biasOf(e); return b && b.ok ? lk(dossier.biasMini(b), () => onOpen(e.key), 'バイアス度の内訳を見る', 'bi-chip') : null; };
   function related(e, max) {
     const rel = relatedOf(e).slice(0, max);
-    return rel.length ? h('div', { class: 'mn-rel' }, h('span', { class: 'k', text: '関連の見出し' }), h('ul', null, rel.map((x) => h('li', null, lk(x.text, () => onPress(x.key), 'この出来事を開く'))))) : null;
+    return rel.length ? h('div', { class: 'mn-rel' }, h('span', { class: 'k', text: '関連ニュース' }), h('ul', null, rel.map((x) => h('li', null, lk(x.text, () => onPress(x.key), 'この出来事を開く'))))) : null;
   }
 
   function card(e, level, sel) {

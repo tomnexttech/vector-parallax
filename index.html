@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://generativelanguage.googleapis.com https://api.anthropic.com https://api.openai.com https://earthquake.usgs.gov https://www.jma.go.jp https://www.gdacs.org https://tiles.openfreemap.org https://s3.amazonaws.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
-<meta name="description" content="同じ出来事を、日本と海外の媒体・官公庁の資料・地図・災害・市場と一画面で並べるサイト。">
+<meta name="description" content="国内と海外のメディア、官公庁の発表を並べて読めるニュースサイト。">
 <meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -31,7 +31,7 @@
 <div class="app" id="app">
 
   <header class="tb" id="tb">
-    <div class="tb-app">
+    <div class="tb-app" id="app-home" role="link" tabindex="0" aria-label="ホームへ" title="ホームへ">
       <svg class="mark" viewBox="0 0 20 20" aria-hidden="true"><path d="M2.5 7.5h10M7.5 12.5h10"/></svg>
       <span class="app-name">Parallax</span>
     </div>
@@ -56,7 +56,7 @@
     <button type="button" class="tbb" id="view-btn" aria-expanded="false" aria-controls="tb-menu">表示</button>
     <div class="state" id="state" role="status" aria-live="polite">読込中</div>
     <div class="meters">
-      <span class="meter" id="m-src" data-host><span class="k">媒体</span><b class="num" id="src-live">—</b><span class="sl">/</span><span id="src-total">—</span></span>
+      <span class="meter" id="m-src" data-host><span class="k">メディア</span><b class="num" id="src-live">—</b><span class="sl">/</span><span id="src-total">—</span></span>
       <span class="meter" id="m-gen" data-host><span class="k">更新</span><b id="gen-at">—</b><time id="gen-age"></time></span>
       <span class="meter" id="m-ai" data-host><span class="k">AI</span><b id="ai-who">—</b><time id="ai-age"></time></span>
       <span class="meter" id="m-new" hidden><span class="k">前回から</span><b class="num" id="new-n">—</b></span>
@@ -64,8 +64,11 @@
     <div class="tb-r">
       <button type="button" class="search" id="cmd-btn" aria-haspopup="dialog" title="検索と操作（Ctrl+K）"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg><span id="cmd-t">検索</span><kbd id="cmd-kbd">Ctrl K</kbd></button>
       <button type="button" class="tbb icon" id="voice-btn" hidden aria-label="声で操作" title="声で操作（v）"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.5" y="2.5" width="5" height="9.5" rx="2.5"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>
-      <button type="button" class="tbb" id="home-btn">詳しい画面</button>
-      <button type="button" class="tbb" id="entry-btn" aria-pressed="false">かんたん表示</button>
+      <div class="seg screens" id="screens" role="group" aria-label="画面">
+        <button type="button" id="sc-home" aria-pressed="true">ホーム</button>
+        <button type="button" id="sc-board" aria-pressed="false">詳しく見る</button>
+        <button type="button" id="sc-simple" aria-pressed="false">比べる</button>
+      </div>
       <button type="button" class="tbb tx-i" id="about-btn" title="データと AI（i）"><span class="ic">i</span><span class="tx">データと AI</span></button>
       <button type="button" class="tbb icon" id="theme-btn" aria-label="外観 ダーク" title="外観"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" stroke="none"/></svg></button>
       <button type="button" class="tbb tx-i" id="tour-btn" title="使い方"><span class="ic">?</span><span class="tx">使い方</span></button>
@@ -81,11 +84,11 @@
   <div class="note-bar scene-bar" id="scene-bar" role="status" hidden></div>
 
   <nav class="jump" aria-label="欄へ移る">
-    <a href="#p-case">出来事</a><a href="#p-pri">注目</a><a href="#p-map">地図</a><a href="#p-rel">関連</a><a href="#p-basis">出典</a><a href="#p-anom">一部の媒体だけ</a><a href="#p-tv">映像</a><a href="#p-haz">災害</a><a href="#p-src">媒体</a><a class="lx" href="#p-hours">時間</a><a class="lx" href="#p-fields">分野</a><a class="lx" href="#p-count">件数</a><a class="lx" href="#p-mkt">市場</a><a class="lx" href="#p-pol">政治</a>
+    <a href="#p-case">ニュース詳細</a><a href="#p-pri">注目ニュース</a><a href="#p-map">地図</a><a href="#p-rel">関連</a><a href="#p-basis">出典</a><a href="#p-anom">片側だけのニュース</a><a href="#p-tv">映像</a><a href="#p-haz">災害</a><a href="#p-src">メディア</a><a class="lx" href="#p-hours">時間</a><a class="lx" href="#p-fields">分野</a><a class="lx" href="#p-count">件数</a><a class="lx" href="#p-mkt">市場</a><a class="lx" href="#p-pol">政治</a>
   </nav>
   <div class="gwrap genre-strip" id="genre-strip"></div>
 
-  <section class="entry" id="entry" aria-label="かんたん表示" hidden></section>
+  <section class="entry" id="entry" aria-label="比べる" hidden></section>
   <section class="sect" id="sect" hidden></section>
   <section class="sect sv" id="sect-saved" aria-label="保存" hidden>
     <div class="sc-in">
@@ -112,18 +115,17 @@
     <div class="home-bar" id="home-bar">
       <div class="home-tt">
         <h2 class="home-t">今日のニュース</h2>
-        <p class="home-lead">同じニュースを、国内と海外のメディアと官公庁がどう伝えたか。並べて比べます。</p>
         <p class="home-sub num" id="home-sub"></p>
       </div>
-      <button type="button" class="home-detail" id="home-detail">詳しい画面へ</button>
+      <button type="button" class="home-detail" id="home-detail">詳しく見る</button>
     </div>
     <div class="col c1">
       <section class="pane" id="p-src" aria-labelledby="src-h">
-        <header class="ph"><h2 id="src-h">媒体</h2><span class="pc" id="src-c"></span></header>
+        <header class="ph"><h2 id="src-h">メディア</h2><span class="pc" id="src-c"></span></header>
         <div class="pb" id="src-b"></div>
       </section>
       <section class="pane" id="p-hours" aria-labelledby="hours-h">
-        <header class="ph"><h2 id="hours-h">時間ごとの見出し</h2><span class="pc" id="hours-c"></span></header>
+        <header class="ph"><h2 id="hours-h">時間別の件数</h2><span class="pc" id="hours-c"></span></header>
         <div class="pb" id="hours-b"></div>
       </section>
       <section class="pane" id="p-fields" aria-labelledby="fields-h">
@@ -135,7 +137,7 @@
 
     <div class="col c2">
       <section class="pane" id="p-pri" aria-labelledby="pri-h">
-        <header class="ph"><h2 id="pri-h">注目</h2><b class="pc num" id="pri-c">—</b></header>
+        <header class="ph"><h2 id="pri-h">注目ニュース</h2><b class="pc num" id="pri-c">—</b></header>
         <div class="gwrap" id="pri-genres"></div>
         <div class="chips" id="pri-chips" role="group" aria-label="論点で絞る"></div>
         <div class="pb" id="pri-b"><ul class="sk-rows" aria-hidden="true"><li><i class="sk sk-th"></i><span class="sk-tx"><i class="sk sk-ln"></i><i class="sk sk-ln s"></i></span></li><li><i class="sk sk-th"></i><span class="sk-tx"><i class="sk sk-ln"></i><i class="sk sk-ln s"></i></span></li><li><i class="sk sk-th"></i><span class="sk-tx"><i class="sk sk-ln"></i><i class="sk sk-ln s"></i></span></li><li><i class="sk sk-th"></i><span class="sk-tx"><i class="sk sk-ln"></i><i class="sk sk-ln s"></i></span></li><li><i class="sk sk-th"></i><span class="sk-tx"><i class="sk sk-ln"></i><i class="sk sk-ln s"></i></span></li></ul></div>
@@ -145,18 +147,18 @@
         <div class="pb" id="local-b"></div>
       </section>
       <section class="pane" id="p-rank" aria-labelledby="rank-h">
-        <header class="ph"><h2 id="rank-h">よく報じられている</h2><a class="pc rk-all" href="#news/rank">ランキング</a></header>
+        <header class="ph"><h2 id="rank-h">注目度ランキング</h2><a class="pc rk-all" href="#news/rank">すべて見る</a></header>
         <div class="pb" id="rank-b"></div>
       </section>
       <section class="pane" id="p-anom" aria-labelledby="anom-h">
-        <header class="ph"><h2 id="anom-h">一部の媒体だけ</h2><b class="pc num" id="anom-c">—</b></header>
+        <header class="ph"><h2 id="anom-h">片側だけのニュース</h2><b class="pc num" id="anom-c">—</b></header>
         <div class="asum" id="anom-sum" role="group" aria-label="報じ方の種類で絞る"></div>
         <div class="pb" id="anom-b"></div>
       </section>
     </div>
 
     <div class="col c3">
-      <section class="pane case" id="p-case" aria-label="出来事">
+      <section class="pane case" id="p-case" aria-label="ニュース詳細">
         <div class="pb" id="case"><div class="sk-case" aria-hidden="true"><i class="sk sk-ph"></i><span class="sk-tx"><i class="sk sk-tag"></i><i class="sk sk-ln h"></i><i class="sk sk-ln h"></i><i class="sk sk-ln h s"></i><i class="sk sk-bar"></i></span><i class="sk sk-num"></i></div></div>
       </section>
       <div class="under" id="under">
@@ -165,11 +167,11 @@
           <div class="pb" id="tv-b"></div>
         </section>
         <section class="pane" id="p-rel" aria-labelledby="rel-h">
-          <header class="ph"><h2 id="rel-h">関連の見出し</h2><span class="pc" id="rel-c"></span></header>
+          <header class="ph"><h2 id="rel-h">関連ニュース</h2><span class="pc" id="rel-c"></span></header>
           <div class="pb" id="rel-b"></div>
         </section>
         <section class="pane" id="p-basis" aria-labelledby="basis-h">
-          <header class="ph"><h2 id="basis-h">根拠と出典</h2><span class="pc" id="basis-c"></span></header>
+          <header class="ph"><h2 id="basis-h">出典とまとめ方</h2><span class="pc" id="basis-c"></span></header>
           <div class="pb" id="basis-b"></div>
         </section>
       </div>
@@ -179,7 +181,7 @@
 
     <div class="col c4">
       <section class="pane count" id="p-count" aria-labelledby="count-h">
-        <header class="ph"><h2 id="count-h">集めた見出し</h2></header>
+        <header class="ph"><h2 id="count-h">見出しの件数</h2></header>
         <div class="pb"><b class="big num" id="count-n">—</b><dl class="kv tight" id="count-f"></dl></div>
       </section>
       <section class="pane" id="p-haz" aria-labelledby="haz-h">

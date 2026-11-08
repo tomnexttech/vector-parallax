@@ -57,7 +57,7 @@ export function createMapNews({ h, lk, headNode, ratioOf, photoOf, fmtAge, fmtCl
         e.geo ? h('span', { class: 'nt-pl', text: e.geo.name }) : null, h('span', { class: 'nt-ag', text: fmtAge(e.last) })),
       p ? h('span', { class: 'nt-ph' }, h('img', { src: p.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => ev.target.parentElement.remove() } })) : null,
       headNode(e, 'nt-t'),
-      h('span', { class: 'nt-f' }, ratioOf(e), h('b', { class: 'num', text: e.n }), h('small', { text: '媒体' })));
+      h('span', { class: 'nt-f' }, ratioOf(e), h('b', { class: 'num', text: e.n }), h('small', { text: '社' })));
   }
   function aside(e) {
     const vid = videoOf(e);
@@ -67,10 +67,10 @@ export function createMapNews({ h, lk, headNode, ratioOf, photoOf, fmtAge, fmtCl
       h('img', { src: `https://i.ytimg.com/vi/${vid.v.id}/mqdefault.jpg`, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => ev.target.remove() } }),
       h('span', { class: 'mn-vn', text: vid.name })) : null;
     return h('article', { class: 'mn-sel' },
-      h('div', { class: 'mn-sh' }, e.geo ? h('b', { class: 'banner', text: e.geo.name }) : null, h('span', { class: 'mn-m' }, ratioOf(e), h('b', { class: 'num', text: e.n }), h('small', { text: '媒体' })), isNum(e.last) ? h('small', { text: fmtClock(e.last) }) : null),
+      h('div', { class: 'mn-sh' }, e.geo ? h('b', { class: 'banner', text: e.geo.name }) : null, h('span', { class: 'mn-m' }, ratioOf(e), h('b', { class: 'num', text: e.n }), h('small', { text: '社' })), isNum(e.last) ? h('small', { text: fmtClock(e.last) }) : null),
       h('h3', { lang: e.heading.lang || null }, headNode(e, 'mn-t')),
       describe(e), play,
-      rel.length ? h('div', { class: 'mn-rel' }, h('span', { class: 'k', text: '関連の見出し' }), h('ul', null, rel.map((x) => h('li', null, lk(x.text, () => onSelect(x.key), 'この出来事を開く'))))) : null,
+      rel.length ? h('div', { class: 'mn-rel' }, h('span', { class: 'k', text: '関連ニュース' }), h('ul', null, rel.map((x) => h('li', null, lk(x.text, () => onSelect(x.key), 'この出来事を開く'))))) : null,
       h('button', { type: 'button', class: 'mn-go', on: { click: () => onDetails(e.key) } }, '詳しく見る'));
   }
   function render(box, v) {

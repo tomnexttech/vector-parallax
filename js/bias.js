@@ -60,7 +60,7 @@ function region(m, base) {
   if (!all) return { why: '媒体名が無い' };
   const seen = X.size / all, ground = base.intl / (base.jp + base.intl), r = againstChance(seen, ground, all);
   if (!r) return { why: '集めた媒体が片方だけ' };
-  return { value: r.value, formula: `|海外の媒体の割合 ${pct(seen)} − 集めた媒体全体の海外の割合 ${pct(ground)}| ÷ ${all} 媒体で偶然に出る振れ ${pct(r.sd)} ÷ ${Z_FULL}（上限 100）` };
+  return { value: r.value, formula: `|海外の媒体の割合 ${pct(seen)} − 集めた媒体全体の海外の割合 ${pct(ground)}| ÷ ${all}社で偶然に出る振れ ${pct(r.sd)} ÷ ${Z_FULL}（上限 100）` };
 }
 function kinds(m, base) {
   const shares = base && base.shares ? Object.values(base.shares) : [];

@@ -97,9 +97,9 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
       const move = (id, d) => change((n) => { const o = n.tv.order; const i = o.indexOf(id), j = i + d; if (i < 0 || j < 0 || j >= o.length) return; [o[i], o[j]] = [o[j], o[i]]; });
       return [
         group('', [
-          row('映像の欄', paneOff ? '隠している間は読み込まない' : null, sw('tv-pane', !paneOff, '映像の欄', (n, v) => { n.panes.off = v ? n.panes.off.filter((x) => x !== 'tv') : [...n.panes.off, 'tv']; })),
+          row('映像の欄', paneOff ? '隠している間は読み込みません' : null, sw('tv-pane', !paneOff, '映像の欄', (n, v) => { n.panes.off = v ? n.panes.off.filter((x) => x !== 'tv') : [...n.panes.off, 'tv']; })),
           row('自動で再生', null, sw('tv-auto', s.tv.auto, '自動で再生', (n, v) => { n.tv.auto = v; })),
-          row('最初の音', s.tv.sound && s.tv.auto ? '音を出すと、ブラウザが自動の再生を止めることがある' : null,
+          row('最初の音', s.tv.sound && s.tv.auto ? '音を出すと、ブラウザが自動再生を止めることがあります' : null,
             seg('tv-sound', '最初の音', s.tv.sound ? 'on' : 'off', [['off', '消音'], ['on', '出す']], (n, v) => { n.tv.sound = v === 'on'; })),
         ]),
         group('局', st.map((x, i) => h('div', { class: 'set-r set-st' + (off.has(x.id) ? ' off' : '') },
@@ -108,7 +108,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
           h('div', { class: 'set-mv' },
             h('button', { type: 'button', class: 'mv', 'aria-label': `${x.name} を上へ`, disabled: i === 0 ? true : null, data: { f: `up-${x.id}` }, on: { click: () => move(x.id, -1) } }, icon('<path d="M6 12l4-4 4 4"/>')),
             h('button', { type: 'button', class: 'mv', 'aria-label': `${x.name} を下へ`, disabled: i === st.length - 1 ? true : null, data: { f: `dn-${x.id}` }, on: { click: () => move(x.id, 1) } }, icon('<path d="M6 8l4 4 4-4"/>'))))),
-        `出来事を選ぶと、表示する局の中から報じた局へ移る。表示 ${st.length - off.size} / ${st.length}`),
+        `ニュースを選ぶと、表示する局の中から、そのニュースを扱った局に移ります。表示 ${st.length - off.size} / ${st.length}`),
       ];
     },
     news(s, inf) {
@@ -117,15 +117,15 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
         on: { click: () => change((n) => { n.news[`${k}_off`] = []; }) } }, label);
       return [
         group('', [
-          row('最初に開く見方', '自動は AI のまとめがあれば AI。上の帯でいつでも替えられる', seg('view', '最初に開く見方', s.news.view, [['auto', '自動'], ['ai', 'AI'], ['rules', '自動']], (n, v) => { n.news.view = v; })),
-          row('見出しの言語', 'AI の題が無い出来事は、報じた媒体の見出しを出す', seg('lang', '見出しの言語', s.news.lang, [['ja', '日本語'], ['en', 'English'], ['orig', '元の見出し']], (n, v) => { n.news.lang = v; })),
-          row('国内と海外', '両方で報じられた出来事は常に出す', seg('scope', '国内と海外', s.news.scope, [['all', '両方'], ['jp', '国内'], ['intl', '海外']], (n, v) => { n.news.scope = v; })),
-          row('地元のニュース', 'ホームとかんたん表示に、選んだ地名が出るニュースの欄を出す。選びはこのブラウザだけに残す', h('select', { class: 'set-sel', 'aria-label': '地元のニュース', data: { f: 'local' }, on: { change: (ev) => { const v = ev.target.value; change((n) => { n.local.place = v; }); } } },
+          row('最初に開く見方', '自動は、AI のまとめがあれば AI を使います。上の帯でいつでも替えられます', seg('view', '最初に開く見方', s.news.view, [['auto', '自動'], ['ai', 'AI'], ['rules', '自動']], (n, v) => { n.news.view = v; })),
+          row('見出しの言語', 'AI の題が無いニュースは、メディアの見出しをそのまま出します', seg('lang', '見出しの言語', s.news.lang, [['ja', '日本語'], ['en', 'English'], ['orig', '元の見出し']], (n, v) => { n.news.lang = v; })),
+          row('国内と海外', '国内と海外の両方が載せたニュースは必ず出します', seg('scope', '国内と海外', s.news.scope, [['all', '両方'], ['jp', '国内'], ['intl', '海外']], (n, v) => { n.news.scope = v; })),
+          row('地元のニュース', 'ホームと「比べる」に、選んだ地名のニュースを出します。選択はこのブラウザにだけ保存します', h('select', { class: 'set-sel', 'aria-label': '地元のニュース', data: { f: 'local' }, on: { change: (ev) => { const v = ev.target.value; change((n) => { n.local.place = v; }); } } },
             h('option', { value: '', selected: !s.local.place ? true : null }, '選ばない'),
             ['都道府県', '国'].map((g) => h('optgroup', { label: g }, PLACE_CHOICES.filter((x) => x.group === g).map((x) => h('option', { value: x.key, selected: s.local.place === x.key ? true : null }, x.ja)))))),
         ]),
-        group('媒体の種類', inf.types.map(([t, k]) => row(t, null, [h('span', { class: 'set-k', text: `媒体 ${k}` }), sw(`ty-${t}`, !tOff.has(t), t, (n, v) => { n.news.types_off = v ? n.news.types_off.filter((x) => x !== t) : [...n.news.types_off, t]; })])),
-          '表示する種類の媒体が一つでも報じた出来事は出す', allOn('types', '全て表示', 'ty-all')),
+        group('メディアの種類', inf.types.map(([t, k]) => row(t, null, [h('span', { class: 'set-k', text: `媒体 ${k}` }), sw(`ty-${t}`, !tOff.has(t), t, (n, v) => { n.news.types_off = v ? n.news.types_off.filter((x) => x !== t) : [...n.news.types_off, t]; })])),
+          '選んだ種類のメディアが一社でも載せたニュースは出します', allOn('types', '全て表示', 'ty-all')),
         group('分野', inf.fields.map((f) => row(f, null, sw(`fd-${f}`, !fOff.has(f), f, (n, v) => { n.news.fields_off = v ? n.news.fields_off.filter((x) => x !== f) : [...n.news.fields_off, f]; }))),
           null, allOn('fields', '全て表示', 'fd-all')),
       ];
@@ -134,12 +134,12 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
       const hd = inf.hidden;
       const by = Object.entries(hd.by).filter(([, n]) => n).map(([k, n]) => `${KIND_JA[k] || k} ${n}`).join(' · ');
       return [
-        h('p', { class: 'set-lead' }, h('span', { text: '当たった出来事は一覧と地図から外し、上の帯に数を出す。注目の行はラベルだけ残して畳む。' }),
+        h('p', { class: 'set-lead' }, h('span', { text: '当たったニュースは一覧と地図から外し、上の帯に件数を出します。注目の行はラベルだけ残します。' }),
           h('b', { class: 'num', text: ` いま ${hd.n} 件` }), by ? h('span', { class: 'set-by', text: `（${by}）` }) : null),
         group('語', terms('mw', s.mute.words, MUTE_WORDS, '見出しに含む語', (n, v) => { n.mute.words = addTerm(n.mute.words, v, MUTE_WORDS); }, (n, t) => { n.mute.words = removeTerm(n.mute.words, t); }),
-          '全角と半角、大文字と小文字は同じに扱う'),
-        group('媒体', terms('mo', s.mute.outlets, MUTE_OUTLETS, '媒体の名', (n, v) => { n.mute.outlets = addTerm(n.mute.outlets, v, MUTE_OUTLETS, NAME_LEN); }, (n, t) => { n.mute.outlets = removeTerm(n.mute.outlets, t); }, 'set-outlets'),
-          '隠すのは、その媒体だけが報じた出来事。他も報じた出来事は残す'),
+          '全角と半角、大文字と小文字は区別しません'),
+        group('メディア', terms('mo', s.mute.outlets, MUTE_OUTLETS, 'メディアの名', (n, v) => { n.mute.outlets = addTerm(n.mute.outlets, v, MUTE_OUTLETS, NAME_LEN); }, (n, t) => { n.mute.outlets = removeTerm(n.mute.outlets, t); }, 'set-outlets'),
+          '隠すのは、そのメディアだけが載せたニュースです。ほかも載せたニュースは残ります'),
         h('datalist', { id: 'set-outlets' }, inf.outlets.map((o) => h('option', { value: o }))),
         h('p', { class: 'set-gf' }, '分野と媒体の種類は ', h('button', { type: 'button', class: 'set-link', data: { f: 'go-news' }, on: { click: () => go('news') } }, 'ニュース'), ' で選ぶ'),
       ];
@@ -147,12 +147,12 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
     motion(s, inf) {
       return [
         group('', [
-          row('出来事の自動切替', '12 秒ごとに注目の次の出来事へ。触れている間は止まる', sw('m-cases', s.motion.cases, '出来事の自動切替', (n, v) => { n.motion.cases = v; })),
-          row('一覧の自動送り', '見切れる一覧をゆっくり送る', sw('m-scroll', s.motion.scroll, '一覧の自動送り', (n, v) => { n.motion.scroll = v; })),
+          row('出来事の自動切替', '12 秒ごとに次の注目ニュースへ移ります。触れている間は止まります', sw('m-cases', s.motion.cases, '出来事の自動切替', (n, v) => { n.motion.cases = v; })),
+          row('一覧の自動送り', 'はみ出す一覧をゆっくり送ります', sw('m-scroll', s.motion.scroll, '一覧の自動送り', (n, v) => { n.motion.scroll = v; })),
           row('動きを減らす', `この端末は動きを${inf.calmSystem ? '減らす' : '減らさない'}設定`, seg('m-calm', '動きを減らす', s.motion.calm, [['system', 'システムに従う'], ['on', '常に減らす']], (n, v) => { n.motion.calm = v; })),
-          row('操作の音・押した時', '押した時と切り替えた時にごく小さな音。スマホは押した時に短く震える', sw('m-sound', s.motion.sound, '押した時の音', (n, v) => { n.motion.sound = v; })),
-          row('操作の音・当てた時', 'カーソルを当てた時にごく小さな音', sw('m-hsound', s.motion.hoverSound, '当てた時の音', (n, v) => { n.motion.hoverSound = v; })),
-        ], '動きを減らすと、自動の送りと切替の動き、地図の移動の動きを止める'),
+          row('操作の音・押した時', '押した時と切り替えた時に小さな音が鳴ります。スマホは短く震えます', sw('m-sound', s.motion.sound, '押した時の音', (n, v) => { n.motion.sound = v; })),
+          row('操作の音・当てた時', 'カーソルを当てた時に小さな音が鳴ります', sw('m-hsound', s.motion.hoverSound, '当てた時の音', (n, v) => { n.motion.hoverSound = v; })),
+        ], '動きを減らすと、自動送り、切り替えの動き、地図の動きが止まります'),
       ];
     },
     look(s) {
@@ -165,14 +165,14 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
         opts.map(([v, ja]) => h('button', { type: 'button', 'aria-pressed': String(value === v), data: { f: `${f}-${v}` }, on: { click: () => { fn(v); render(); } } }, ja)));
       const vw = view ? view.get() : null;
       return [vw ? group('一度に見るニュース', [row('件数', null, pick('v-count', '件数', vw.count, vw.counts, view.setCount)), row('並べ方', null, pick('v-layout', '並べ方', vw.layout, vw.layouts, view.setLayout))]) : null,
-        group('', PANES.map(([id, ja]) => row(ja, id === 'tv' ? '隠している間は読み込まない' : null,
+        group('', PANES.map(([id, ja]) => row(ja, id === 'tv' ? '隠している間は読み込みません' : null,
         sw(`p-${id}`, !off.has(id), ja, (n, v) => { n.panes.off = v ? n.panes.off.filter((x) => x !== id) : [...n.panes.off, id]; }))), '出来事と注目の欄は常に出す')];
     },
     ai() {
       const cfg = cleanOwnAI(ai.get());
       const kind = cfg.kind, p = PROVIDERS[kind] || null;
       const dflt = p ? (kind === 'gemini' && ai.fallback && modelOk(ai.fallback()) ? ai.fallback() : p.model) : '';
-      const rows = [row('状態', null, h('b', { class: 'set-state', data: { f: 'ai-state' }, text: p && cfg.keys[kind] ? '設定済み' : '未設定' })), row('提供元', 'なしのままでも、AI のまとめは今まで通り全部使える',
+      const rows = [row('状態', null, h('b', { class: 'set-state', data: { f: 'ai-state' }, text: p && cfg.keys[kind] ? '設定済み' : '未設定' })), row('提供元', 'なしのままでも AI のまとめは使えます',
         h('div', { class: 'seg', role: 'group', 'aria-label': '提供元' },
           [['none', 'なし'], ...KINDS.map((k) => [k, PROVIDERS[k].ja])].map(([v, ja]) => h('button', {
             type: 'button', 'aria-pressed': String(kind === v), data: { f: `ai-kind-${v}` }, on: { click: () => aiChange((c) => { c.kind = v; }) } }, ja))))];
@@ -195,8 +195,8 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
           h('button', { type: 'button', class: 'tbb', data: { f: 'ai-forget' }, on: { click: onForget } }, '鍵を消す')]));
       }
       return [
-        h('p', { class: 'set-lead', text: '鍵はこのブラウザの中だけに保存し、選んだ提供元にだけ送る。費用はあなたの契約に掛かる' }),
-        group('', rows, '使い道は、声の操作と、出来事の欄の「自分の AI に聞く」。AI のまとめや要約は、鍵がなくても今のまま使える'),
+        h('p', { class: 'set-lead', text: '鍵はこのブラウザにだけ保存し、選んだ提供元にだけ送ります。費用は契約者に掛かります' }),
+        group('', rows, '声の操作と、ニュース詳細の「自分の AI に聞く」で使います。AI のまとめは鍵がなくても使えます'),
         p ? h('datalist', { id: 'set-ai-models' }, p.models.map((m) => h('option', { value: m }))) : null,
         h('p', { class: 'set-msg' + (aiMsg && aiMsg.err ? ' err' : ''), role: 'status', 'aria-live': 'polite', hidden: !aiMsg, data: { f: 'ai-msg' }, text: aiMsg ? aiMsg.text : '' }),
       ];
@@ -205,9 +205,9 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
       const armed = Date.now() < resetArm;
       return [
         group('', [
-          row('書き出す', '設定とフォローする言葉を一つの JSON に（鍵は入れない）', h('button', { type: 'button', class: 'tbb', data: { f: 'd-exp' }, on: { click: onExport } }, 'JSON を書き出す')),
-          row('読み込む', '書き出した JSON から戻す', h('button', { type: 'button', class: 'tbb', data: { f: 'd-imp' }, on: { click: () => file.click() } }, 'JSON を読み込む')),
-          row('既定に戻す', 'フォローする言葉と自分の AI は残す', h('button', { type: 'button', class: 'tbb' + (armed ? ' warn' : ''), data: { f: 'd-reset' }, on: { click: onReset } }, armed ? 'もう一度押すと戻す' : '既定に戻す')),
+          row('書き出す', '設定とフォローする言葉を JSON に書き出します（鍵は入りません）', h('button', { type: 'button', class: 'tbb', data: { f: 'd-exp' }, on: { click: onExport } }, 'JSON を書き出す')),
+          row('読み込む', '書き出した JSON から戻します', h('button', { type: 'button', class: 'tbb', data: { f: 'd-imp' }, on: { click: () => file.click() } }, 'JSON を読み込む')),
+          row('既定に戻す', 'フォローする言葉と自分の AI は残ります', h('button', { type: 'button', class: 'tbb' + (armed ? ' warn' : ''), data: { f: 'd-reset' }, on: { click: onReset } }, armed ? 'もう一度押すと戻す' : '既定に戻す')),
         ]),
         msg ? h('p', { class: 'set-msg' + (msg.err ? ' err' : ''), role: 'status', text: msg.text }) : null,
       ];

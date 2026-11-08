@@ -25,14 +25,18 @@ BASE_URL = "https://tomnexttech.github.io/vector-parallax/"
 SITE = "Parallax"
 JST = timezone(timedelta(hours=9))
 GOV = "政府一次"
-SIDES = (("jp", "国内", "国内の報道"), ("intl", "海外", "海外の報道"), ("gov", "官公庁", "官公庁の資料"))
+SIDES = (("jp", "国内", "国内の報道"), ("intl", "海外", "海外の報道"), ("gov", "官公庁", "官公庁の発表"))
+BRIEF_KEYS = ("what_ja", "background_ja", "views_ja", "next_ja")
+BRIEF_LABELS = (("what_ja", "何が起きたか"), ("background_ja", "経緯"), ("views_ja", "伝え方の違い"), ("next_ja", "今後の焦点"))
+UNKNOWN = "伝えられていない"
 FIELDS = (("国内政治", "politics"), ("国際", "world"), ("経済", "economy"), ("安全保障", "security"),
           ("技術", "tech"), ("市場", "markets"), ("その他", "other"))
-ONE_SIDE = {"jp": "国内の報道だけ", "intl": "海外の報道だけ", "gov": "官公庁の資料だけ"}
-ONE_SIDE_NOTE = "ほかの側の見出しに無いことは、その側が扱わなかったことを意味しません。別の言い方の見出しはまとめの規則で拾えないことがあります。"
-LEAD = "同じニュースを、国内と海外のメディア、官公庁がどう伝えたか並べて比べるサイトです。"
+ONE_SIDE = {"jp": "国内だけ", "intl": "海外だけ", "gov": "官公庁だけ"}
+ONE_SIDE_NOTE = "片側にしか見出しがないニュース。ほかの側に報道がないとは限りません。"
+FEED_COUNTS = "国内、海外、官公庁の件数つき。"
 FEED_MAX = 30          # items in one feed
 HEADS_MAX = 40         # headlines on one page
+TIMELINE_MAX = 16      # rows of the time line on one page
 ARCHIVE_DAYS = 7
 ARCHIVE_TOP = 30       # big news kept per day (ranked)
 ARCHIVE_HEADS = 12     # headlines kept per archived event (so its page can be made again)
@@ -51,6 +55,16 @@ def _s(v, n=300):
 
 def _int(v):
     return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+
+def _brief(b):
+    """story.brief (CONTRACT 13.1) as the page of an event keeps it: four strings, who wrote it and when. None when what_ja is empty or the shape is wrong"""
+    if not isinstance(b, dict) or not _s(b.get("what_ja"), 300):
+        return None
+    out = {k: _s(b.get(k), 300) for k in BRIEF_KEYS}
+    out["model"] = _s(b.get("model"), 80)
+    out["made_at"] = _int(b.get("made_at"))
+    return out
 
 
 def _http(u):
@@ -84,7 +98,7 @@ def _head(m, with_desc=True):
     return h
 
 
-def make_event(sid, members, case=None, cat=None):
+def make_event(sid, members, case=None, cat=None, brief=None):
     """one event from its member items (dicts of latest.items); case = board.cases[sid] or None"""
     case = case if isinstance(case, dict) else {}
     ms = sorted([m for m in members if isinstance(m, dict)], key=_by_time)
@@ -117,6 +131,7 @@ def make_event(sid, members, case=None, cat=None):
         "photo": ph if ph and ph["url"] else None,
         "heads": heads[:HEADS_MAX],
         "score": case.get("score") if isinstance(case.get("score"), (int, float)) else 0,
+        "brief": _brief(brief),
     }
 
 
@@ -138,7 +153,7 @@ def events(latest, board):
                     ids += [i for i in stories[x].get("member_ids") or [] if isinstance(i, str) and i not in ids]
         members = [dict(items[i], id=i) for i in ids if isinstance(items.get(i), dict)]
         if members:
-            out[sid] = make_event(sid, members, c)
+            out[sid] = make_event(sid, members, c, brief=st.get("brief"))
     return out
 
 
@@ -194,15 +209,16 @@ def clock(ts, date=True):
 
 
 def counts_line(ev):
-    """the counts of each side that has reports, and who came first: "国内 4・海外 2・最初に報じたのは海外 1時間27分先" """
-    parts = ["%s %d" % (ja, ev["sides"][k]) for k, ja, _ in SIDES if ev["sides"][k]]
+    """the counts of each side that has reports, and who came first: "国内4件、海外2件。海外が国内より1時間27分早く報じた" """
+    parts = ["%s%d件" % (ja, ev["sides"][k]) for k, ja, _ in SIDES if ev["sides"][k]]
+    out = "、".join(parts)
     firsts = sorted([(ev["first"][k], ja) for k, ja, _ in SIDES if ev["first"].get(k) is not None])
     if len(firsts) >= 2:
-        (t0, ja0), (t1, _) = firsts[0], firsts[1]
-        parts.append("最初の報道は同じ分" if t1 - t0 < 60 else "最初に報じたのは%s %s先" % (ja0, gap_text(t1 - t0)))
+        (t0, ja0), (t1, ja1) = firsts[0], firsts[1]
+        out += "。" + ("最初の報道は同じ分" if t1 - t0 < 60 else "%sが%sより%s早く報じた" % (ja0, ja1, gap_text(t1 - t0)))
     elif firsts:
-        parts.append("最初の報道 %s" % clock(firsts[0][0]))
-    return "・".join(parts)
+        out += "。最初の報道 %s" % clock(firsts[0][0])
+    return out
 
 
 # ---------------------------------------------------------------- the page of one event
@@ -230,7 +246,10 @@ figure{margin:16px 0}figure img{max-width:100%;height:auto;display:block;border-
 section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px 16px;margin:16px 0}h2{font-size:16px;margin:12px 0 4px}
 ol{list-style:none;margin:0;padding:0}li{padding:10px 0;border-top:1px solid var(--line)}li:first-child{border-top:0}.meta{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
 q{display:block;font-size:14px;color:var(--mut);margin-top:4px}q::before,q::after{content:none}.note{font-size:13px;color:var(--mut);margin-top:24px}
-footer{font-size:13px;color:var(--mut);margin-top:16px}footer a{margin-right:12px}"""
+footer{font-size:13px;color:var(--mut);margin-top:16px}footer a{margin-right:12px}
+.mark{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12px;font-weight:400;color:var(--mut);margin-left:6px;vertical-align:1px}
+.brief dl{margin:0 0 8px}.brief dt{font-size:13px;color:var(--mut);margin-top:12px}.brief dd{margin:2px 0 0}.brief dd.none{color:var(--mut)}
+.hl{font-size:16px}a.orig{font-size:13px;margin-left:8px}.tl li{padding:6px 0}.tl .hl{font-size:14px}"""
 
 
 def story_page(ev, base=BASE_URL, generated_at=None, canonical_sid=None, kept_from=None, newer_sid=None):
@@ -256,39 +275,57 @@ def story_page(ev, base=BASE_URL, generated_at=None, canonical_sid=None, kept_fr
     if ev.get("first_ts") is not None:
         head.append('<meta property="article:published_time" content="%s">' % datetime.fromtimestamp(ev["first_ts"], timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
     head += ['<link rel="icon" href="../assets/icons/icon-192.png" type="image/png">',
-             '<link rel="alternate" type="application/rss+xml" title="%s 今日の大きなニュース" href="../feed.xml">' % SITE,
+             '<link rel="alternate" type="application/rss+xml" title="%s 今日の注目ニュース" href="../feed.xml">' % SITE,
              "<style>%s</style>" % CSS]
-    body = ['<header class="top"><a class="site" href="../">%s</a><span>%s</span></header>' % (SITE, _e(LEAD))]
+    body = ['<header class="top"><a class="site" href="../">%s</a><a href="../">ホームへ</a></header>' % SITE]
     body.append("<h1>%s</h1>" % _e(title))
     if ev.get("outlet"):
-        body.append('<p class="src">%s・見出しは公表どおり</p>' % _e(ev["outlet"]))
-    body.append('<p><span class="field">%s</span></p>' % _e(ev["cat"]))
+        body.append('<p class="src">%s</p>' % _e(ev["outlet"]))
+    body.append('<p class="meta"><span class="field">%s</span> %d社が報道・%d件・最初の報道 %s・最新の報道 %s</p>'
+                % (_e(ev["cat"]), ev["n_outlets"], ev["n_items"], clock(ev.get("first_ts")), clock(ev.get("last_ts"))))
     body.append('<p class="line">%s</p>' % _e(desc))
-    body.append('<p class="meta">%d 媒体・%d 件・最初の報道 %s・最新の報道 %s</p>' % (ev["n_outlets"], ev["n_items"], clock(ev.get("first_ts")), clock(ev.get("last_ts"))))
-    body.append('<a class="open" href="%s">アプリでこのニュースを比べる</a>' % _e(app_link(dict(ev, sid=canonical_sid or sid))))
+    body.append('<a class="open" href="%s">比べて見る</a>' % _e(app_link(dict(ev, sid=canonical_sid or sid))))
     if newer_sid:
-        body.append('<p class="meta"><a href="%s.html">このニュースの新しい頁</a></p>' % _e(newer_sid))
+        body.append('<p class="meta"><a href="%s.html">新しい頁へ</a></p>' % _e(newer_sid))
     if img:
         body.append('<figure><img src="%s" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer"><figcaption>写真：%s</figcaption></figure>'
                     % (_e(img), _e(ev["photo"].get("outlet") or "—")))
+    br = ev.get("brief")
+    if br:
+        rows = []
+        for k, label in BRIEF_LABELS:
+            v = br.get(k)
+            if not v:
+                continue
+            rows.append('<dt>%s</dt><dd%s>%s</dd>' % (label, ' class="none"' if v == UNKNOWN else "", _e(v)))
+        by = "・".join(x for x in (br.get("model"), clock(br["made_at"]) if br.get("made_at") else "") if x)
+        body.append('<section class="brief"><h2>要点<span class="mark">AI</span></h2><dl>%s</dl><p class="meta">AI が書きました（%s）。元の記事で確かめてください。</p></section>'
+                    % ("".join(rows), _e(by or "—")))
     for k, _, ja in SIDES:
         hs = [h for h in ev["heads"] if h["side"] == k]
         if not hs:
             continue           # a side without a report is not named
         rows = []
         for h in hs:
-            t = _e(h["title"]) if h["title"] else "記事を開く"
-            a = '<a href="%s" rel="noopener nofollow" referrerpolicy="no-referrer">%s</a>' % (_e(h["link"]), t) if h["link"] else t
+            t = _e(h["title"]) if h["title"] else "見出しなし"
+            orig = '<a class="orig" href="%s" rel="noopener nofollow" referrerpolicy="no-referrer">元の記事</a>' % _e(h["link"]) if h["link"] else ""
             via = "・Google ニュース経由" if h.get("via") else ""
             q = "<q>%s</q>" % _e(h["desc"]) if h.get("desc") else ""
-            rows.append('<li><div class="meta">%s・%s・%s%s</div>%s%s</li>' % (_e(clock(h["ts"])), _e(h["outlet"] or "—"), _e(h["type"]), via, a, q))
-        body.append('<section><h2>%s %d 件</h2><ol>%s</ol></section>' % (ja, ev["sides"][k], "".join(rows)))
+            rows.append('<li><div class="meta">%s・%s・%s%s</div><div class="hl">%s%s</div>%s</li>'
+                        % (_e(clock(h["ts"])), _e(h["outlet"] or "—"), _e(h["type"]), via, t, orig, q))
+        body.append('<section><h2>%s %d件</h2><ol>%s</ol></section>' % (ja, ev["sides"][k], "".join(rows)))
+    timed = [h for h in ev["heads"] if h["ts"] is not None]
+    if len(timed) >= 2:
+        names = {k: short for k, short, _ in SIDES}
+        rows = ['<li><span class="meta">%s・%s・%s</span> <span class="hl">%s</span></li>'
+                % (_e(clock(h["ts"])), names.get(h["side"], ""), _e(h["outlet"] or "—"), _e(h["title"] or "見出しなし")) for h in timed[:TIMELINE_MAX]]
+        body.append('<section class="tl"><h2>時系列</h2><ol>%s</ol></section>' % "".join(rows))
     if ev["n_items"] > len(ev["heads"]):
-        body.append('<p class="meta">ほか %d 件はアプリで見られます。</p>' % (ev["n_items"] - len(ev["heads"])))
+        body.append('<p class="meta">ほか %d 件はホームで見られます。</p>' % (ev["n_items"] - len(ev["heads"])))
     when = clock(generated_at) if generated_at else "—"
-    note = ("%s 時点の控えです。" % _e(kept_from)) if kept_from else ("%s 時点の集計です。" % when)
-    body.append('<p class="note">%s件数は集めた見出しの数です。見出しと説明文は各メディアが公表したまま載せ、記事の本文は載せていません。</p>' % note)
-    body.append('<footer><a href="../">%s</a><a href="../feed.xml">RSS</a><a href="../feed-oneside.xml">片方の側だけ（RSS）</a></footer>' % SITE)
+    note = ("%s時点の控え" % _e(kept_from)) if kept_from else ("%s時点" % when)
+    body.append('<p class="note">%s。見出しと要旨は各メディアの配信の引用で、記事の本文は載せていません。</p>' % note)
+    body.append('<footer><a href="../">%s</a><a href="../feed.xml">RSS</a><a href="../feed-oneside.xml">片側だけのニュース（RSS）</a></footer>' % SITE)
     return '<!doctype html>\n<html lang="ja">\n<head>\n%s\n</head>\n<body>\n<main>\n%s\n</main>\n</body>\n</html>\n' % ("\n".join(head), "\n".join(body))
 
 
@@ -323,7 +360,7 @@ def rss(name, title, desc, rows, base=BASE_URL, generated_at=None):
         out.append("<title>%s</title>" % _x(ev["title"]))
         out.append("<link>%s</link>" % _x(link))
         out.append('<guid isPermaLink="false">%s</guid>' % _x(guid(ev)))
-        out.append("<description>%s</description>" % _x((prefix + "・" if prefix else "") + line))
+        out.append("<description>%s</description>" % _x((prefix + "。" if prefix else "") + line))
         out.append("<category>%s</category>" % _x(ev["cat"]))
         if ev.get("first_ts") is not None:
             out.append("<pubDate>%s</pubDate>" % _rfc822(ev["first_ts"]))
@@ -341,7 +378,7 @@ def day_of(ts):
 def entry_of(ev, rank=None):
     """an event as the archive keeps it: no description, at most ARCHIVE_HEADS headlines"""
     e = {k: ev[k] for k in ("sid", "title", "title_none", "outlet", "title_id", "cat", "n_items", "n_outlets", "sides", "side_outlets", "first",
-                            "first_ts", "last_ts", "first_id", "photo")}
+                            "first_ts", "last_ts", "first_id", "photo", "brief")}
     e["heads"] = [{k: v for k, v in h.items() if k != "desc"} for h in ev["heads"][:ARCHIVE_HEADS]]
     e["rank"] = rank
     return e
@@ -370,7 +407,8 @@ def _clean_entry(e):
             "title_id": _s(e.get("title_id"), 64), "cat": _s(e.get("cat"), 20) or "その他", "n_items": _int(e.get("n_items")) or len(heads),
             "n_outlets": _int(e.get("n_outlets")) or 1, "sides": num(e.get("sides")), "side_outlets": num(e.get("side_outlets")),
             "first": {k: _int(first.get(k)) for k, _, _ in SIDES}, "first_ts": _int(e.get("first_ts")), "last_ts": _int(e.get("last_ts")),
-            "first_id": _s(e.get("first_id"), 64), "photo": ph if ph and ph["url"] else None, "heads": heads, "rank": _int(e.get("rank"))}
+            "first_id": _s(e.get("first_id"), 64), "photo": ph if ph and ph["url"] else None, "heads": heads, "rank": _int(e.get("rank")),
+            "brief": _brief(e.get("brief"))}
 
 
 def scrub(entry, withheld):
@@ -386,6 +424,7 @@ def scrub(entry, withheld):
         return None
     e = dict(entry, heads=heads)
     if len(heads) != len(entry["heads"]):
+        e["brief"] = None                # a summary made from headlines that are now withheld goes with them
         if e["title_id"] and e["title_id"] not in {h["id"] for h in heads}:
             t = next((h for h in heads if h["title"]), None)
             e.update(title=t["title"] if t else "・".join(sorted({h["outlet"] for h in heads if h["outlet"]})[:3]), title_none=t is None,
@@ -525,10 +564,10 @@ def write_site(out, latest, board, base=BASE_URL, fetch=fetch_json, withheld=Non
     big = big_news(evs, board)
     ones = one_side(evs)
     fields = by_field(evs)
-    feeds = {"feed.xml": ("今日の大きなニュース", LEAD + " 各ニュースの国内・海外・官公庁の件数と、最初に報じた側。", [(e, "") for e in big])}
-    feeds["feed-oneside.xml"] = ("片方の側だけのニュース", ONE_SIDE_NOTE, [(e, ONE_SIDE[s]) for s, e in ones])
+    feeds = {"feed.xml": ("今日の注目ニュース", "報道の多かったニュース。" + FEED_COUNTS, [(e, "") for e in big])}
+    feeds["feed-oneside.xml"] = ("片側だけのニュース", ONE_SIDE_NOTE, [(e, ONE_SIDE[s]) for s, e in ones])
     for f, slug in FIELDS:
-        feeds["feed-%s.xml" % slug] = ("%sのニュース" % f, "分野「%s」のニュースの国内・海外・官公庁の件数と、最初に報じた側。" % f, [(e, "") for e in fields.get(f, [])])
+        feeds["feed-%s.xml" % slug] = ("%sのニュース" % f, "%sのニュース。" % f + FEED_COUNTS, [(e, "") for e in fields.get(f, [])])
     for name, (title, desc, rows) in feeds.items():
         (out / name).write_text(rss(name, title, desc, rows, base, gen), encoding="utf-8")
     # the archive: today's entries are every event a feed links (so a feed's link stays alive for seven days), the big news ranked first

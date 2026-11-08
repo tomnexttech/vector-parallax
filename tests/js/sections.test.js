@@ -27,7 +27,7 @@ test('the paper: the order of the columns, one headline of an event to a column,
   const p = paperOf(es);
   assert.deepEqual(p.map((x) => x.type), ['政府一次', '全国紙', '通信社']);
   assert.deepEqual(PAPER_ORDER.slice(0, 2), ['政府一次', '全国紙']);
-  assert.equal(p[0].label, '官公庁の資料');
+  assert.equal(p[0].label, '官公庁の発表');
   assert.deepEqual(p[1].rows.map((r) => r.it.title), ['A 早い', 'B 紙']);
   assert.equal(paperOf(es, { cap: 1 })[1].rows.length, 1);
   assert.equal(paperOf(es, { cap: 1 })[1].n, 2);

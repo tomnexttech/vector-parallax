@@ -51,7 +51,7 @@ export function breakingText(b, clock = () => '') {
   const at = isNum(b.at) ? clock(b.at) : '';
   if (b.kind === 'tsunami') return { tag: '津波', text: [b.title, b.place].filter(Boolean).join(' ') + (at ? `・${at}` : '') };
   if (b.kind === 'quake') return { tag: '地震', text: `震度${SHINDO_JA(b.shindo)} ${b.place || '—'}${isNum(b.mag) ? ` M${b.mag.toFixed(1)}` : ''}${at ? `・${at}` : ''}` };
-  if (b.kind === 'surge') return { tag: '報道が急増', text: `${b.title}・6 時間で ${b.new6h} 件・${b.n}媒体` };
+  if (b.kind === 'surge') return { tag: '報道が急増', text: `${b.title}・6 時間で ${b.new6h} 件・${b.n}社` };
   return { tag: '', text: '' };
 }
 
@@ -84,7 +84,7 @@ export function localOf(events, key) {
 
 export const SPANS = [['6h', '6 時間', 6 * 3600], ['24h', '24 時間', 24 * 3600], ['all', '全部', Infinity]];
 export const SEARCH_SIDES = [['all', '全部'], ['jp', '国内'], ['intl', '海外'], ['gov', '官公庁']];
-export const SORTS = [['n', '媒体の多い順'], ['new', '新しい順']];
+export const SORTS = [['n', '報道が多い順'], ['new', '新しい順']];
 export const QF0 = { span: 'all', side: 'all', outlet: '', sort: 'n' };
 
 export function searchOf(events, { span = 'all', side = 'all', outlet = '', sort = 'n', now, sideN, outletOf = (it) => it.media || it.outlet } = {}) {

@@ -11,7 +11,7 @@
 
 export const ASK_LIMITS = { items: 10, heading: 120, outlet: 40, title: 120, desc: 200, line: 120, lines: 3 };
 export const ASK_MARK = 'AI（自分の鍵）';
-export const ASK_NOTE = 'AI の文は誤りうる・元の記事で確かめる。真偽や左右の判定はしない';
+export const ASK_NOTE = 'AI の文は間違うことがあります。元の記事で確かめてください。真偽や左右の判定はしない';
 export const ASK_SCHEMA = { type: 'OBJECT', properties: { lines: { type: 'ARRAY', items: { type: 'STRING' } } }, required: ['lines'] };
 export const ASK_SYSTEM = [
   'You compare how different news outlets word one event, for a reader who wants to see the difference in wording.',

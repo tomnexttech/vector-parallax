@@ -32,8 +32,8 @@ const IMPORT_MAX = 200000;        // characters of a settings file
 
 /** the panes a visitor may turn off; the event and the priority list always stay */
 export const PANES = [
-  ['src', '媒体'], ['hours', '時間ごとの見出し'], ['fields', '分野'], ['anom', '一部の媒体だけ'], ['map', '地図'],
-  ['count', '集めた見出し'], ['tv', '映像'], ['haz', '災害'], ['mkt', '市場'], ['pol', '政治'],
+  ['src', 'メディア'], ['hours', '時間別の件数'], ['fields', '分野'], ['anom', '片側だけのニュース'], ['map', '地図'],
+  ['count', '見出しの件数'], ['tv', '映像'], ['haz', '災害'], ['mkt', '市場'], ['pol', '政治'],
 ];
 const PANE_IDS = PANES.map(([id]) => id);
 const STATION_IDS = STATIONS.map((x) => x.id);
@@ -143,7 +143,7 @@ export function reasonJa(r) {
   return r.k === 'word' ? `語「${r.v}」` : r.k === 'outlet' ? `媒体「${r.v}」` : r.k === 'type' ? `媒体の種類「${r.v}」`
     : r.k === 'field' ? `分野「${r.v}」` : r.v === 'intl' ? '海外の出来事' : '国内の出来事';
 }
-export const KIND_JA = { word: '語', outlet: '媒体', type: '媒体の種類', field: '分野', scope: '国内と海外' };
+export const KIND_JA = { word: '語', outlet: 'メディア', type: 'メディアの種類', field: '分野', scope: '国内と海外' };
 
 // ------------------------------------------------------------ the viewer's own AI (a key of their own, optional)
 export const OWN_AI_KEY = 'parallax.ownai.v1';

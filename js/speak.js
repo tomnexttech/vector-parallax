@@ -12,7 +12,7 @@
 
 export const PER = 5;
 const JA = /[぀-ヿ一-鿿]/;
-const SIDE_JA = [['jp', '国内の報道'], ['intl', '海外の報道'], ['gov', '官公庁の資料']];
+const SIDE_JA = [['jp', '国内の報道'], ['intl', '海外の報道'], ['gov', '官公庁の発表']];
 const str = (v) => (typeof v === 'string' ? v : '');
 const langOf = (t) => (JA.test(t) ? 'ja' : 'en');
 const tag = (v) => String((v && v.lang) || '').toLowerCase().replace('_', '-');

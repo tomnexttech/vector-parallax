@@ -94,8 +94,8 @@ class Events(unittest.TestCase):
     def test_counts_line_names_the_first_side_and_the_gap(self):
         latest, board, sid = dataset()
         evs = site.events(latest, board)
-        self.assertEqual(site.counts_line(evs[sid]), "国内 2・海外 1・最初に報じたのは海外 1時間27分先")
-        self.assertTrue(site.counts_line(evs["s0000000000b0"]).startswith("海外 2・最初の報道 "))
+        self.assertEqual(site.counts_line(evs[sid]), "国内2件、海外1件。海外が国内より1時間27分早く報じた")
+        self.assertTrue(site.counts_line(evs["s0000000000b0"]).startswith("海外2件。最初の報道 "))
         self.assertEqual(evs[sid]["title"], "協議が再開　政府は「前進」")            # the representative headline as published
         self.assertEqual(evs[sid]["outlet"], "NHK")
 
@@ -131,7 +131,7 @@ class Page(unittest.TestCase):
         self.assertEqual(p.links["canonical"], url)
         self.assertEqual(p.meta["og:url"], url)
         self.assertEqual(p.meta["og:title"], "協議が再開　政府は「前進」")
-        self.assertEqual(p.meta["og:description"], "国内 2・海外 1・最初に報じたのは海外 1時間27分先")
+        self.assertEqual(p.meta["og:description"], "国内2件、海外1件。海外が国内より1時間27分早く報じた")
         self.assertEqual(p.meta["og:image"], "https://img.example/a2.jpg")
         self.assertEqual(p.meta["twitter:card"], "summary_large_image")
         for k in ("og:type", "og:site_name", "twitter:title", "twitter:description", "twitter:image", "description"):
@@ -144,13 +144,13 @@ class Page(unittest.TestCase):
         self.assertNotIn("<resume>", page)
         self.assertIn("https://news.example/a1", page)
         self.assertIn("<q>The first paragraph the feed carried.</q>", page)
-        self.assertIn("国内の報道 2 件", page)
+        self.assertIn("国内の報道 2件", page)
         self.assertNotIn("<script", page)
 
     def test_a_side_without_reports_is_not_named(self):
         page = site.story_page(self.evs["s0000000000b0"], BASE, T0)
         self.assertNotIn("国内の報道", page)
-        self.assertNotIn("官公庁の資料", page)
+        self.assertNotIn("官公庁の発表", page)
         self.assertNotRegex(page, "報じなかった|報じていない|偏向|フェイク|誤報|右派|左派")
         self.assertEqual(parse(page).meta["twitter:card"], "summary")
 
@@ -172,7 +172,7 @@ class Feeds(unittest.TestCase):
         it = its[0]
         self.assertEqual(it.findtext("title"), "協議が再開　政府は「前進」")
         self.assertEqual(it.findtext("link"), BASE + "s/%s.html" % sid)
-        self.assertEqual(it.findtext("description"), "国内 2・海外 1・最初に報じたのは海外 1時間27分先")
+        self.assertEqual(it.findtext("description"), "国内2件、海外1件。海外が国内より1時間27分早く報じた")
         self.assertEqual(it.findtext("guid"), "parallax:a1")
         parsedate_to_datetime(it.findtext("pubDate"))
         parsedate_to_datetime(ch.findtext("lastBuildDate"))
@@ -187,7 +187,7 @@ class Feeds(unittest.TestCase):
                 ET.fromstring((Path(d) / n).read_bytes())
             one = ET.fromstring((Path(d) / "feed-oneside.xml").read_bytes())
             self.assertEqual([i.findtext("link") for i in one.iter("item")], [BASE + "s/s0000000000b0.html"])
-            self.assertTrue(one.find("channel/item/description").text.startswith("海外の報道だけ・海外 2"))
+            self.assertTrue(one.find("channel/item/description").text.startswith("海外だけ。海外2件"))
             for p in Path(d).rglob("*"):
                 if p.is_file():
                     self.assertEqual(LC.scan_text(p.read_text(encoding="utf-8"), PAT), [], p.name)
@@ -234,7 +234,7 @@ class Archive(unittest.TestCase):
             self.assertEqual([x["date"] for x in idx["days"]], ["2026-11-09", "2026-11-08"])
             self.assertEqual(r["archive_from_previous"], ["2026-11-08"])
             old = (Path(d2) / "s" / ("%s.html" % sid)).read_text(encoding="utf-8")
-            self.assertIn("11月8日 時点の控え", old)
+            self.assertIn("11月8日時点の控え", old)
             self.assertIn("協議が再開", old)
             self.assertEqual(r["pages_kept"], 3)
 

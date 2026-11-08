@@ -1,7 +1,7 @@
 # VECTOR PARALLAX
 
-**Put the same event, as reported by Japanese and overseas outlets, side by side — and see who did not report it.**
-同じ出来事を、日本と海外の媒体がどう報じたか（報じなかったか）を並べて見比べる。
+**Japanese and overseas news on the same event, side by side.**
+国内と海外のメディア、官公庁のニュースを並べて見られるサイト。
 
 Live page (GitHub Pages): <https://tomnexttech.github.io/vector-parallax/>
 
@@ -25,6 +25,8 @@ two ways, and **the difference between them is the point**:
   but its per-outlet focus line is not published for an outlet whose terms forbid redistribution (`no`) or allow only non-commercial use (`nc`;
   the page shows that outlet's name, time and link only), while the neutral one-line summary of the whole event is kept and is
   checked never to quote a headline. A second, cheaper model can add a neutral one-line summary to events without an AI headline (marked `AI`, with the model and the time); that stage is **switched off by default** (`summary.enabled` in `data/prompt.json`).
+
+A story of two outlets or more also carries a short AI brief (what happened, the course, how the sides differ, what is next), written in the same call as the summary from the headlines, their times and the feed descriptions only; a field with a number or a name that is not in that material is dropped, and the page and the event page say who wrote it (CONTRACT 13.1).
 
 Each story lists which outlets covered it, when, with a link to each original item, and **why these headlines
 were grouped** (shared words, shared place names, the time span). Filters show stories covered by `BOTH`

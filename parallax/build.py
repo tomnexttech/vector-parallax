@@ -27,6 +27,7 @@ import sys
 import time
 import unicodedata
 import urllib.parse
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 try:
@@ -56,8 +57,10 @@ MERGE_CALL_LIMIT = 2                       # 1 回の build での束ね直し�
 MERGE_FALLBACK_LIMIT = 4                   # 束ね直しの予備の型（鎖の全部）への試行の上限。主の型の上限とは別に数える（CONTRACT §13）
 SUMMARY_FALLBACK_LIMIT = 20                # 要約の予備の型への試行の上限。同じく別に数える
 SUMMARY_CALL_LIMIT = 15                    # 同じく要約の呼び数の上限
-SUMMARY_BATCH = 45                         # 要約 1 呼びの出来事の数
+SUMMARY_BATCH = 30                         # 要約 1 呼びの出来事の数（詳しい要約 brief も同じ呼びで返すので、45 から減らした。CONTRACT §13.1）
 SUMMARY_MAX_ITEMS = 8                      # 1 出来事あたり要約に渡す見出しの上限
+SUMMARY_TIMEOUT_S = 120                     # 要約の呼び 1 回の待ち（詳しい要約で答えが長くなったので、既定の 90 秒から延ばした。CONTRACT §13.1）
+BRIEF_FIELDS = validate_mod.BRIEF_FIELDS    # 詳しい要約の欄（CONTRACT §13.1）
 MAX_CALLS = MERGE_CALL_LIMIT
 CACHE_SCHEMA = "parallax-summary-cache/1"
 CACHE_MAX_ENTRIES = 2000                   # 控え全体（全 provider の区画の合計）の上限
@@ -200,6 +203,9 @@ def _named_fields(stories):
         sm = s.get("summary") if isinstance(s, dict) else None
         if isinstance(sm, dict) and names_withheld_outlet(sm.get("text_ja")):
             yield s, "summary"
+        bf = s.get("brief") if isinstance(s, dict) else None
+        if isinstance(bf, dict) and any(names_withheld_outlet(bf.get(k)) for k in BRIEF_FIELDS):
+            yield s, "brief"
 
 
 def count_named_outlets(stories):
@@ -210,8 +216,8 @@ def withhold_outlet_names(stories):
     """公開版: 出来事全体の文が no / nc の媒体名を挙げていたら、その文を落とす（contrast_ja・flag_note_ja は ""、summary は外す）。-> 落とした文の数"""
     hits = list(_named_fields(stories))
     for s, k in hits:
-        if k == "summary":
-            s.pop("summary", None)
+        if k in ("summary", "brief"):
+            s.pop(k, None)
         else:
             s["ai"][k] = ""
     return len(hits)
@@ -339,6 +345,10 @@ def gate_names_in_stories(stories):
         sm = s.get("summary")
         if isinstance(sm, dict) and has_gate_name(sm.get("text_ja")):
             s.pop("summary", None)
+            n += 1
+        bf = s.get("brief")
+        if isinstance(bf, dict) and any(has_gate_name(bf.get(k)) for k in BRIEF_FIELDS):
+            s.pop("brief", None)
             n += 1
     return n
 
@@ -660,7 +670,7 @@ def summary_disabled_run(prompt):
     return {"status": "disabled", "provider": None, "model": None, "at": None, "prompt_version": prompt.get("version"),
             "targets": 0, "cache_hits": 0, "summarized": 0, "calls": 0, "calls_failed": 0, "calls_skipped": 0, "attempts": 0,
             "call_limit": SUMMARY_CALL_LIMIT, "fallback_attempts": 0, "fallback_limit": SUMMARY_FALLBACK_LIMIT, "left_out": 0, "errors": [], "quoted_fields": 0, "empty": 0, "missing": 0,
-            "named_outlets": 0, "shown_provider": None, "note_ja": ""}
+            "named_outlets": 0, "shown_provider": None, "note_ja": "", "briefed": 0, "brief_fields_dropped": 0, "ungrounded": 0}
 
 
 def choose_summary_provider(args, env, prompt, merge_provider=None, model=None):
@@ -681,7 +691,7 @@ def choose_summary_provider(args, env, prompt, merge_provider=None, model=None):
     name = model or prompt.get("summary_model")
     if not name:
         raise ValueError("data/prompt.json has no summary_model")
-    return ai_mod.GeminiProvider(key, name, max_output_tokens=sp.get("max_output_tokens") or ai_mod.DEFAULT_MAX_OUTPUT_TOKENS,
+    return ai_mod.GeminiProvider(key, name, timeout=SUMMARY_TIMEOUT_S, max_output_tokens=sp.get("max_output_tokens") or ai_mod.DEFAULT_MAX_OUTPUT_TOKENS,
                                  budget=ai_mod.CallBudget(SUMMARY_CALL_LIMIT),
                                  fallback_models=[] if model else fallback_chain(prompt, "summary_fallback_model"),
                                  fallback_budget=ai_mod.CallBudget(SUMMARY_FALLBACK_LIMIT)), ""
@@ -818,6 +828,21 @@ def prune_cache(cache, live_digests):
     return dropped
 
 
+def _summary_item(it):
+    """要約の doc の一件。見出しに、側・時刻・配信が自ら付けた説明（desc_of が載せてよいと言う物だけ）を添える（CONTRACT §13.1）。
+    記事の本文は渡さない。側と時刻は、詳しい要約が「国内・海外・官公庁の違い」と「いつ」を材料の中から書くため。"""
+    row = {"outlet": it["outlet"], "lang": it["lang"], "title": it["title"]}
+    if "home" in it or "type" in it:
+        row["side"] = "官公庁" if it.get("type") == "政府一次" else ("海外" if it.get("home") == "intl" else "国内")
+    ts = it.get("ts")
+    if isinstance(ts, (int, float)) and not isinstance(ts, bool):
+        row["at"] = datetime.fromtimestamp(ts, timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M")
+    d = desc_of(it)
+    if d:
+        row["desc"] = d
+    return row
+
+
 def build_summary_requests(pending, items):
     """pending: 要約が要る story（頁の並び順）。SUMMARY_BATCH 件ずつの束にする。見出しは doc の中にだけ入る。
     -> [{"rid","eids":{eid: sid},"sids","doc"}]（全部。送るのは先頭の SUMMARY_CALL_LIMIT 本まで）"""
@@ -828,8 +853,7 @@ def build_summary_requests(pending, items):
         for n, st in enumerate(chunk, 1):
             eid = "e%d" % n
             eids[eid] = st["sid"]
-            events.append({"eid": eid, "items": [{"outlet": items[i]["outlet"], "lang": items[i]["lang"], "title": items[i]["title"]}
-                                                 for i in st["member_ids"][:SUMMARY_MAX_ITEMS]]})
+            events.append({"eid": eid, "items": [_summary_item(items[i]) for i in st["member_ids"][:SUMMARY_MAX_ITEMS]]})
         doc = json.dumps({"events": events}, ensure_ascii=False, separators=(",", ":"))
         reqs.append({"rid": "s%d" % (len(reqs) + 1), "eids": eids, "sids": [st["sid"] for st in chunk], "doc": doc})
     return reqs
@@ -839,7 +863,8 @@ def run_summaries(requests, provider, prompt):
     """-> ({sid: 文}, run)。budget の上限に当たったら、残りは送らない（calls_skipped）。"""
     sp = prompt["summary"]
     run = {"calls": 0, "calls_failed": 0, "calls_skipped": 0, "errors": [],
-           "quoted_fields": 0, "empty": 0, "missing": 0, "unknown_eid": 0}
+           "quoted_fields": 0, "empty": 0, "missing": 0, "unknown_eid": 0,
+           "brief_fields_dropped": 0, "ungrounded": 0, "named_outlets": 0, "briefs": {}}
     got = {}
     for n, req in enumerate(requests):
         raw, err = provider.call(sp["system"], ai_mod.render_user_text(sp, req["doc"]), sp["schema"])
@@ -858,14 +883,34 @@ def run_summaries(requests, provider, prompt):
             run["errors"].extend(res["errors"])
             continue
         got.update(res["summaries"])
+        run["briefs"].update(res.get("briefs") or {})
         run.setdefault("models", {}).update({sid: getattr(provider, "model", None) for sid in req["sids"]})   # 行ごとに、答えた型
         for k, v in res["counts"].items():
-            run[k] += v
+            run[k] = run.get(k, 0) + v
     return got, run
 
 
 def _put_summary(story, e, part):
     story["summary"] = {"text_ja": e["text_ja"], "made_at": int(e["made_at"]), "provider": part, "model": e["model"]}
+
+
+def _brief_texts(b):
+    return [b.get(k) for k in BRIEF_FIELDS] if isinstance(b, dict) else []
+
+
+def _put_brief(story, e, part):
+    """詳しい要約（story["brief"]。CONTRACT §13.1）。what_ja が無ければ付けない。欄の文字列だけ・作った時刻・誰が書いたか。"""
+    b = e.get("brief")
+    if isinstance(b, dict) and isinstance(b.get("what_ja"), str) and b["what_ja"].strip():
+        story["brief"] = {k: (b.get(k) if isinstance(b.get(k), str) else "") for k in BRIEF_FIELDS}
+        story["brief"].update({"made_at": int(e["made_at"]), "provider": part, "model": e["model"]})
+
+
+def _put_entry(story, e, part):
+    """控えの一件を story に写す。要約は AI の見出しの無い story だけ（§13）、詳しい要約は全ての複数媒体の story。"""
+    if not story.get("ai") and e.get("summary_ok", True):
+        _put_summary(story, e, part)
+    _put_brief(story, e, part)
 
 
 def summary_stage(stories, by_id, now, prompt, provider, status_if_none, cache, reject=None):
@@ -874,22 +919,28 @@ def summary_stage(stories, by_id, now, prompt, provider, status_if_none, cache, 
     cache はその場で直す（窓の外を落とす・新しい要約を足す）。reject(text) が真の文（公開版: no / nc の媒体名を挙げた文）は付けず、控えにも入れない。
     -> (summary_run, 全 pending の要求)"""
     pv = prompt.get("version")
-    targets = [s for s in stories if not s.get("ai") and s.get("n_outlets", 0) >= 2]      # 1 媒体だけの出来事には付けない（§13）
+    bv = (prompt.get("summary") or {}).get("brief_version")
+    bv = bv if isinstance(bv, int) and not isinstance(bv, bool) and bv > 0 else None       # 無ければ詳しい要約の段は動かない（古い prompt）
+    targets = [s for s in stories if s.get("n_outlets", 0) >= 2 and (bv or not s.get("ai"))]      # 1 媒体だけの出来事には付けない（§13）。詳しい要約は AI の見出しのある story にも付く（§13.1）
     digest = {s["sid"]: members_digest(s["member_ids"]) for s in targets}
     live = provider.name if provider is not None else None
     model = getattr(provider, "model", None)
     lookup_models = getattr(provider, "chain_models", None) or model     # 鎖の別の型が作った行も当たりにする（同じ provider の中）
     hits, named = 0, 0
+    hit_sids = set()
     for s in targets:                                       # 1. 控え（この回の provider の区画・同じ model・同じ版）
         e = cache_lookup(cache, live, digest[s["sid"]], pv, lookup_models)
-        if e and reject and reject(e["text_ja"]):
+        if e and bv and e.get("brief_v") != bv:             # 詳しい要約が出来る前の控えは当たりにしない（作り直す）
+            e = None
+        if e and reject and any(reject(x) for x in [e["text_ja"]] + _brief_texts(e.get("brief")) if x):
             cache["partitions"][live].pop(digest[s["sid"]], None)
             named += 1
             e = None
         if e:
-            _put_summary(s, e, live)
+            _put_entry(s, e, live)
+            hit_sids.add(s["sid"])
             hits += 1
-    pending = [s for s in targets if "summary" not in s]
+    pending = [s for s in targets if s["sid"] not in hit_sids]
     all_reqs = build_summary_requests(pending, by_id) if pending else []
     reqs = all_reqs[:SUMMARY_CALL_LIMIT]
     left_out = sum(len(r["sids"]) for r in all_reqs[SUMMARY_CALL_LIMIT:])
@@ -905,10 +956,21 @@ def summary_stage(stories, by_id, now, prompt, provider, status_if_none, cache, 
             if text and reject and reject(text):
                 named += 1
                 text = ""
-            if text:
-                e = {"text_ja": text, "made_at": made_at, "model": run.get("models", {}).get(s["sid"]) or model, "prompt_version": pv, "sid": s["sid"]}
+            br = run.get("briefs", {}).get(s["sid"])
+            if br and reject and any(reject(x) for x in _brief_texts(br) if x):
+                named += 1
+                br = None
+            if text or br:
+                e = {"text_ja": text or br["what_ja"], "made_at": made_at, "model": run.get("models", {}).get(s["sid"]) or model,
+                     "prompt_version": pv, "sid": s["sid"]}
+                if not text:
+                    e["summary_ok"] = False                  # text_ja は詳しい要約の what_ja の借り物（要約としては使わない）
+                if bv:
+                    e["brief_v"] = bv                        # この版の詳しい要約を頼んだ印（答えに brief が無くても、同じ物をもう頼まない）
+                if br:
+                    e["brief"] = br
                 part[digest[s["sid"]]] = e
-                _put_summary(s, e, live)
+                _put_entry(s, e, live)
         if not reqs:
             status = "recorded" if isinstance(provider, ai_mod.RecordedSummaryProvider) else "ok"
         elif run["calls"] and run["calls_failed"] == run["calls"]:
@@ -924,17 +986,18 @@ def summary_stage(stories, by_id, now, prompt, provider, status_if_none, cache, 
         if shown and shown != live:
             for s in targets:
                 e = cache_lookup(cache, shown, digest[s["sid"]], pv)
-                if e and reject and reject(e["text_ja"]):
+                if e and reject and any(reject(x) for x in [e["text_ja"]] + _brief_texts(e.get("brief")) if x):
                     named += 1
                     e = None
                 if e:
-                    _put_summary(s, e, shown)
+                    _put_entry(s, e, shown)
                     hits += 1
     prune_cache(cache, set(digest.values()))
     sm = [s["summary"] for s in stories if "summary" in s]
+    sm_all = sm + [s["brief"] for s in stories if "brief" in s]
     budget = getattr(provider, "budget", None) if provider is not None else None
     summary_run = {"status": status, "provider": getattr(provider, "name", None) if provider else None, "model": getattr(provider, "model", None),
-                   "at": max((x["made_at"] for x in sm), default=None), "prompt_version": pv,
+                   "at": max((x["made_at"] for x in sm_all), default=None), "prompt_version": pv,
                    "targets": len(targets), "cache_hits": hits, "summarized": len(sm),
                    "calls": run["calls"], "calls_failed": run["calls_failed"], "calls_skipped": run["calls_skipped"],
                    "attempts": budget.used if budget is not None else run["calls"], "call_limit": SUMMARY_CALL_LIMIT,
@@ -942,7 +1005,9 @@ def summary_stage(stories, by_id, now, prompt, provider, status_if_none, cache, 
                    "fallback_limit": SUMMARY_FALLBACK_LIMIT,
                    "left_out": left_out, "errors": run["errors"], "quoted_fields": run["quoted_fields"],
                    "empty": run["empty"], "missing": run["missing"], "named_outlets": named,
-                   "shown_provider": sm[0]["provider"] if sm else None,
+                   "briefed": sum(1 for s in stories if "brief" in s), "brief_fields_dropped": run.get("brief_fields_dropped", 0),
+                   "ungrounded": run.get("ungrounded", 0),
+                   "shown_provider": sm_all[0]["provider"] if sm_all else None,
                    "note_ja": getattr(provider, "note_ja", "") or "" if provider is not None else ""}
     return summary_run, reqs
 
@@ -1191,6 +1256,16 @@ def summary_problems(stories):
     """story["summary"] の形（CONTRACT §13）。本文は問題文に入れない。-> 問題の文の list"""
     bad, providers = [], set()
     for s in stories:
+        bf = s.get("brief") if isinstance(s, dict) else None
+        if bf is not None:
+            lim = (load_prompt().get("summary") or {}).get("limits") or {}
+            if not (isinstance(bf, dict) and all(isinstance(bf.get(k), str) and len(bf[k]) <= lim.get(k, 400) for k in BRIEF_FIELDS)
+                    and bf["what_ja"].strip() and _is_epoch(bf.get("made_at")) and isinstance(bf.get("provider"), str) and bf["provider"]
+                    and isinstance(bf.get("model"), str) and bf["model"]):
+                return ["a story brief has the wrong shape"]
+            if isinstance(s.get("n_outlets"), int) and s["n_outlets"] < 2:
+                bad.append("a brief sits on an event with a single outlet")
+            providers.add(bf["provider"])
         sm = s.get("summary") if isinstance(s, dict) else None
         if sm is None:
             continue

@@ -99,7 +99,7 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
       for (const e of list.slice(0, 24)) {
         const d = describe(e), b = el('button'), li = el('li');
         b.type = 'button';
-        b.append(el('span', 'mc-t', d.title), el('span', 'mc-m', [`${e.n || 0}媒体`, d.age].filter(Boolean).join(' · ')));
+        b.append(el('span', 'mc-t', d.title), el('span', 'mc-m', [`${e.n || 0}社`, d.age].filter(Boolean).join(' · ')));
         b.addEventListener('click', () => { closeCard(); open(e.key); });
         li.append(b); ul.append(li);
       }
