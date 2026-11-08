@@ -26,7 +26,7 @@ import { createActions } from './actions.js';
 import { loadTasks, saveTasks, addTask, toggleTask, removeTask, hasTask, loadReads, saveReads, clearReads, noteRead, readMix } from './tasks.js';
 import { speechSupported, listen, route as voiceRoute } from './voice.js';
 import { absentOutlets, absentBlock, outletProfile } from './absent.js';
-import { entryEvents, renderEntry, pickFirst, lineIcon, sides as sidesOf, SIDES, original, firstLine } from './entry.js';
+import { entryEvents, renderEntry, pickFirst, leadPool, lineIcon, sides as sidesOf, SIDES, original, firstLine } from './entry.js';
 import { STORY, TL_CAP, timeline, sourcesOf } from './story.js';
 import { readLines, createReader } from './speak.js';
 import { uiLang, watch as watchWords } from './i18n.js';
@@ -610,6 +610,7 @@ function row(e, opt = {}) {
   });
   const tag = opt.flag ? h('span', { class: 'flag', title: opt.flag.tip, text: opt.flag.ja }) : null;
   li.append(...kids(
+    opt.thumb ? rowThumb(e) : null,
     tag,
     headNode(e, 'rt'),
     h('span', { class: 'rm' },
@@ -624,6 +625,14 @@ function row(e, opt = {}) {
     state.openRow === e.key ? rowMore(e) : null,
   ));
   return li;
+}
+/** the small picture of a news in the home's list: the outlet's own photo shown whole, else the field's line symbol on the field's colour (CSS shows it only on the home) */
+function rowThumb(e) {
+  const f = e.field || '', p = entryPhoto(e);
+  const box = h('span', { class: `rth${p ? '' : ' none'}`, data: { genre: f }, 'aria-hidden': 'true' });
+  if (p) box.append(h('img', { src: p.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => { box.classList.add('none'); ev.target.replaceWith(genreIcon(f)); } } }));
+  else box.append(genreIcon(f));
+  return box;
 }
 // "new in the last six hours" is counted when the data was built: an old build must not say it as if it were now
 const newsFresh = () => !isOld(state.data.generated_at, nowS());
@@ -725,10 +734,11 @@ function renderPri() {
   const list = shownPri();
   $('pri-h').textContent = state.q ? '検索' : state.topic === 'cross' ? '国内と海外' : narrow() ? '今日の注目' : '注目';
   roll($('pri-c'), list.length);
+  paintHomeSub(list.length);
   const qOut = state.q ? [h('p', { class: 'q-out' }, h('span', { text: `「${state.q}」で探している` }), lk('解除', clearSearch, '検索をやめて全部に戻す', 'r-a')), qBar()] : null;
   const fold = narrow() && !state.priAll && !state.q && list.length > 5;
   const showN = fold ? list.slice(0, 5) : list;
-  $('pri-b').replaceChildren(qOut, showN.length ? h('ul', { class: 'rows' }, showN.map((e) => row(e))) : h('p', { class: 'empty', text: state.q ? '一致 0 件' : '0 件' }),
+  $('pri-b').replaceChildren(qOut, showN.length ? h('ul', { class: 'rows' }, showN.map((e) => row(e, { thumb: true }))) : h('p', { class: 'empty', text: state.q ? '一致 0 件' : '0 件' }),
     fold ? h('button', { type: 'button', class: 'more', on: { click: () => { state.priAll = true; renderPri(); } } }, `残り ${list.length - 5} 件`) : null,
     h('p', { class: 'pfoot legend', text: `ラベルは${FLAG_LEGEND}` }));
   syncAutoLine();
@@ -974,8 +984,10 @@ function caseNode(e) {
   const head = h('div', { class: 'ch-main' },
     h('div', { class: 'ch-title' },
       h('h1', { lang: e.heading.lang || null, class: e.heading.none ? 'none' : null }, headNode(e, 'h1t')),
-      e.heading.en ? h('p', { class: 'en', lang: 'en', text: e.heading.en }) : null),
-    h('button', { type: 'button', class: 'ch-big', title: '全部の報道を見る', on: { click: () => act.all() } }, num(e.n), h('span', { class: 'u', text: '媒体' })));
+      e.heading.en ? h('p', { class: 'en', lang: 'en', text: e.heading.en }) : null,
+      h('div', { class: 'ch-ratio' }, dossier.ratioBar(measureOf(e)), h('p', { class: 'ch-rn' }, SIDES.map(([k, , short]) => h('span', { class: 'rn-i', data: { side: k } }, h('i'), short, h('b', { class: 'num', text: arr(measureOf(e)[k]).length }))))),
+      h('button', { type: 'button', class: 'home-open', on: { click: () => { setHome('board'); act.all(); } } }, '詳しい画面で開く')),
+    h('button', { type: 'button', class: 'ch-big', title: '全部の報道を見る', on: { click: () => { setHome('board'); act.all(); } } }, num(e.n), h('span', { class: 'u', text: '媒体' })));
   const aiLines = [];
   if (e.summary) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: str(e.summary.text_ja) }), aiTag([str(e.summary.provider), str(e.summary.model)], e.summary.made_at)));
   if (e.ai && str(e.ai.contrast_ja)) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: e.ai.contrast_ja }), aiTag(aiBy, aiAt)));
@@ -1139,10 +1151,26 @@ function caseNode(e) {
       link ? extLink(link, { class: 'lk sl', title: `${x.name} の最初の記事を開く` }, '記事を開く') : null);
   })));
 
+  // the home's lead without a picture is filled from the event itself, in the picture's column: a line the outlet published (the AI's own line, marked AI, when it wrote one),
+  // then the first headlines in time order with their side. CSS shows it on the home only; nothing here is drawn or written by a model.
+  let fill = null;
+  if (!photo) {
+    const rows = tl.filter((r) => str(r.it.title).trim()).slice(0, 3);
+    const aiText = e.summary && str(e.summary.text_ja).trim() ? str(e.summary.text_ja).trim() : e.ai && str(e.ai.contrast_ja).trim() ? str(e.ai.contrast_ja).trim() : '';
+    const withDesc = sorted.find((it) => typeof it.desc === 'string' && it.desc.trim());
+    const lead = aiText ? h('p', { class: 'lf-q' }, h('span', { class: 'aimk', text: 'AI' }), aiText) : withDesc ? descOf(withDesc, safeUrl(withDesc.link)) : null;
+    if (lead || rows.length) {
+      fill = h('section', { class: 't-fill' }, lead, aiText ? h('small', { class: 'lf-n', text: AI_NOTE }) : null,
+        rows.length ? h('ol', { class: 'lf-l' }, rows.map((r) => h('li', { data: { side: r.side } },
+          h('span', { class: 'lf-m' }, h('i', { 'aria-hidden': 'true' }), outletOf(r.it) || SHORT[r.side], isNum(r.it.ts) ? h('time', { class: 'num', text: fmtClock(r.it.ts) }) : null),
+          h('span', { class: 'lf-h', lang: r.it.lang === 'en' ? 'en' : null, text: `「${str(r.it.title).trim()}」` })))) : null);
+    }
+  }
+
   const node = h('div', { class: 'case-in' },
     h('div', { class: 'dos' + (photo ? ' has-photo' : '') },
       h('header', { class: 'ch dcard t-place' }, place, head), photo, status, nav,
-      stH('pt', '要点'), point, figs,
+      stH('pt', '要点'), point, fill, figs,
       stH('tl', '経過', tl.length), tlCard,
       stH('sd', '各側の見出し'), dossier.sides(m, angles, act),
       stH('src', '出典の一覧', src.length), srcCard),
@@ -1315,7 +1343,7 @@ function renderEntryView() {
   if (state.ui !== 'simple' || !state.data) return;
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
   renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
-    fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => setUi('full'),
+    fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => { setHome('board'); setUi('full'); },
     detail: entryDetail, measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
     oneSide: sideGroups(true), oneSideTitle: ONE_SIDE_TITLE, oneSideNote: ONE_SIDE_NOTE, more: entryMore,
     local: state.set.local.place ? { name: placeName(state.set.local.place), events: localList().slice(0, 5) } : null });
@@ -1347,6 +1375,28 @@ function entryPhoto(e) {
   // else a still of the event's own video (the broadcaster's image); in the chosen event it plays in its place
   const v = videosOf(videosOfEvent(e), STATIONS, 1)[0], st = v && STATIONS.find((x) => x.id === v.station);
   return v ? { url: `https://i.ytimg.com/vi/${v.id}/mqdefault.jpg`, outlet: st ? st.name : '', ts: Number(v.ts) || null, link: `https://www.youtube.com/watch?v=${v.id}`, kind: 'video', id: v.id } : null;
+}
+// ---------------------------------------------------------------- the home: the lead story and the cards, or the board as the detailed screen
+const HOME_KEY = 'parallax.home.v1';
+const homeMode = () => (document.documentElement.dataset.home === 'board' ? 'board' : 'home');
+function paintHomeSub(n) {
+  const el = $('home-sub'), g = state.data && state.data.generated_at;
+  if (el) el.textContent = isNum(g) ? `${fmtShort(g)} 時点・${n} 件` : `${n} 件`;
+}
+function paintHomeBtn() {
+  const b = $('home-btn'); if (!b) return;
+  b.textContent = homeMode() === 'home' ? '詳しい画面' : 'ホームに戻る';
+  if (document.documentElement.lang === 'en') b.textContent = homeMode() === 'home' ? 'Detailed screen' : 'Back to home';
+}
+function setHome(m) {
+  const v = m === 'board' ? 'board' : 'home';
+  if (state.ui === 'simple') setUi('full');
+  document.documentElement.dataset.home = v;
+  try { window.localStorage.setItem(HOME_KEY, v); } catch { /* private window: the choice lasts until the page is closed */ }
+  paintHomeBtn();
+  if (state.sect !== 'home') setSect('home');
+  if (state.data) requestAnimationFrame(() => renderMap(false));
+  return true;
 }
 function setUi(m) {
   state.ui = m === 'simple' ? 'simple' : 'full';
@@ -1946,8 +1996,9 @@ function followField() {
   const best = [...c.entries()].sort((a, b) => b[1] - a[1])[0];
   if (best && (!state.fieldTabs.length || state.fieldTabs.includes(best[0]))) state.field = best[0];
 }
-function step(dir) {
-  const list = shownPri().filter((e) => !folded(e));
+function step(dir, pool) {
+  let list = shownPri().filter((e) => !folded(e));
+  if (pool) list = pool(list);
   if (!list.length) return false;
   const i = list.findIndex((e) => e.key === state.sel);
   const n = list[(i + dir + list.length) % list.length];
@@ -1999,7 +2050,9 @@ function renderAll() {
     showFatal(`表示に失敗しました: ${err && err.message ? err.message : String(err)}`);
   }
 }
-function showFatal(text) { const el = $('fatal'); el.textContent = text; el.hidden = false; }
+/** the loading face (a skeleton in the home, js/theme_boot.js sets the flag before the first paint) ends when the data is in or cannot come */
+function endLoad() { delete document.documentElement.dataset.load; }
+function showFatal(text) { const el = $('fatal'); el.textContent = text; el.hidden = false; endLoad(); }
 
 // ---------------------------------------------------------------- idle: send the priority events
 function pause() {
@@ -2026,7 +2079,7 @@ function autoStep() {
   if (line && line.classList.contains('held')) syncAutoLine();
   if (now < state.autoNext) return;
   state.autoNext = now + AUTO_MS;
-  step(1);
+  step(1, homeMode() === 'home' ? leadPool : null);   // the home's lead walks the fields of the news; the bin of "other" is for a hand that asks for it
 }
 function tickerStep() {
   if (document.hidden) return;
@@ -2856,6 +2909,9 @@ async function main() {
   const themeLabel = () => $('theme-btn').setAttribute('aria-label', `外観 ${state.set.look.theme === 'light' ? 'ライト' : 'ダーク'}`);
   $('theme-btn').addEventListener('click', () => { applySettings({ ...state.set, look: { ...state.set.look, theme: state.set.look.theme === 'light' ? 'dark' : 'light' } }); themeLabel(); });
   themeLabel();
+  paintHomeBtn();
+  $('home-btn').addEventListener('click', () => setHome(homeMode() === 'home' ? 'board' : 'home'));
+  $('home-detail').addEventListener('click', () => setHome('board'));
   $('entry-btn').addEventListener('click', () => { const was = state.sect === 'home' ? state.ui : 'full'; setSect('home'); setUi(was === 'simple' ? 'full' : 'simple'); });
   if (new URLSearchParams(location.search).get('m') === 'simple') setUi('simple');
   // the first visit: a short tour over the simple view, which stays open after it (js/tour.js); 使い方 in the bar shows it again
@@ -2974,6 +3030,7 @@ async function main() {
   renderTicker(false);
   const first = firstShown();
   if (first) { select(first.key, false); followTv(first); }
+  endLoad();
   // a link to one event: it opens over the home screen, whichever view holds it
   const qs = new URLSearchParams(location.search), askSid = qs.get('sid'), askT = qs.get('t');
   if (askSid || askT) {

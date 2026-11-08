@@ -20,6 +20,8 @@ export function uiLang(pref, langs) {
 export const SKIP = '[data-i18n-skip],.en-w,.en-ws,.hits,.terms,.tl-hl,.mh,.en-at,.en-q,.ch-ai,.en-ai-t,h1,.en-st,.en-h,.en-ost,.pp-t,.mf,.en-vh,.en-mo,.mo,.en-o,.st-src .en-mo,.r .t,.rel,.near,.en-firsts .o,.facts dd,.kv dd,.op-lk,script,style,textarea,input,select option[data-raw]';
 
 export const EN = {
+  '今日のニュース': "Today's news", '詳しい画面': 'Detailed screen', '詳しい画面で開く': 'Open on the detailed screen', 'ホームに戻る': 'Back to home',
+  '同じニュースを、国内と海外のメディアと官公庁がどう伝えたか。並べて比べます。': 'The same news, as outlets in Japan, outlets abroad and the ministries told it, side by side.',
   // the figures' heads and the news site's own parts (rankings, breaking line, local news, the narrowed search)
   '件数の比': 'Share of reports', '媒体の種類': 'Types of outlet', '国内と海外の語': 'Words in Japan and abroad', '媒体と語の重なり': 'Outlets and shared words', '時間の流れ': 'Over time', '0〜100': '0-100', '着目した語': 'Words in focus',
   '速報': 'Breaking', '報道が急増': 'Reports rising fast', '速報を閉じる': 'Close the breaking line', '災害の画面を開く': 'Open the disaster screen', 'このニュースを開く': 'Open this news',

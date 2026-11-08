@@ -24,6 +24,10 @@
   } catch (e) { /* private window or broken JSON: dark, and the browser's language */
     if (!/^ja(-|$)/.test(String(navigator.language || 'ja').toLowerCase())) document.documentElement.lang = 'en';
   }
+  // the home: the lead story and the cards (default), or the board kept as the detailed screen (js/app.js setHome)
+  try { document.documentElement.setAttribute('data-home', window.localStorage.getItem('parallax.home.v1') === 'board' ? 'board' : 'home'); } catch (e) { document.documentElement.setAttribute('data-home', 'home'); }
+  // until the data is in the home shows a skeleton of its lists, not empty glass (js/app.js endLoad removes the flag; css/app.css, "home v2")
+  document.documentElement.setAttribute('data-load', '1');
   apply();
   window.parallaxTheme = { apply: apply, get: function () { return document.documentElement.getAttribute('data-theme'); } };
 })();

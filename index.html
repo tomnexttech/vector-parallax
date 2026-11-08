@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
 <meta name="description" content="同じ出来事を、日本と海外の媒体・官公庁の資料・地図・災害・市場と一画面で並べるサイト。">
-<meta name="theme-color" content="#26272a">
+<meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark light">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Parallax">
@@ -22,7 +22,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;600&amp;display=swap">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&amp;display=swap&amp;text=0123456789.%2C%3A%2F%25%2B-">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700;900&amp;display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@300;400;500&amp;display=swap&amp;text=0123456789.%2C%3A%2F%25%2B-">
 <link rel="stylesheet" href="css/app.css">
 <script type="module" src="js/app.js"></script>
 </head>
@@ -63,6 +64,7 @@
     <div class="tb-r">
       <button type="button" class="search" id="cmd-btn" aria-haspopup="dialog" title="検索と操作（Ctrl+K）"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg><span id="cmd-t">検索</span><kbd id="cmd-kbd">Ctrl K</kbd></button>
       <button type="button" class="tbb icon" id="voice-btn" hidden aria-label="声で操作" title="声で操作（v）"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.5" y="2.5" width="5" height="9.5" rx="2.5"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>
+      <button type="button" class="tbb" id="home-btn">詳しい画面</button>
       <button type="button" class="tbb" id="entry-btn" aria-pressed="false">かんたん表示</button>
       <button type="button" class="tbb tx-i" id="about-btn" title="データと AI（i）"><span class="ic">i</span><span class="tx">データと AI</span></button>
       <button type="button" class="tbb icon" id="theme-btn" aria-label="外観 ダーク" title="外観"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" stroke="none"/></svg></button>
@@ -107,6 +109,14 @@
   </section>
 
   <main class="board" id="board">
+    <div class="home-bar" id="home-bar">
+      <div class="home-tt">
+        <h2 class="home-t">今日のニュース</h2>
+        <p class="home-lead">同じニュースを、国内と海外のメディアと官公庁がどう伝えたか。並べて比べます。</p>
+        <p class="home-sub num" id="home-sub"></p>
+      </div>
+      <button type="button" class="home-detail" id="home-detail">詳しい画面へ</button>
+    </div>
     <div class="col c1">
       <section class="pane" id="p-src" aria-labelledby="src-h">
         <header class="ph"><h2 id="src-h">媒体</h2><span class="pc" id="src-c"></span></header>
@@ -128,7 +138,7 @@
         <header class="ph"><h2 id="pri-h">注目</h2><b class="pc num" id="pri-c">—</b></header>
         <div class="gwrap" id="pri-genres"></div>
         <div class="chips" id="pri-chips" role="group" aria-label="論点で絞る"></div>
-        <div class="pb" id="pri-b"></div>
+        <div class="pb" id="pri-b"><ul class="sk-rows" aria-hidden="true"><li><i class="sk sk-th"></i><span class="sk-tx"><i class="sk sk-ln"></i><i class="sk sk-ln s"></i></span></li><li><i class="sk sk-th"></i><span class="sk-tx"><i class="sk sk-ln"></i><i class="sk sk-ln s"></i></span></li><li><i class="sk sk-th"></i><span class="sk-tx"><i class="sk sk-ln"></i><i class="sk sk-ln s"></i></span></li><li><i class="sk sk-th"></i><span class="sk-tx"><i class="sk sk-ln"></i><i class="sk sk-ln s"></i></span></li><li><i class="sk sk-th"></i><span class="sk-tx"><i class="sk sk-ln"></i><i class="sk sk-ln s"></i></span></li></ul></div>
       </section>
       <section class="pane" id="p-local" aria-labelledby="local-h" hidden>
         <header class="ph"><h2 id="local-h">地元のニュース</h2><span class="pc num" id="local-c"></span></header>
@@ -147,7 +157,7 @@
 
     <div class="col c3">
       <section class="pane case" id="p-case" aria-label="出来事">
-        <div class="pb" id="case"></div>
+        <div class="pb" id="case"><div class="sk-case" aria-hidden="true"><i class="sk sk-ph"></i><span class="sk-tx"><i class="sk sk-tag"></i><i class="sk sk-ln h"></i><i class="sk sk-ln h"></i><i class="sk sk-ln h s"></i><i class="sk sk-bar"></i></span><i class="sk sk-num"></i></div></div>
       </section>
       <div class="under" id="under">
         <section class="pane tv" id="p-tv" aria-labelledby="tv-h">

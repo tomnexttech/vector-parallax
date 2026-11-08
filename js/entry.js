@@ -62,13 +62,24 @@ export function entryEvents(pri, n = CARDS) {
   return best ? [best, ...all.filter((e) => e !== best)].slice(0, n) : all.slice(0, n);   // the event shown under the cards is the first card
 }
 
-/** the event to open first: reported by all three sides, else by two, else the first; the order of the list decides among equals */
-export function pickFirst(list) {
+/** the bin the field finder leaves an event in when no field of the news fits (js/app.js OTHER_FIELD) */
+const OTHER = 'その他';
+/** an event that belongs to a field of the news (politics, abroad, economy, security, technology ...), not to the bin of "other" */
+export const hardNews = (e) => !!(e && typeof e.field === 'string' && e.field && e.field !== OTHER);
+/** the events a lead may come from or rotate through: the ones with a field of the news; the bin of "other" only when there is nothing else */
+export function leadPool(list) {
   const es = (Array.isArray(list) ? list : []).filter(Boolean);
+  const hard = es.filter(hardNews);
+  return hard.length ? hard : es;
+}
+
+/** the event to open first: from the fields of the news when there is one (a field first, "other" only when nothing else is left), then
+ *  reported by all three sides, else by two, else the first; the order of the list decides among equals */
+export function pickFirst(list) {
+  const es = leadPool(list);
   const k = (e) => { const s = sides(e); return (s.jp.length > 0) + (s.intl.length > 0) + (s.gov.length > 0); };
   const rich = (l) => l.find((e) => k(e) === 3) || l.find((e) => k(e) === 2 && e.members.length >= 3);   // three reports and up can be measured
-  const named = es.filter((e) => e.field && e.field !== 'その他');   // the first thing shown belongs to a field of the news
-  return rich(named) || rich(es) || es.find((e) => k(e) === 2) || es[0] || null;
+  return rich(es) || es.find((e) => k(e) === 2) || es[0] || null;
 }
 
 export function sides(e) {

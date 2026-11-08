@@ -7,38 +7,41 @@
 
 :root {
   --f-text: "IBM Plex Sans JP", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Segoe UI", "Yu Gothic UI", Meiryo, sans-serif;
-  --f-num: "IBM Plex Sans", var(--f-text);
+  --f-display: "Zen Kaku Gothic New", var(--f-text);
+  --f-num: "Barlow Semi Condensed", "IBM Plex Sans", var(--f-text);
   --font: var(--f-text);
-  --fs-0: 9px; --fs-1: 10px; --fs-2: 11px; --fs-3: 12px; --fs-4: 13px; --fs-5: 15px; --fs-6: 18px; --fs-7: 20px; --fs-8: 34px; --fs-9: 40px; --fs-10: 56px;
+  --fs-0: 10px; --fs-1: 11px; --fs-2: 12px; --fs-3: 13px; --fs-4: 14px; --fs-5: 16px; --fs-6: 19px; --fs-7: 22px; --fs-8: 34px; --fs-9: 44px; --fs-10: 60px;
   --fw-1: 400; --fw-2: 500; --fw-3: 600; --fw-num: 400;
-  --lh-1: 1.2; --lh-2: 1.45; --lh-3: 1.65;
-  --ease: cubic-bezier(.16, .84, .28, 1);
+  --lh-1: 1.2; --lh-2: 1.5; --lh-3: 1.65;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+  --r-s: 6px; --r-m: 10px; --r-l: 14px; --r-xl: 20px; --r-pill: 999px;
+  --ease: cubic-bezier(.16, .84, .28, 1); --t-1: 120ms; --t-2: 220ms; --t-3: 320ms;
 
-  --win: #0c0c0d; --pane: #19191b; --pane-2: #1f2022; --tb: #222325; --raise: #2f3034; --raise-h: #393a3e;
-  --line: rgba(255, 255, 255, .062); --line-2: rgba(255, 255, 255, .12); --edge: #000;
-  --ink: #e7e8ea; --ink-2: #a8abb0; --ink-3: #75787d; --ink-4: #4e5156; --ink-hi: #fff;
-  --fill-1: rgba(255, 255, 255, .03); --fill-2: rgba(255, 255, 255, .06); --fill-3: rgba(255, 255, 255, .11);
-  --field: #1b1c1e; --seg-bg: #1b1c1e; --seg-on: #4a4b50; --seg-on-ink: #fff; --seg-on-sh: none;
-  --sheet: #1d1e20; --box: #232427; --pop: #2b2c2f; --well: #111214;
-  --scrim: rgba(8, 8, 9, .55); --shadow: 0 30px 80px rgba(0, 0, 0, .6); --shadow-pop: 0 18px 40px rgba(0, 0, 0, .55); --dim: blur(1.5px) brightness(.72);
-  --scroll: #3a3b3f; --track: #46474c; --knob: #e7e8ea;
-  --cyan: #5ac8f0; --cyan-a: rgba(90, 200, 240, .15); --cyan-b: rgba(90, 200, 240, .1); --cyan-l: rgba(90, 200, 240, .42); --cyan-fill: #3d6f86;
-  --red: #ff5a4f; --red-a: rgba(255, 90, 79, .14); --red-l: rgba(255, 90, 79, .5); --red-bg: #3a1f1d;
-  --bar: rgba(231, 232, 234, .34); --bar-2: rgba(231, 232, 234, .16); --bar-3: rgba(231, 232, 234, .1);
-  --map-sea: #121315; --map-grid: rgba(255, 255, 255, .055); --map-label: #c9cbcf; --map-dot: rgba(231, 232, 234, .15); --map-halo: rgba(13, 14, 16, .92); --map-plate: rgba(18, 19, 21, .8);
+  --win: #000; --pane: #1c1c1e; --pane-2: #1c1c1e; --tb: #161618; --raise: #2c2c2e; --raise-h: #3a3a3c;
+  --line: rgba(255, 255, 255, .08); --line-2: rgba(255, 255, 255, .15); --edge: rgba(255, 255, 255, .07);
+  --ink: #f5f5f7; --ink-2: #c3c3c8; --ink-3: #98989f; --ink-4: #6c6c72; --ink-hi: #fff;
+  --fill-1: rgba(255, 255, 255, .04); --fill-2: rgba(255, 255, 255, .07); --fill-3: rgba(255, 255, 255, .12);
+  --field: #2c2c2e; --seg-bg: #2c2c2e; --seg-on: #48484a; --seg-on-ink: #fff; --seg-on-sh: none;
+  --sheet: #1c1c1e; --box: #2c2c2e; --pop: #2c2c2e; --well: #0e0e0f;
+  --scrim: rgba(0, 0, 0, .5); --shadow: 0 30px 80px rgba(0, 0, 0, .6); --shadow-pop: 0 18px 40px rgba(0, 0, 0, .55); --dim: blur(1.5px) brightness(.72);
+  --scroll: #3a3a3c; --track: #48484a; --knob: #f5f5f7;
+  --cyan: #64d2ff; --cyan-a: rgba(100, 210, 255, .14); --cyan-b: rgba(100, 210, 255, .08); --cyan-l: rgba(100, 210, 255, .5); --cyan-fill: #3a7a96;
+  --red: #ff6961; --red-a: rgba(255, 105, 97, .14); --red-l: rgba(255, 105, 97, .5); --red-bg: #3b1d1b;
+  --bar: rgba(245, 245, 247, .36); --bar-2: rgba(245, 245, 247, .17); --bar-3: rgba(245, 245, 247, .1);
+  --map-sea: #101012; --map-grid: rgba(255, 255, 255, .055); --map-label: #c9cbcf; --map-dot: rgba(245, 245, 247, .15); --map-halo: rgba(12, 12, 14, .92); --map-plate: rgba(20, 20, 22, .8);
   color-scheme: dark;
 }
 :root[data-theme="light"] {
-  --win: #ebebed; --pane: #fff; --pane-2: #fff; --tb: #f6f6f7; --raise: #fff; --raise-h: #f2f2f4;
-  --line: rgba(0, 0, 0, .075); --line-2: rgba(0, 0, 0, .14); --edge: rgba(0, 0, 0, .11);
-  --ink: #1d1d1f; --ink-2: #46474c; --ink-3: #686b71; --ink-4: #9b9ea3; --ink-hi: #000;
-  --fill-1: rgba(0, 0, 0, .03); --fill-2: rgba(0, 0, 0, .052); --fill-3: rgba(0, 0, 0, .09);
+  --win: #f5f5f7; --pane: #fff; --pane-2: #fff; --tb: #fbfbfd; --raise: #fff; --raise-h: #f2f2f4;
+  --line: rgba(0, 0, 0, .08); --line-2: rgba(0, 0, 0, .14); --edge: rgba(0, 0, 0, .08);
+  --ink: #1d1d1f; --ink-2: #424245; --ink-3: #6e6e73; --ink-4: #8e8e93; --ink-hi: #000;
+  --fill-1: rgba(0, 0, 0, .03); --fill-2: rgba(0, 0, 0, .05); --fill-3: rgba(0, 0, 0, .09);
   --field: #fff; --seg-bg: rgba(0, 0, 0, .06); --seg-on: #fff; --seg-on-ink: #1d1d1f; --seg-on-sh: 0 1px 2px rgba(0, 0, 0, .14), 0 0 0 .5px rgba(0, 0, 0, .08);
   --sheet: #fff; --box: #fff; --pop: #fff; --well: #f0f0f2;
-  --scrim: rgba(36, 36, 40, .22); --shadow: 0 24px 64px rgba(0, 0, 0, .18), 0 0 0 .5px rgba(0, 0, 0, .1); --shadow-pop: 0 12px 32px rgba(0, 0, 0, .16), 0 0 0 .5px rgba(0, 0, 0, .1); --dim: blur(1.5px);
-  --scroll: #c4c5c9; --track: #d4d5d8; --knob: #fff;
-  --cyan: #0a6fa3; --cyan-a: rgba(10, 111, 163, .1); --cyan-b: rgba(10, 111, 163, .07); --cyan-l: rgba(10, 111, 163, .4); --cyan-fill: #0a6fa3;
-  --red: #c9342a; --red-a: rgba(201, 52, 42, .09); --red-l: rgba(201, 52, 42, .45); --red-bg: #fdecea;
+  --scrim: rgba(36, 36, 40, .22); --shadow: 0 24px 64px rgba(0, 0, 0, .16), 0 0 0 .5px rgba(0, 0, 0, .1); --shadow-pop: 0 12px 32px rgba(0, 0, 0, .14), 0 0 0 .5px rgba(0, 0, 0, .1); --dim: blur(1.5px);
+  --scroll: #c7c7cc; --track: #d1d1d6; --knob: #fff;
+  --cyan: #00739e; --cyan-a: rgba(0, 115, 158, .1); --cyan-b: rgba(0, 115, 158, .06); --cyan-l: rgba(0, 115, 158, .45); --cyan-fill: #00739e;
+  --red: #d70015; --red-a: rgba(215, 0, 21, .08); --red-l: rgba(215, 0, 21, .45); --red-bg: #fdecec;
   --bar: rgba(29, 29, 31, .32); --bar-2: rgba(29, 29, 31, .14); --bar-3: rgba(29, 29, 31, .07);
   color-scheme: light;
 }
@@ -1013,8 +1016,8 @@ html[data-calm] *, html[data-calm] *::before, html[data-calm] *::after { animati
  * figures (the share, the first report of each side, the words), the headlines side by side, the videos, the outlets not seen.
  * Body text 16 px, presses 44 px or more. The three sides have a hue each only to lead a count to its column: the same weight,
  * never red or green. ---- */
-:root { --sd-jp: #ef8fb4; --sd-intl: #6cc0f5; --sd-gov: #cdb07f; }
-:root[data-theme="light"] { --sd-jp: #a8285f; --sd-intl: #0a66a0; --sd-gov: #765615; }
+:root { --sd-jp: #ff8fb8; --sd-intl: #64c4ff; --sd-gov: #d9b77a; }
+:root[data-theme="light"] { --sd-jp: #b5235f; --sd-intl: #0068a8; --sd-gov: #7a5a12; }
 [data-side="jp"] { --sd: var(--sd-jp); }
 [data-side="intl"] { --sd: var(--sd-intl); }
 [data-side="gov"] { --sd: var(--sd-gov); }
@@ -2146,6 +2149,9 @@ a.wt-o:hover { color: var(--cyan); }
 @media (max-width: 760px) {
   .tb { position: relative; flex-wrap: wrap; row-gap: 2px; padding: 5px 10px 4px; }
   #view-btn { display: inline-block; order: 2; margin-left: auto; }
+  #view-btn { min-height: 44px; min-width: 44px; }   /* the one way to the search, the buttons and the look: a thumb-sized target */
+  .tabs button { min-height: 32px; }
+  .tb > .tb-r { display: none; }   /* before js/app.js placeBar moves it into the menu, the row of buttons must not be drawn (it ran off the right edge) */
   .tb .meters { order: 3; flex: 1 1 100%; flex-wrap: nowrap; align-items: center; gap: 10px; overflow-x: auto; scrollbar-width: none; font-size: var(--fs-2); }
   .tb .meters .meter { flex: none; }
   #m-ai, #m-gen time { display: none; }
@@ -2182,7 +2188,7 @@ a.wt-o:hover { color: var(--cyan); }
  * The map keeps its own drawing and its own colours; nothing here reaches into the theater. ---- */
 :root { --glass: rgba(255, 255, 255, .032); --glass-2: rgba(255, 255, 255, .055); --lit-e: rgba(90, 200, 240, .36); --lit-box: 0 0 0 .5px rgba(90, 200, 240, .52), 0 0 16px rgba(90, 200, 240, .14); --lit-line: 0 0 9px rgba(90, 200, 240, .6); --tabs-h: 54px; }
 :root[data-theme="light"] { --glass: rgba(255, 255, 255, .78); --glass-2: #fff; --lit-e: rgba(10, 111, 163, .34); --lit-box: 0 0 0 .5px rgba(10, 111, 163, .46), 0 1px 3px rgba(10, 111, 163, .1); --lit-line: none; }
-:root[data-size="l"] { --fs-0: 10px; --fs-1: 12px; --fs-2: 13px; --fs-3: 14px; --fs-4: 15px; --fs-5: 17px; --fs-6: 20px; --fs-7: 22px; }
+:root[data-size="l"] { --fs-0: 11px; --fs-1: 12px; --fs-2: 14px; --fs-3: 15px; --fs-4: 16px; --fs-5: 18px; --fs-6: 21px; --fs-7: 24px; }
 
 /* L-shaped corners: drawn as a background, so a plate needs no extra elements */
 .sc-h, .cmd, .sects-2 {
@@ -2661,3 +2667,304 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
 /* a row's topics and words give way with an ellipsis, never one letter to a line; a phone lets the row wrap */
 .rm:has(.bi-chip) > .rk, .rm:has(.bi-chip) > .rw { white-space: nowrap; }
 @media (max-width: 760px) { .rm:has(.bi-chip) { flex-wrap: wrap; } .rm:has(.bi-chip) > .rk, .rm:has(.bi-chip) > .rw { flex: 0 1 100%; } }
+
+/* ---- design system 11-08 b (docs/design-system.md, docs/design-research.md): photographs and room, the layer that moves you in glass,
+ * one big number to a news, a lit edge only on what is chosen. Content panes stay opaque (HIG Materials: no glass in the content layer). ---- */
+:root { --glass-nav: rgba(28, 28, 30, .74); --glass-pop: rgba(36, 36, 38, .8); --glass-edge: rgba(255, 255, 255, .12); --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .07); --blur: blur(24px) saturate(180%);
+  --lit-e: rgba(100, 210, 255, .55); --lit-box: 0 0 0 1px rgba(100, 210, 255, .62), 0 0 18px rgba(100, 210, 255, .15); --lit-line: 0 0 8px rgba(100, 210, 255, .5); --num-glow: 0 0 26px rgba(100, 210, 255, .22); }
+:root[data-theme="light"] { --glass-nav: rgba(251, 251, 253, .8); --glass-pop: rgba(255, 255, 255, .84); --glass-edge: rgba(0, 0, 0, .08); --glass-hi: inset 0 1px 0 rgba(255, 255, 255, .8);
+  --lit-e: rgba(0, 115, 158, .5); --lit-box: 0 0 0 1.5px rgba(0, 115, 158, .55); --lit-line: none; --num-glow: none; }
+
+/* the layer that moves you: glass (the bar, the phone's tabs, the head of a sheet, the find field, popovers) */
+.tb { border-bottom: 1px solid var(--glass-edge); box-shadow: var(--glass-hi); }
+/* glass on the bar only where the tabs are not fixed inside it: a backdrop filter would make the bar the box the fixed tabs sit in */
+@media (min-width: 761px) { .tb { position: relative; z-index: 6; background: var(--glass-nav); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); } }
+@media (orientation: landscape) and (max-height: 500px) { .tb { position: static; z-index: auto; background: var(--tb); -webkit-backdrop-filter: none; backdrop-filter: none; } }
+.sheet-h { background: var(--glass-nav); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); z-index: 2; }
+.cmd, .pop { background-color: var(--glass-pop); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border: 1px solid var(--glass-edge); }
+.cmd { border-radius: var(--r-xl); }
+.pop { border-radius: var(--r-l); }
+.app-name { font: 700 var(--fs-5)/1 var(--f-display); letter-spacing: 0; }
+.tbb, button.search, .search { border-radius: var(--r-s); }
+.sects a[aria-current="page"] { font-weight: 600; }
+@media (max-width: 760px) {
+  .sects { background: var(--glass-nav); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-top: 1px solid var(--glass-edge); }
+}
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) {
+  .sects { background: var(--glass-nav); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .tb, .sheet-h, .cmd, .pop, .sects { background-color: var(--tb) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+
+/* the content layer: opaque panes with room between them, no lines between panes, heads on the same face */
+.board { gap: var(--sp-2); padding: var(--sp-2); background: var(--win); }
+.col { gap: var(--sp-2); }
+.pane { border-radius: var(--r-l); }
+:root[data-theme="light"] .board { gap: var(--sp-2); padding: var(--sp-2); }
+:root[data-theme="light"] .col { gap: var(--sp-2); }
+:root[data-theme="light"] .pane { border-radius: var(--r-l); box-shadow: 0 0 0 .5px rgba(0, 0, 0, .07), 0 1px 3px rgba(0, 0, 0, .04); }
+.ph { height: 30px; padding: 0 var(--sp-3); background: transparent; border-bottom: 0; }
+.ph h2, :root[data-theme="light"] .ph h2 { font: 700 var(--fs-4)/1.2 var(--f-display); color: var(--ink); letter-spacing: 0; }
+.chips, .tabs { border-bottom: 0; padding: var(--sp-1) var(--sp-3) var(--sp-2); }
+.chip, .tab { border-radius: var(--r-s); }
+.set-box { border-radius: var(--r-l); }
+.ch { border-bottom: 0; }
+
+/* headlines in the display face; figures in the instrument face */
+.ch-title h1, .bd-t, .sc-h h1, .en-st, .en-head h2, .entry .en-sub, .en-col h4, .wt.lv-xl .nt-t, .tour-t, .sheet-h h2, .en-osg h4, .en-h, .en-q { font-family: var(--f-display); font-weight: 700; letter-spacing: 0; }
+.ch-title h1, .bd-t { line-height: 1.4; }
+.sc-h h1 { font-size: var(--fs-7); }
+.ds-big .num, .ch-big .num, .count .big { font-family: var(--f-num); font-weight: 300; letter-spacing: -.02em; color: var(--ink-hi); }
+.ds-big .num, .ch-big .num { text-shadow: var(--num-glow); }
+
+/* what is chosen: the edge lights, nothing else does */
+.rows .r.sel, :root[data-theme="light"] .rows .r.sel { box-shadow: inset 0 0 0 1px var(--cyan-l); background: var(--cyan-b); }
+.wt.sel { box-shadow: var(--lit-box); }
+
+/* the simple view: one large title, cards without borders, room between the parts */
+.entry { padding: var(--sp-6) var(--sp-6) var(--sp-7); }
+.en-head h2 { font-size: var(--fs-8); font-weight: 900; line-height: 1.2; }
+.en-head h2 .n { font-family: var(--f-num); font-weight: 400; font-size: 20px; }
+.en-lead { margin-top: var(--sp-1); }
+.en-card { border: 0; border-radius: var(--r-l); background: var(--pane); }
+:root[data-theme="light"] .en-card { box-shadow: 0 0 0 .5px rgba(0, 0, 0, .07), 0 1px 3px rgba(0, 0, 0, .04); }
+.en-card:hover { border-color: transparent; background: var(--raise); }
+:root[data-theme="light"] .en-card:hover { background: #fff; box-shadow: 0 0 0 .5px rgba(0, 0, 0, .1), 0 4px 14px rgba(0, 0, 0, .07); }
+.en-card[aria-pressed="true"], :root[data-theme="light"] .en-card[aria-pressed="true"] { box-shadow: var(--lit-box); }
+.en-st { font-size: 30px; line-height: 1.38; }
+.entry .en-sub { margin-top: var(--sp-7); }
+@media (max-width: 760px) {
+  .entry { padding: var(--sp-5) var(--sp-4) calc(var(--sp-7) + var(--tabs-h)); }
+  .en-head h2 { font-size: 26px; }
+  .en-st { font-size: 22px; }
+}
+@media (prefers-reduced-motion: reduce) { .en-card, .tbb, .chip { transition: none !important; } }
+
+/* the tiles of a news (js/dossier.js): quiet faces in the content layer; no tinted wash, no corner marks, no cyan frame. The edge lights only when chosen */
+.dcard, .sd, .nt, :root[data-theme="light"] :is(.dcard, .sd, .nt) { background: var(--fill-1); box-shadow: inset 0 0 0 1px var(--line); border-radius: var(--r-m); }
+.dcard::before, .sd::before, .nt::before { display: none; }
+@media (max-width: 760px) {
+  .en-head h2 { font-size: 22px; flex-wrap: wrap; row-gap: 0; }
+}
+
+/* ---- home v2 (docs/design-system.md 13 and 13-b): glass as the look of the page. Three layers: a ground of light drawn in CSS (no photograph),
+ * large glass surfaces (the lead story, the list of news, each card of the lower band), and tiles on them (a photo, a row, a figure).
+ * The blur sits on the large surfaces only; rows, labels and buttons carry a flat translucent fill. The board stays as the detailed screen (data-home="board"). ---- */
+:root {
+  --hg-ground: #05070d;
+  --hg-glow: radial-gradient(64vmax 52vmax at 6% -8%, rgba(48, 76, 196, .5), transparent 72%), radial-gradient(52vmax 46vmax at 104% 6%, rgba(16, 124, 136, .46), transparent 72%),
+    radial-gradient(56vmax 46vmax at 74% 112%, rgba(104, 40, 130, .46), transparent 72%), radial-gradient(44vmax 40vmax at -6% 96%, rgba(24, 70, 132, .4), transparent 72%);
+  --hg-discs: radial-gradient(circle closest-side, #2e49bb 0%, #1b2b84 78%, #17246f 97%, transparent 100%) 12% 14% / 30vmax 30vmax no-repeat,
+    radial-gradient(circle closest-side, #1ab0b4 0%, #0b6068 78%, #09525a 97%, transparent 100%) 90% 36% / 20vmax 20vmax no-repeat,
+    radial-gradient(circle closest-side, #b04ab0 0%, #5a1f6e 78%, #4b1a5f 97%, transparent 100%) 58% 90% / 26vmax 26vmax no-repeat;
+  --hs-fill: linear-gradient(148deg, rgba(255, 255, 255, .14) 0%, rgba(255, 255, 255, .035) 42%, rgba(255, 255, 255, .075) 100%), rgba(14, 18, 30, .62); --hs-edge: rgba(255, 255, 255, .16); --hs-hi: inset 0 1px 0 rgba(255, 255, 255, .2); --hs-shadow: 0 28px 64px rgba(0, 0, 0, .4);
+  --hs-blur: blur(26px) saturate(165%); --hp-blur: blur(20px) saturate(160%);
+  --hc-fill: rgba(255, 255, 255, .07); --hc-edge: rgba(255, 255, 255, .13); --hc-hi: inset 0 1px 0 rgba(255, 255, 255, .14); --hc-hover: rgba(255, 255, 255, .12); --hc-on: rgba(255, 255, 255, .17);
+  --h-ink3: #bcbcc4; --hk: rgba(255, 255, 255, .1);
+}
+:root[data-theme="light"] {
+  --hg-ground: #e7edf8;
+  --hg-glow: radial-gradient(64vmax 52vmax at 6% -8%, rgba(110, 160, 255, .5), transparent 72%), radial-gradient(52vmax 46vmax at 104% 6%, rgba(255, 186, 140, .46), transparent 72%),
+    radial-gradient(56vmax 46vmax at 74% 112%, rgba(186, 150, 255, .42), transparent 72%), radial-gradient(44vmax 40vmax at -6% 96%, rgba(120, 200, 230, .4), transparent 72%);
+  --hg-discs: radial-gradient(circle closest-side, #b7d2ff 0%, #8fb7ff 78%, #86b0fb 97%, transparent 100%) 12% 14% / 30vmax 30vmax no-repeat,
+    radial-gradient(circle closest-side, #ffd7bb 0%, #ffb98f 78%, #fdb185 97%, transparent 100%) 90% 36% / 20vmax 20vmax no-repeat,
+    radial-gradient(circle closest-side, #dccbff 0%, #b79cf5 78%, #af93f1 97%, transparent 100%) 58% 90% / 26vmax 26vmax no-repeat;
+  --hs-fill: linear-gradient(148deg, rgba(255, 255, 255, .84) 0%, rgba(255, 255, 255, .6) 50%, rgba(255, 255, 255, .72) 100%); --hs-edge: rgba(255, 255, 255, .85); --hs-hi: inset 0 1px 0 rgba(255, 255, 255, .95); --hs-shadow: 0 22px 56px rgba(40, 60, 120, .16), 0 0 0 .5px rgba(40, 56, 110, .1);
+  --hc-fill: rgba(255, 255, 255, .6); --hc-edge: rgba(255, 255, 255, .9); --hc-hi: inset 0 1px 0 rgba(255, 255, 255, 1); --hc-hover: rgba(255, 255, 255, .85); --hc-on: rgba(255, 255, 255, .96);
+  --h-ink3: #3e3e45; --hk: rgba(36, 48, 100, .1);
+}
+
+.home-bar { display: none; }
+@media not all and (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) {
+/* the ground: a field of light, fixed, behind everything (a photograph is never the ground) */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])) { background: var(--hg-ground); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])) body { background: transparent; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])) body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--hg-discs), var(--hg-glow); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #ai-line { display: none; }
+
+/* the simple view on the same ground: its cards are frosted, a flat fill under the blur only on the big ones */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])) .entry { background: transparent; --ink-3: var(--h-ink3); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])) .en-card { background: var(--hs-fill); border: 1px solid var(--hs-edge); border-radius: 24px; box-shadow: var(--hs-hi), var(--hs-shadow); -webkit-backdrop-filter: var(--hp-blur); backdrop-filter: var(--hp-blur); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])) .en-card:hover { background: var(--hs-fill), var(--hc-hover); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])) .en-card[aria-pressed="true"] { box-shadow: var(--hs-hi), var(--lit-box); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])) .en-col { background: var(--hs-fill); border: 1px solid var(--hs-edge); border-radius: 22px; box-shadow: var(--hs-hi); }
+
+/* the page: a title, the lead story beside the list of news, then the cards. The columns of the board become one grid */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .board { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto 480px; gap: 32px 24px; align-content: start; flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto;
+  padding: 28px clamp(20px, 3.4vw, 56px) 72px; background: transparent; --ink-3: var(--h-ink3); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .col, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .under { display: contents; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-bar { display: flex; grid-column: 1 / -1; grid-row: 1; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-t { margin: 0; font: 900 clamp(32px, 3.4vw, 48px)/1.1 var(--f-display); letter-spacing: 0; color: var(--ink-hi); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-lead { margin-top: 10px; max-width: 44ch; font-size: var(--fs-5); line-height: 1.65; color: var(--ink-2); }
+:root[data-theme="light"][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-lead { color: #2c2c32; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-sub { margin-top: 4px; min-height: 20px; font-size: var(--fs-3); color: var(--h-ink3); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-detail { flex: none; height: 44px; padding: 0 22px; border-radius: var(--r-pill); border: 1px solid var(--hs-edge); background: var(--hs-fill); color: var(--ink); font: 600 var(--fs-4)/1 var(--f-text);
+  box-shadow: var(--hs-hi); -webkit-backdrop-filter: var(--hp-blur); backdrop-filter: var(--hp-blur); transition: background var(--t-1), border-color var(--t-1); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-detail:hover { background: var(--hc-on); }
+
+/* large glass: the lead story, the list, and every card of the lower band */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane { position: relative; z-index: 1; border-radius: 24px; background: var(--hs-fill); border: 1px solid var(--hs-edge); box-shadow: var(--hs-hi), var(--hs-shadow); -webkit-backdrop-filter: var(--hp-blur); backdrop-filter: var(--hp-blur); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-pri { border-radius: 30px; -webkit-backdrop-filter: var(--hs-blur); backdrop-filter: var(--hs-blur); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .ph { height: auto; min-height: 0; padding: 18px 22px 8px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .ph h2 { font: 800 var(--fs-5)/1.3 var(--f-display); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pb { max-height: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .chips, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .tabs { padding: 4px 22px 10px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-rel, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-basis, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .wall, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .mapnews { display: none; }
+
+/* the lead story: the picture beside the title; the rest of the report is on the detailed screen */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case { grid-column: 1 / span 8; grid-row: 2; display: flex; min-height: 480px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .pb { flex: none; max-height: none; overflow: visible; padding: 0; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .case-in { height: auto; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .case-in > :not(.dos) { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); grid-template-rows: auto 1fr; gap: 6px 32px; padding: 32px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > * { display: none; grid-column: auto; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > .t-place, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > .t-status { display: block; grid-column: 2; padding: 0; background: none; box-shadow: none; border: 0; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > .t-place { grid-row: 1; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > .t-status { grid-row: 2; align-self: end; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > .t-photo { display: flex; grid-column: 1; grid-row: 1 / span 2; padding: 0; background: none; box-shadow: none; border: 0; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .pstack { padding: 0; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .pback { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .t-photo .pfig { border-radius: 20px; overflow: hidden; background: rgba(0, 0, 0, .26); box-shadow: inset 0 0 0 1px var(--hc-edge), 0 12px 32px rgba(0, 0, 0, .25); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .t-photo .pimg img { max-height: 360px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .t-photo figcaption { padding: 8px 14px 10px; background: var(--hc-fill); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-place .prec, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-place .ch-tools { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-place .banner { font-weight: 600; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-main { margin-top: 12px; gap: 20px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-title h1 { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; font: 700 clamp(22px, 1.9vw, 28px)/1.35 var(--f-display); letter-spacing: 0; color: var(--ink-hi); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-title .en { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: 10px; font-size: var(--fs-4); line-height: 1.6; color: var(--h-ink3); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-big .num { font: 300 var(--fs-10)/1 var(--f-num); letter-spacing: -.02em; color: var(--ink-hi); text-shadow: var(--num-glow); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-big .u { display: block; margin-top: 6px; font-size: var(--fs-3); color: var(--ink); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .t-status { display: flex; flex-wrap: nowrap; gap: 14px; font-size: var(--fs-3); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .t-status .facts { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .t-status .st-l { flex: 1; min-width: 40px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .t-status .st-l > i { background: var(--ink-2); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-ratio { margin-top: 18px; max-width: 520px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-ratio .ratio { display: flex; width: 100%; height: 8px; gap: 3px; border-radius: 4px; overflow: hidden; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-rn { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 8px; font-size: var(--fs-3); color: var(--ink-2); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .rn-i { display: inline-flex; align-items: center; gap: 6px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .rn-i i { width: 9px; height: 9px; border-radius: 3px; background: var(--sd); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .rn-i b { font-family: var(--f-num); font-weight: 500; color: var(--ink); }
+.home-open { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-open { display: inline-flex; align-items: center; margin-top: 20px; height: 44px; padding: 0 22px; border-radius: var(--r-pill); border: 1px solid var(--hc-edge); background: var(--hc-fill); box-shadow: var(--hc-hi);
+  color: var(--ink); font: 600 var(--fs-4)/1 var(--f-text); transition: background var(--t-1); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-open:hover { background: var(--hc-on); }
+
+/* the list of news: a small picture and the title; the chosen one is lit */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-pri { grid-column: 9 / -1; grid-row: 2; contain: size; min-height: 0; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-pri .ph { padding: 24px 24px 8px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-pri .ph h2 { font-size: var(--fs-7); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-chips, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-pri .pfoot { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-pri .pb { flex: 1; max-height: none; padding: 4px 12px 16px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-b .rows .r { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 2px 14px; align-items: start; margin-bottom: 4px; padding: 10px 12px; border: 0; border-radius: 18px; transition: background var(--t-1); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-b .rows .r > .rth { grid-row: 1 / span 3; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-b .rows .r > :not(.rth) { grid-column: 2; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-b .rows .r:hover { background: var(--hc-hover); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-b .rows .r.sel { background: var(--hc-on); box-shadow: inset 0 0 0 1px var(--lit-e), var(--hc-hi); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-b .rows .r.sel::before { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-b .rt { -webkit-line-clamp: 3; font: 700 var(--fs-4)/1.45 var(--f-display); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-b .rm .gtag, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-b .rm .bi-chip, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #pri-b .rm .rk { display: none; }
+.rth { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .rth { display: flex; align-items: center; justify-content: center; width: 84px; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px; background: rgba(0, 0, 0, .24); box-shadow: inset 0 0 0 1px var(--hc-edge); color: var(--gc, var(--ink-3)); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .rth img { display: block; width: 100%; height: 100%; object-fit: contain; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .rth.none { background: color-mix(in srgb, var(--gc, #8e8e93) 22%, transparent); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .rth svg { width: 40%; height: auto; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+
+/* the cards of the lower band, in the order a reader looks: what is reported most, the map, the disasters, then the figures behind the page */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:not(#p-case):not(#p-pri) { grid-column: span 4; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:where(:not(#p-case):not(#p-pri)) { height: 320px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-local { order: 0; } :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-rank { order: 1; } :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-anom { order: 2; } :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-map { order: 3; } :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-haz { order: 4; } :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-pol { order: 5; } :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-mkt { order: 6; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-tv { order: 7; } :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-count { order: 8; } :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-src { order: 9; } :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-hours { order: 10; } :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-fields { order: 11; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .mapbox { flex: 1; min-height: 0; height: auto; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-rank { max-height: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:has(> .pb > .empty:only-child), :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-mkt.fold { height: auto; min-height: 0; align-self: start; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:has(> .pb > .empty:only-child) .pb { max-height: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .rows .r:hover { background: var(--hc-hover); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .rows .r.sel { background: var(--hc-on); box-shadow: inset 0 0 0 1px var(--lit-e); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane :is(.dcard, .sd, .nt) { background: var(--hc-fill); box-shadow: inset 0 0 0 1px var(--hc-edge), var(--hc-hi); }
+
+/* a lead without a picture: its place is taken by what the event itself holds, in the picture's column: a line the outlet published (or the AI's, marked AI), then the first headlines
+ * in time order, each with its side. Built in js/app.js caseNode (t-fill); nothing here is drawn or written by a model. */
+.t-fill { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo):has(> .t-fill) > .t-fill { display: flex; flex-direction: column; justify-content: center; gap: 12px; grid-column: 1; grid-row: 1 / span 2; min-width: 0; padding: 0; background: none; box-shadow: none; border: 0; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo):not(:has(> .t-fill)) { grid-template-columns: minmax(0, 1fr); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo):not(:has(> .t-fill)) > .t-place, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo):not(:has(> .t-fill)) > .t-status { grid-column: 1; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .t-fill .mq, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-q { margin: 0; padding: 0; border: 0; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .t-fill .mq p, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-q { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 0; font-size: var(--fs-4); line-height: 1.65; color: var(--ink); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-q .aimk { margin-right: 6px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .t-fill .mq footer, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-n { margin-top: 4px; font-size: var(--fs-2); color: var(--h-ink3); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-n { display: block; margin-top: -6px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .t-fill .mq-o { color: var(--h-ink3); text-decoration: underline; text-underline-offset: 2px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-l { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-l li { display: grid; gap: 4px; padding: 10px 14px; border-radius: 14px; background: var(--hc-fill); box-shadow: inset 0 0 0 1px var(--hc-edge), var(--hc-hi); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-m { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: var(--fs-3); color: var(--ink-2); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-m i { flex: none; width: 9px; height: 9px; border-radius: 3px; background: var(--sd); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-m time { margin-left: auto; color: var(--h-ink3); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos:not(.has-photo) .lf-h { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font: 600 var(--fs-4)/1.5 var(--f-display); color: var(--ink-hi); overflow-wrap: anywhere; }
+
+/* the loading face: until the data is in, the lists show the shape of their rows with a quiet pulse, and the cards stay small */
+.sk-rows, .sk-case { display: none; }
+.sk { display: block; border-radius: 8px; background: var(--hk); animation: hk-pulse 1.8s ease-in-out infinite; }
+.sk-tx { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.sk-ln { height: 13px; } .sk-ln.s { width: 58%; } .sk-ln.h { height: 24px; border-radius: 12px; }
+.sk-th { width: 84px; aspect-ratio: 4 / 3; border-radius: 12px; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .sk-rows { display: block; margin: 0; padding: 4px 12px 16px; list-style: none; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .sk-rows li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 14px; margin-bottom: 4px; padding: 10px 12px; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .sk-rows .sk-tx { padding-top: 6px; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case #case { flex: 1; min-width: 0; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .sk-case { position: relative; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px; padding: 32px; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .sk-ph { aspect-ratio: 4 / 3; border-radius: 20px; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .sk-tx { gap: 14px; padding-right: 96px; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .sk-tag { width: 64px; height: 26px; border-radius: 6px; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .sk-bar { width: 70%; height: 8px; margin-top: 10px; border-radius: 4px; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .sk-num { position: absolute; top: 32px; right: 32px; width: 44px; height: 64px; border-radius: 12px; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:where(:not(#p-case):not(#p-pri):not(#p-map):not(#p-tv)) { height: auto; min-height: 0; align-self: start; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:not(#p-case):not(#p-pri):not(#p-map):not(#p-tv) .pb > * { display: none; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:not(#p-case):not(#p-pri):not(#p-map):not(#p-tv) > .pb::before { content: ""; display: block; height: 14px; margin: 6px 22px 12px; border-radius: 7px; background: var(--hk); animation: hk-pulse 1.8s ease-in-out infinite; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:not(#p-case):not(#p-pri):not(#p-map):not(#p-tv) > .pb::after { content: ""; display: block; width: 58%; height: 14px; margin: 0 22px 22px; border-radius: 7px; background: var(--hk); animation: hk-pulse 1.8s ease-in-out infinite; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .asum, :root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .tabs, :root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .chips { display: none; }
+}
+@keyframes hk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+@media (min-width: 761px) { :root[data-load] .meters { visibility: hidden; } }
+
+@media (min-width: 1700px) { :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:not(#p-case):not(#p-pri) { grid-column: span 3; } }
+@media (min-width: 761px) and (max-width: 1100px) {
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .jump { display: none; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .board { overflow: visible; grid-template-rows: auto auto auto; padding: 28px 24px 48px; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case { grid-column: 1 / -1; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-pri { grid-column: 1 / -1; grid-row: 3; contain: none; max-height: 620px; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:not(#p-case):not(#p-pri) { grid-column: span 6; }
+}
+@media (max-width: 760px) {
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .board { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 16px; padding: 20px 16px calc(var(--tabs-h) + 28px); overflow: visible; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-bar { flex-direction: column; align-items: flex-start; gap: 14px; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-t { font-size: 34px; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-lead { font-size: var(--fs-4); }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-pri, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:not(#p-case):not(#p-pri) { grid-column: 1; grid-row: auto; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case { order: -2; min-height: 0; border-radius: 26px; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-pri { order: -1; contain: none; max-height: 640px; border-radius: 26px; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; gap: 14px; padding: 18px; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > .t-place, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > .t-status, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > .t-photo { grid-column: 1; grid-row: auto; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > .t-photo { order: -1; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-title h1 { font-size: 24px; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-big .num { font-size: 44px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .dos > .t-fill { grid-column: 1; grid-row: auto; order: -1; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .sk-case { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 18px; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .sk-tx { padding-right: 0; }
+:root[data-load][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .sk-num { top: auto; bottom: 18px; right: 18px; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:not(#p-case):not(#p-pri) { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--hs-fill); }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:where(:not(#p-case):not(#p-pri)) { height: 340px; }
+}
+
+/* a flat face where the visitor asked for one, or the browser cannot blur: the same layout, opaque panes, the field of light off */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])) { background: var(--win); }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])) body::before { display: none; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])) .en-card, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])) .en-col { background: var(--pane) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; border-color: var(--line-2); box-shadow: none; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-detail { background: var(--pane) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; border-color: var(--line-2); box-shadow: none; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-open, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .rth { background: var(--raise); }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane, :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-detail { background: var(--pane); }
+}
+@media (prefers-reduced-motion: reduce) { .home-detail, .home-open, .rows .r { transition: none !important; } .sk, .pb::before, .pb::after { animation: none !important; } }
