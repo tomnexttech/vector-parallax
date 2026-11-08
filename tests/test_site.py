@@ -293,5 +293,27 @@ class Assemble(unittest.TestCase):
             self.assertFalse((Path(o) / "feed.xml").exists())
 
 
+class BriefRowsTest(unittest.TestCase):
+    """CONTRACT 13.1: a row that says "not reported" is not shown, and a brief with nothing left to show has no frame"""
+    def _ev(self, **b):
+        base = {"what_ja": "港で船が座礁した。", "background_ja": "", "views_ja": "", "next_ja": "", "made_at": T0, "model": "m"}
+        base.update(b)
+        its = [item("a1", "BBC", "海外公共", "intl", T0 - 900, "Ship aground"), item("a2", "NHK", "公共放送", "jp", T0 - 600, "船が座礁")]
+        return site.make_event("s1", its, brief=base)
+
+    def test_the_not_reported_row_is_left_out_of_the_page(self):
+        html = site.story_page(self._ev(background_ja=site.UNKNOWN, views_ja="国内は原因に触れた。"), generated_at=T0)
+        self.assertIn("何が起きたか", html)
+        self.assertIn("伝え方の違い", html)
+        self.assertNotIn(site.UNKNOWN, html)
+        self.assertNotIn("経緯", html)
+
+    def test_a_brief_of_nothing_shown_has_no_frame(self):
+        ev = site.make_event("s1", [item("a1", "BBC", "海外公共", "intl", T0 - 900, "Ship aground"), item("a2", "NHK", "公共放送", "jp", T0 - 600, "船が座礁")],
+                             brief={"what_ja": site.UNKNOWN, "background_ja": site.UNKNOWN, "views_ja": "", "next_ja": "", "made_at": T0, "model": "m"})
+        self.assertIsNone(ev["brief"])
+        self.assertNotIn("<h2>要点", site.story_page(ev, generated_at=T0))
+
+
 if __name__ == "__main__":
     unittest.main()

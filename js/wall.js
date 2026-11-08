@@ -106,7 +106,7 @@ export function createWall({ h, lk, dossier, lineIcon, headNode, measureOf, phot
     // a thin event with no photo: the headlines of its field keep the page from standing empty
     const near = pics.length ? [] : v.strip.filter((x) => x.key !== e.key && x.field === e.field).slice(0, 6);
     return h('div', { class: 'bd' },
-      h('div', { class: 'dcard bd-strip' }, h('b', { class: 'bd-sk', text: '注目' }), h('b', { class: 'num bd-sn', text: v.total }), h('div', { class: 'bd-ths' }, thumbs)),
+      h('div', { class: 'dcard bd-strip' }, h('b', { class: 'bd-sk', text: '注目ニュース' }), h('b', { class: 'num bd-sn', text: v.total }), h('div', { class: 'bd-ths' }, thumbs)),
       h('div', { class: 'bd-l' }, dossier.biasTile(biasOf(e)), dossier.homeTile(m, act(e)), dossier.typeTile(m, act(e), typeWho(e))),
       h('article', { class: 'dcard bd-m' },
         h('div', { class: 'bd-mh' }, e.geo ? h('b', { class: 'banner', text: e.geo.name }) : h('b', { class: 'banner soft', text: e.field || '分野の外' }), e.geo ? h('span', { class: 'prec', text: e.geo.prec }) : null,

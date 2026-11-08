@@ -48,12 +48,16 @@ test('the committed data: every summary on a story reads back, and one file hold
 import { briefOf, briefIndex, BRIEF_UNKNOWN } from '../../js/summary.js';
 const brief = (o = {}) => ({ what_ja: '港で船が座礁した。', background_ja: BRIEF_UNKNOWN, views_ja: '', next_ja: '', made_at: 5, provider: 'gemini', model: 'm', ...o });
 
-test('briefOf: four rows at most, empty rows left out, the unknown phrase marked', () => {
+test('briefOf: four rows at most; empty rows and rows that say "not reported" are left out', () => {
   const b = briefOf({ brief: brief() });
-  assert.deepEqual(b.rows.map((r) => r.key), ['what_ja', 'background_ja']);
-  assert.equal(b.rows[1].unknown, true);
-  assert.equal(b.rows[0].unknown, false);
+  assert.deepEqual(b.rows.map((r) => r.key), ['what_ja']);
+  const c = briefOf({ brief: brief({ background_ja: '港は閉鎖された。', views_ja: BRIEF_UNKNOWN, next_ja: '調査が始まる。' }) });
+  assert.deepEqual(c.rows.map((r) => r.key), ['what_ja', 'background_ja', 'next_ja']);
   assert.deepEqual([b.provider, b.model, b.madeAt], ['gemini', 'm', 5]);
+});
+
+test('briefOf: when every row is empty or "not reported" there is no brief, so no frame', () => {
+  assert.equal(briefOf({ brief: brief({ what_ja: BRIEF_UNKNOWN, background_ja: BRIEF_UNKNOWN }) }), null);
 });
 
 test('briefOf: no brief, an old story, a brief without what_ja or who wrote it: null', () => {

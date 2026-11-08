@@ -195,7 +195,8 @@ class Page(unittest.TestCase):
         for want in ("要点", "何が起きたか", "沿岸の港で貨物船が座礁した。", 'class="mark">AI', "gemini-x", "<q>沿岸の港で貨物船が座礁した。</q>", ">元の記事</a>", "時系列", "https://b.example/2"):
             self.assertIn(want, page)
         self.assertNotIn("伝え方の違い", page)                 # 空の欄は行ごと出さない
-        self.assertIn('class="none">伝えられていない', page)
+        self.assertNotIn("伝えられていない", page)          # a row that says "not reported" is not shown (CONTRACT 13.1, 2026-11-09)
+        self.assertNotIn("<dt>経緯</dt>", page)
 
     def test_without_a_brief_the_page_is_the_page_it_was(self):
         site, ev = self.event(None)

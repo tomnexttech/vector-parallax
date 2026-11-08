@@ -39,7 +39,7 @@ export const EN = {
   '↑ ↓ で選ぶ　Enter で開く　Esc で閉じる': '↑ ↓ to choose, Enter to open, Esc to close',
   'AI のまとめ': 'AI summaries', '国内と海外の両方': 'Both Japan and abroad', '一覧': 'List', '件数': 'Count', '多い': 'Many', '並べ方': 'Layout', '標準': 'Standard', '主役': 'Lead',
   // the panes of the board
-  '出来事': 'News', '注目': 'Top news', '関連': 'Related', '出典': 'Sources', '片側だけのニュース': 'Only some outlets', '時間': 'Hours', '分野': 'Fields',
+  '出来事': 'News', '注目': 'Top news', '注目ニュース': 'Top news', '関連': 'Related', '出典': 'Sources', '片側だけのニュース': 'Only some outlets', '時間': 'Hours', '分野': 'Fields',
   '時間別の件数': 'Headlines by hour', '見出しの件数': 'Collected headlines', '期間内の見出し': 'Headlines in the window', '関連ニュース': 'Related headlines',
   '出典とまとめ方': 'Basis and sources', '種類': 'Type', '直近 1 時間': 'Last hour', '最多': 'Peak', '注目の初報': 'First reports of top news', '各 6 件まで': 'Up to 6 each',
   '届かない・更新なし': 'Unreachable or not updated', '地名なし': 'No place', '地点なし': 'No place', '押すと拡大': 'Press to enlarge', '記事掲載の停止を依頼する': 'Ask to remove an article',
@@ -153,7 +153,7 @@ const PAT = [
   [/^半径 (\d+) km$/, (m) => `Radius ${m[1]} km`],
   [/^判定できない (\d+) 媒体$/, (m) => `${m[1]} outlets undecided`],
   [/^届かない・更新なし (\d+)$/, (m) => `Unreachable or not updated ${m[1]}`],
-  [/^注目 (\d+)\/(\d+)$/, (m) => `Top news ${m[1]}/${m[2]}`],
+  [/^注目ニュース (\d+)\/(\d+)$/, (m) => `Top news ${m[1]}/${m[2]}`],
   [/^バイアス度 (\d+)$/, (m) => `Bias score ${m[1]}`],
   [/^(国内|海外|官公庁) (\d+)(?:・(国内|海外|官公庁) (\d+))?(?:・(国内|海外|官公庁) (\d+))?$/, (m) => [[m[1], m[2]], [m[3], m[4]], [m[5], m[6]]].filter((x) => x[0]).map(([k, n]) => `${SIDE[k]} ${n}`).join(' · ')],
   [/^(.+) の出来事だけ見る$/, (m) => `Only ${trOne(m[1])}`],

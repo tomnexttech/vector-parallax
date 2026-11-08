@@ -1686,7 +1686,7 @@ a.sd-t:hover { color: var(--cyan); text-decoration: underline; }
 .mem-f { margin-left: 8px; font-weight: 400; color: var(--ink-2); }
 .mem-f b { color: var(--cyan); font-weight: 600; }
 .mem-f .lk { margin-left: 6px; color: var(--cyan); }
-@container case (max-width: 560px) {
+@container case (max-width: 500px) {
   .dos.has-photo > .t-place, .dos.has-photo > .t-photo { grid-column: 1 / -1; }
   .figs, .sides { grid-template-columns: minmax(0, 1fr); }
   .t-photo .pimg img { max-height: 240px; }
@@ -2033,7 +2033,7 @@ a.wt-o:hover { color: var(--cyan); }
 .figs > .t-time { grid-column: span 2; }
 .figs > .t-over { grid-column: span 2; }
 .figs > .t-bias.open { grid-column: 1 / -1; }
-@container case (max-width: 560px) { .figs { grid-template-columns: minmax(0, 1fr); } .figs > .t-time, .figs > .t-over { grid-column: auto; } }
+@container case (max-width: 500px) { .figs { grid-template-columns: minmax(0, 1fr); } .figs > .t-time, .figs > .t-over { grid-column: auto; } }
 .wt .figs > .t-time, .wt .figs > .t-over { grid-column: auto; }
 @container tile (min-width: 560px) { .wt .figs { grid-template-columns: repeat(3, minmax(0, 1fr)); } .wt .figs > .t-time, .wt .figs > .t-over { grid-column: span 2; } .wt .figs > .t-bias.open { grid-column: 1 / -1; } }
 /* the gauge */
@@ -3111,3 +3111,190 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
 #theater .mt[data-genre="all"]::before { display: none; }
 #theater .mt[aria-pressed="true"]::before { box-shadow: 0 0 0 1.5px var(--mg-on-ink); }
 #theater .mgl .maplibregl-canvas:focus-visible { outline: 2px solid var(--mg-on); outline-offset: -3px; }
+
+
+/* ---- board v4 (2026-11-09, docs/design-system.md 18): the detailed screen in the home's glass. Same three layers as the home: the field of light as the ground, a large
+ * glass surface (on a wide screen each of the four columns is one sheet; stacked, each pane is), and tiles on it (a pane, a card of the news, a row). The blur sits on
+ * the sheets only (four at most on a wide screen, two on a tablet, none on a phone); the panes and cards on them are a flat translucent fill.
+ * <html data-screen="home|board|compare|sect"> (js/app.js paintScreen) is what these rules hang on; the screen's own words and numbers are not touched here. ---- */
+:root { --bt-fill: rgba(255, 255, 255, .07); --bt-edge: rgba(255, 255, 255, .13); --bt-hi: inset 0 1px 0 rgba(255, 255, 255, .14); --bt-chip: rgba(255, 255, 255, .09); --tp-on: rgba(255, 255, 255, .17); --hs-lite: 0 10px 28px rgba(0, 0, 0, .28); }
+:root[data-theme="light"] { --bt-fill: rgba(255, 255, 255, .78); --bt-edge: rgba(36, 48, 100, .12); --bt-hi: inset 0 1px 0 rgba(255, 255, 255, 1); --bt-chip: rgba(36, 48, 100, .07); --tp-on: rgba(255, 255, 255, .96); --hs-lite: 0 10px 28px rgba(40, 60, 120, .14); }
+
+/* the ground: the board and the compare screen stand on the same field of light as the home */
+@media not all and (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) {
+  :root:is([data-screen="board"], [data-screen="compare"]) { background: var(--hg-ground); }
+  :root:is([data-screen="board"], [data-screen="compare"]) body { background: transparent; }
+  :root:is([data-screen="board"], [data-screen="compare"]) body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--hg-discs), var(--hg-glow); }
+  :root[data-screen="board"] .board { background: transparent; --ink-3: var(--h-ink3); }
+  /* the compare screen opened while the saved home is the board: the home's rules are keyed to data-home, so the same glass is named here */
+  :root[data-screen="compare"][data-home="board"] .entry { background: transparent; --ink-3: var(--h-ink3); }
+  :root[data-screen="compare"][data-home="board"] .en-card { background: var(--hs-fill); border: 1px solid var(--hs-edge); border-radius: 24px; box-shadow: var(--hs-hi), var(--hs-shadow); -webkit-backdrop-filter: var(--hp-blur); backdrop-filter: var(--hp-blur); }
+  :root[data-screen="compare"][data-home="board"] .en-card:hover { background: var(--hs-fill), var(--hc-hover); }
+  :root[data-screen="compare"][data-home="board"] .en-card[aria-pressed="true"] { box-shadow: var(--hs-hi), var(--lit-box); }
+  :root[data-screen="compare"][data-home="board"] .en-col { background: var(--hs-fill); border: 1px solid var(--hs-edge); border-radius: 22px; box-shadow: var(--hs-hi); }
+}
+
+/* ---- the bar: one row. The three screens first (a capsule), then the sections; one thing in the row is chosen. Each stop is 44px high, the visible shape is drawn smaller ---- */
+@media (min-width: 761px) and (min-height: 501px), (min-width: 1101px) {
+  .sects a[data-s="home"] { display: none; }
+  .sects { align-items: center; align-self: stretch; gap: 0; }
+  .sects a, .sects #screens button { position: relative; z-index: 0; height: 44px; padding: 0 11px; border: 0; background: none; box-shadow: none; font: 500 var(--fs-4)/1 var(--f-text); color: var(--ink-2); }
+  .sects a::before, .sects #screens button::before { content: ""; position: absolute; inset: 6px 0; z-index: -1; border-radius: 999px; transition: background var(--t-1); }
+  .sects a:hover, .sects #screens button:hover { color: var(--ink-hi); }
+  .sects a:hover::before, .sects #screens button:hover::before { background: var(--fill-2); }
+  .sects a[aria-current="page"], .sects #screens button[aria-pressed="true"] { color: var(--ink-hi); font-weight: 600; background: none; box-shadow: none; }
+  .sects a[aria-current="page"]::before, .sects #screens button[aria-pressed="true"]::before { background: var(--tp-on); box-shadow: inset 0 0 0 1px var(--lit-e); }
+  .sects a[aria-current="page"]::after { display: none; }
+  .sects #screens { flex: none; position: relative; z-index: 0; display: inline-flex; align-items: center; gap: 0; margin-right: 14px; padding: 0 3px; border: 0; border-radius: 0; background: none; }
+  .sects #screens::before { content: ""; position: absolute; inset: 6px 0; z-index: -1; border-radius: 999px; background: var(--fill-2); box-shadow: inset 0 0 0 1px var(--line); }
+  .sects #screens::after { content: ""; position: absolute; right: -8px; top: 14px; bottom: 14px; width: 1px; background: var(--line-2); }
+  .sects #screens button::before { inset: 9px 0; }
+  .sects #screens button { padding: 0 13px; }
+}
+@media (min-width: 1321px) and (max-width: 1500px) { .meter time { display: none; } }
+@media (min-width: 761px) and (max-width: 1100px) and (min-height: 501px) { .tb .sects { height: 44px; } }
+@media (max-width: 760px) { .sects > #screens { display: none; } }
+.tbm #screens { align-self: flex-start; }
+.tbm #screens button { min-height: 44px; padding: 0 16px; }
+
+/* ---- the sheets: on a wide screen each column is one large glass surface ---- */
+@media (min-width: 1101px) {
+  :root[data-screen="board"] .board { gap: 12px; padding: 12px; grid-template-columns: 232px 332px minmax(0, 1fr) 270px; }
+  :root[data-screen="board"] .col { position: relative; padding: 6px; gap: 6px; overflow: hidden; border-radius: 26px; background: var(--hs-fill); border: 1px solid var(--hs-edge); box-shadow: var(--hs-hi), var(--hs-shadow);
+    -webkit-backdrop-filter: var(--hs-blur); backdrop-filter: var(--hs-blur); }
+  :root[data-screen="board"] .pane { background: var(--bt-fill); box-shadow: inset 0 0 0 1px var(--bt-edge), var(--bt-hi); }
+  /* the news itself has no tile of its own: its cards are the tiles on the sheet */
+  :root[data-screen="board"] #p-case { background: none; box-shadow: none; border-radius: 0; }
+  :root[data-screen="board"] .under { gap: 6px; }
+  :root[data-screen="board"] .dos { padding: 0; gap: 6px; }
+}
+@media (min-width: 1101px) and (max-width: 1320px) { :root[data-screen="board"] .board { grid-template-columns: 208px 292px minmax(0, 1fr) 242px; } }
+@media (min-width: 1101px) and (max-width: 1220px) { :root[data-screen="board"] .board { gap: 8px; padding: 8px; grid-template-columns: 214px 256px minmax(0, 1fr) 218px; } :root[data-screen="board"] .src-types li { padding: 4px 5px; } }
+
+/* ---- stacked (a tablet, a phone): every pane is a glass surface of its own; the blur only on the two big ones, on a tablet; none on a phone ---- */
+@media (max-width: 1100px) {
+  :root[data-screen="board"] .board { gap: 12px; padding: 12px 12px 24px; }
+  :root[data-screen="board"] .pane { background: var(--hs-fill); border: 1px solid var(--hs-edge); box-shadow: var(--hs-hi), var(--hs-lite); }
+  :root[data-screen="board"] .jump { background: var(--glass-nav); border-bottom: 1px solid var(--hs-edge); }
+  :root[data-screen="board"] .jump a { min-height: 44px; display: inline-flex; align-items: center; padding: 0 12px; }
+}
+@media (min-width: 761px) and (max-width: 1100px) {
+  :root[data-screen="board"] #p-case, :root[data-screen="board"] #p-pri { -webkit-backdrop-filter: var(--hp-blur); backdrop-filter: var(--hp-blur); }
+  :root[data-screen="board"] .jump { -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); }
+}
+
+/* ---- inside a pane: a head that leads, rows that are rounded and hover as one, chips as pills ---- */
+:root[data-screen="board"] .pane { border-radius: 20px; --ink-3: var(--h-ink3); }
+:root[data-screen="board"] .ph { height: auto; min-height: 0; padding: 14px 16px 6px; gap: 10px; background: transparent; border-bottom: 0; }
+:root[data-screen="board"] .ph h2 { font: 800 var(--fs-5)/1.3 var(--f-display); color: var(--ink-hi); }
+:root[data-screen="board"] .ph .pc { font-size: var(--fs-3); color: var(--h-ink3); }
+:root[data-screen="board"] .ph b.pc { color: var(--ink); }
+:root[data-screen="board"] .ph.can-open:hover, :root[data-screen="board"] .ph.can-open:active { background: transparent; }
+:root[data-screen="board"] .ph-open { flex: none; width: 44px; height: 44px; margin: -14px -12px -14px 0; border-radius: 50%; color: var(--h-ink3); background: none; }
+:root[data-screen="board"] .ph-open svg { width: 12px; height: 12px; }
+:root[data-screen="board"] .ph.can-open:hover .ph-open, :root[data-screen="board"] .ph-open:hover, :root[data-screen="board"] .ph-open:focus-visible { background: none; color: var(--ink-hi); }
+:root[data-screen="board"] .pb { padding: 0 6px 8px; }
+:root[data-screen="board"] #case.pb { padding: 0; }
+:root[data-screen="board"] .chips, :root[data-screen="board"] .tabs { gap: 6px; padding: 2px 14px 10px; border-bottom: 0; }
+:root[data-screen="board"] .chip, :root[data-screen="board"] .tab { padding: 5px 11px; border-radius: 999px; font-size: var(--fs-2); color: var(--ink-2); background: var(--bt-chip); box-shadow: inset 0 0 0 1px var(--bt-edge); }
+:root[data-screen="board"] .chip:hover, :root[data-screen="board"] .tab:hover { background: var(--hc-hover); color: var(--ink-hi); }
+:root[data-screen="board"] .chip[aria-pressed="true"], :root[data-screen="board"] .tab[aria-pressed="true"] { background: var(--hc-on); color: var(--ink-hi); box-shadow: inset 0 0 0 1px var(--lit-e); }
+:root[data-screen="board"] .chip[aria-pressed="true"] .n, :root[data-screen="board"] .tab[aria-pressed="true"] .n { color: var(--ink-2); opacity: 1; }
+:root[data-screen="board"] .genres { padding: 4px 12px 8px; border-bottom: 0; }
+:root[data-screen="board"] .rows .r { margin: 0 0 2px; padding: 9px 12px 10px; border-bottom: 0; border-radius: 14px; transition: background var(--t-1); }
+:root[data-screen="board"] .rows .r:hover { background: var(--hc-hover); }
+:root[data-screen="board"] .rows .r.sel { background: var(--hc-on); box-shadow: inset 0 0 0 1px var(--lit-e), var(--hc-hi); }
+:root[data-screen="board"] .rt { font: 600 var(--fs-4)/1.5 var(--f-display); }
+:root[data-screen="board"] .rm { margin-top: 4px; }
+:root[data-screen="board"] .q-out { background: var(--bt-chip); border-radius: 12px; margin: 0 8px 6px; }
+:root[data-screen="board"] .rk-r { margin: 0 0 2px; padding: 9px 12px 10px 8px; border-bottom: 0; border-radius: 14px; transition: background var(--t-1); }
+:root[data-screen="board"] .rk-r:hover { background: var(--hc-hover); }
+:root[data-screen="board"] .rk-r.sel { background: var(--hc-on); box-shadow: inset 0 0 0 1px var(--lit-e), var(--hc-hi); }
+:root[data-screen="board"] .rk-t { font: 600 var(--fs-4)/1.5 var(--f-display); }
+:root[data-screen="board"] .src-types li { padding: 4px 10px; border-radius: 10px; }
+:root[data-screen="board"] .src-types li:hover { background: var(--hc-hover); }
+:root[data-screen="board"] .asum { gap: 6px; padding: 2px 10px 8px; border-bottom: 0; }
+:root[data-screen="board"] .ak { padding: 8px 12px; border: 0; border-radius: 14px; background: var(--bt-chip); box-shadow: inset 0 0 0 1px var(--bt-edge); }
+:root[data-screen="board"] .ak:nth-child(odd) { border-right: 0; }
+:root[data-screen="board"] .ak:hover { background: var(--hc-hover); }
+:root[data-screen="board"] .ak[aria-pressed="true"] { background: var(--hc-on); box-shadow: inset 0 0 0 1px var(--lit-e); }
+:root[data-screen="board"] .ak[aria-pressed="true"] .akl, :root[data-screen="board"] .ak[aria-pressed="true"] .akn { color: var(--ink-hi); }
+:root[data-screen="board"] .tv-f { border-radius: 14px; overflow: hidden; }
+:root[data-screen="board"] #p-map .mapbox { margin: 0 6px 6px; border-radius: 14px; overflow: hidden; }
+
+/* ---- the cards of one news (js/dossier.js): tiles on the sheet; the heads of the parts lead ---- */
+:root[data-screen="board"] :is(.dcard, .sd, .nt) { background: var(--bt-fill); box-shadow: inset 0 0 0 1px var(--bt-edge), var(--bt-hi); border-radius: 18px; }
+:root[data-screen="board"] .dcard { padding: 14px 16px; }
+:root[data-screen="board"] .dcard.t-place { padding: 16px 18px; border-radius: 22px; }
+:root[data-screen="board"] .sd { padding: 14px 16px 16px; }
+:root[data-screen="board"] .sd::after { left: 16px; right: 16px; height: 3px; border-radius: 0 0 3px 3px; }
+:root[data-screen="board"] .nt:hover { background: var(--hc-hover); }
+:root[data-screen="board"] .t-photo .pfig { border-radius: 14px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--bt-edge); }
+:root[data-screen="board"] .t-status { padding: 11px 16px; border-radius: 16px; background: var(--bt-fill); box-shadow: inset 0 0 0 1px var(--bt-edge), var(--bt-hi); }
+:root[data-screen="board"] .st-nav { gap: 6px; padding: 2px 2px 0; }
+:root[data-screen="board"] .st-nav button { height: 32px; padding: 0 15px; border: 0; border-radius: 999px; color: var(--ink-2); background: var(--bt-chip); box-shadow: inset 0 0 0 1px var(--bt-edge); }
+:root[data-screen="board"] .st-nav button:hover { color: var(--ink-hi); background: var(--hc-hover); }
+:root[data-screen="board"] .st-h { margin: 16px 4px 2px; font: 800 var(--fs-5)/1.3 var(--f-display); color: var(--ink-hi); }
+:root[data-screen="board"] .t-ai { padding: 14px 18px 16px; border-radius: 18px; background: var(--bt-fill); box-shadow: inset 0 0 0 1px var(--bt-edge), var(--bt-hi); }
+:root[data-screen="board"] .t-ai:empty { display: none; }
+:root[data-screen="board"] .ch-brief dt { margin-top: 14px; font: 600 var(--fs-3)/1.4 var(--f-text); color: var(--ink-2); }
+:root[data-screen="board"] .ch-brief dt:first-child { margin-top: 0; }
+:root[data-screen="board"] .ch-brief dd { margin: 4px 0 0; font-size: var(--fs-4); line-height: 1.75; color: var(--ink); }
+:root[data-screen="board"] .ch-title h1 { font-family: var(--f-display); font-weight: 700; }
+
+/* the AI line and the view bar under the top bar: no strip of their own, they sit on the ground */
+:root[data-screen="board"] .ailine { background: transparent; border-bottom: 0; --ink-3: var(--h-ink3); }
+
+/* a hit area of 44px where a finger is the pointer; the drawn shape stays the same size */
+@media (max-width: 1100px) {
+  :root[data-screen="board"] .chip, :root[data-screen="board"] .tab { min-height: 44px; display: inline-flex; align-items: center; }
+  :root[data-screen="board"] .st-nav button { min-height: 44px; }
+  :root[data-screen="board"] .ak { min-height: 44px; }
+  :root[data-screen="board"] .ph.can-open .ph-open { margin-top: -16px; margin-bottom: -16px; }
+}
+
+/* a flat face where the visitor asked for one or the browser cannot blur: the same layout, opaque, the field of light off */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root:is([data-screen="board"], [data-screen="compare"]) { background: var(--win); }
+  :root:is([data-screen="board"], [data-screen="compare"]) body::before { display: none; }
+  :root[data-screen="board"] .col, :root[data-screen="board"] .pane:not(#p-case), :root[data-screen="board"] .jump { background: var(--pane) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; border-color: var(--line-2); box-shadow: none; }
+  :root[data-screen="board"] .col .pane:not(#p-case), :root[data-screen="board"] :is(.dcard, .sd, .nt, .t-ai, .t-status) { background: var(--raise) !important; }
+  :root[data-screen="compare"][data-home="board"] :is(.en-card, .en-col) { background: var(--pane) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; border-color: var(--line-2); box-shadow: none; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root[data-screen="board"] .col, :root[data-screen="board"] .pane:not(#p-case) { background: var(--pane); }
+  :root[data-screen="board"] .col .pane:not(#p-case) { background: var(--raise); }
+}
+@media (prefers-reduced-motion: reduce) { :root[data-screen="board"] .rows .r, :root[data-screen="board"] .rk-r, .sects a::before, .sects #screens button::before { transition: none !important; } }
+
+/* the strip of field icons under the bar sits on the ground, not on a band of its own; the bar keeps its room for the counts */
+:root[data-screen="board"] .genre-strip { background: transparent; border-bottom: 0; }
+@media (min-width: 1101px) and (max-width: 1500px) { .tb button.search kbd { display: none; } .tb .search { flex-basis: 132px; width: 132px; } }
+
+/* the figures and rules of the detailed screen in the home's colours: the three sides keep their hues, the rest is white and grey; red is for what is broken or breaking only */
+:root[data-screen="board"] .tl-u { width: 22px; border-radius: 1px; background: var(--h-ink3); }
+:root[data-screen="board"] .tl-go { width: 44px; height: 44px; margin: -14px -12px -14px auto; border-radius: 50%; background: none; color: var(--h-ink3); }
+:root[data-screen="board"] .tl-go:hover { color: var(--ink-hi); filter: none; }
+:root[data-screen="board"] .tl-go svg { width: 12px; height: 12px; stroke-width: 1.6; }
+:root[data-screen="board"] .st-l i { background: var(--ink-2); }
+:root[data-screen="board"] .hours rect.pri { fill: var(--ink-2); }
+:root[data-screen="board"] .lanes circle.first { fill: var(--ink-hi); }
+:root[data-screen="board"] .tl-big b { border-radius: 6px; color: var(--ink-hi); background: var(--hc-on); box-shadow: inset 0 0 0 1px var(--bt-edge); }
+@media (min-width: 1101px) { .tb { gap: 6px; } .tb .meters { gap: 10px; } }
+
+/* contrast, measured on the pixels behind the letters (docs/design-system.md 18): the chosen chip is a dark face with a lit edge, the small count under a ranking is the readable grey */
+:root:not([data-theme="light"])[data-screen="board"] :is(.chip, .tab, .ak)[aria-pressed="true"] { background: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, .12)), rgba(8, 10, 24, .6); color: var(--ink-hi); }
+:root[data-screen="board"] .rk-m { color: var(--ink-3); }
+
+/* touch (a tablet or a phone): the controls of the screen are 44px high; the small counts inside a row get a 44px hit area drawn around them (the row itself is the large target) */
+@media (max-width: 1100px) {
+  .tb-app { min-height: 44px; }
+  :root[data-screen="board"] :is(.addtask, .speak, .more, summary, .al-go, .tl-k, .sd-w) { min-height: 44px; }
+  :root[data-screen="board"] :is(.addtask, .speak, .al-go, .sd-w) { display: inline-flex; align-items: center; justify-content: center; }
+  :root[data-screen="board"] :is(a.pc.rk-all, a.stopreq, #sb-src) { display: inline-flex; align-items: center; min-height: 44px; }
+  :root[data-screen="board"] .chip { min-width: 44px; justify-content: center; }
+  :root[data-screen="board"] .rm .lk, :root[data-screen="board"] .nt-top .lk, :root[data-screen="board"] .mo .lk { position: relative; }
+  :root[data-screen="board"] .rm .lk::after, :root[data-screen="board"] .nt-top .lk::after, :root[data-screen="board"] .mo .lk::after { content: ""; position: absolute; inset: -13px -8px; }
+}
+:root:not([data-theme="light"])[data-screen="board"] #p-case .ch-big .u { display: inline-block; margin: 6px -6px 0 0; padding: 1px 6px 2px; border-radius: 999px; background: rgba(6, 8, 20, .42); }
+@media (min-width: 1101px) { .tb .meters { flex-shrink: 0; } }

@@ -380,7 +380,7 @@ const AI_NOTE = 'AI の文は間違うことがあります。元の記事で確
 function briefBox(e, tag) {
   const b = e.brief; if (!b) return null;
   return h('div', { class: 'ch-brief' },
-    h('dl', null, b.rows.map((r) => [h('dt', { text: r.label }), h('dd', { class: r.unknown ? 'none' : null, text: r.text })])),
+    h('dl', null, b.rows.map((r) => [h('dt', { text: r.label }), h('dd', { text: r.text })])),
     h('p', { class: 'ch-ai' }, tag([b.provider, b.model], b.madeAt), h('span', { text: AI_NOTE })));
 }
 const ISSUES = 'https://github.com/tomnexttech/vector-parallax/issues';
@@ -741,7 +741,7 @@ function renderPri() {
   renderGenres();
   $('pri-chips').replaceChildren(...priChips());
   const list = shownPri();
-  $('pri-h').textContent = state.q ? '検索' : state.topic === 'cross' ? '国内と海外' : narrow() ? '今日の注目' : '注目';
+  $('pri-h').textContent = state.q ? '検索' : state.topic === 'cross' ? '国内と海外' : narrow() ? '今日の注目ニュース' : '注目ニュース';
   roll($('pri-c'), list.length);
   paintHomeSub(list.length);
   const qOut = state.q ? [h('p', { class: 'q-out' }, h('span', { text: `「${state.q}」で探している` }), lk('解除', clearSearch, '検索をやめて全部に戻す', 'r-a')), qBar()] : null;
@@ -1251,14 +1251,16 @@ function viewEl() {
   return state.viewEl;
 }
 const phoneBar = window.matchMedia('(max-width: 760px)');
+/** a phone held sideways: the sections are a rail down the left edge, so the three screens stay with the buttons */
+const railBar = window.matchMedia('(orientation: landscape) and (max-height: 500px) and (max-width: 1100px)');
 /** a tablet held upright (761-1100px wide, not the short landscape of a phone): the same fold as a phone, but the tabs stay in the bar */
 const foldBar = window.matchMedia('(max-width: 760px), (min-width: 761px) and (max-width: 1100px) and (min-height: 501px)');
 /** folded (phone or tablet): the search, the buttons, the range and the choice of count and layout move behind one button (表示); the bar keeps the name, the switch and one line of state.
  *  A phone also moves the AI line behind the button; a tablet leaves it under the bar. */
 function placeBar() {
-  const tb = $('tb'), menu = $('tb-menu'), al = $('ai-line'), r = document.querySelector('.tb-r');
-  if (foldBar.matches) { if (phoneBar.matches) menu.append(al, r); else { menu.append(r); tb.after(al); } }
-  else { tb.insertBefore(r, menu); tb.after(al); menu.hidden = true; $('view-btn').setAttribute('aria-expanded', 'false'); }
+  const tb = $('tb'), menu = $('tb-menu'), al = $('ai-line'), r = document.querySelector('.tb-r'), scr = $('screens');
+  if (foldBar.matches) { if (phoneBar.matches) menu.append(scr, al, r); else { menu.append(r); tb.after(al); $('sects').prepend(scr); } }
+  else { tb.insertBefore(r, menu); tb.after(al); menu.hidden = true; $('view-btn').setAttribute('aria-expanded', 'false'); if (railBar.matches) r.prepend(scr); else $('sects').prepend(scr); }
   if (state.data) renderAiLine();
 }
 function renderViewBar() {
@@ -1401,9 +1403,12 @@ function paintHomeSub(n) {
 const SCREENS = ['home', 'board', 'simple'];
 const screenNow = () => (state.ui === 'simple' ? 'simple' : homeMode() === 'board' ? 'board' : 'home');
 let screenReady = false, screenPop = false;
+// The bar has one row: the three screens first, then the sections. Only one thing in it is chosen: a screen while the home is open, a section when another is.
+// <html data-screen> names what is on screen for the stylesheet: home | board | compare | sect
 function paintScreen() {
-  const now = screenNow();
-  for (const id of SCREENS) { const b = $('sc-' + id); if (b) b.setAttribute('aria-pressed', String(id === now)); }
+  const now = screenNow(), onHome = state.sect === 'home';
+  for (const id of SCREENS) { const b = $('sc-' + id); if (b) b.setAttribute('aria-pressed', String(onHome && id === now)); }
+  document.documentElement.dataset.screen = !onHome ? 'sect' : now === 'simple' ? 'compare' : now;
 }
 function noteScreen() {
   paintScreen();
@@ -1781,11 +1786,11 @@ function renderTicker(force) {
   const box = $('sb-tick');
   const tq = state.tickQ.filter(vis);
   const q = tq.length ? tq : state.pri.filter(vis).slice(0, 1);
-  if (!q.length) { box.replaceChildren(h('span', { class: 'k', text: '注目' }), '0 件'); return; }
+  if (!q.length) { box.replaceChildren(h('span', { class: 'k', text: '注目ニュース' }), '0 件'); return; }
   const i = state.tickI % q.length;
   const e = q[i];
   const line = h('span', { class: 'tk' + (force && !reduced() ? ' in' : '') },
-    h('span', { class: 'k', text: tq.length ? `新着 ${i + 1}/${q.length}` : `注目 1/${state.pri.length}` }),
+    h('span', { class: 'k', text: tq.length ? `新着 ${i + 1}/${q.length}` : `注目ニュース 1/${state.pri.length}` }),
     headNode(e, 'tt'),
     h('span', { class: 'tm', text: ` ${e.n}社${e.topics.length ? ' · ' + e.topics.map(flagJa).join('・') : ''}` }));
   line.addEventListener('click', () => select(e.key, true));
@@ -2599,6 +2604,7 @@ const SECOND = new Set(['market', 'politics', 'disaster', 'video']);
 const isPage = (id) => id === 'news' || id === 'saved' || !!PAGE_SHEET[id] || (id === 'map' && state.set.panes.off.includes('map')) || (id === 'video' && state.set.panes.off.includes('tv'));
 const stacked = () => window.matchMedia('(max-width: 1100px)').matches;
 function renderSectNav() {
+  paintScreen();
   for (const a of document.querySelectorAll('#sects a[data-s]')) { if (a.dataset.s === state.sect) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
   const sec = SECOND.has(state.sect);
   $('sects-more').classList.toggle('on', sec);
@@ -3022,6 +3028,7 @@ async function main() {
   placeBar();
   phoneBar.addEventListener('change', placeBar);
   foldBar.addEventListener('change', placeBar);
+  railBar.addEventListener('change', placeBar);
   $('view-btn').addEventListener('click', () => { const m = $('tb-menu'); m.hidden = !m.hidden; $('view-btn').setAttribute('aria-expanded', String(!m.hidden)); });
   document.addEventListener('click', (ev) => { const m = $('tb-menu'); if (!m.hidden && !ev.target.closest('#tb-menu, #view-btn, .pop')) { m.hidden = true; $('view-btn').setAttribute('aria-expanded', 'false'); } });
   applyView();

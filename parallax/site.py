@@ -62,6 +62,8 @@ def _brief(b):
     if not isinstance(b, dict) or not _s(b.get("what_ja"), 300):
         return None
     out = {k: _s(b.get(k), 300) for k in BRIEF_KEYS}
+    if not any(v and v != UNKNOWN for v in out.values()):    # nothing left to show: no frame (a row that says "not reported" is not shown)
+        return None
     out["model"] = _s(b.get("model"), 80)
     out["made_at"] = _int(b.get("made_at"))
     return out
@@ -295,9 +297,9 @@ def story_page(ev, base=BASE_URL, generated_at=None, canonical_sid=None, kept_fr
         rows = []
         for k, label in BRIEF_LABELS:
             v = br.get(k)
-            if not v:
+            if not v or v == UNKNOWN:
                 continue
-            rows.append('<dt>%s</dt><dd%s>%s</dd>' % (label, ' class="none"' if v == UNKNOWN else "", _e(v)))
+            rows.append('<dt>%s</dt><dd>%s</dd>' % (label, _e(v)))
         by = "・".join(x for x in (br.get("model"), clock(br["made_at"]) if br.get("made_at") else "") if x)
         body.append('<section class="brief"><h2>要点<span class="mark">AI</span></h2><dl>%s</dl><p class="meta">AI が書きました（%s）。元の記事で確かめてください。</p></section>'
                     % ("".join(rows), _e(by or "—")))
