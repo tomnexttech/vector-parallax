@@ -1,26 +1,28 @@
-/* mapui — what stands on the map: pressing it, the related news on a card, the theme's colouring and its legend, the 3D floor.
- * The drawing stays in js/map.js and js/map3d.js; this file says what to draw and what a press means.
+/* mapui — what stands on the map: pressing it, the related news on a card, the theme's colouring and its legend, the globe.
+ * The drawing stays in js/map.js (which map) and js/mapgl.js; this file says what to draw and what a press means.
  *
  *   createMapUi({ map, floor, theater, events, theme, genres, genre, setGenre, describe, open, focus }) -> { press(hit, at), paint(info), update(), inTheme(e) }
  *     events()   the events on the board (not hidden, not folded)
  *     theme()    null, or { label, match(e) }: the field chosen, or the words searched for
  *     describe(e) -> { title, age }   what a line of the card says; open(key) opens the event
  *
- *   A press on the small map opens the big one. On the big one, a mark or a pillar (or the ground of a country or a prefecture) brings a card of its
- *   news and says so on the window: `parallax:map-select` { place, lat, lon, country }; closing the card says `parallax:map-clear`.
- *   The count of a theme is the number of articles with a known place, nothing about what they say. */
-import { marksAt, markKey, nameKey } from './map.js';
+ *   A press on the small map opens the big one. On the big one, a mark (or the ground of a country or a prefecture) brings a card of its news and says
+ *   so on the window: `parallax:map-select` { place, lat, lon, country }; closing the card says `parallax:map-clear`. The globe button turns the flat map
+ *   into a globe with the same ground (only where js/mapgl.js is the map). The count of a theme is the number of articles with a known place, nothing
+ *   about what they say. */
+import { markKey, nameKey } from './map.js';
 import { placeJa } from './places.js';
 import { GENRE_ALL, genreShort } from './genres.js';
 import { loadBorders, whereIs, tally, stepsFor, levelOf, levelAlpha, stepLabel, pathOf, nameList, inEntry } from './mapthemes.js';
-import { webglAvailable, createMap3d } from './map3d.js';
 
 const JP_FROM = 12, JP_TO = 18;      // px per degree: the prefectures take over from the country
-const OFF_KEY = 'parallax.map3d.off';
+const GLOBE_KEY = 'parallax.map.globe';
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const weightOf = (e) => (Array.isArray(e.members) && e.members.length ? e.members.length : e.n > 0 ? e.n : 1);
 const rowOf = (e) => ({ lat: e.geo.lat, lon: e.geo.lon, name: e.geo.name, country: !!e.geo.country, weight: weightOf(e) });
 const leaves = (m) => (m.kids && m.kids.length ? m.kids.flatMap(leaves) : [m]);
+const readGlobe = () => { try { return localStorage.getItem(GLOBE_KEY) === '1'; } catch { return false; } };
+const saveGlobe = (on) => { try { localStorage.setItem(GLOBE_KEY, on ? '1' : '0'); } catch { /* this visit only */ } };
 
 export function createMapUi({ map, floor, theater, events, theme, genres, genre, setGenre, describe, open, focus }) {
   const calm = () => document.documentElement.hasAttribute('data-calm') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -31,19 +33,21 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
   openBtn.type = 'button'; openBtn.title = '地図を大きく表示（M）';
   openBtn.addEventListener('click', () => floor.setMode('map'));
 
-  const chips = el('div', 'mtheme'); chips.setAttribute('role', 'group'); chips.setAttribute('aria-label', 'テーマで地図を塗り分ける');
+  const chips = el('div', 'mtheme'); chips.setAttribute('role', 'group'); chips.setAttribute('aria-label', '分野で地図を色分けする');
   const legend = el('aside', 'mlegend'); legend.hidden = true;
   const tools = el('div', 'mtools');
-  const btn3 = el('button', 'm3btn', '3D'); btn3.type = 'button'; btn3.hidden = true; btn3.setAttribute('aria-pressed', 'false'); btn3.title = '地図を傾けて、記事の数の柱を立てる';
+  const btnG = el('button', 'm3btn', '地球儀'); btnG.type = 'button'; btnG.hidden = true; btnG.title = '地球儀にする';
   const mkCtl = (text, label, fn) => { const b = el('button', 'm3ctl', text); b.type = 'button'; b.setAttribute('aria-label', label); b.title = label; b.addEventListener('click', fn); return b; };
   const ctl = el('span', 'm3ctls'); ctl.hidden = true;
-  ctl.append(mkCtl('◀', '左へ回す', () => m3 && m3.rotate(-0.5)), mkCtl('▶', '右へ回す', () => m3 && m3.rotate(0.5)), mkCtl('+', '寄せる', () => m3 && m3.zoom(1.6)), mkCtl('−', '引く', () => m3 && m3.zoom(1 / 1.6)));
-  tools.append(btn3, ctl);
+  ctl.append(mkCtl('+', '拡大', () => map.zoom(1.6)), mkCtl('−', '縮小', () => map.zoom(1 / 1.6)));
+  tools.append(btnG, ctl);
   const note = el('p', 'mnote'); note.hidden = true;
-  const host = el('div', 'm3'); host.hidden = true;
   const leader = el('i', 'mleader'); leader.hidden = true;
   const card = el('aside', 'mcard'); card.hidden = true; card.setAttribute('aria-live', 'polite');
-  theater.append(host, openBtn, chips, legend, tools, note, leader, card);
+  theater.append(openBtn, chips, legend, tools, note, leader, card);
+  const credit = theater.querySelector('.map-credit');
+  if (credit && !/MapLibre/.test(credit.textContent)) credit.textContent += ' · MapLibre GL JS';
+  let globeOn = readGlobe();
 
   // ---------------------------------------------------------------- the borders, read when first wanted
   function ensureBorders() {
@@ -113,7 +117,7 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
   }
   function showPlace(p) {
     pick = p;
-    map.setPicked({ lat: p.lat, lon: p.lon, path: p.path || null });
+    map.setPicked({ lat: p.lat, lon: p.lon, path: p.path || null, rings: p.entry ? p.entry.rings : null });
     renderCard();
     window.dispatchEvent(new CustomEvent('parallax:map-select', { detail: { place: p.name, lat: p.lat, lon: p.lon, country: !!p.country } }));
   }
@@ -145,7 +149,7 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
   function placeCard() {
     if (!pick || card.hidden) return;
     const W = theater.clientWidth, H = theater.clientHeight, cw = card.offsetWidth, ch = card.offsetHeight;
-    const a = in3d() ? m3.project(pick.lat, pick.lon, pick.top) : map.xy(pick.lat, pick.lon);
+    const a = map.xy(pick.lat, pick.lon);
     const inView = a && a[0] >= 0 && a[0] <= W && a[1] >= 0 && a[1] <= H;
     if (W < 560) { leader.hidden = true; card.style.transform = `translate(${Math.round((W - cw) / 2)}px, ${Math.max(4, H - ch - 6)}px)`; return; }
     const px = a ? a[0] : W / 2, py = a ? a[1] : H / 2;
@@ -176,7 +180,7 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
   }
 
   // ---------------------------------------------------------------- the theme
-  let themeKey = null, themeLast = null, jpNow = null, chipsKey = null, tintFn = null;
+  let themeKey = null, themeLast = null, jpNow = null, chipsKey = null;
   function renderChips() {
     const es = events(), now = genre();
     const counts = new Map();
@@ -192,12 +196,13 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
       b.addEventListener('click', () => { setGenre(now === f ? GENRE_ALL : f); });
       return b;
     };
-    chips.replaceChildren(el('b', 'mt-h', 'THEME'), mk(GENRE_ALL, 'すべて', null), ...genres.filter((f) => counts.get(f)).map((f) => mk(f, genreShort(f), counts.get(f))));
+    chips.replaceChildren(el('b', 'mt-h', '分野'), mk(GENRE_ALL, 'すべて', null), ...genres.filter((f) => counts.get(f)).map((f) => mk(f, genreShort(f), counts.get(f))));
   }
   /** the map is close to Japan: the legend counts prefectures */
   function jpInView(t) {
     const v = map.view(), b = borders && borders.japan && borders.japan.box;
     if (!v || !b || !t.tally.prefs.length || v.s < (JP_FROM + JP_TO) / 2) return false;
+    if (v.west != null) { for (const k of [-1, 0, 1]) if (v.east > b[0] + 360 * k && v.west < b[2] + 360 * k && v.north > b[1] && v.south < b[3]) return true; return false; }
     const lonC = ((v.lon0 + v.w / 2 / v.s + 540) % 360) - 180, latC = v.lat0 - v.h / 2 / v.s, hw = v.w / 2 / v.s, hh = v.h / 2 / v.s;
     return lonC + hw > b[0] && lonC - hw < b[2] && latC + hh > b[1] && latC - hh < b[3];
   }
@@ -222,23 +227,10 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
     legend.replaceChildren(head, scale, list, foot);
     legend.hidden = false;
   }
-  /** the theme as one small picture of the world, read by the 3D floor: (lon, lat) -> 0..1. Japan by its prefectures */
-  function tintPicture(t, steps) {
-    const w = 1440, h = 720, c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    const g = c.getContext('2d', { willReadFrequently: true });
-    if (!g) return null;
-    const L = Math.max(1, steps.length), tone = (n) => { const v = Math.round(((levelOf(steps, n) + 1) / L) * 255); return `rgb(${v},${v},${v})`; };
-    g.setTransform(w / 360, 0, 0, -h / 180, w / 2, h / 2);
-    for (const r of t.countries) { g.fillStyle = tone(r.n); g.fill(pathOf(r.e)); }
-    if (t.prefs.length && borders.japan) { g.fillStyle = 'rgb(40,40,40)'; g.fill(pathOf(borders.japan)); for (const r of t.prefs) { g.fillStyle = tone(r.n); g.fill(pathOf(r.e)); } }
-    const px = g.getImageData(0, 0, w, h).data;
-    return (lon, lat) => px[(Math.max(0, Math.min(h - 1, Math.floor(((90 - lat) / 180) * h))) * w + Math.floor(((lon + 180) / 360) * w) % w) * 4] / 255;
-  }
   function applyTheme() {
     const T = theme();
     if (!T) {
-      if (themeKey !== '') { themeKey = ''; themeLast = null; tintFn = null; delete theater.dataset.themed; map.setTheme(null); renderLegend(); feed3d(); if (pick) renderCard(); }
+      if (themeKey !== '') { themeKey = ''; themeLast = null; delete theater.dataset.themed; map.setTheme(null); renderLegend(); if (pick) renderCard(); }
       return;
     }
     const rows = events().filter((e) => e.geo && T.match(e)).map(rowOf);
@@ -248,91 +240,27 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
     themeKey = key;
     const t = tally(borders, rows);
     const steps = stepsFor(t.countries.length ? t.countries[0].n : 0), L = steps.length;
-    const item = (r) => ({ path: pathOf(r.e), a: levelAlpha(levelOf(steps, r.n), L), name: r.e.name, n: r.n, cx: r.e.cx, cy: r.e.cy, w: r.e.w, jp: r.e === borders.japan });
+    const item = (r) => ({ path: pathOf(r.e), rings: r.e.rings, a: levelAlpha(levelOf(steps, r.n), L), name: r.e.name, n: r.n, cx: r.e.cx, cy: r.e.cy, w: r.e.w, jp: r.e === borders.japan });
     map.setTheme({ countries: t.countries.map(item), prefs: t.prefs.map(item), jpFrom: JP_FROM, jpTo: JP_TO });
     themeLast = { label: T.label, tally: t, steps };
-    tintFn = tintPicture(t, steps);
     theater.dataset.themed = '1';
-    renderLegend(); feed3d();
+    renderLegend();
     if (pick) renderCard();
   }
 
-  // ---------------------------------------------------------------- the 3D floor
-  let gl3 = null, m3 = null, want3d = false, on3d = false;
-  const isOff = () => { try { return localStorage.getItem(OFF_KEY) === '1'; } catch { return false; } };
-  const in3d = () => !!(m3 && on3d);
-  /** the places as the flat map counts them, the number being articles */
-  function pointsOf() {
-    const T = theme(), at = new Map();
-    for (const e of events()) {
-      if (!e.geo || (T && !T.match(e))) continue;
-      const k = `${e.geo.lat.toFixed(1)},${e.geo.lon.toFixed(1)}`;
-      const a = at.get(k) || { lat: e.geo.lat, lon: e.geo.lon, n: 0, pri: 0, country: !!e.geo.country, name: e.geo.name };
-      a.n += weightOf(e);
-      if (/[^\x00-\x7f]/.test(e.geo.name) && !/[^\x00-\x7f]/.test(a.name)) a.name = e.geo.name;
-      at.set(k, a);
-    }
-    return [...at.values()];
+  // ---------------------------------------------------------------- the globe
+  const say = (text) => { note.textContent = text; note.hidden = false; setTimeout(() => { note.hidden = true; }, 4200); };
+  function syncTools() {
+    const m = floor.mode(), gl = map.kind === 'gl';
+    btnG.hidden = !gl || m === 'case';
+    btnG.dataset.on = globeOn ? '1' : '0';
+    btnG.textContent = globeOn ? '平面' : '地球儀';
+    btnG.title = globeOn ? '平らな地図へ戻す' : '地球儀にする';
+    ctl.hidden = m === 'case';
+    if (gl) map.globe(globeOn && m !== 'case');
   }
-  function feed3d() {
-    if (!m3) return;
-    const pts = pointsOf(), T = theme();
-    const f = focus ? focus() : null;
-    m3.setData({
-      marks: (s) => marksAt(pts, s).map((m) => ({ key: `${m.kind}|${m.name}`, name: m.name, lat: m.lat, lon: m.lon, n: m.n, m })),
-      focus: f, tint: T ? tintFn : null, tintKey: T ? themeKey : '',
-    });
-  }
-  function say(text) { note.textContent = text; note.hidden = false; setTimeout(() => { note.hidden = true; }, 4200); }
-  function enter3d() {
-    const v = map.view(), g = v ? map.sample(1440, 720) : null;
-    if (!g) { setTimeout(sync3d, 400); return; }
-    if (!m3) {
-      try {
-        m3 = createMap3d(host, {
-          calm,
-          avoid: () => { if (ctl.hidden) return null; const a = host.getBoundingClientRect(), b = tools.getBoundingClientRect(); return [b.left - a.left, b.top - a.top, b.right - a.left, b.bottom - a.top]; },
-          onFrame: () => { if (pick) placeCard(); },
-          onPress: (h) => {
-            if (h.kind === 'pillar') { showMark(h.m); if (h.m.kids) m3.flyTo(h.lat, h.lon, m3.camera().span * 0.55); }
-            else if (h.kind === 'ground') pressGround(h.lat, h.lon, theater.clientWidth / m3.camera().span);
-            else closeCard();
-          },
-          onSlow: () => { try { localStorage.setItem(OFF_KEY, '1'); } catch { /* this visit only */ } want3d = false; gl3 = false; sync3d(); say('この端末では 3D を止めました'); },
-        });
-      } catch (e) { console.warn('[map3d]', e); m3 = null; }
-      if (!m3) { want3d = false; gl3 = false; sync3d(); return; }
-      try { Object.defineProperty(host, 'm3Stats', { value: () => m3.stats(), configurable: true }); } catch { /* */ }
-    }
-    on3d = true;
-    theater.dataset.m3 = '1';
-    const span = v.w / v.s;
-    m3.enter({ lon: ((v.lon0 + v.w / 2 / v.s + 540) % 360) - 180, lat: v.lat0 - v.h / 2 / v.s, span }, g);
-    feed3d();
-    placeCard();
-  }
-  function leave3d() {
-    if (!m3 || !on3d) return;
-    const c = m3.camera();
-    on3d = false;
-    m3.leave();
-    delete theater.dataset.m3;
-    map.resize();
-    map.jump(c.lat, c.lon, theater.clientWidth / c.span);
-    placeCard();
-  }
-  function sync3d() {
-    if (gl3 === null) gl3 = !isOff() && webglAvailable();
-    const m = floor.mode();
-    btn3.hidden = !gl3 || m === 'case';
-    btn3.setAttribute('aria-pressed', String(want3d));
-    btn3.textContent = want3d ? '平面' : '3D';
-    btn3.title = want3d ? '平面の地図へ戻す' : '地図を傾けて、記事の数の柱を立てる';
-    ctl.hidden = !want3d || m === 'case';
-    const should = want3d && m !== 'case' && gl3;
-    if (should && !on3d) enter3d(); else if (!should && on3d) leave3d();
-  }
-  btn3.addEventListener('click', () => { want3d = !want3d; sync3d(); });
+  btnG.addEventListener('click', () => { globeOn = !globeOn; saveGlobe(globeOn); syncTools(); });
+  window.addEventListener('parallax:map-engine', (ev) => { if (ev.detail === 'canvas' && globeOn) say('この端末では平らな地図だけを出します'); syncTools(); update(); });
 
   // ---------------------------------------------------------------- with the board
   function update() {
@@ -341,8 +269,7 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
     if (m === 'case') closeCard(); else ensureBorders();
     renderChips();
     applyTheme();
-    sync3d();
-    if (in3d()) feed3d();
+    syncTools();
   }
   window.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && pick) closeCard(); });
   const q = document.getElementById('q');
@@ -353,7 +280,7 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
     /** the marks follow the theme */
     inTheme: (e) => { const T = theme(); return !T || T.match(e); },
     paint() {
-      if (pick && !in3d()) placeCard();
+      if (pick) placeCard();
       if (themeLast && jpInView(themeLast) !== jpNow) renderLegend();
     },
   };

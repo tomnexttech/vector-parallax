@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { decodeBorders, whereIs, tally, stepsFor, levelOf, levelAlpha, stepLabel, inEntry } from '../../js/mapthemes.js';
-import { cameraOf, toScreen, toGround } from '../../js/map3d.js';
 import { markKey, nameKey } from '../../js/map.js';
 
 const B = decodeBorders(JSON.parse(readFileSync(new URL('../../assets/map/borders.json', import.meta.url), 'utf8')));
@@ -65,16 +64,3 @@ test('a place is counted under the same name as its mark', () => {
   assert.equal(markKey('日本', 36.2, 138.3, true), '日本');
 });
 
-test('the 3D camera: straight down the floor is the flat map, and a point goes to the screen and back', () => {
-  const W = 800, H = 600, flat = cameraOf({ span: 100, yaw: 0, pitch: 0.0001 }, W, H);
-  const c = toScreen(flat, 0, 0, 0, W, H), e = toScreen(flat, 50, 0, 0, W, H), n = toScreen(flat, 0, 0, -30, W, H);
-  assert.ok(Math.abs(c[0] - 400) < 0.5 && Math.abs(c[1] - 300) < 0.5);
-  assert.ok(Math.abs(e[0] - 800) < 1, 'half the span reaches the edge');
-  assert.ok(n[1] < 300 && Math.abs(300 - n[1] - 240) < 2, 'north is up, at the same scale');
-  const C = cameraOf({ span: 60, yaw: 0.7, pitch: 1.02 }, W, H);
-  for (const [dl, z] of [[0, 0], [10, 5], [-20, 8], [15, -12]]) {
-    const s = toScreen(C, dl, 0, z, W, H), g = toGround(C, s[0], s[1], W, H);
-    assert.ok(Math.abs(g[0] - dl) < 1e-3 && Math.abs(g[1] - z) < 1e-3);
-  }
-  assert.equal(toGround(C, 400, -4000, W, H), null, 'above the horizon there is no floor');
-});

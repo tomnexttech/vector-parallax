@@ -3022,3 +3022,92 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
 .ch-brief .ch-ai { margin: 8px 0 0; }
 .ch-brief .ch-ai > span:last-child { margin-left: 8px; }
 .ch-brief.en-ai { margin-bottom: var(--sp-3); }
+
+/* ---- map v3 (docs/design-system.md 17): a map for people who want to know where. The ground is MapLibre (js/mapgl.js): names, borders, rivers,
+ * roads, a globe. What stood round the old map (frame marks, the reading of LAT / LON, TRACKING, the scan line, pillars) is gone; the controls are
+ * the page glass: pills and a card, each with a flat fill, and the blur only on the card, the legend and the layer bar (the weight rule, 13-b). ---- */
+:root { --map-space: #0a1322; --mg-fill: rgba(16, 22, 38, .74); --mg-edge: rgba(255, 255, 255, .16); --mg-ink: #f5f5f7; --mg-ink2: #c3c3c8; --mg-ink3: #aeb0b8; --mg-on: #64d2ff; --mg-on-ink: #06121c; --mg-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+:root[data-theme="light"] { --map-space: #e9eef5; --mg-fill: rgba(255, 255, 255, .82); --mg-edge: rgba(255, 255, 255, .95); --mg-ink: #1d1d1f; --mg-ink2: #424245; --mg-ink3: #55565c; --mg-on: #00587a; --mg-on-ink: #ffffff; --mg-shadow: 0 10px 28px rgba(40, 60, 120, .18); }
+#theater { background: var(--map-space); border-radius: 16px; }
+#theater .floor > .mgl { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; background: var(--map-space); }   /* over maplibre-gl.css, which makes the container relative */
+
+#theater .mhud, #theater .ftrk, #theater .pillars, #theater .flegend, #theater .map-read, #theater .fcn, #theater .mtag { display: none !important; }
+#theater .mpanel, #theater .mtheme, #theater .mlegend, #theater .mcard, #theater .mnote, #theater .m3btn, #theater .m3ctl, #theater .mopen, #theater .mtabs button, #theater .map-credit {
+  font-family: var(--f-text); letter-spacing: 0; text-transform: none; }
+/* the layer bar and the fields: pills on glass */
+#theater .mpanel { left: 12px; right: 12px; top: 10px; padding: 6px 10px; gap: 4px 6px; background: var(--mg-fill); border: 1px solid var(--mg-edge); border-radius: 14px; box-shadow: var(--mg-shadow); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); }
+#theater .mp-h b { font: 600 var(--fs-2)/1 var(--f-text); letter-spacing: 0; color: var(--mg-ink); }
+#theater .mp-h small { color: var(--mg-ink3); }
+#theater .mpanel .lyr { height: 30px; gap: 6px; padding: 0 10px 0 8px; border: 1px solid transparent; border-radius: 999px; background: var(--hc-fill); font-size: var(--fs-2); color: var(--mg-ink); }
+#theater .mpanel .lyr .n { color: var(--mg-ink3); font-size: var(--fs-2); }
+#theater .mpanel .lyr:hover { background: var(--hc-hover); border-color: var(--mg-edge); }
+#theater .mpanel .lyr[aria-pressed="false"] { opacity: .55; }
+#theater .mtheme { left: 12px; right: 12px; top: 58px; gap: 6px; }
+@media (min-width: 1281px) { .board[data-floor="map"] #theater .mtheme { left: 12px; right: 190px; top: 58px; } }
+#theater .mt-h { margin-right: 2px; font: 500 var(--fs-2)/1 var(--f-text); letter-spacing: 0; color: var(--mg-ink2); text-shadow: none; padding: 5px 8px; border-radius: 999px; background: var(--mg-fill); }
+#theater .mt { min-height: 32px; padding: 0 12px; align-items: center; gap: 6px; border: 1px solid var(--mg-edge); border-radius: 999px; background: var(--mg-fill); color: var(--mg-ink); font: 500 var(--fs-2)/1 var(--f-text); box-shadow: var(--mg-shadow); }
+#theater .mt small { color: var(--mg-ink3); font-size: var(--fs-2); }
+#theater .mt:hover { background: var(--hc-hover); }
+#theater .mt[aria-pressed="true"] { background: var(--mg-on); border-color: var(--mg-on); color: var(--mg-on-ink); }
+#theater .mt[aria-pressed="true"] small { color: var(--mg-on-ink); opacity: .8; }
+/* the globe button and the zoom */
+#theater .mtools { right: 12px; top: 58px; gap: 8px; align-items: flex-end; }
+@media (min-width: 1281px) { .board[data-floor="map"] #theater .mtools { right: 12px; top: 58px; } }
+#theater .m3btn { min-width: 76px; min-height: 36px; padding: 0 14px; border: 1px solid var(--mg-edge); border-radius: 999px; background: var(--mg-fill); color: var(--mg-ink); font: 600 var(--fs-2)/1 var(--f-text); box-shadow: var(--mg-shadow); cursor: pointer; }
+#theater .m3btn:hover { background: var(--hc-hover); }
+#theater .m3btn[data-on="1"] { background: var(--mg-on); border-color: var(--mg-on); color: var(--mg-on-ink); }
+#theater .m3ctls { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--mg-edge); border-radius: 14px; background: var(--mg-fill); box-shadow: var(--mg-shadow); overflow: hidden; }
+#theater .m3ctl { width: 40px; height: 38px; border: 0; border-radius: 0; background: none; color: var(--mg-ink); font: 500 20px/1 var(--f-text); cursor: pointer; }
+#theater .m3ctl + .m3ctl { box-shadow: inset 0 1px 0 var(--mg-edge); }
+#theater .m3ctl:hover { background: var(--hc-hover); }
+#theater .mopen { left: 12px; top: 12px; padding: 0 14px 0 28px; min-height: 36px; line-height: 36px; border: 1px solid var(--mg-edge); border-radius: 999px; background: var(--mg-fill); color: var(--mg-ink); box-shadow: var(--mg-shadow); }
+#theater .mopen::before { left: 12px; border-color: var(--mg-ink); border-left-color: transparent; border-bottom-color: transparent; }
+#theater .mnote { border-radius: 999px; background: var(--mg-fill); box-shadow: var(--mg-shadow); color: var(--mg-ink); padding: 8px 14px; }
+#theater .modebar { left: 12px; bottom: 28px; }
+.board[data-floor="case"] #theater .modebar { left: auto; right: 12px; top: 12px; bottom: auto; }
+#theater .mtabs { gap: 2px; padding: 3px; border: 1px solid var(--mg-edge); border-radius: 999px; background: var(--mg-fill); box-shadow: var(--mg-shadow); }
+#theater .mtabs button { min-height: 30px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--mg-ink2); font: 600 var(--fs-2)/1 var(--f-text); letter-spacing: 0; }
+#theater .mtabs button[aria-pressed="true"] { background: var(--mg-on); color: var(--mg-on-ink); }
+#theater .map-credit { left: 12px; right: auto; bottom: 6px; max-width: calc(100% - 24px); padding: 2px 8px; border-radius: 999px; background: var(--mg-fill); color: var(--mg-ink3); font-size: var(--fs-1); line-height: 1.4; z-index: 2; }
+.board[data-floor="map"] #theater .map-credit { left: 12px; right: auto; bottom: 6px; text-align: left; font-size: var(--fs-1); }
+/* the legend of a theme and the card of a place: glass, a plain head, one large number */
+#theater .mlegend { right: 64px; bottom: 34px; width: min(260px, calc(100% - 100px)); padding: 12px 14px; border: 1px solid var(--mg-edge); border-radius: 18px; background: var(--mg-fill); box-shadow: var(--mg-shadow); color: var(--mg-ink); -webkit-backdrop-filter: blur(20px) saturate(165%); backdrop-filter: blur(20px) saturate(165%); }
+#theater .ml-h span, #theater .ml-s span, #theater .ml-f { color: var(--mg-ink3); }
+#theater .ml-s i, #theater .ml-l i { background: var(--mg-on); }
+#theater .ml-l button:hover span { color: var(--mg-on); }
+#theater .mcard { width: min(340px, calc(100% - 16px)); border: 1px solid var(--mg-edge); border-radius: 18px; background: var(--mg-fill); box-shadow: var(--mg-shadow); color: var(--mg-ink); overflow: hidden; -webkit-backdrop-filter: blur(22px) saturate(165%); backdrop-filter: blur(22px) saturate(165%); }
+#theater .mc-c { display: none; }
+#theater .mc-h { padding: 12px 8px 8px 14px; background: none; color: var(--mg-ink); align-items: baseline; }
+#theater .mc-h h3 { font: 700 var(--fs-5)/1.25 var(--f-display); letter-spacing: 0; }
+#theater .mc-n b { font: 300 var(--fs-7)/1 var(--f-num); letter-spacing: -.02em; }
+#theater .mc-n small { font-size: var(--fs-2); opacity: 1; color: var(--mg-ink2); }
+#theater .mc-x { width: 36px; height: 36px; border-radius: 999px; color: var(--mg-ink2); font-size: 20px; align-self: flex-start; }
+#theater .mc-x:hover { background: var(--hc-hover); color: var(--mg-ink); }
+#theater .mc-s { padding: 0 14px 8px; color: var(--mg-ink2); font-size: var(--fs-2); letter-spacing: 0; box-shadow: none; }
+#theater .mc-b { padding: 0 14px 8px; box-shadow: none; }
+#theater .mc-b li { color: var(--mg-ink2); }
+#theater .mc-b i { background: var(--mg-on); }
+#theater .mc-b b { color: var(--mg-ink); }
+#theater .mc-l button { min-height: 48px; padding: 8px 14px 7px; box-shadow: inset 0 1px 0 var(--mg-edge); }
+#theater .mc-l button:hover, #theater .mc-l button:focus-visible { background: var(--hc-hover); }
+#theater .mc-m, #theater .mc-none { color: var(--mg-ink2); }
+#theater .mleader { background: var(--mg-on); opacity: .7; }
+/* the small map on the board and the home: the layers are not offered, one press opens the map */
+.board[data-floor="case"] #theater .mpanel, .board[data-floor="case"] #theater .mtheme, .board[data-floor="case"] #theater .mtools, .board[data-floor="case"] #theater .mlegend, .board[data-floor="case"] #theater .mcard { display: none; }
+.board[data-floor="case"] #theater .map-credit { left: 8px; bottom: 4px; }
+@media (max-width: 760px) {
+  #theater .mpanel { left: 8px; right: 8px; top: 8px; flex-wrap: nowrap; overflow-x: auto; }
+  #theater .mtheme { left: 8px; right: 8px; top: 56px; }
+  #theater .mtools { top: 100px; right: 8px; }
+  #theater .mcard { width: calc(100% - 16px); }
+  #theater .mlegend { right: 8px; bottom: 34px; width: min(240px, calc(100% - 16px)); }
+  #theater .map-credit { font-size: var(--fs-0); }
+}
+@media (hover: none) and (pointer: coarse) { #theater .mpanel .lyr { height: 44px; } #theater .mt { min-height: 44px; } #theater .mtabs button { min-height: 44px; } #theater .m3btn { min-height: 44px; } #theater .m3ctl { width: 44px; height: 44px; } }
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  #theater .mpanel, #theater .mlegend, #theater .mcard { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--pane); }
+}
+#theater .mt[data-genre]::before { content: ""; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--gc, var(--g-oth)); box-shadow: 0 0 0 1.5px var(--mg-edge); }
+#theater .mt[data-genre="all"]::before { display: none; }
+#theater .mt[aria-pressed="true"]::before { box-shadow: 0 0 0 1.5px var(--mg-on-ink); }
+#theater .mgl .maplibregl-canvas:focus-visible { outline: 2px solid var(--mg-on); outline-offset: -3px; }

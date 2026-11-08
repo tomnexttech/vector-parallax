@@ -1,6 +1,12 @@
-/* map — the world under the board, on one canvas.
+/* map — the world under the board.
  *
- *   createMap(canvas, { base, onPick, onPress, hi, local, onPaint, wheel }) -> { show(scene, animate), resize(), pick(x, y), reset(), zoom(k), view(),
+ * createMap() (the end of this file) gives the page the detailed map of js/mapgl.js (MapLibre GL JS: names, borders, rivers, roads, a globe) where
+ * the browser can run it, and the canvas map described below where it cannot (no WebGL) or the ground does not come. This file also holds what the
+ * two share: the marks' folding (marksAt), the names of the places (nameKey, markKey, prefOf) and the sizes of the hazards' marks.
+ *
+ * The canvas map: one canvas.
+ *
+ *   createCanvasMap(canvas, { base, onPick, onPress, hi, local, onPaint, wheel }) -> { show(scene, animate), resize(), pick(x, y), reset(), zoom(k), view(),
  *                                                                   xy(lat, lon), wheel(ev), geoAt(x, y), setTheme(T), setPicked(p), setNames(list),
  *                                                                   pin(on), jump(lat, lon, s), sample(w, h), cursor }
  *     local(clientX, clientY) -> [x, y] on the canvas, for a canvas that is turned in 3D (js/floor.js); onPaint({ view, w, h, marks, moving })
@@ -267,7 +273,7 @@ function loadGround(base, hi) {
   return groundP;
 }
 
-export function createMap(canvas, opts = {}) {
+export function createCanvasMap(canvas, opts = {}) {
   const base = opts.base || 'assets/map/ne2/2';
   const hiSrc = opts.hi || (typeof document === 'object' && document.querySelector('meta[name="parallax-map-hi"]') ? document.querySelector('meta[name="parallax-map-hi"]').content : null);
   const g = canvas.getContext('2d');
@@ -969,5 +975,52 @@ export function createMap(canvas, opts = {}) {
   };
   hiListeners.add(() => { closeSharp(sharp); sharp = null; if (scene && view && !anim) paint(view, false); });
   loadGround(base, hiSrc).then((gr) => { world = gr.world; coast = gr.coast; render = gr.render; if (scene && !anim && view) paint(view, false); });
+  return api;
+}
+
+// ---------------------------------------------------------------- which map
+const GL_CALLS = ['setMode', 'globe', 'setTheme', 'setPicked', 'setNames', 'pin', 'show'];   // what a map that takes over must be told again, in this order
+const IDLE = { view: null, xy: null, geoAt: null, pick: null, zoom: false, isGlobe: false };
+function webglOk() {
+  try {
+    if (typeof Worker !== 'function' || typeof document !== 'object') return false;
+    const c = document.createElement('canvas'), gl = c.getContext('webgl2') || c.getContext('webgl');
+    if (!gl) return false;
+    const lose = gl.getExtension('WEBGL_lose_context');
+    if (lose) lose.loseContext();
+    return true;
+  } catch { return false; }
+}
+/** the page's map. The same calls whichever map is behind them; `kind` says which ('wait' until one is up, 'gl' or 'canvas'), and the window says
+ *  `parallax:map-engine` (detail: the kind) when it is up. Nothing is drawn by the canvas map while the detailed one is on its way, and when the
+ *  detailed one fails (a browser without WebGL, the ground not coming in 15 s) the canvas map takes over with everything it was told. */
+export function createMap(canvas, opts = {}) {
+  const last = new Map();
+  let impl = null, cursor = 'grab';
+  const api = {
+    get kind() { return impl ? impl.kind : 'wait'; },
+    get cursor() { return cursor; },
+    set cursor(v) { cursor = v; if (impl) impl.cursor = v; },
+  };
+  for (const name of ['show', 'resize', 'reset', 'zoom', 'pin', 'view', 'xy', 'geoAt', 'pick', 'jump', 'setTheme', 'setPicked', 'setNames', 'setMode', 'globe', 'isGlobe', 'wheel']) {
+    api[name] = (...a) => {
+      if (GL_CALLS.includes(name)) last.set(name, a);
+      return impl ? (typeof impl[name] === 'function' ? impl[name](...a) : IDLE[name]) : IDLE[name];
+    };
+  }
+  const up = (m, kind) => {
+    impl = m; m.kind = kind; m.cursor = cursor;
+    for (const name of GL_CALLS) if (last.has(name) && typeof m[name] === 'function') m[name](...last.get(name));
+    try { window.dispatchEvent(new CustomEvent('parallax:map-engine', { detail: kind })); } catch { /* */ }
+  };
+  const fallback = (why) => { if (impl) return; if (why) console.warn('[map] the canvas map is used:', why); up(createCanvasMap(canvas, opts), 'canvas'); };
+  if (opts.engine === 'canvas' || !webglOk()) { fallback(opts.engine === 'canvas' ? '' : 'no WebGL'); return api; }
+  let g = null;
+  import('./mapgl.js').then(async (m) => {
+    const ml = await m.loadLib();
+    g = m.createMapGL(canvas, opts, ml);
+    await g.ready;
+    up(g, 'gl');
+  }).catch((e) => { if (g) { try { g.destroy(); } catch { /* */ } g = null; } fallback(e && e.message); });
   return api;
 }

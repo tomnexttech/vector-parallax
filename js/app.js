@@ -1486,11 +1486,11 @@ function scene() {
     const k = `${x.geo.lat.toFixed(1)},${x.geo.lon.toFixed(1)}`;
     const a = at.get(k) || { lat: x.geo.lat, lon: x.geo.lon, n: 0, pri: false, name: x.geo.name, ref: x.key, best: 0, country: !!x.geo.country };
     a.n++; if (pri.has(x.key)) a.pri = true;
-    if (x.n > a.best) { a.best = x.n; a.ref = x.key; }
+    if (x.n > a.best || !a.field) { if (x.n > a.best) { a.best = x.n; a.ref = x.key; } a.field = x.field; }
     if (/[^\x00-\x7f]/.test(x.geo.name) && !/[^\x00-\x7f]/.test(a.name)) a.name = x.geo.name;
     at.set(k, a);
   }
-  const points = [...at.values()].map((a) => ({ lat: a.lat, lon: a.lon, n: a.n, pri: a.pri ? 1 : 0, country: a.country, name: a.name, ref: a.ref }));
+  const points = [...at.values()].map((a) => ({ lat: a.lat, lon: a.lon, n: a.n, pri: a.pri ? 1 : 0, country: a.country, name: a.name, ref: a.ref, field: a.field }));
   const hz = state.haz || { quakes: [], typhoons: [], disasters: [] };
   return {
     focus: e && e.geo ? { lat: e.geo.lat, lon: e.geo.lon, radiusKm: e.geo.country ? null : RADIUS_KM, label: e.geo.name } : null,
