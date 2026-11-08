@@ -20,7 +20,7 @@ const SECTIONS = [
   ['mute', 'ミュート', '<path d="M2.8 10s2.6-4.8 7.2-4.8 7.2 4.8 7.2 4.8-2.6 4.8-7.2 4.8S2.8 10 2.8 10z"/><circle cx="10" cy="10" r="2.1"/><path d="M4.2 15.8L15.8 4.2"/>'],
   ['motion', '動き', '<path d="M3 10h9.5M9.5 6.5L13 10l-3.5 3.5M16.5 4.5v11"/>'],
   ['look', '外観', '<circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" stroke="none"/>'],
-  ['panes', '盤の欄', '<rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M7.5 3.5v13M12.5 3.5v6.5h5"/>'],
+  ['panes', 'ボードのパネル', '<rect x="2.5" y="3.5" width="15" height="13" rx="2"/><path d="M7.5 3.5v13M12.5 3.5v6.5h5"/>'],
   ['ai', '自分の AI', '<path d="M10 3l1.7 4.3L16 9l-4.3 1.7L10 15l-1.7-4.3L4 9l4.3-1.7z"/><path d="M15.5 13.5v3M14 15h3"/>'],
   ['data', '保存と復元', '<path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M3.5 13.5v3h13v-3"/>'],
 ];
@@ -220,7 +220,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
     const n = root.querySelector('[data-f="ai-msg"]');
     if (n) { n.textContent = aiMsg ? aiMsg.text : ''; n.hidden = !aiMsg; n.classList.toggle('err', !!(aiMsg && aiMsg.err)); }
   }
-  const noKeep = 'このブラウザに保存できない（プライベートウィンドウなど）。この窓を閉じるまでは効く';
+  const noKeep = 'このブラウザに保存できない（プライベートウィンドウなど）。このタブを閉じるまでは効く';
   function aiChange(fn, text) {
     const next = cleanOwnAI(ai.get());
     fn(next);
@@ -284,7 +284,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
     let text = '';
     try { text = f.size > 200000 ? '' : await f.text(); } catch { text = ''; }
     const r = importSettings(text);
-    if (!r.ok) { msg = { err: true, text: r.error === 'big' ? '読み込めない（大きすぎる・空）' : r.error === 'json' ? '読み込めない（JSON ではない）' : '読み込めない（この盤の設定ではない）' }; render(); return; }
+    if (!r.ok) { msg = { err: true, text: r.error === 'big' ? '読み込めない（大きすぎる・空）' : r.error === 'json' ? '読み込めない（JSON ではない）' : '読み込めない（このサイトの設定ではない）' }; render(); return; }
     set(r.settings);
     if (r.watch) watch.set(r.watch);
     msg = { text: `読み込んだ${r.watch ? `（フォローする言葉 ${r.watch.length}）` : ''}` }; render();
@@ -309,7 +309,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
       h('header', { class: 'set-top' }, h('h2', { id: 'set-title', text: '設定' }),
         h('p', { class: 'set-priv', text: sec === 'ai' ? 'このブラウザだけに保存・選んだ提供元にだけ送る' : 'このブラウザだけに保存・送信しない' }),
         h('button', { type: 'button', class: 'ds-x', data: { f: 'close' }, on: { click: close } }, '閉じる')),
-      inf.saved === false ? h('p', { class: 'set-warn', role: 'status', text: 'このブラウザに保存できない（プライベートウィンドウなど）。この窓を閉じるまでは効く' }) : null,
+      inf.saved === false ? h('p', { class: 'set-warn', role: 'status', text: 'このブラウザに保存できない（プライベートウィンドウなど）。このタブを閉じるまでは効く' }) : null,
       h('div', { class: 'set-cols' },
         h('nav', { class: 'set-side', 'aria-label': '設定の区分' }, SECTIONS.map(([k, ja, p]) => h('button', {
           type: 'button', class: 'set-nav', 'aria-current': k === sec ? 'page' : null, data: { k, f: `nav-${k}` }, on: { click: () => go(k) } }, icon(p), h('span', { text: ja })))),

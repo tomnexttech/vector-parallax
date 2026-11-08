@@ -29,7 +29,7 @@ export const CATALOG = [
   { id: 'watch_remove', ja: 'フォローする言葉・地名を外す', param: 'term' },
   { id: 'open_article', ja: '表示中の出来事の最初の記事を開く', param: '' },
   { id: 'about', ja: 'データと AI についての板を開く', param: '' },
-  { id: 'settings', ja: '設定の画面を開く（映像・ニュース・ミュート・動き・盤の欄）', param: '' },
+  { id: 'settings', ja: '設定の画面を開く（映像・ニュース・ミュート・動き・ボードのパネル）', param: '' },
   { id: 'close', ja: '開いている板を閉じる', param: '' },
   { id: 'sheet', ja: '欄を大きく開く（媒体・時間ごと・注目・一部の媒体だけ・市場・政治・災害）', param: 'kind' },
   { id: 'task_add', ja: '表示中の出来事を保存する（タスクに足す）', param: '' },

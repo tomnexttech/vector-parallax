@@ -1493,15 +1493,15 @@ function renderCount() {
   if (cn && isObj(cn.headlines)) {
     $('count-h').textContent = '集めた見出し';
     roll($('count-n'), cn.headlines.fetched);
-    const go = { 窓の見出し: () => openSheet('hours', $('p-count')), '2 媒体以上': () => openSheet('pri', $('p-count')), 国内と海外: () => setTopic('cross') };
-    const f = [['窓の見出し', cn.headlines.in_window], ['2 媒体以上', cn.multi_outlet], ['国内と海外', isObj(cn.home) ? cn.home.both : null]];
+    const go = { 期間内の見出し: () => openSheet('hours', $('p-count')), '2 媒体以上': () => openSheet('pri', $('p-count')), 国内と海外: () => setTopic('cross') };
+    const f = [['期間内の見出し', cn.headlines.in_window], ['2 媒体以上', cn.multi_outlet], ['国内と海外', isObj(cn.home) ? cn.home.both : null]];
     $('count-f').replaceChildren(...f.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', null, lk(num(isNum(v) ? v : null), go[k], `${k} を開く`, 'cnt'))]));
     return;
   }
   if (x) {
     $('count-h').textContent = '集めた見出し';
     roll($('count-n'), x.fetched_items);
-    const f = [['窓の見出し', x.in_window], ['2 媒体以上', x.multi_outlet], ['一次資料', x.primary_items]];
+    const f = [['期間内の見出し', x.in_window], ['2 媒体以上', x.multi_outlet], ['一次資料', x.primary_items]];
     $('count-f').replaceChildren(...f.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', null, num(isNum(v) ? v : null))]));
     return;
   }
@@ -2162,8 +2162,8 @@ const SHEET_BODY = {
         td(fmtN(r.h1), 'r'), td(fmtN(r.h6), 'r'), td(fmtN(r.h48), 'r'), td(isNum(r.age_h) ? `${r.age_h}時間前` : '—', 'r dim opt'), ...(anyDrop ? [td(fmtN(dropOf(r)), 'r dim opt')] : [])))));
     }
     return { big: fmtN(live), unit: `/ ${rows.length} 届いた媒体`, bad: live < rows.length * 0.8,
-      facts: cn && isObj(cn.headlines) ? [['集めた見出し', fmtN(cn.headlines.fetched)], ['窓の見出し', fmtN(cn.headlines.in_window)], ['出来事', fmtN(cn.bundles && cn.bundles.events)], ['2 媒体以上', fmtN(cn.multi_outlet)],
-        [staleJa, fmtN(stale.size), stale.size ? 'err' : ''], ['事件の層', fmtN(cn.incidents)]] : [['集めた見出し', fmtN(x.fetched_items)], ['窓の見出し', fmtN(x.in_window)], ['出来事', fmtN(x.stories)], ['2 媒体以上', fmtN(x.multi_outlet)], ['一次資料', fmtN(x.primary_items)],
+      facts: cn && isObj(cn.headlines) ? [['集めた見出し', fmtN(cn.headlines.fetched)], ['期間内の見出し', fmtN(cn.headlines.in_window)], ['出来事', fmtN(cn.bundles && cn.bundles.events)], ['2 媒体以上', fmtN(cn.multi_outlet)],
+        [staleJa, fmtN(stale.size), stale.size ? 'err' : ''], ['事件の層', fmtN(cn.incidents)]] : [['集めた見出し', fmtN(x.fetched_items)], ['期間内の見出し', fmtN(x.in_window)], ['出来事', fmtN(x.stories)], ['2 媒体以上', fmtN(x.multi_outlet)], ['一次資料', fmtN(x.primary_items)],
         [staleJa, fmtN(stale.size), stale.size ? 'err' : ''], ['事件の層', isNum(x.events) ? `${x.events}・畳んだ束 ${fmtN(x.stories_folded)}` : '—']], body };
   },
   hours() {
@@ -2659,7 +2659,7 @@ async function voiceRun(alts) {
   }
   const cands = r.cands.map((c) => h('button', { type: 'button', class: 'chip', text: c.ja, on: { click: () => { actions.run(c.id); $('voice-pop').hidden = true; } } }));
   if (r.heard) cands.push(h('button', { type: 'button', class: 'chip', text: `「${r.heard.slice(0, 16)}」で探す`, on: { click: () => { actions.run('case_find', r.heard); $('voice-pop').hidden = true; } } }));
-  const keyIn = h('input', { type: 'password', class: 'vk', placeholder: 'Gemini の鍵（任意・この窓の間だけ）', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Gemini の鍵' });
+  const keyIn = h('input', { type: 'password', class: 'vk', placeholder: 'Gemini の鍵（任意・このタブを閉じるまで）', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Gemini の鍵' });
   keyIn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); voiceKey = keyIn.value.trim(); keyIn.value = ''; voiceRun(alts); } });
   voiceSay([h('p', { class: 'vh', text: r.heard ? `「${r.heard}」` : '聞き取れず' }), h('p', { class: 'vr', text: r.by === 'ai' ? '一覧に当たらない' : '規則に当たらない' }), h('div', { class: 'vc' }, cands), voiceKey || own ? null : keyIn]);
 }

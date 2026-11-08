@@ -39,7 +39,7 @@ export const EN = {
   'AI のまとめ': 'AI summaries', '国内と海外の両方': 'Both Japan and abroad', '一覧': 'List', '件数': 'Count', '多い': 'Many', '並べ方': 'Layout', '標準': 'Standard', '主役': 'Lead',
   // the panes of the board
   '出来事': 'News', '注目': 'Top news', '関連': 'Related', '出典': 'Sources', '一部の媒体だけ': 'Only some outlets', '時間': 'Hours', '分野': 'Fields',
-  '時間ごとの見出し': 'Headlines by hour', '集めた見出し': 'Collected headlines', '窓の見出し': 'Headlines in the window', '関連の見出し': 'Related headlines',
+  '時間ごとの見出し': 'Headlines by hour', '集めた見出し': 'Collected headlines', '期間内の見出し': 'Headlines in the window', '関連の見出し': 'Related headlines',
   '根拠と出典': 'Basis and sources', '種類': 'Type', '直近 1 時間': 'Last hour', '最多': 'Peak', '注目の初報': 'First reports of top news', '各 6 件まで': 'Up to 6 each',
   '届かない・更新なし': 'Unreachable or not updated', '地名なし': 'No place', '地点なし': 'No place', '押すと拡大': 'Press to enlarge', '記事掲載の停止を依頼する': 'Ask to remove an article',
   '掲載の停止': 'Removal', '論点で絞る': 'Narrow by topic', 'AI が書いた題': 'Title written by the AI', '報じ方の種類で絞る': 'Narrow by type of outlet',
@@ -96,7 +96,7 @@ export const EN = {
   // saved, settings
   '保存したニュース': 'Saved news', 'このブラウザだけに保存します': 'Kept in this browser only', 'フォローする言葉': 'Words to follow', '足す': 'Add', 'フォローに当たるニュース': 'News matching what you follow',
   '自分の読み方': 'My reading', '記録を消す': 'Clear the record', 'このブラウザだけに保存・送信しない': 'Kept in this browser only, never sent', 'ミュート': 'Mute', '動き': 'Motion',
-  '盤の欄': 'Board panes', '自分の AI': 'My own AI', '保存と復元': 'Back up and restore', '映像の欄': 'Video pane', 'まとめ方': 'Grouping', '設定の区分': 'Settings sections',
+  'ボードのパネル': 'Board panes', '自分の AI': 'My own AI', '保存と復元': 'Back up and restore', '映像の欄': 'Video pane', 'まとめ方': 'Grouping', '設定の区分': 'Settings sections',
   'ダーク': 'Dark', 'ライト': 'Light', '字の大きさ': 'Type size', '大きい': 'Large', 'ダイヤル（内は論点、外は注目の出来事）': 'Dial (inside: topics, outside: top news)', 'ダイヤルを開く': 'Open the dial',
   '今の順': 'Current order', '紙面': 'Front page', '時間ごと': 'By hour', '今日の注目': 'Today\'s top news', '注目のニュース': 'Top news', 'この地点': 'This place', '詳しく見る': 'See details',
   'ニュースの見方': 'Ways to read the news', '下の段に出すニュース': 'News in the lower row', 'この出来事を開く': 'Open this news',
