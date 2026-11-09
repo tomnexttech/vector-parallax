@@ -1,12 +1,14 @@
 /* floor — where the map stands on the board.
  *
- *   createFloor({ map, board, onMode }) -> { mode(), setMode(m), toggle(), paint(info), data(d), local(x, y), pillars(), span() }
+ *   createFloor({ map, board, onMode }) -> { mode(), setMode(m), full(on), isFull(), toggle(), paint(info), data(d), local(x, y), pillars(), span() }
  *
  * Three ways to show one map (js/map.js gives the page its map, js/mapgl.js draws it):
  *   case  the map is a small pane at the right foot of the board (the middle column keeps the event, and under it the video, the related headlines
  *         and the sources); the event in focus is the cyan mark, and a press opens the map;
  *   map   the event pane folds away and the map takes the middle column;
- *   flat  1280 px and narrower: the map lies in the page; two fingers move it (or Ctrl and the wheel), so the page still scrolls.
+ *   flat  1280 px and narrower: the map lies in the page. On a screen made for fingers it is a preview (the page scrolls under the finger; a tap
+ *         opens the whole map, full(true)); where the map is the screen (the 地図 screen, a phone held sideways) one finger moves it. A mouse
+ *         moves it with the drag and zooms with Ctrl and the wheel. js/touchmode.js says which.
  * The map is told which of the three it is in (setMode), because a small map must not take the wheel. Nothing here draws: no pillars, no frame
  * marks, no scanning; what the map holds is in the map's own marks. quadMatrix, unquad and turnover are the plain arithmetic of the earlier
  * turned floor, kept for their tests.
@@ -72,9 +74,27 @@ export function createFloor({ map, board, onMode }) {
   flatQ.addEventListener('change', () => { apply(); if (onMode) onMode(mode()); });
   for (const b of document.querySelectorAll('#modebar [data-m]')) b.addEventListener('click', () => setMode(b.dataset.m));
 
+  // the map opened to the whole screen (a phone or a tablet, where the small map lies in a page that a finger scrolls): <html data-mapfull>
+  const root = document.documentElement;
+  const isFull = () => root.dataset.mapfull === '1';
+  function full(on) {
+    on = !!on;
+    if (on === isFull()) return on;
+    if (on) root.dataset.mapfull = '1'; else delete root.dataset.mapfull;
+    if (pane) {   // opened, the map is a dialog over the page: the reader of the screen is told, and the way back takes the focus
+      if (on) { pane.setAttribute('role', 'dialog'); pane.setAttribute('aria-modal', 'true'); } else { pane.removeAttribute('role'); pane.removeAttribute('aria-modal'); }
+      const back = pane.querySelector('.mclose');
+      if (on && back) { try { back.focus({ preventScroll: true }); } catch { /* */ } }
+    }
+    if (typeof map.resize === 'function') { map.resize(); setTimeout(() => map.resize(), 60); }
+    if (onMode) onMode(mode());
+    return on;
+  }
+
+  window.addEventListener('hashchange', () => full(false));   // going to another screen closes the opened map
   apply();
   return {
-    mode, setMode,
+    mode, setMode, full, isFull,
     toggle: () => setMode(want === 'map' ? 'case' : 'map'),
     local: () => null,
     pillars: () => false,

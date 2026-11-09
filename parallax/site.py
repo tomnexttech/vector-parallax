@@ -262,7 +262,7 @@ footer{font-size:13px;color:var(--mut);margin-top:16px}footer a{margin-right:12p
 .lg>span{display:inline-flex;align-items:center;gap:5px}.lg>span::before{content:"";width:12px;height:10px;border-radius:3px}.lg .on::before{background:color-mix(in srgb,var(--mut) 34%,transparent)}
 .lg .off::before{background:repeating-linear-gradient(135deg,transparent 0 2px,color-mix(in srgb,var(--mut) 60%,transparent) 2px 3px);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--mut) 28%,transparent)}.lg .na::before{content:"·";width:auto;height:auto;line-height:1}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
-.cv-sc{overflow-x:auto;margin:0 -8px;padding:0 8px 8px}.cv-sc:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:8px}
+.cv-sc{position:relative;overflow-x:auto;overscroll-behavior-x:contain;margin:0 -8px;padding:0 8px 8px}.cv-sc:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:8px}
 .cv-t{border-collapse:separate;border-spacing:3px;width:100%;font-size:13px;line-height:1.45}.cv-t th,.cv-t td{padding:0;text-align:left;font-weight:400;vertical-align:top}
 .cv-t thead th{min-width:96px;padding:0 2px 5px;vertical-align:bottom}.cv-t thead b{position:relative;display:block;padding-top:6px}.cv-t thead b::before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;border-radius:2px;background:var(--sd)}
 .cv-t thead small,.cv-t tbody th small{display:block;font-size:11px;font-weight:400;color:var(--mut);font-variant-numeric:tabular-nums}

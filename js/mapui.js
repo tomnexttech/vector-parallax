@@ -11,6 +11,7 @@
  *   into a globe with the same ground (only where js/mapgl.js is the map). The count of a theme is the number of articles with a known place, nothing
  *   about what they say. */
 import { markKey, nameKey } from './map.js';
+import { isCoarse, touchLive } from './touchmode.js';
 import { placeJa } from './places.js';
 import { GENRE_ALL, genreShort } from './genres.js';
 import { loadBorders, whereIs, tally, stepsFor, levelOf, levelAlpha, stepLabel, pathOf, nameList, inEntry } from './mapthemes.js';
@@ -44,7 +45,10 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
   const note = el('p', 'mnote'); note.hidden = true;
   const leader = el('i', 'mleader'); leader.hidden = true;
   const card = el('aside', 'mcard'); card.hidden = true; card.setAttribute('aria-live', 'polite');
-  theater.append(openBtn, chips, legend, tools, note, leader, card);
+  // the opened map's way back (only drawn while <html data-mapfull>): 44 px, on the corner a thumb reaches
+  const closeBtn = el('button', 'mclose', '閉じる'); closeBtn.type = 'button'; closeBtn.setAttribute('aria-label', '地図を閉じる'); closeBtn.title = '地図を閉じる（Esc）';
+  closeBtn.addEventListener('click', () => { if (floor.full) floor.full(false); });
+  theater.append(openBtn, closeBtn, chips, legend, tools, note, leader, card);
   const credit = theater.querySelector('.map-credit');
   if (credit && !/MapLibre/.test(credit.textContent)) credit.textContent += ' · MapLibre GL JS';
   let globeOn = readGlobe();
@@ -168,6 +172,12 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
 
   // ---------------------------------------------------------------- the press
   function press(hit, at) {
+    // a map that lies in a page a finger scrolls is a preview: a tap opens the whole map (and the mark that was tapped, if any)
+    if (floor.full && floor.mode() === 'flat' && isCoarse(window) && !touchLive()) {
+      floor.full(true);
+      if (hit && hit.m) showMark(hit.m);
+      return true;
+    }
     if (floor.mode() === 'case') {
       floor.setMode('map');
       if (hit && hit.m) showMark(hit.m);
@@ -271,7 +281,7 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
     applyTheme();
     syncTools();
   }
-  window.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && pick) closeCard(); });
+  window.addEventListener('keydown', (ev) => { if (ev.key !== 'Escape') return; if (pick) closeCard(); else if (floor.full && floor.isFull && floor.isFull()) floor.full(false); });
   const q = document.getElementById('q');
   if (q) { let t = 0; q.addEventListener('input', () => { clearTimeout(t); t = setTimeout(update, 220); }); }
 

@@ -42,7 +42,7 @@ export const EN = {
   '出来事': 'News', '注目': 'Top news', '注目ニュース': 'Top news', '関連': 'Related', '出典': 'Sources', '片側だけのニュース': 'Only some outlets', '時間': 'Hours', '分野': 'Fields',
   '時間別の件数': 'Headlines by hour', '見出しの件数': 'Collected headlines', '期間内の見出し': 'Headlines in the window', '関連ニュース': 'Related headlines',
   '出典とまとめ方': 'Basis and sources', '種類': 'Type', '直近 1 時間': 'Last hour', '最多': 'Peak', '注目の初報': 'First reports of top news', '各 6 件まで': 'Up to 6 each',
-  '届かない・更新なし': 'Unreachable or not updated', '地名なし': 'No place', '地点なし': 'No place', '押すと拡大': 'Press to enlarge', '記事掲載の停止を依頼する': 'Ask to remove an article',
+  '届かない・更新なし': 'Unreachable or not updated', '地名なし': 'No place', '地点なし': 'No place', '押すと拡大': 'Press to enlarge', '地図を閉じる': 'Close the map', '地図を閉じる（Esc）': 'Close the map (Esc)', '一本の指で動かし、二度たたくと拡大、二度たたいて上下になぞると拡大・縮小、ボタンでも拡大・縮小できます': 'Move the map with one finger; double-tap to zoom in; double-tap and hold, then drag up or down to zoom; the buttons zoom too', '記事掲載の停止を依頼する': 'Ask to remove an article',
   '掲載の停止': 'Removal', '論点で絞る': 'Narrow by topic', 'AI が書いた題': 'Title written by the AI', '報じ方の種類で絞る': 'Narrow by type of outlet',
   'すべての報道を見る': 'See all reports', 'この出来事の全報道を見る': 'See all reports of this news', 'バイアス度の内訳を見る': 'See the parts of the bias score',
   '注目を拡大': 'Enlarge top news', '媒体を拡大': 'Enlarge outlets', '災害を拡大': 'Enlarge disasters', '市場を拡大': 'Enlarge markets', '政治を拡大': 'Enlarge politics',

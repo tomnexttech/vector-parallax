@@ -14,6 +14,7 @@
  * source (js/mapstyle.js); a press asks the map what is under it and says the same hit as the canvas map did. */
 import { buildStyle, OVERLAY } from './mapstyle.js';
 import { marksAt, quakeR, SPAN } from './map.js';
+import { isCoarse, touchLive } from './touchmode.js';
 
 const TILE = 512;
 const BUBBLE = 1.7;                // marksAt folds by the size of the canvas map's marks; ours are this much larger
@@ -97,7 +98,7 @@ export function createMapGL(canvas, opts, ml) {
   try {
     map = new ml.Map({
       container: host, style: style(), center: initial.center, zoom: initial.zoom, minZoom: 0.3, maxZoom: 17, maxPitch: 0, pitchWithRotate: false, dragRotate: false,
-      attributionControl: false, localIdeographFontFamily: LOCAL_FONT, cooperativeGestures: true, locale: HELP, fadeDuration: 120, pixelRatio: Math.min(2, window.devicePixelRatio || 1),
+      attributionControl: false, localIdeographFontFamily: LOCAL_FONT, cooperativeGestures: !isCoarse(window), locale: HELP, fadeDuration: 120, pixelRatio: Math.min(2, window.devicePixelRatio || 1),
       renderWorldCopies: true, hash: false, canvasContextAttributes: { antialias: true },
     });
   } catch (e) { host.remove(); canvas.style.display = ''; throw e; }
@@ -305,7 +306,25 @@ export function createMapGL(canvas, opts, ml) {
   const onTheme = () => { palMode = modeOf(); fields = colours(); if (!loaded) return; map.setStyle(style(), { diff: true }); map.once('styledata', () => { if (!dead) refreshAll(); }); };
   window.addEventListener('parallax-theme', onTheme);
 
-  try { map.getCanvas().setAttribute('aria-label', '出来事・地震・台風・災害の地図。ドラッグで動かし、ボタンか 2 本の指で拡大します'); } catch { /* */ }
+  // ---------------------------------------------------------------- the finger
+  // A screen made for fingers: where the map is the screen (the 地図 screen, the pane of a phone held sideways, the map opened whole), one finger moves
+  // it, a double tap zooms in, a double tap held and dragged up or down zooms, two fingers pinch. Where the map lies in a page a finger scrolls, it is a
+  // preview: the page takes the finger and a tap opens the whole map (js/mapui.js). A mouse keeps the earlier rule (the wheel needs Ctrl in a small map).
+  function applyTouch() {
+    if (dead) return;
+    const coarse = isCoarse(window), live = coarse ? touchLive() : mode === 'map';
+    try {
+      if (coarse || live) map.cooperativeGestures.disable(); else map.cooperativeGestures.enable();
+      if (coarse && !live) { map.dragPan.disable(); map.touchZoomRotate.disable(); map.doubleClickZoom.disable(); }
+      else { map.dragPan.enable(); map.touchZoomRotate.enable(); map.touchZoomRotate.disableRotation(); map.doubleClickZoom.enable(); }
+    } catch { /* an older library keeps what it had */ }
+    host.dataset.touch = coarse ? (live ? 'live' : 'still') : '';
+  }
+  const touchWatch = typeof MutationObserver === 'function' ? new MutationObserver(applyTouch) : null;
+  if (touchWatch) { touchWatch.observe(root, { attributes: true, attributeFilter: ['data-sect', 'data-mapfull'] }); const a = document.getElementById('app'); if (a) touchWatch.observe(a, { attributes: true, attributeFilter: ['data-lp'] }); const bd = document.getElementById('board'); if (bd) touchWatch.observe(bd, { attributes: true, attributeFilter: ['data-floor'] }); }
+  window.addEventListener('resize', applyTouch);
+
+  try { map.getCanvas().setAttribute('aria-label', '出来事・地震・台風・災害の地図。一本の指で動かし、二度たたくと拡大、二度たたいて上下になぞると拡大・縮小、ボタンでも拡大・縮小できます'); } catch { /* */ }
   Object.defineProperty(canvas, 'mapGl', { value: map, configurable: true });
   Object.assign(api, {
     show(sc, animate) {
@@ -340,8 +359,7 @@ export function createMapGL(canvas, opts, ml) {
     setMode(m) {
       mode = m;
       if (loaded) { try { map.setPadding({ top: padTop(), left: 0, right: 0, bottom: 0 }); } catch { /* */ } }
-      try { if (m === 'map') map.cooperativeGestures.disable(); else map.cooperativeGestures.enable(); } catch { /* */ }
-      try { map.dragPan.enable(); map.touchZoomRotate.enable(); map.touchZoomRotate.disableRotation(); } catch { /* */ }
+      applyTouch();
     },
     globe(on) {
       on = !!on; if (on === globeOn) return;
@@ -349,7 +367,7 @@ export function createMapGL(canvas, opts, ml) {
       if (loaded) { try { map.setProjection({ type: on ? 'globe' : 'mercator' }); } catch { /* */ } if (on) held = true; painted(false); }
     },
     isGlobe: () => globeOn,
-    destroy() { dead = true; clearTimeout(timer); window.removeEventListener('parallax-theme', onTheme); if (ro) ro.disconnect(); try { map.remove(); } catch { /* */ } host.remove(); canvas.style.display = ''; },
+    destroy() { dead = true; clearTimeout(timer); if (touchWatch) touchWatch.disconnect(); window.removeEventListener('resize', applyTouch); window.removeEventListener('parallax-theme', onTheme); if (ro) ro.disconnect(); try { map.remove(); } catch { /* */ } host.remove(); canvas.style.display = ''; },
   });
   api.setMode(mode);
   api.OVERLAY = OVERLAY;

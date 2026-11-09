@@ -39,6 +39,7 @@
  * out and keeps its side, and a new sheet of the ground comes up over the old one (js/basemap.js). data-calm and reduced motion skip all of it.
  * The theme (js/mapthemes.js, set by js/mapui.js) is one more layer, over the ground and under the marks: the places filled by their count. */
 
+import { isCoarse, touchLive, nearTap } from './touchmode.js';
 import { createBasemap } from './basemap.js';
 
 const TILE = 256, COLS = 8, ROWS = 4, WW = COLS * TILE, WH = ROWS * TILE;
@@ -890,9 +891,32 @@ export function createCanvasMap(canvas, opts = {}) {
     const r = canvas.getBoundingClientRect();
     return [ev.clientX - r.left, ev.clientY - r.top];
   };
-  canvas.addEventListener('pointerdown', (ev) => { if (!view) return; glide = null; const [x, y] = local(ev); drag = { x, y, v: view, moved: false }; try { canvas.setPointerCapture(ev.pointerId); } catch { /* */ } });
+  // fingers: where the map is the screen one finger moves it, a double tap zooms in, a double tap held and dragged zooms; where the map lies in a page a
+  // finger scrolls it only takes a tap (js/touchmode.js)
+  const live = () => !isCoarse(window) || touchLive();
+  const setTouchAction = () => { canvas.style.touchAction = isCoarse(window) ? (live() ? 'none' : 'auto') : ''; };
+  setTouchAction();
+  let lastTap = null, zoomDrag = null;
+  canvas.addEventListener('pointerdown', (ev) => {
+    if (!view) return;
+    glide = null; setTouchAction();
+    const [x, y] = local(ev);
+    if (ev.pointerType === 'touch' && live() && nearTap(lastTap, { t: performance.now(), x, y })) {
+      zoomDrag = { y, s: view.s, mx: x, my: y, moved: false }; lastTap = null; drag = null;
+      try { canvas.setPointerCapture(ev.pointerId); } catch { /* */ }
+      return;
+    }
+    drag = { x, y, v: view, moved: false, still: ev.pointerType === 'touch' && !live() };
+    try { canvas.setPointerCapture(ev.pointerId); } catch { /* */ }
+  });
   canvas.addEventListener('pointermove', (ev) => {
     const [lx, ly] = local(ev);
+    if (zoomDrag) {
+      const dy = ly - zoomDrag.y;
+      if (Math.abs(dy) > 4) { zoomDrag.moved = true; glideTo(zoomDrag.s * Math.pow(2, -dy / 110), zoomDrag.mx, zoomDrag.my); }
+      return;
+    }
+    if (drag && drag.still) return;
     if (drag) {
       const dx = lx - drag.x, dy = ly - drag.y;
       if (!drag.moved && Math.hypot(dx, dy) < 4) return;
@@ -904,9 +928,11 @@ export function createCanvasMap(canvas, opts = {}) {
     canvas.style.cursor = api.pick(lx, ly) ? 'pointer' : api.cursor;
   });
   canvas.addEventListener('pointerup', (ev) => {
+    if (zoomDrag) { const z = zoomDrag; zoomDrag = null; if (!z.moved && view) glideTo(view.s * 2, z.mx, z.my); return; }
     const d = drag; drag = null;
     if (!d || d.moved) return;
     const [x, y] = local(ev);
+    if (ev.pointerType === 'touch' && !d.still) lastTap = { t: performance.now(), x, y };
     const hit = api.pick(x, y);
     if (opts.onPress && opts.onPress(hit, { x, y, ...api.geoAt(x, y) })) return;
     if (!hit) return;
@@ -920,7 +946,7 @@ export function createCanvasMap(canvas, opts = {}) {
     glideTo((glide ? glide.s : view.s) * Math.pow(1.0018, -ev.deltaY), mx, my);
   }
   if (opts.wheel !== false) canvas.addEventListener('wheel', onWheel, { passive: false });
-  canvas.addEventListener('dblclick', () => api.reset());
+  canvas.addEventListener('dblclick', () => { if (!isCoarse(window)) api.reset(); });
 
   const api = {
     show,

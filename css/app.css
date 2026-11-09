@@ -3406,7 +3406,7 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
 .cv-lg .on::before { background: color-mix(in srgb, var(--ink-2) 34%, transparent); }
 .cv-lg .off::before { background: repeating-linear-gradient(135deg, transparent 0 2px, color-mix(in srgb, var(--ink-2) 60%, transparent) 2px 3px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink-2) 28%, transparent); }
 .cv-lg .na::before { content: "·"; width: auto; height: auto; font-size: var(--fs-4); line-height: 1; }
-.cv-sc { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; border-radius: 12px; }
+.cv-sc { position: relative; overflow-x: auto; overscroll-behavior-x: contain; touch-action: pan-x pan-y; scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; border-radius: 12px; }
 .cv-sc:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
 .cv-t { width: 100%; border-collapse: separate; border-spacing: 3px; table-layout: auto; font-size: var(--fs-2); line-height: 1.4; }
 .cv-t th, .cv-t td { padding: 0; text-align: left; font-weight: 400; vertical-align: top; }
@@ -3521,4 +3521,90 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
 @media (max-width: 760px) and (orientation: portrait) {
   .dial-btn { right: calc(28px + env(safe-area-inset-right)); }
   .dial { right: calc(16px + env(safe-area-inset-right)); }
+}
+
+/* ================================================================ v47
+ * 1. The page keeps to its width. A region that scrolls up and down must not scroll sideways: on a touch screen a finger can pan any box whose
+ *    overflow-x is auto and whose content is wider than it (the table of outlets used to push its hidden labels out of its own box and the page
+ *    followed them, a good third of the width to the right). The tables and the strips that are meant to run on keep their own box (position: relative, so what is
+ *    placed inside them stays inside), and say how a finger moves them.
+ * 2. Fingers on the map (js/touchmode.js): where the map is the screen one finger moves it; where it lies in a page it is a preview.
+ * 3. Phones held sideways: one bar, one row of topics, the body of the page given the height.
+ * ================================================================ */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overflow-x: hidden; overflow-x: clip; overscroll-behavior-x: none; }
+body { overflow-x: hidden; overscroll-behavior-x: none; }
+.entry, .app > .entry, .sect, .nw-l, .nw-r, #case, #app #case, .pb, .cb, .about, .ds-b, .set-main, .set-side, .own-body, .cmd-l, .mn-sel, .mn-tiles, .wall,
+.board[data-wall="1"] .wall, :root[data-sect="video"] .board, :root[data-sect="video"] .board, :root[data-sect="map"] .board { overflow-x: hidden; overscroll-behavior-x: none; }
+.cv-sc, .en-cards, .genres, .layers, .mtheme, .bd-ths, .sc-tabs, .nw-l .chips { overscroll-behavior-x: contain; touch-action: pan-x pan-y; }
+.en-cards, .genres { position: relative; }
+/* a list whose row is wider than its pane (the left column of the board at 1180) cuts the row inside the list, not at the pane that scrolls up and down */
+.rows { overflow-x: clip; }
+
+/* a field under 16px makes iOS zoom the page when it is focused, and the page stays zoomed (and drifts) until a finger pinches it back */
+@media (pointer: coarse) { input, select, textarea { font-size: 16px; } }
+
+/* the map under a finger */
+.mgl[data-touch="live"], .mgl[data-touch="live"] .maplibregl-canvas-container, .mgl[data-touch="live"] .maplibregl-canvas { touch-action: none !important; }
+.mgl[data-touch="still"], .mgl[data-touch="still"] .maplibregl-canvas-container, .mgl[data-touch="still"] .maplibregl-canvas { touch-action: auto !important; }
+.mclose { display: none; }
+@media (pointer: coarse) {
+  #theater .m3ctl { width: 44px; height: 44px; font-size: 24px; }
+  #theater .m3btn { min-height: 44px; min-width: 76px; }
+  #theater .mcard .mc-x { min-width: 44px; min-height: 44px; }
+}
+/* the map opened to the whole screen (a tap on the small map of a phone or a tablet) */
+:root[data-mapfull] #p-map { position: fixed !important; inset: 0; z-index: 80; width: auto; height: auto !important; margin: 0; border-radius: 0; display: flex !important; flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); background: var(--map-space); }
+:root[data-mapfull] #p-map > .ph { display: none; }
+:root[data-mapfull] #p-map .mapbox, :root[data-mapfull] #theater { flex: 1; height: auto; min-height: 0; border-radius: 0; }
+:root[data-mapfull] .mclose { display: grid; place-items: center; position: absolute; z-index: 9; left: 10px; top: 10px; min-width: 44px; height: 44px; padding: 0 16px; border: 1px solid var(--mg-edge);
+  border-radius: 22px; background: var(--mg-fill); color: var(--mg-ink); font: 600 var(--fs-3)/1 var(--f-text); box-shadow: var(--mg-shadow); -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); }
+:root[data-mapfull] #theater .mpanel { left: 104px; }
+:root[data-mapfull] #theater .mtheme { top: 64px; }
+:root[data-mapfull] #theater .mtools { top: 64px; }
+:root[data-mapfull] .dial-btn, :root[data-mapfull] .dial { display: none; }
+
+/* on a phone the card of a place is a sheet over the lower part of the map: it takes half at most, so the map above it can still be moved */
+@media (max-width: 760px) { #theater .mcard { max-height: 52%; } }
+
+/* phones held sideways */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) {
+  .app > .tb { height: 36px; }
+  .app > .ailine { align-items: center; padding: 0 12px; min-height: 0; height: 28px; font-size: var(--fs-2); }
+  .ailine b.num { font-size: var(--fs-4); }
+  .app > .jump { height: 38px; }
+  .jump a { display: flex; align-items: center; min-height: 38px; padding: 0 10px; position: relative; }
+  .jump a::after { content: ""; position: absolute; inset: -3px 0; }
+  .app > .sb { height: 22px; }
+  /* the topics: one row of small tablets in place of the tall icons */
+  #app .genres, #pri-genres { display: flex; flex-wrap: nowrap; gap: 6px; overflow-x: auto; overflow-y: hidden; padding: 5px 8px; scrollbar-width: none; }
+  #app .genres::-webkit-scrollbar { display: none; }
+  #app .genres .gn { flex: none; flex-direction: row; width: auto; min-width: 0; height: 32px; gap: 4px; padding: 0 10px 0 4px; border-radius: 16px; box-shadow: inset 0 0 0 1px var(--line-2); position: relative; }
+  #app .genres .gn::after { content: ""; position: absolute; inset: -6px -2px; }
+  #app .genres .gn .gi { width: 24px; height: 24px; background: none; box-shadow: none; }
+  #app .genres .gn svg { width: 16px; height: 16px; }
+  #app .genres .gn .gl { font-size: 13px; }
+  .app > .entry .en-head { display: none; }
+  /* the 地図 screen: the list of the place on the left, the map on the right, both the whole height */
+  :root[data-sect="map"] .board { display: contents !important; }
+  :root[data-sect="map"] #p-map { display: flex !important; grid-column: 2; grid-row: 5 / 7; height: auto; width: auto; margin: 0; }
+  :root[data-sect="map"] #p-mapnews { display: flex !important; grid-column: 1; grid-row: 5 / 7; height: auto; border-left: 0; }
+  :root[data-sect="map"] .app > .jump, :root[data-sect="map"] #modebar { display: none !important; }
+  :root[data-sect="map"] #p-map .mapbox { height: 100%; }
+  :root[data-sect="map"] .mapnews[data-on="1"] { display: flex !important; }
+  /* the page's own head and the counts line give their height to the list */
+  #pri-chips { display: none; }
+  .sc-h { display: none; }
+  .sc-tabs { padding-top: 4px; }
+  /* the layers and the topics of the map: one scrolling row each, the zoom buttons low on the right, so the map shows */
+  #theater .mpanel { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; top: 6px; left: 8px; right: 8px; padding: 3px 8px; gap: 4px 6px; }
+  #theater .mpanel::-webkit-scrollbar, #theater .mtheme::-webkit-scrollbar { display: none; }
+  #theater .mpanel > * { flex: none; }
+  #theater .mpanel .lyr { height: 28px; }
+  #theater .mtheme { top: 46px; left: 8px; right: 8px; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  #theater .mtheme > * { flex: none; }
+  #theater .mt { min-height: 30px; padding: 0 10px; }
+  #theater .mtools { top: auto; bottom: 26px; right: 8px; flex-direction: row; align-items: flex-end; }
+  :root[data-mapfull] #theater .mpanel { left: 104px; }
+  :root[data-mapfull] #theater .mtheme { top: 56px; }
 }
