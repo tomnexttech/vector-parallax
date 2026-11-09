@@ -2630,7 +2630,8 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
 .rk-m { grid-area: m; display: flex; align-items: center; gap: 8px; }
 .rk-m .ratio { width: 64px; }
 
-.rk { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 0 28px; padding-top: 12px; }
+/* the two columns of the ranking (a div); the topics under a headline are also called .rk (a span) and must not become a grid of 340px columns */
+div.rk { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 0 28px; padding-top: 12px; }
 .rk-c { min-width: 0; padding-top: 7px; border-top: 2px solid var(--line-2); }
 .rk-c h3 { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; font-size: var(--fs-4); font-weight: var(--fw-3); }
 .rk-c h3 small { font-size: var(--fs-3); font-weight: 400; color: var(--ink-3); }
@@ -3553,7 +3554,7 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
   #theater .mcard .mc-x { min-width: 44px; min-height: 44px; }
 }
 /* the map opened to the whole screen (a tap on the small map of a phone or a tablet) */
-:root[data-mapfull] #p-map { position: fixed !important; inset: 0; z-index: 80; width: auto; height: auto !important; margin: 0; border-radius: 0; display: flex !important; flex-direction: column;
+:root[data-mapfull] #p-map { position: fixed !important; inset: 0; z-index: 80 !important; width: auto; height: auto !important; margin: 0; border-radius: 0; display: flex !important; flex-direction: column;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); background: var(--map-space); }
 :root[data-mapfull] #p-map > .ph { display: none; }
 :root[data-mapfull] #p-map .mapbox, :root[data-mapfull] #theater { flex: 1; height: auto; min-height: 0; border-radius: 0; }
@@ -3607,4 +3608,48 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
   #theater .mtools { top: auto; bottom: 26px; right: 8px; flex-direction: row; align-items: flex-end; }
   :root[data-mapfull] #theater .mpanel { left: 104px; }
   :root[data-mapfull] #theater .mtheme { top: 56px; }
+}
+
+/* ---- v48: a phone held sideways reads headlines, 3 to 4 in one screen ----
+ * The list of the home had no picture rule in this orientation (the small picture of a row belongs to the portrait home, above), so each row held a full-width photo (500px):
+ * one headline never fitted. Here: the picture is 64x48 beside the headline, the title and the field buttons share one 44px row, the headline is 16px on two lines at most,
+ * the line under it is one line of 13px. The news screen keeps its three rows of buttons at 44px (the look of each is smaller than its hit area) and no gap between them. */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) {
+  /* home: only the list; the lead event opens from a row, as a sheet */
+  :root[data-screen="home"] .app:not([data-ui="simple"]) #p-case { display: none !important; }
+  :root[data-screen="home"] .app:not([data-ui="simple"]) #p-pri { display: grid; grid-column: 1 / -1 !important; grid-row: 6 !important; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 44px minmax(0, 1fr);
+    min-height: 0; height: auto; max-height: none !important; contain: none !important; border-radius: 12px; order: 0; }
+  :root[data-screen="home"] #p-pri > .ph { grid-area: 1 / 1; height: 44px; min-height: 44px; padding: 0 6px 0 14px; border-bottom: 0; }
+  :root[data-screen="home"] #p-pri > .ph .pc { margin-left: 10px; }
+  :root[data-screen="home"] #p-pri > .ph .ph-open { margin-left: 2px; }
+  :root[data-screen="home"] #p-pri > #pri-genres { grid-area: 1 / 2; align-self: stretch; display: flex; align-items: center; min-width: 0; padding: 0; overflow: hidden; }
+  :root[data-screen="home"] #p-pri > #pri-genres .genres { flex: 1 1 auto; min-width: 0; align-items: center; padding: 0 8px 0 4px; border-bottom: 0; }
+  :root[data-screen="home"] #p-pri > #pri-b { grid-area: 2 / 1 / 3 / 3; min-height: 0; max-height: none; padding: 0 4px 4px; }
+  :root[data-screen="home"] .app:not([data-ui="simple"]) > .ailine { grid-column: 1 / -1; }
+  #snap-note[hidden] { display: none; }
+  /* a row: the picture at the left, the headline over the line of figures */
+  :root[data-screen="home"] #pri-b .rows .r { display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: 12px; align-items: center; margin: 0; padding: 5px 10px 5px 8px; border-radius: 0; }
+  :root[data-screen="home"] #pri-b .rows .r > .rth { grid-column: 1; grid-row: 1 / span 2; display: flex; align-items: center; justify-content: center; width: 64px; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 8px;
+    background: rgba(0, 0, 0, .24); box-shadow: inset 0 0 0 1px var(--line); color: var(--gc, var(--ink-3)); }
+  :root[data-screen="home"] #pri-b .rows .r > .rth img { display: block; width: 100%; height: 100%; object-fit: contain; }
+  :root[data-screen="home"] #pri-b .rows .r > .rth.none { background: color-mix(in srgb, var(--gc, #8e8e93) 22%, transparent); }
+  :root[data-screen="home"] #pri-b .rows .r > .rth svg { width: 40%; height: auto; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+  :root[data-screen="home"] #pri-b .rows .r > :not(.rth) { grid-column: 2; min-width: 0; }
+  /* the headline and the line under it, on the home and in the news list */
+  #pri-b .rows .r > .rt, .nw-l .rows .r > .rt { grid-row: 1; align-self: end; -webkit-line-clamp: 2; font-size: 16px; line-height: 22px; }
+  #pri-b .rows .r > .rm, .nw-l .rows .r > .rm { grid-row: 2; align-self: start; flex-wrap: nowrap; overflow: hidden; margin-top: 2px; font-size: 13px; line-height: 20px; white-space: nowrap; }
+  #pri-b .rows .r > .rm > *, .nw-l .rows .r > .rm > * { flex: none; }
+  #pri-b .rows .r > .rm > .rk, .nw-l .rows .r > .rm > .rk { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  #pri-b .rm .lk, .nw-l .rm .lk, #pri-b .rm .bi-mini, .nw-l .rm .bi-mini, .rm .bi-mini small, .rm .bi-mini b { font-size: 13px; line-height: 20px; }
+  .nw-l .rows .r { padding: 5px 12px; }
+  /* the news screen: the tabs, the fields and the topics are three rows of 44px, nothing more between them */
+  .sc-in, .sc-in.fill { gap: 0; padding: 0 12px 12px; }
+  .sc-tabs { align-items: center; min-height: 44px; padding-top: 0; }
+  .sc-tab { position: relative; padding: 6px 12px; }
+  .sc-tab::after { content: ""; position: absolute; inset: -5px 0; }
+  .nw-l > .genres { height: 44px; padding-top: 0; padding-bottom: 0; align-items: center; }
+  .nw-l > .chips { display: flex; align-items: center; min-height: 44px; padding: 0 12px; overflow-x: auto; scrollbar-width: none; }
+  .nw-l > .chips::-webkit-scrollbar { display: none; }
+  .nw-l > .chips .chip { position: relative; flex: none; min-height: 28px; padding: 2px 8px; font-size: 13px; }
+  .nw-l > .chips .chip::after { content: ""; position: absolute; inset: -8px -1px; }
 }
