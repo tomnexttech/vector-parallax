@@ -1081,7 +1081,6 @@ function caseNode(e) {
   // with a detailed summary the one-line contrast is not shown again (its row, 伝え方の違い, is in the summary)
   if (e.ai && str(e.ai.contrast_ja) && !e.brief) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: e.ai.contrast_ja }), aiTag(aiBy, aiAt)));
   if (aiLines.length - (e.brief ? 1 : 0) > 0 || (e.heading.ai && !e.brief)) aiLines.push(h('p', { class: 'ainote', text: AI_NOTE }));
-  aiLines.push(ownBox(e));
 
   const sorted = [...ms].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity));
   const last = m.last;
@@ -1218,7 +1217,8 @@ function caseNode(e) {
       h('span', { class: 'rp-m' }, outletOf(it) || short, isNum(it.ts) ? h('time', { class: 'num', text: fmtClock(it.ts) }) : null),
       h('span', { class: 'rp-h', lang: it.lang === 'en' ? 'en' : null }, linkTo(it, t ? `「${t}」` : outletOf(it) || '—')));
   })) : null;
-  const point = aiLines.length ? h('div', { class: 't-ai' }, aiLines) : fl ? h('p', { class: 't-ai st-fl', text: fl }) : null;
+  // the point: the AI's lines (the detailed summary, or the short ones), else the first line of the reports; the viewer's own AI (connect, or the asks) is the last row of the card
+  const point = h('div', { class: 't-ai' }, aiLines.length ? aiLines : fl ? h('p', { class: 'st-fl', text: fl }) : null, ownBox(e));
   const tl = timeline(ms);
   const t1 = tl.length && isNum(tl[0].it.ts) ? tl[0].it.ts : null;
   const days = t1 != null && tl.some((r) => isNum(r.it.ts) && r.it.ts - t1 > 18 * 3600);
