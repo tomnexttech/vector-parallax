@@ -111,3 +111,16 @@ test('the rest of the rows is behind a button that says how many', () => {
   assert.equal(all(el, (n) => n.tag === 'tr' && n.attrs.data && n.attrs.data.k).length, 7);
   assert.equal(all(node({ ...c, rows: c.rows.slice(0, 5) }), (n) => n.tag === 'button').length, 0);
 });
+
+test('the sign that the table runs on: a label above the table that is only filled in on the page; no extra button, region or tab stop', () => {
+  const { node } = createCoverage({ h });
+  const el = node(coverageOf(raw()));
+  const wrap = all(el, (n) => n.attrs && n.attrs.class === 'cv-wrap');
+  assert.equal(wrap.length, 1);
+  assert.ok(wrap[0].kids.some((k) => k.attrs && k.attrs.class === 'cv-hint' && k.attrs['aria-hidden'] === 'true'));
+  assert.ok(wrap[0].kids.some((k) => k.attrs && k.attrs.class === 'cv-sc'));
+  assert.equal(all(el, (n) => n.tag === 'button').length, 0);                  // the label is not a control
+  assert.equal(all(el, (n) => n.attrs && n.attrs.role === 'region').length, 1);
+  assert.equal(all(el, (n) => n.attrs && n.attrs.tabindex === '0').length, 1);
+  assert.equal(text(all(el, (n) => n.attrs && n.attrs.class === 'cv-hint')[0]), '');   // nothing is measured without a page: nothing is said
+});

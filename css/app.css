@@ -3407,19 +3407,21 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
 .cv-lg .off::before { background: repeating-linear-gradient(135deg, transparent 0 2px, color-mix(in srgb, var(--ink-2) 60%, transparent) 2px 3px); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink-2) 28%, transparent); }
 .cv-lg .na::before { content: "·"; width: auto; height: auto; font-size: var(--fs-4); line-height: 1; }
 .cv-sc { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; border-radius: 12px; }
-.cv-sc:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.cv-sc:focus-visible { outline: 2px solid var(--cyan); outline-offset: -2px; }
 .cv-t { width: 100%; border-collapse: separate; border-spacing: 3px; table-layout: auto; font-size: var(--fs-2); line-height: 1.4; }
 .cv-t th, .cv-t td { padding: 0; text-align: left; font-weight: 400; vertical-align: top; }
 .cv-t thead th { min-width: 76px; padding: 0 2px 5px; vertical-align: bottom; font-size: var(--fs-2); color: var(--ink-hi); }
-.cv-t thead th b { position: relative; display: block; padding-top: 6px; font-weight: 700; overflow-wrap: anywhere; }
+.cv-t thead th b { position: relative; display: block; padding-top: 6px; font-weight: 700; overflow-wrap: break-word; word-break: normal; }
 .cv-t thead th b::before { content: ""; position: absolute; left: 0; top: 0; width: 100%; height: 3px; border-radius: 2px; background: var(--sd); }
 .cv-t thead small { display: block; font-size: var(--fs-1); font-weight: 400; color: var(--h-ink3, var(--ink-2)); }
 .cv-t tbody th { position: sticky; left: 0; z-index: 1; min-width: 84px; max-width: 132px; padding: 7px 8px 6px 2px; background: color-mix(in srgb, var(--raise) 92%, transparent); vertical-align: top; color: var(--ink-hi); }
 .cv-t tbody th .cv-l { display: block; font-size: var(--fs-3); font-weight: 700; line-height: 1.35; overflow-wrap: anywhere; }
+.cv-t tbody th .cv-l[lang="en"] { overflow-wrap: break-word; word-break: normal; }
 .cv-t tbody th small { display: block; margin-top: 1px; font-size: var(--fs-1); font-weight: 400; color: var(--h-ink3, var(--ink-2)); font-variant-numeric: tabular-nums; }
 .cv-t td { min-width: 76px; border-radius: 8px; }
 .cv-t td.on { padding: 6px 7px; background: color-mix(in srgb, var(--sd) 16%, transparent); box-shadow: inset 3px 0 0 var(--sd); color: var(--ink); }
-.cv-t td.on .cv-p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; overflow-wrap: anywhere; }
+/* a word is never cut in the middle: overflow-wrap: anywhere let the column shrink below one word of English ("Saturd/ay"); break-word breaks only a word wider than the whole column, and Japanese still breaks between characters as before */
+.cv-t td.on .cv-p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; overflow-wrap: break-word; word-break: normal; hyphens: manual; }
 .cv-t td.on mark { padding: 0; background: none; color: var(--ink-hi); font-weight: 700; box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--sd) 80%, transparent); }
 .cv-t td.off { padding: 6px 7px; text-align: center; color: var(--h-ink3, var(--ink-2)); background: repeating-linear-gradient(135deg, transparent 0 5px, color-mix(in srgb, var(--ink-2) 16%, transparent) 5px 6px); }
 .cv-t td.na { padding: 6px 7px; text-align: center; color: var(--h-ink3, var(--ink-2)); }
@@ -3428,12 +3430,20 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
 .cv-more:hover { background: var(--hc-hover, var(--fill-2)); color: var(--ink-hi); }
 @container cov (max-width: 640px) {
   .cv-t thead th, .cv-t td { min-width: 60px; }
+  .cv-t td.on:not(.t) { min-width: 92px; }
   .cv-t tbody th { min-width: 70px; max-width: 96px; }
   .cv-t td.on.t { text-align: center; box-shadow: none; }
   .cv-t td.on.t .cv-dot { display: block; }
   .cv-t td.on.t .cv-p { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); }
 }
 @container cov (min-width: 641px) { .cv-t thead th, .cv-t td { min-width: 104px; } }
+/* the sign that the table runs on to the right: the right edge fades out and the label above counts the outlets not wholly in view (js/coverage.js); the names row and the column of points stay where they are */
+.cv-wrap { position: relative; min-width: 0; }
+.cv-hint { display: none; margin: 0 4px 4px 0; text-align: right; font: 600 var(--fs-2)/1.3 var(--f-text); color: var(--ink); font-variant-numeric: tabular-nums; }
+.cv-wrap[data-over] > .cv-hint { display: block; }
+.cv-wrap[data-over]:not([data-more]) > .cv-hint { visibility: hidden; }
+.cv-wrap[data-more] > .cv-sc { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
+.cv-wrap[data-left] .cv-t tbody th { box-shadow: 7px 0 8px -7px rgba(0, 0, 0, .55); }
 /* the choice of words */
 .cv-w { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--bt-edge); }
 .cov .cv-w h4 { margin: 0 0 8px; padding: 0; font: 700 var(--fs-4)/1.3 var(--f-display); color: var(--ink-hi); }
@@ -3488,4 +3498,27 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
   .t-reps { grid-template-columns: minmax(0, 1fr); }
   .t-reps .rp { border-left: 0; border-top: 1px solid var(--bt-edge, var(--line)); }
   .t-reps .rp:first-child { border-top: 0; }
+}
+
+/* v6 (the phone's first screen of an event): the photo is one thin strip under the headline (the small picture, its source and the arrow), so that the first line of the point meets the first screen;
+   the number of outlets and the bar keep one line and the three counts take the next, each count with its own mark behind it (a mark never begins a line) */
+@container case (max-width: 500px) {
+  :root[data-screen="board"] #p-case .dos.has-photo:not(.ph-small) > .t-photo { display: grid; grid-template-columns: 116px minmax(0, 1fr); grid-template-rows: auto auto; align-content: center; gap: 0 12px; padding: 8px 12px 8px 8px; }
+  :root[data-screen="board"] #p-case .dos.has-photo:not(.ph-small) > .t-photo :is(.pstack, .pfig) { display: contents; }
+  :root[data-screen="board"] #p-case .dos.has-photo:not(.ph-small) > .t-photo .pback { display: none; }
+  :root[data-screen="board"] #p-case .dos.has-photo:not(.ph-small) > .t-photo .pimg { grid-column: 1; grid-row: 1 / span 2; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--bt-edge); }
+  :root[data-screen="board"] #p-case .dos.has-photo:not(.ph-small) > .t-photo .pimg img { width: 116px; height: 80px; max-height: none; object-fit: cover; }
+  :root[data-screen="board"] #p-case .dos.has-photo:not(.ph-small) > .t-photo .pcard { width: 116px; min-height: 80px; padding: 6px; text-align: center; }
+  :root[data-screen="board"] #p-case .dos.has-photo:not(.ph-small) > .t-photo figcaption { grid-column: 2; grid-row: 1; align-self: end; padding: 0; font-size: var(--fs-2); line-height: 1.35; overflow-wrap: anywhere; }
+  :root[data-screen="board"] #p-case .dos.has-photo:not(.ph-small) > .t-photo .pnav { grid-column: 2; grid-row: 2; align-self: start; justify-content: space-between; margin: 0; }
+  :root[data-screen="board"] #p-case .ch-ratio { display: contents; }
+  :root[data-screen="board"] #p-case .ch-ratio .ratio { grid-column: 2; grid-row: 3; align-self: center; flex: none; width: 100%; max-width: 168px; min-width: 64px; }
+  :root[data-screen="board"] #p-case .ch-rn { grid-column: 1 / -1; grid-row: 4; margin-top: 6px; }
+}
+:root[data-screen="board"] #p-case .rn-i + .rn-i::before { content: none; }
+:root[data-screen="board"] #p-case .rn-i:not(:last-child)::after { content: "・"; margin: 0 8px 0 1px; color: var(--ink-3); }
+/* the dial's round button sits wholly inside the card, a little in from the card's right edge, and no longer on the edge itself; the ring moves with it */
+@media (max-width: 760px) and (orientation: portrait) {
+  .dial-btn { right: calc(28px + env(safe-area-inset-right)); }
+  .dial { right: calc(16px + env(safe-area-inset-right)); }
 }

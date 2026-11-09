@@ -96,19 +96,40 @@ export function createCoverage({ h }) {
         h('i', { class: 'cv-d', 'aria-hidden': 'true' }, x.o.slice(0, 6).map((i) => h('i', { data: { side: cov.outlets[i].side } }))),
         h('small', { text: x.o.slice(0, 3).map((i) => cov.outlets[i].name).join('・') + (x.o.length > 3 ? ` ほか ${x.o.length - 3}` : '') }))))))));
   }
+  /** the sign that the table runs on to the right: the outlets that are not wholly in view are counted, the right edge fades (css), the label sits above the table.
+   *  It is measured on the page (the sizes are only known there), after each paint, on a scroll and on a resize; without a page (a test) nothing is measured and nothing is shown. */
+  const watchScroll = (wrap, box, hint) => {
+    if (typeof box.getBoundingClientRect !== 'function' || typeof box.addEventListener !== 'function') return null;
+    let shown = null;
+    const measure = () => {
+      const over = box.scrollWidth - box.clientWidth > 2;
+      const edge = box.getBoundingClientRect().right;
+      const rest = over ? [...box.querySelectorAll('thead th[data-side]')].filter((th) => th.getBoundingClientRect().right > edge + 1).length : 0;
+      wrap.toggleAttribute('data-over', over);
+      wrap.toggleAttribute('data-more', rest > 0);
+      wrap.toggleAttribute('data-left', box.scrollLeft > 2);
+      if (rest > 0 && rest !== shown) { shown = rest; hint.textContent = `→ あと ${rest} 社`; }
+    };
+    box.addEventListener('scroll', measure, { passive: true });
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    return () => { if (ro) { ro.disconnect(); ro.observe(box); if (box.firstElementChild) ro.observe(box.firstElementChild); } measure(); };   // the table itself grows when the fonts come in
+  };
   /** the whole card: the table (the lead rows, the rest behind a button) and the choice of words */
   function node(cov, { n = LEAD_ROWS } = {}) {
     const lead = leadRows(cov, n), more = cov.rows.length - lead.length;
     const box = h('div', { class: 'cv-sc', role: 'region', tabindex: '0', 'aria-label': '媒体の比べの表（横に流せます）' });
+    const hint = h('p', { class: 'cv-hint', 'aria-hidden': 'true' });
+    const wrap = h('div', { class: 'cv-wrap' }, hint, box);
+    const watched = watchScroll(wrap, box, hint);
     let all = false;
-    const paint = () => box.replaceChildren(table(cov, { rows: all ? cov.rows : lead }));
+    const paint = () => { box.replaceChildren(table(cov, { rows: all ? cov.rows : lead })); if (watched) watched(); };
     paint();
     const hasNa = cov.rows.some((r) => r.c.some((x) => x === null));
     const btn = more > 0 ? h('button', { type: 'button', class: 'cv-more', 'aria-expanded': 'false', on: { click: () => { all = !all; btn.setAttribute('aria-expanded', String(all)); btn.textContent = all ? '行を減らす' : `残り ${more} 行を見る`; paint(); } } }, `残り ${more} 行を見る`) : null;
     return h('section', { class: 'cov', 'aria-label': '媒体の比べ' },
       h('h3', { class: 'st-h', data: { st: 'cv' } }, '媒体の比べ',
         h('span', { class: 'cv-lg' }, h('span', { class: 'on', text: '出ている' }), h('span', { class: 'off', text: '見出しと要旨には出ていない' }), hasNa ? h('span', { class: 'na', text: '照合なし' }) : null)),
-      box, btn, words(cov));
+      wrap, btn, words(cov));
   }
   return { node, table, words };
 }

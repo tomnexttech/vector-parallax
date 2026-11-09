@@ -23,6 +23,8 @@ test('the page words: exact, by pattern, else as they were', () => {
   assert.equal(tr('  設定 '), '  Settings ');
   assert.equal(tr('6社・6 件'), '6 outlets · 6 reports');
   assert.equal(tr('残り 3 件を見る'), 'Show the other 3');
+  assert.equal(tr('→ あと 4 社'), '→ 4 more outlets');
+  assert.equal(tr('→ あと 1 社'), '→ 1 more outlet');
   assert.equal(tr('+1.4時間'), '+1.4 h');
   assert.equal(tr('1時間27分'), '1 h 27 min');
   assert.equal(tr('国内 4・海外 2・官公庁 0'), 'Japan 4 · Abroad 2 · Ministries 0');
