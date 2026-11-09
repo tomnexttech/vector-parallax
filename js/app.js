@@ -36,7 +36,10 @@ import { createPolitics } from './politics_ui.js';
 import { STATIONS, videosOf, playFor, playOfStation, playOfVideo, describe, embedSrc } from './tv.js';
 import { loadSettings, saveSettings, cleanSettings, hiddenBy, reasonJa, KIND_JA, loadOwnAI, saveOwnAI, cleanOwnAI, activeOwnAI } from './settings.js';
 import { makeProvider } from './provider.js';
-import { askOwnAI, testOwnAI, errJa, ASK_NOTE } from './ownai.js';
+import { askOwnAI, testOwnAI, errJa, ASK_NOTE, MODE_JA, QUESTION_MAX } from './ownai.js';
+import { askCache } from './slim.js';
+import { beginLogin, readReturn, finishLogin, cleanedUrl, clearPending } from './login.js';
+import { createConnect } from './connect.js';
 import { createSettingsPanel } from './settings_panel.js';
 import { initLandscape } from './landscape.js';
 import { initDial } from './dial.js';
@@ -74,9 +77,9 @@ const FLAG_FALLBACK = {
 };
 const VETO_WHY = { has_jp_outlet: '日本のメディアが含まれる', has_jp_mainstream: '日本の主要メディアが含まれる', single_outlet: '1 社だけ', has_non_primary: '官公庁以外のメディアが含まれる' };
 const ERR_TEXT = {
-  quota: 'Gemini の利用上限（429）に当たりました。少し時間を空けてやり直してください。', auth: '鍵が通りませんでした（401/403）。鍵を確かめてください。',
-  blocked: 'Gemini が応答を止めました。', truncated: '応答が長さの上限で切れました。', http: 'Gemini が誤りを返しました。', timeout: '時間内に応答がありませんでした。',
-  network: 'Google へ届きませんでした（通信）。', json: '応答が JSON として読めませんでした。', shape: '応答の形が崩れていました。', nokey: '鍵がありません。',
+  quota: '提供元の利用上限か残高の不足です（429/402）。少し時間を空けるか、残高を確かめてください。', auth: '鍵が通りませんでした（401/403）。鍵を確かめてください。',
+  blocked: '提供元が応答を止めました。', truncated: '応答が長さの上限で切れました。', http: '提供元が誤りを返しました。', timeout: '時間内に応答がありませんでした。',
+  network: '提供元へ届きませんでした（通信）。', json: '応答が JSON として読めませんでした。', shape: '応答の形が崩れていました。', nokey: '鍵がありません。',
   missing: '記録済みの答えがありません。', budget: '1 回の更新での AI の呼び数の上限に達しました。',
 };
 const TERMS_TEXT = { ok: '再表示可', nc: '非商用のみ', no: '再配布不可', unknown: '未確認' };
@@ -901,9 +904,10 @@ function histNote() {
   if (!isObj(hs)) return '記録を読めない';
   return `記録 ${isNum(hs.n) ? hs.n : arr(hs.entries).length} 件・${isNum(hs.days) ? hs.days : 30} 日分まで・${fmtShort(hs.updated_at)} 更新`;
 }
-// ---------------------------------------------------------------- the viewer's own AI (js/ownai.js): nothing shows until the settings hold a provider and a key
+// ---------------------------------------------------------------- the viewer's own AI (js/ownai.js): a button to connect until one is connected, then the three asks
 const ownActive = () => activeOwnAI(state.own, defaultModel);
 const ownSig = () => { const a = ownActive(); return a ? `${a.kind}|${a.model}` : ''; };
+const askStore = () => (state.askCache || (state.askCache = askCache(store)));
 /** what the AI is given: the heading and, for each outlet once and by the clock, the headline and description the page itself shows */
 function ownEvent(e) {
   const seen = new Set();
@@ -914,30 +918,99 @@ function ownEvent(e) {
 }
 function paintOwn(box, e) {
   const a = ownActive(), st = state.ownAsk.get(e.key) || null;
-  if (!a) { box.replaceChildren(); box.hidden = true; return; }
   box.hidden = false;
+  if (!a) {
+    box.replaceChildren(h('div', { class: 'ch-own' }, h('button', { type: 'button', class: 'tbb', data: { f: 'own-connect' }, on: { click: () => openConnect() } }, '自分の AI につなぐ')));
+    return;
+  }
   const busy = !!(st && st.busy);
-  const out = [h('div', { class: 'ch-own' },
-    h('button', { type: 'button', class: 'tbb', data: { f: 'own-ask' }, disabled: busy ? true : null, on: { click: () => askOwn(e) } }, busy ? '聞いています…' : '自分の AI に聞く'),
-    h('span', { class: 'ch-own-s', text: 'メディアごとの見出しの違いを 3 行で' }),
+  const qIn = h('input', { type: 'text', class: 'set-in own-q', maxlength: String(QUESTION_MAX), placeholder: '質問', 'aria-label': 'このニュースへの質問', autocomplete: 'off', data: { f: 'own-q' } });
+  if (st && st.mode === 'question' && st.question) qIn.value = st.question;
+  const go = (mode) => askOwn(e, mode, mode === 'question' ? qIn.value : '');
+  qIn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); go('question'); } });
+  const btn = (mode, label) => h('button', { type: 'button', class: 'tbb', data: { f: `own-${mode}` }, disabled: busy ? true : null, on: { click: () => go(mode) } }, label);
+  const out = [h('div', { class: 'ch-own' }, btn('brief', '要約'), btn('compare', '違いを見る'), h('span', { class: 'own-qf' }, qIn, btn('question', '聞く')),
+    busy ? h('span', { class: 'ch-own-s', role: 'status', text: '聞いています…' }) : null,
     st && st.err ? h('span', { class: 'ch-own-m', role: 'status', text: errJa(st.err) }) : null)];
   if (st && st.lines && st.lines.length) {
     out.push(h('ol', { class: 'ch-own-l' }, st.lines.map((l) => h('li', { text: l }))),
-      h('p', { class: 'ainote' }, h('span', { class: 'aimk', text: 'AI' }), `（自分の鍵）${st.by}${isNum(st.at) ? `・${fmtShort(st.at)}` : ''}・${ASK_NOTE}`));
+      h('p', { class: 'ainote' }, h('span', { class: 'aimk', text: 'AI' }), `${MODE_JA[st.mode] || ''}・${st.by}${isNum(st.at) ? `・${fmtShort(st.at)}` : ''}${st.cached ? '・控えの答え' : ''}・${ASK_NOTE}`));
   }
   box.replaceChildren(...out);
 }
 const ownBox = (e) => { const box = h('div', { class: 'ch-ownbox', data: { k: e.key } }); paintOwn(box, e); return box; };
-function repaintOwn(e) { const box = $('case').querySelector('.ch-ownbox'); if (box && box.dataset.k === String(e.key)) paintOwn(box, e); }
-async function askOwn(e) {
+function repaintOwn(e) { for (const box of document.querySelectorAll('.ch-ownbox')) if (box.dataset.k === String(e.key)) paintOwn(box, e); }
+async function askOwn(e, mode, question) {
   const a = ownActive(), prev = state.ownAsk.get(e.key);
   if (!a || (prev && prev.busy)) return;
-  state.ownAsk.set(e.key, { busy: true });
+  if (mode === 'question' && !String(question).trim()) { state.ownAsk.set(e.key, { busy: false, mode, question: '', lines: [], err: 'noquestion' }); repaintOwn(e); return; }
+  state.ownAsk.set(e.key, { busy: true, mode, question });
   repaintOwn(e);
   let res;
-  try { res = await askOwnAI(makeProvider(a.kind, a.key, a.model, { retries: 1, timeoutMs: 45000 }), ownEvent(e)); } catch (err) { res = { lines: [], err: (err && err.code) || 'network' }; }
-  state.ownAsk.set(e.key, { busy: false, ...res, by: `${a.ja} · ${a.model}`, at: Math.floor(Date.now() / 1000) });
+  try { res = await askOwnAI(makeProvider(a.kind, a.key, a.model, { retries: 1, timeoutMs: 45000 }), ownEvent(e), { mode, question, cache: askStore(), eventKey: String(e.key) }); } catch (err) { res = { lines: [], err: (err && err.code) || 'network' }; }
+  state.ownAsk.set(e.key, { busy: false, mode, question, lines: res.lines, err: res.err, cached: !!res.cached, by: `${a.ja} · ${a.model}`, at: nowS() });
   repaintOwn(e);
+}
+/** the choice is kept apart from the settings; the board is drawn again only when what is asked of changes */
+function setOwnAI(c) {
+  const before = ownSig();
+  state.own = cleanOwnAI(c);
+  const ok = saveOwnAI(store, state.own);
+  if (ownSig() !== before && state.data) renderAll();
+  paintOwnBtn();
+  if (state.connect && state.connect.isOpen()) state.connect.render();
+  if (!ownActive()) askStore().clear();
+  return ok;
+}
+function paintOwnBtn() {
+  const b = $('own-btn'), a = ownActive();
+  if (!b) return;
+  b.classList.toggle('on', !!a);
+  const t = a ? `自分の AI（${a.ja}・つながっています）` : '自分の AI につなぐ';
+  b.title = t; b.setAttribute('aria-label', t);
+}
+function openConnect() {
+  if (!state.connect) return false;
+  if (state.sheet) closeSheet();
+  if (state.about) closeAbout();
+  pause();
+  state.connect.open();
+  return true;
+}
+async function ownTest() {
+  const a = ownActive();
+  if (!a) return { ok: false, err: 'nokey' };
+  try { return await testOwnAI(makeProvider(a.kind, a.key, a.model, { retries: 0, timeoutMs: 20000 })); } catch (err) { return { ok: false, err: (err && err.code) || 'network' }; }
+}
+/** log in with OpenRouter: the page leaves for openrouter.ai and comes back with ?code=… (js/login.js) */
+async function startOwnLogin() {
+  const say = (t, err) => { if (state.connect) state.connect.say(t, err); };
+  let ss = null;
+  try { ss = window.sessionStorage; } catch { ss = null; }
+  if (!ss) { say('ログインを始められません。このブラウザは一時保存を許していません', true); return; }
+  try {
+    const { url } = await beginLogin({ session: ss, location: window.location, crypto: window.crypto });
+    window.location.assign(url);
+  } catch { say('ログインを始められませんでした', true); }
+}
+/** a page opened with ?code=… is the way back from OpenRouter: trade the code for the viewer's key, then clean the address */
+async function resumeLogin() {
+  if (!/[?&]code=/.test(location.search)) return;
+  let ss = null;
+  try { ss = window.sessionStorage; } catch { ss = null; }
+  const ret = ss ? readReturn(location.search, ss) : { err: 'none' };
+  try { history.replaceState(history.state, '', cleanedUrl(location.href)); } catch { /* the address stays as it is */ }
+  if (ss) clearPending(ss);
+  if (!ret) return;
+  if (ret.err) { toast(errJa(ret.err)); return; }
+  toast('OpenRouter に接続しています');
+  const r = await finishLogin(ret);
+  if (r.err) { toast(errJa(r.err)); return; }
+  const c = cleanOwnAI(state.own);
+  c.kind = 'openrouter'; c.keys.openrouter = r.key;
+  const ok = setOwnAI(c);
+  openConnect();
+  if (state.connect) state.connect.say(ok ? 'OpenRouter につながりました' : 'つながりましたが、このブラウザには保存できません。このタブを閉じるまでは使えます', !ok);
 }
 
 /** the photos of an event: the one the board chose (CONTRACT 20.5) first, then each report that carries one, by the clock */
@@ -1002,7 +1075,7 @@ function caseNode(e) {
   if (e.summary && !e.brief) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: str(e.summary.text_ja) }), aiTag([str(e.summary.provider), str(e.summary.model)], e.summary.made_at)));
   if (e.ai && str(e.ai.contrast_ja)) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: e.ai.contrast_ja }), aiTag(aiBy, aiAt)));
   if (aiLines.length - (e.brief ? 1 : 0) > 0 || (e.heading.ai && !e.brief)) aiLines.push(h('p', { class: 'ainote', text: AI_NOTE }));
-  if (ownActive()) aiLines.push(ownBox(e));
+  aiLines.push(ownBox(e));
 
   const sorted = [...ms].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity));
   const last = m.last;
@@ -1359,7 +1432,7 @@ function renderEntryView() {
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
   renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
     fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => { setHome('board'); setUi('full'); },
-    detail: entryDetail, briefBox: (e) => briefBox(e, tagAI), measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
+    detail: entryDetail, ownBox, briefBox: (e) => briefBox(e, tagAI), measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
     oneSide: sideGroups(true), oneSideTitle: ONE_SIDE_TITLE, oneSideNote: ONE_SIDE_NOTE, more: entryMore,
     local: state.set.local.place ? { name: placeName(state.set.local.place), events: localList().slice(0, 5) } : null });
   const hd = $('entry').querySelector('.en-head');
@@ -1806,7 +1879,7 @@ function aboutEl() {
     h('div', { class: 'sheet-h' }, h('h2', { text: 'データと AI' }), h('button', { type: 'button', class: 'tbb', text: '閉じる', on: { click: closeAbout } })),
     h('ul', { class: 'floor' }, h('li', { text: '見出しとリンクは各メディアのものです。画像は元の記事の場所から表示しています' }), h('li', { text: 'メディアに左右のラベルは付けません' }),
       h('li', { text: '見出しの真偽は判定しません' }), h('li', { text: '「見当たらない」は、集めたニュースの中での話です' }), h('li', { text: AI_NOTE }), h('li', null, extLink(ISSUES, null, '掲載の停止の依頼'), `・${STOP_NOTE}`)),
-    det('ab-scope', '集めた範囲', true), det('ab-ai', 'AI の実行'), det('ab-eval', '検査'), det('ab-src', '媒体の一覧'), det('ab-byok', '自分の鍵で AI を回す（任意）'));
+    det('ab-scope', '集めた範囲', true), det('ab-ai', 'AI の実行'), det('ab-eval', '検査'), det('ab-src', '媒体の一覧'), det('ab-byok', '自分の AI で実行（任意）'));
   aboutNode.querySelector('#ab-byok-i').append(
     h('p', { class: 'lead', text: '鍵はこのタブの中だけに置き、Google にだけ送ります' }),
     h('p', { class: 'msg', id: 'byok-req' }),
@@ -1815,7 +1888,8 @@ function aboutEl() {
     h('div', { class: 'btns' },
       h('button', { type: 'button', class: 'btn pri', id: 'byok-run', text: '実行', on: { click: onRun } }),
       h('button', { type: 'button', class: 'btn', id: 'byok-restore', text: '記録済みに戻す', hidden: true, on: { click: onRestore } }),
-      extLink('https://aistudio.google.com/apikey', { class: 'btn' }, '鍵を作る')),
+      h('button', { type: 'button', class: 'btn', id: 'byok-connect', text: '自分の AI につなぐ', on: { click: () => { closeAbout(); openConnect(); } } }),
+      extLink('https://aistudio.google.com/apikey', { class: 'btn', id: 'byok-mk' }, 'Gemini の鍵を作る')),
     h('p', { class: 'msg', id: 'byok-msg', role: 'status', 'aria-live': 'polite' }));
   aboutNode.querySelector('#byok-key').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); onRun(); } });
   return aboutNode;
@@ -1907,6 +1981,10 @@ function renderByok() {
   if (!model.value) model.value = run && run.provider === 'gemini' && MODEL_RE.test(str(run.model)) ? run.model : defaultModel;
   q1('#byok-run').disabled = state.busy || reqs.length === 0;
   q1('#byok-restore').hidden = !state.live;
+  const a = ownActive();   // a connected AI runs it; the key and model fields are for a Gemini key typed for this tab only
+  for (const id of ['#byok-model', '#byok-key']) q1(id).closest('label').hidden = !!a;
+  q1('#byok-connect').hidden = !!a; q1('#byok-mk').hidden = !!a;
+  q1('#ab-byok-i .lead').textContent = a ? `${a.ja} · ${a.model} で実行します。料金はそのアカウントに掛かります` : '鍵はこのタブの中だけに置き、Google にだけ送ります';
 }
 function byokMsg(text, err) { const m = q1('#byok-msg'); if (!m) return; m.textContent = text; m.classList.toggle('err', !!err); }
 function looksLikeData(x) { return isObj(x) && Array.isArray(x.stories) && Array.isArray(x.rule_clusters) && isObj(x.items); }
@@ -1916,6 +1994,10 @@ export async function byokWith(providerMod, rerunMod, key, model) {
   if (!rerunMod || typeof rerunMod.rerunAI !== 'function') throw new Error('rerun.js に rerunAI が無い');
   let provider = await providerMod.geminiProvider(key, model);
   key = null;
+  return byokRun(rerunMod, provider);
+}
+/** the AI run itself, for any provider (a Gemini key typed here, or the AI the viewer connected) */
+async function byokRun(rerunMod, provider) {
   const onProgress = (p) => {
     if (isObj(p)) byokMsg(`実行中 ${[p.rid, isNum(p.done) && isNum(p.total) ? `${p.done}/${p.total}` : '', p.err].filter(Boolean).join(' · ')}`);
     else if (p != null) byokMsg(`実行中 ${String(p)}`);
@@ -1938,8 +2020,19 @@ function errText(err) {
   const m = err && err.message ? String(err.message) : String(err);
   return m.length > 140 ? m.slice(0, 139) + '…' : m;
 }
+async function runWithOwn(a) {
+  if (!state.base || !arr(state.base.ai_requests).length) { byokMsg('送れる要求がありません', true); return; }
+  state.busy = true; renderByok(); byokMsg('読み込み中'); setState('AI を実行中', true);
+  try {
+    let mods;
+    try { mods = await Promise.all([import('./provider.js'), import('./rerun.js')]); } catch { byokMsg('読み込めませんでした。記録済みの表示のままです。', true); return; }
+    await byokRun(mods[1], mods[0].makeProvider(a.kind, a.key, a.model));
+  } catch (err) { byokMsg(`${errText(err)} 記録済みの表示のままです。`, true); } finally { state.busy = false; renderByok(); setState(''); }
+}
 async function onRun() {
   if (state.busy) return;
+  const own = ownActive();
+  if (own) { await runWithOwn(own); return; }
   const keyEl = q1('#byok-key');
   let key = keyEl.value.trim();
   keyEl.value = '';
@@ -2906,21 +2999,19 @@ async function main() {
     view: { get: () => ({ count: (state.vwNow || state.vw).count, layout: state.vw.layout, counts: countsFor(window.innerWidth, window.innerHeight).map((c) => [c, COUNT_JA[c]]), layouts: LAYOUTS.map((l) => [l, LAYOUT_JA[l]]) }), setCount, setLayout },
     ai: {
       get: () => state.own,
-      set: (c) => {   // the choice is kept apart from the settings; the case pane is drawn again only when what is asked of changes
-        const before = ownSig();
-        state.own = cleanOwnAI(c);
-        const ok = saveOwnAI(store, state.own);
-        if (ownSig() !== before && state.data) renderCase();
-        return ok;
-      },
+      set: (c) => setOwnAI(c),
+      login: () => startOwnLogin(),
       active: () => { const a = ownActive(); return a ? { kind: a.kind, ja: a.ja, model: a.model } : null; },
       fallback: () => defaultModel,
-      test: async () => {
-        const a = ownActive();
-        if (!a) return { ok: false, err: 'nokey' };
-        try { return await testOwnAI(makeProvider(a.kind, a.key, a.model, { retries: 0, timeoutMs: 20000 })); } catch (err) { return { ok: false, err: (err && err.code) || 'network' }; }
-      },
+      test: ownTest,
     } });
+  state.connect = createConnect({ root: $('own-layer'), get: () => state.own, test: ownTest, login: startOwnLogin, settings: () => openSettings('ai'),
+    active: () => { const a = ownActive(); return a ? { kind: a.kind, ja: a.ja, model: a.model } : null; },
+    model: (kind, v) => { const c = cleanOwnAI(state.own); c.models[kind] = v; setOwnAI(c); },
+    forget: (kind) => { const c = cleanOwnAI(state.own); c.keys[kind] = ''; setOwnAI(c); } });
+  $('own-btn').addEventListener('click', () => openConnect());
+  paintOwnBtn();
+  resumeLogin();
   applyPanes();
   try { const l = store ? JSON.parse(store.getItem(LAYER_KEY) || 'null') : null; state.layers = isObj(l) ? l : {}; } catch { state.layers = {}; }
   window.parallaxActions = actions;   // the voice layer (later) reads the same list

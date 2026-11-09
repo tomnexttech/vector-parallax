@@ -3298,3 +3298,38 @@ a.tl-hl:hover { color: var(--cyan); text-decoration: underline; }
 }
 :root:not([data-theme="light"])[data-screen="board"] #p-case .ch-big .u { display: inline-block; margin: 6px -6px 0 0; padding: 1px 6px 2px; border-radius: 999px; background: rgba(6, 8, 20, .42); }
 @media (min-width: 1101px) { .tb .meters { flex-shrink: 0; } }
+
+/* own AI v5 (2026-11-09): the button on the top bar, the connect window, the three asks under an event. Colours and glass are the ones above; nothing new. */
+#own-btn { position: relative; }
+#own-btn .ic { display: inline-grid; place-items: center; }
+#own-btn .ic svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+@media (min-width: 1600px) { #own-btn { display: inline-flex; align-items: center; gap: 6px; width: auto; padding: 0 10px 0 8px; font: inherit; font-size: var(--fs-3); } #own-btn .tx { display: inline; } }
+#own-btn.on { color: var(--cyan); border-color: var(--cyan-l); }
+#own-btn.on::after { content: ""; position: absolute; top: 4px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); }
+.ownwin { grid-template-rows: auto auto; width: min(440px, 100%); height: auto; max-height: 100%; }
+.own-body { display: grid; gap: 14px; padding: 18px 20px 20px; overflow: auto; }
+.own-lead { margin: 0; font-size: var(--fs-4); line-height: 1.65; color: var(--ink); }
+.own-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.own-btns .tbb { height: 36px; padding: 0 14px; font-size: var(--fs-3); }
+.own-btns .own-go { border-color: var(--cyan-l); background: var(--cyan-b); }
+.own-foot { margin: 0; font-size: var(--fs-2); line-height: 1.65; color: var(--ink-3); }
+.own-st { display: grid; grid-template-columns: 4.5em minmax(0, 1fr); gap: 8px 12px; align-items: center; margin: 0; font-size: var(--fs-3); }
+.own-st dt { color: var(--ink-3); }
+.own-st dd { margin: 0; color: var(--ink); }
+.own-model { width: 100%; height: 32px; }
+.ch-own { gap: 8px; }
+.own-qf { display: inline-flex; flex: 1 1 200px; gap: 6px; min-width: 0; max-width: 360px; }
+.own-q { flex: 1 1 100px; width: auto; min-width: 0; height: 26px; }
+.ch-own .tbb:disabled { opacity: .5; cursor: default; }
+@media (pointer: coarse) { .ch-own .tbb, .ch-own .own-q, .own-btns .tbb, .own-model { min-height: 44px; } }
+@media (max-width: 760px) {
+  .own-layer { align-items: flex-end; padding: 0; }
+  .own-layer .ownwin { width: 100%; border-radius: 14px 14px 0 0; border-bottom: 0; }
+}
+.entry .ch-ownbox { align-self: stretch; margin-top: 0; }
+.entry .ch-own .tbb { height: 32px; padding: 0 12px; font-size: 14px; }
+.entry .own-q { height: 32px; font-size: 14px; }
+.entry .ch-own-l { max-width: none; font-size: 16px; line-height: 1.75; }
+.entry .ch-ownbox .ainote { font-size: 13px; }
+.entry .ch-own-m, .entry .ch-own-s { font-size: 13px; }
+@media (pointer: coarse) { .ch-own .tbb { min-width: 44px; } .ownwin .ds-x { min-width: 44px; min-height: 44px; } .entry .ch-own .tbb, .entry .own-q { height: auto; min-height: 44px; } }

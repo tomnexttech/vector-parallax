@@ -1258,3 +1258,15 @@ Days are JST dates; the seven days ending today are kept, an older day is droppe
 Within one day the entries of this build replace those of earlier builds; an earlier entry is the same event as a new one when they share the first report or half the kept headlines,
 and then only the new one is kept (its rank is the best of the two) and the old sid goes to `alias`. A page that shows a past day reads these files (`top` in order, each entry's counts
 and its link `s/<sid>.html`); it never needs that day's `latest.json`. `sides` with 0 are data for the page's figures; the page must not turn a 0 into "did not report".
+
+## 22. The viewer's own AI: login, the asks, the cut (decided 2026-11-09)
+
+Method, conditions, prices, CORS check and numbers: `docs/own-ai-login.md`. What this contract fixes:
+
+- **Providers**: `gemini`, `claude`, `openai`, `openrouter` (`js/provider.js` `KINDS`). The viewer's key is kept only in `localStorage` `parallax.ownai.v1`, one key and one model per provider, never in the settings file. A key goes to its own provider's host and nowhere else (`PROVIDERS[kind].host`; the page's `connect-src` lists the four hosts). OpenRouter model names may contain `/` and `:` (`modelRe('openrouter')`); the other providers' may not.
+- **Login**: OpenRouter OAuth with PKCE (`js/login.js`). The secret lives in `sessionStorage` for this tab and for ten minutes; the return is accepted only with the matching `state`; the address is cleaned at once; the code is traded by `POST /api/v1/auth/keys` from the browser. The login never runs on its own: the viewer presses it.
+- **Optional**: with no key and no login the page shows the same data and the same build-made AI text; the viewer's AI adds only what the viewer asks for.
+- **Asks** (`js/ownai.js` `askOwnAI` with options): `compare` (three lines), `brief` (three lines; a part the material does not say is written 伝えられていない), `question` (one to four lines, at most 200 characters of question). The material is the headlines as published and the feed's description (14.1), cut by `js/slim.js` (the same headline once with all its outlets; the sentences of a description that say something new; at most ten reports, chosen by what they add; the count of reports the event has is told). Never sent: links, times, photos, the page's own AI lines. The instruction forbids judging true or false and calling an outlet left or right; the answer is shown with the AI mark, provider, model, time and the AI-can-be-wrong note.
+- **Cache of answers**: `parallax.ownai.cache.v1`, answers only (no key, no material beyond the question the viewer typed), at most 40, six hours, cleared on disconnect.
+- **Re-running the bundling** with a viewer's key (`js/rerun.js`): the request goes in compact form (`compactDoc`: `outlets` table plus `[id, outlet index, lang, title]`) with one added sentence in the instruction (`COMPACT_NOTE`); the validator reads the original request. `options.compact = false` sends the whole request as the build writes it. The build's own requests, `data/prompt.json` and the recorded-answer keys (`sha256(user_text)`) are unchanged by this section.
+

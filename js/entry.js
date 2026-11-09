@@ -171,7 +171,7 @@ export function renderEntry(root, o) {
   const sm = sel.summary && str(sel.summary.text_ja).trim(), ct = sel.ai && str(sel.ai.contrast_ja).trim();
   const bf = sel.brief && o.briefBox ? o.briefBox(sel) : null;
   if (bf) bf.classList.add('en-ai');
-  const ais = [bf, sm && !bf ? aiBox(sm, [str(sel.summary.provider), str(sel.summary.model)], sel.summary.made_at) : null, ct ? aiBox(ct, o.aiBy || [], o.aiAt) : null].filter(Boolean);
+  const ais = [bf, sm && !bf ? aiBox(sm, [str(sel.summary.provider), str(sel.summary.model)], sel.summary.made_at) : null, ct ? aiBox(ct, o.aiBy || [], o.aiAt) : null, o.ownBox ? o.ownBox(sel) : null].filter(Boolean);   // the last one is the viewer's own AI: a button to connect, then the asks
 
   // ---- the three figures: only what the headlines can count; a figure without its data is left out
   const tile = (cls, title, body) => h('section', { class: `en-fg ${cls}` }, h('h4', { class: 'en-fh', text: title }), body);

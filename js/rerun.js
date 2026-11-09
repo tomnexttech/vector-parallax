@@ -10,9 +10,13 @@
  * - onProgress({ rid, done, total, err, phase }): 各要求の前（phase 'start'・done は終えた数）と後（phase 'end'・err は符号か ''）に呼ぶ。
  * - data が前回の AI の見方を保っている（ai_run.status が kept_previous で ai_snapshot がある）時も、元は今の取得の items・rule_clusters だけを使い、
  *   出力に ai_snapshot は残さない（古い AI の束を、鍵の持ち主の結果に混ぜない。CONTRACT §12）。
- * - 元の data は書き換えない。 */
+ * - 元の data は書き換えない。
+ * - 送る前に js/slim.js で材料を削る（options.compact を false にすると削らない）：各見出しに付く媒体の facts（媒体名・国内か海外か・種類）を
+ *   表に一度だけ書き、見出しは [id, 表の番号, lang, 見出し] の一行にする。元の doc に戻せる形（試験で一字違わず戻ることを確かめる）。
+ *   答えの上限も、見出しの数から要る分（1 件 420 トークン、下限 8192）に絞る。検査（validate）は元の要求で行うので、答えの読み方は変わらない。 */
 
 import { validate } from './validate.js';
+import { compactDoc, COMPACT_NOTE, outputCap } from './slim.js';
 
 // cluster.type_rank と同じ表（parallax/cluster.py の TYPE_RANK・_OTHER_RANK）。試験で Python の結果と突き合わせる
 const TYPE_RANK = { '政府一次': 0, '通信社': 1, '公共放送': 2, '海外公共': 2, '全国紙': 3, '経済紙': 4, '地方紙': 5, '集約': 8 };
@@ -140,8 +144,17 @@ export async function rerunAI(data, provider, options) {
     run.blocks_sent += req.bids.length;
     for (const b of req.bids) sent.add(b);
     let reply;
+    let system = prompt.system, doc = req.doc, cap = maxTokens;
+    if (opt.compact !== false) {
+      try {
+        const parsed = JSON.parse(req.doc);
+        doc = compactDoc(parsed); system = `${prompt.system}
+${COMPACT_NOTE}`;
+        cap = outputCap(parsed.blocks.reduce((a, b) => a + b.items.length, 0), maxTokens);
+      } catch { doc = req.doc; system = prompt.system; cap = maxTokens; }   // a request that is not in the usual shape goes as it is
+    }
     try {
-      reply = await provider.call(prompt.system, userTextOf(prompt, req.doc), prompt.schema, { maxOutputTokens: maxTokens });
+      reply = await provider.call(system, userTextOf(prompt, doc), prompt.schema, { maxOutputTokens: cap });
     } catch {
       reply = { raw: null, err: 'network' };
     }

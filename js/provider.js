@@ -1,12 +1,12 @@
 /* provider — 閲覧者ご自身の鍵（BYOK）で AI を呼ぶ層。Gemini は parallax/ai.py の GeminiProvider と同じ約束（docs/CONTRACT-public.md §4.5）。
- * 提供元は Gemini・Claude（Anthropic Messages API）・OpenAI（Chat Completions）の三つ。ブラウザから各社へ直接呼ぶ。
+ * 提供元は Gemini・Claude（Anthropic Messages API）・OpenAI（Chat Completions）・OpenRouter（ログインで受け取る鍵。Chat Completions と同じ形）の四つ。ブラウザから各社へ直接呼ぶ。
  *
  *   makeProvider(kind, key, model, opts?) -> { name, model, call(system, userText, schema, extra?) -> Promise<{ raw, err }> }
  *   geminiProvider(key, model, opts?)      makeProvider('gemini', …) と同じ（これまでの名）
  *   toJsonSchema(schema)                   Gemini 流の schema（型が大文字）を JSON Schema に直す（Claude・OpenAI に渡す時）
  *
  * - 鍵はこの関数の閉じた変数にだけ置く。返す物にも、URL にも、エラーの文にも、ログにも出さない。送る先は選んだ提供元の見出し一つだけ
- *   （Gemini: x-goog-api-key ／ Claude: x-api-key ／ OpenAI: Authorization: Bearer）。
+ *   （Gemini: x-goog-api-key ／ Claude: x-api-key ／ OpenAI・OpenRouter: Authorization: Bearer）。
  * - 失敗は例外にせず { raw: null, err: <符号> } で返す。符号は ai.py と同じ: nokey auth quota blocked truncated http timeout network json shape
  *   （利用者に見せる文は data/prompt.json の error_messages）。
  * - やり直しは HTTP 429・5xx・通信の失敗・時間切れだけ。2 回まで、2 秒 → 4 秒と倍に待つ。401/403・形の崩れ・遮断・途切れは変わらないので直ちに返す。
@@ -20,20 +20,28 @@ export const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta
 export const CLAUDE_ENDPOINT = 'https://api.anthropic.com/v1/messages';
 export const CLAUDE_VERSION = '2023-06-01';
 export const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+export const OPENROUTER_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
+export const OPENROUTER_MODELS_URL = 'https://openrouter.ai/api/v1/models';
 export const OPENAI_MIN_TOKENS = 1500;   // 推論する型は考える分も同じ枠から引く。短い返答でも枠が足りず空になるのを避ける
+export const OPENROUTER_MIN_TOKENS = 600;
 export const MODEL_RE = /^[A-Za-z0-9._-]{1,80}$/;
+/** OpenRouter の型の名は「提供元/型」や「:free」の形（例 anthropic/claude-haiku-5.5）。URL には入れず body にだけ入れる */
+export const OPENROUTER_MODEL_RE = /^[A-Za-z0-9._:\/~-]{1,100}$/;
+export const modelRe = (kind) => (kind === 'openrouter' ? OPENROUTER_MODEL_RE : MODEL_RE);
 export const DEFAULT_MAX_OUTPUT_TOKENS = 16384;
 export const RETRIES = 2;
 export const BACKOFF_BASE_MS = 2000;
 export const DEFAULT_TIMEOUT_MS = 90000;
 const BLOCKED_FINISH = new Set(['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST', 'SPII', 'RECITATION']);
 
-export const KINDS = ['gemini', 'claude', 'openai'];
+export const KINDS = ['gemini', 'claude', 'openai', 'openrouter'];
 /** 提供元の一覧。model は各社の今の型（見る人が変えられる）。models は候補（入力欄の補助だけ）。 */
 export const PROVIDERS = {
   gemini: { ja: 'Gemini', model: 'gemini-3.6-flash', models: ['gemini-3.6-flash', 'gemini-3.5-flash-lite'], host: 'generativelanguage.googleapis.com' },
   claude: { ja: 'Claude', model: 'claude-sonnet-5-5', models: ['claude-sonnet-5-5', 'claude-haiku-4-5'], host: 'api.anthropic.com' },
   openai: { ja: 'OpenAI', model: 'gpt-5-mini', models: ['gpt-5-mini', 'gpt-5-nano', 'gpt-5'], host: 'api.openai.com' },
+  // ログインで受け取る鍵。型は 2026-11-09 に openrouter.ai/api/v1/models（公開の一覧）で確かめた名。使える型の一覧は、つないだ後に同じ一覧から読み直す
+  openrouter: { ja: 'OpenRouter', model: 'anthropic/claude-haiku-5.5', models: ['anthropic/claude-haiku-5.5', 'google/gemini-3.5-flash-lite', 'openai/gpt-6-luna', 'anthropic/claude-sonnet-5.5', 'openrouter/free'], host: 'openrouter.ai' },
 };
 
 function codedError(code) {
@@ -103,6 +111,15 @@ export function openaiReplyText(outer) {
   return typeof m.content === 'string' && m.content.trim() ? { text: m.content, err: '' } : { text: null, err: 'shape' };
 }
 
+/** OpenRouter の返答。Chat Completions と同じ形だが、200 の中に error を返すことがある（残高の不足・提供元の停止） */
+export function openrouterReplyText(outer) {
+  if (outer !== null && typeof outer === 'object' && !Array.isArray(outer) && outer.error && typeof outer.error === 'object') {
+    const c = Number(outer.error.code);
+    return { text: null, err: c === 401 || c === 403 ? 'auth' : c === 402 || c === 429 ? 'quota' : c === 408 ? 'timeout' : c === 502 || c === 503 ? 'http' : 'shape' };
+  }
+  return openaiReplyText(outer);
+}
+
 /** 提供元ごとの要求の形。どれも鍵は headers にだけ入れ、URL にも body にも入れない。 */
 const SPECS = {
   gemini: {
@@ -141,10 +158,20 @@ const SPECS = {
     },
     read: openaiReplyText,
   },
+  openrouter: {
+    url: () => OPENROUTER_ENDPOINT,
+    headers: (secret) => ({ 'content-type': 'application/json', authorization: `Bearer ${secret}` }),
+    body: (model, system, userText, schema, maxTokens) => {
+      const b = { model, messages: [{ role: 'system', content: system }, { role: 'user', content: userText }], max_tokens: Math.max(maxTokens, OPENROUTER_MIN_TOKENS) };
+      if (schema) b.response_format = { type: 'json_schema', json_schema: { name: 'reply', schema: toJsonSchema(schema), strict: false } };
+      return b;
+    },
+    read: openrouterReplyText,
+  },
 };
 
 /**
- * kind: 'gemini' | 'claude' | 'openai'。key: 閲覧者の鍵。model: 型の名（英数と . _ - だけ）。
+ * kind: 'gemini' | 'claude' | 'openai' | 'openrouter'。key: 閲覧者の鍵。model: 型の名（英数と . _ - だけ）。
  * opts（試験用）: { fetch, sleep(ms), timeoutMs, retries, maxOutputTokens }
  * 鍵が空・型の名が不正・提供元が不明なら、符号つきの Error（code: 'nokey' | 'badmodel' | 'badkind'）を投げる。
  */
@@ -154,7 +181,7 @@ export function makeProvider(kind, key, model, opts) {
   const o = opts && typeof opts === 'object' ? opts : {};
   const secret = typeof key === 'string' ? key.trim() : '';
   if (!secret) throw codedError('nokey');
-  if (typeof model !== 'string' || !MODEL_RE.test(model)) throw codedError('badmodel');
+  if (typeof model !== 'string' || !modelRe(kind).test(model)) throw codedError('badmodel');
   const doFetch = typeof o.fetch === 'function' ? o.fetch : (typeof fetch === 'function' ? fetch.bind(globalThis) : null);
   const sleep = typeof o.sleep === 'function' ? o.sleep : (ms) => new Promise((r) => setTimeout(r, ms));
   const timeoutMs = Number.isFinite(o.timeoutMs) && o.timeoutMs > 0 ? o.timeoutMs : DEFAULT_TIMEOUT_MS;
@@ -191,7 +218,7 @@ export function makeProvider(kind, key, model, opts) {
       if (timer) clearTimeout(timer);
     }
     if (status === 401 || status === 403) return { raw: null, err: 'auth' };
-    if (status === 429) return { raw: null, err: 'quota' };
+    if (status === 429 || status === 402) return { raw: null, err: 'quota' };   // 402: OpenRouter の残高が足りない
     if (!(status >= 200 && status < 300)) return { raw: null, err: status >= 500 ? 'http5xx' : 'http' };
     let outer;
     try { outer = JSON.parse(text); } catch { return { raw: null, err: 'json' }; }

@@ -54,7 +54,7 @@ for (const c of FIX.cases) {
     const frozen = JSON.stringify(base);
     const prov = fakeProvider(c.answers);
     const progress = [];
-    const out = await rerunAI(base, prov, { prompt: PROMPT, now: NOW, onProgress: (p) => progress.push(p) });
+    const out = await rerunAI(base, prov, { prompt: PROMPT, now: NOW, compact: false, onProgress: (p) => progress.push(p) });   // the whole request as the build writes it (the cut is tested in slim.test.js)
 
     assert.equal(JSON.stringify(base), frozen, 'the input data is not changed');
     assert.equal(prov.calls.length, base.ai_requests.length, 'one provider call per request, in order');

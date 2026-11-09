@@ -18,7 +18,7 @@
 
 import { STATIONS } from './tv.js';
 import { fold, terms } from './prefs.js';
-import { KINDS, PROVIDERS, MODEL_RE } from './provider.js';
+import { KINDS, PROVIDERS, modelRe } from './provider.js';
 import { cleanPlace } from './newsdesk.js';
 
 export const SETTINGS_KEY = 'parallax.settings.v1';
@@ -152,7 +152,8 @@ const KEY_RE = /^[\x21-\x7e]{8,400}$/;    // printable ASCII, no spaces: what a 
 
 /** is this text usable as a key (the panel says so before it keeps it) */
 export const keyOk = (v) => typeof v === 'string' && KEY_RE.test(v.trim());
-export const modelOk = (v) => typeof v === 'string' && MODEL_RE.test(v.trim());
+/** kind を渡すと、その提供元の型の名の形で確かめる（OpenRouter だけ「提供元/型」の / と : を許す） */
+export const modelOk = (v, kind) => typeof v === 'string' && modelRe(kind).test(v.trim());
 export function emptyOwnAI() {
   return { kind: 'none', keys: Object.fromEntries(KINDS.map((k) => [k, ''])), models: Object.fromEntries(KINDS.map((k) => [k, ''])) };
 }
@@ -163,7 +164,7 @@ export function cleanOwnAI(x) {
   out.kind = pick(o.kind, OWN_KINDS, 'none');
   for (const k of KINDS) {
     out.keys[k] = keyOk(ks[k]) ? ks[k].trim() : '';
-    out.models[k] = modelOk(ms[k]) ? ms[k].trim() : '';
+    out.models[k] = modelOk(ms[k], k) ? ms[k].trim() : '';
   }
   return out;
 }
@@ -187,5 +188,5 @@ export function activeOwnAI(c, fallbackModel) {
   const v = cleanOwnAI(c);
   if (!KINDS.includes(v.kind) || !v.keys[v.kind]) return null;
   const k = v.kind;
-  return { kind: k, ja: PROVIDERS[k].ja, key: v.keys[k], model: v.models[k] || (k === 'gemini' && modelOk(fallbackModel) ? fallbackModel : PROVIDERS[k].model) };
+  return { kind: k, ja: PROVIDERS[k].ja, key: v.keys[k], model: v.models[k] || (k === 'gemini' && modelOk(fallbackModel, 'gemini') ? fallbackModel : PROVIDERS[k].model) };
 }

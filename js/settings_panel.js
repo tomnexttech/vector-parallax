@@ -171,8 +171,8 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
     ai() {
       const cfg = cleanOwnAI(ai.get());
       const kind = cfg.kind, p = PROVIDERS[kind] || null;
-      const dflt = p ? (kind === 'gemini' && ai.fallback && modelOk(ai.fallback()) ? ai.fallback() : p.model) : '';
-      const rows = [row('状態', null, h('b', { class: 'set-state', data: { f: 'ai-state' }, text: p && cfg.keys[kind] ? '設定済み' : '未設定' })), row('提供元', 'なしのままでも AI のまとめは使えます',
+      const dflt = p ? (kind === 'gemini' && ai.fallback && modelOk(ai.fallback(), 'gemini') ? ai.fallback() : p.model) : '';
+      const rows = [row('状態', null, h('b', { class: 'set-state', data: { f: 'ai-state' }, text: p && cfg.keys[kind] ? '設定済み' : '未設定' })), row('提供元', 'なしのままでも AI のまとめは出ます',
         h('div', { class: 'seg', role: 'group', 'aria-label': '提供元' },
           [['none', 'なし'], ...KINDS.map((k) => [k, PROVIDERS[k].ja])].map(([v, ja]) => h('button', {
             type: 'button', 'aria-pressed': String(kind === v), data: { f: `ai-kind-${v}` }, on: { click: () => aiChange((c) => { c.kind = v; }) } }, ja))))];
@@ -188,6 +188,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
         modelIn.value = cfg.models[kind];
         modelIn.addEventListener('change', () => onModel(modelIn.value));
         modelIn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); onModel(modelIn.value); } });
+        if (kind === 'openrouter' && !cfg.keys[kind] && ai.login) rows.push(row('ログイン', 'OpenRouter のアカウントで。鍵はこのブラウザに保存されます', h('button', { type: 'button', class: 'tbb', data: { f: 'ai-login' }, on: { click: () => ai.login() } }, 'OpenRouter でログイン')));
         rows.push(row('鍵', `${cfg.keys[kind] ? '保存済み' : '未入力'}・送る先は ${p.host} だけ`, [keyIn, show]));
         rows.push(row('型', `空なら各社の今の型（${dflt}）`, modelIn));
         rows.push(row('接続', null, [
@@ -196,7 +197,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
       }
       return [
         h('p', { class: 'set-lead', text: '鍵はこのブラウザにだけ保存し、選んだ提供元にだけ送ります。費用は契約者に掛かります' }),
-        group('', rows, '声の操作と、ニュース詳細の「自分の AI に聞く」で使います。AI のまとめは鍵がなくても使えます'),
+        group('', rows, '声の操作と、ニュース詳細の「要約」「違いを見る」「質問」で使います。AI のまとめは接続しなくても出ます'),
         p ? h('datalist', { id: 'set-ai-models' }, p.models.map((m) => h('option', { value: m }))) : null,
         h('p', { class: 'set-msg' + (aiMsg && aiMsg.err ? ' err' : ''), role: 'status', 'aria-live': 'polite', hidden: !aiMsg, data: { f: 'ai-msg' }, text: aiMsg ? aiMsg.text : '' }),
       ];
@@ -241,7 +242,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
   function onModel(v) {
     const t = String(v).trim(), cur = cleanOwnAI(ai.get()), kind = cur.kind;
     if (kind === 'none') return;
-    if (t && !modelOk(t)) { say('型の名は半角の英数と . _ - だけ', true); return; }
+    if (t && !modelOk(t, kind)) { say(kind === 'openrouter' ? '型の名は 提供元/型 の形（半角の英数と . _ - : /）' : '型の名は半角の英数と . _ - だけ', true); return; }
     if (cur.models[kind] === t) return;
     cur.models[kind] = t;
     const ok = ai.set(cur);

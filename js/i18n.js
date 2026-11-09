@@ -97,6 +97,7 @@ export const EN = {
   '保存したニュース': 'Saved news', 'このブラウザだけに保存します': 'Kept in this browser only', 'フォローする言葉': 'Words to follow', '足す': 'Add', 'フォローに当たるニュース': 'News matching what you follow',
   '自分の読み方': 'My reading', '記録を消す': 'Clear the record', 'このブラウザだけに保存・送信しない': 'Kept in this browser only, never sent', 'ミュート': 'Mute', '動き': 'Motion',
   'ボードのパネル': 'Board panes', '自分の AI': 'My own AI', '保存と復元': 'Back up and restore', '映像の欄': 'Video pane', 'まとめ方': 'Grouping', '設定の区分': 'Settings sections',
+  '自分の AI につなぐ': 'Connect my AI', 'OpenRouter でログイン': 'Log in with OpenRouter', '鍵を貼る': 'Paste a key', '接続を試す': 'Test connection', '接続を外す': 'Disconnect', '違いを見る': 'See the differences', '聞く': 'Ask', '要約': 'Summary', '質問': 'Ask', '自分の AI で実行（任意）': 'Run with my AI (optional)',
   'ダーク': 'Dark', 'ライト': 'Light', '字の大きさ': 'Type size', '大きい': 'Large', 'ダイヤル（内は論点、外は注目の出来事）': 'Dial (inside: topics, outside: top news)', 'ダイヤルを開く': 'Open the dial',
   '今の順': 'Current order', '紙面': 'Front page', '時間ごと': 'By hour', '今日の注目': 'Today\'s top news', '注目のニュース': 'Top news', 'この地点': 'This place', '詳しく見る': 'See details',
   'ニュースの並べ方': 'Ways to read the news', '下の段に出すニュース': 'News in the lower row', 'この出来事を開く': 'Open this news',

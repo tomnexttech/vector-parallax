@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { makeProvider, geminiProvider, toJsonSchema, claudeReplyText, openaiReplyText, PROVIDERS, KINDS, MODEL_RE, OPENAI_MIN_TOKENS } from '../../js/provider.js';
+import { makeProvider, geminiProvider, toJsonSchema, claudeReplyText, openaiReplyText, PROVIDERS, KINDS, MODEL_RE, modelRe, OPENAI_MIN_TOKENS } from '../../js/provider.js';
 import { ROOT } from './helpers.js';
 
 const KEY = 'test-key-not-real';
@@ -26,13 +26,13 @@ function rig(kind, model, replies, extra) {
 const go = (prov, extra) => prov.call('SYSTEM', 'USER TEXT', SCHEMA, extra);
 const keyFree = (...xs) => xs.every((x) => !JSON.stringify(x).includes(KEY));
 
-test('the table: three providers, models that pass MODEL_RE, and every host is allowed by the page\'s connect-src', () => {
-  assert.deepStrictEqual(KINDS, ['gemini', 'claude', 'openai']);
+test('the table: four providers, models that pass their own name rule, and every host is allowed by the page\'s connect-src', () => {
+  assert.deepStrictEqual(KINDS, ['gemini', 'claude', 'openai', 'openrouter']);
   const csp = /Content-Security-Policy"\s+content="([^"]+)"/.exec(readFileSync(path.join(ROOT, 'index.html'), 'utf8'))[1];
   const connect = /connect-src ([^;]+)/.exec(csp)[1].split(/\s+/);
   for (const k of KINDS) {
     const p = PROVIDERS[k];
-    assert.ok(p.ja && MODEL_RE.test(p.model) && p.models.includes(p.model) && p.models.every((m) => MODEL_RE.test(m)), k);
+    assert.ok(p.ja && modelRe(k).test(p.model) && p.models.includes(p.model) && p.models.every((m) => modelRe(k).test(m)), k);
     assert.ok(connect.includes(`https://${p.host}`), `connect-src has ${p.host}`);
   }
 });
@@ -122,7 +122,7 @@ test('gemini through makeProvider is the same as geminiProvider (name, key heade
   assert.equal(geminiProvider(KEY, 'm', { fetch: async () => json({}) }).name, 'gemini');
 });
 
-for (const [kind, model] of [['claude', 'claude-sonnet-5-5'], ['openai', 'gpt-5-mini']]) {
+for (const [kind, model] of [['claude', 'claude-sonnet-5-5'], ['openai', 'gpt-5-mini'], ['openrouter', 'anthropic/claude-haiku-5.5']]) {
   test(`${kind}: errors become codes — 401/403 auth, 400/404 http, 429 quota after two retries (2 s then 4 s), 5xx http, time-out, network, broken JSON`, async () => {
     for (const [st, code] of [[401, 'auth'], [403, 'auth'], [400, 'http'], [404, 'http']]) {
       const { prov, seen, sleeps } = rig(kind, model, [json({ error: { message: `echo ${KEY}` } }, st)]);

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://generativelanguage.googleapis.com https://api.anthropic.com https://api.openai.com https://earthquake.usgs.gov https://www.jma.go.jp https://www.gdacs.org https://tiles.openfreemap.org https://s3.amazonaws.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://generativelanguage.googleapis.com https://api.anthropic.com https://api.openai.com https://openrouter.ai https://earthquake.usgs.gov https://www.jma.go.jp https://www.gdacs.org https://tiles.openfreemap.org https://s3.amazonaws.com; frame-src https://www.youtube-nocookie.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex">
 <meta name="description" content="国内と海外のメディア、官公庁の発表を並べて読めるニュースサイト。">
@@ -69,6 +69,7 @@
     <div class="tb-r">
       <button type="button" class="search" id="cmd-btn" aria-haspopup="dialog" title="検索と操作（Ctrl+K）"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg><span id="cmd-t">検索</span><kbd id="cmd-kbd">Ctrl K</kbd></button>
       <button type="button" class="tbb icon" id="voice-btn" hidden aria-label="声で操作" title="声で操作（v）"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.5" y="2.5" width="5" height="9.5" rx="2.5"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>
+      <button type="button" class="tbb tx-i" id="own-btn" aria-haspopup="dialog" title="自分の AI"><span class="ic"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3l1.7 4.3L16 9l-4.3 1.7L10 15l-1.7-4.3L4 9l4.3-1.7z"/><path d="M15.5 13.5v3M14 15h3"/></svg></span><span class="tx">自分の AI</span></button>
       <button type="button" class="tbb tx-i" id="about-btn" title="データと AI（i）"><span class="ic">i</span><span class="tx">データと AI</span></button>
       <button type="button" class="tbb icon" id="theme-btn" aria-label="外観 ダーク" title="外観"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="M10 3.5a6.5 6.5 0 0 1 0 13z" fill="currentColor" stroke="none"/></svg></button>
       <button type="button" class="tbb tx-i" id="tour-btn" title="使い方"><span class="ic">?</span><span class="tx">使い方</span></button>
@@ -233,6 +234,7 @@
   <div class="sheet-layer" id="sheet" hidden><section class="dsheet" role="dialog" aria-modal="true" aria-labelledby="ds-title"></section></div>
   <div class="sheet-wrap" id="about-wrap" hidden></div>
   <div class="set-layer" id="set-layer" hidden><section class="setwin" role="dialog" aria-modal="true" aria-labelledby="set-title"></section></div>
+  <div class="set-layer own-layer" id="own-layer" hidden><section class="setwin ownwin" role="dialog" aria-modal="true" aria-labelledby="own-title"></section></div>
   <p class="fatal" id="fatal" role="alert" hidden></p>
 </div>
 </body>
