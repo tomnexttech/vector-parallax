@@ -872,6 +872,7 @@ form of outlet, not a stance. `MAINSTREAM` (for the asymmetry rules) = 公共放
 `off_min` is minutes after the first report. Items without a time are not placed in `timeline`/`heat` (a missing time is never turned
 into "+0"). `images` are the URLs of the item images of the members (several outlets), to be loaded from the outlet, never copied.
 People (the Wikipedia/Wikidata card): not in this version (see HANDOFF). `key_terms` are the big words of the representative headline (18.11).
+`coverage` (22, the table of the outlets) is present when the event has two outlets or more and the table could be made; a case without it is shown as before.
 
 ### 18.6 data/places.json and the place of an event
 
@@ -1213,7 +1214,7 @@ headline as published), `og:description` (the counts line), `og:url` (= canonica
 with a photo, else `summary`), `twitter:title`, `twitter:description`, `twitter:image` (with a photo), `article:published_time` (the first report), `link rel=alternate` to `../feed.xml`.
 Body (2026-11-09: readable without leaving the page): the headline and its outlet, the field (`cases[sid].cat`), `N社が報道・N件・最初の報道・最新の報道`, the counts line, a link **`../?sid=<sid>&t=<headline, 60 chars>`** into the page
 (`js/app.js` opens `sid`, else finds `t`; the button says `比べて見る`), the photo whole with `写真：<outlet>`, **the AI's detailed summary `要点` (13.1) when the story has one** (four rows, the AI mark, provider, model and time),
-then each side that has reports (`国内の報道` / `海外の報道` / `官公庁の発表`): time, outlet, type, the headline as text, the feed's description quoted (14.1) when carried, and the link to the article as `元の記事` (`rel="noopener nofollow"`,
+**the table of the outlets `媒体の比べ` (22) when the case has one**, then each side that has reports (`国内の報道` / `海外の報道` / `官公庁の発表`): time, outlet, type, the headline as text, the feed's description quoted (14.1) when carried, and the link to the article as `元の記事` (`rel="noopener nofollow"`,
 `Google ニュース経由` for 20.7 rows); then `時系列` (time, side, outlet, headline; 16 rows at most); 40 reports at most. No article text. An event without a brief (old data, a failed call, an archived page) shows the page without `要点`.
 
 Pages are made for every event of this build and for every event of the archive (21.3) that this build does not have: an archived sid whose event goes on under a new sid (same first
@@ -1270,3 +1271,35 @@ Method, conditions, prices, CORS check and numbers: `docs/own-ai-login.md`. What
 - **Cache of answers**: `parallax.ownai.cache.v1`, answers only (no key, no material beyond the question the viewer typed), at most 40, six hours, cleared on disconnect.
 - **Re-running the bundling** with a viewer's key (`js/rerun.js`): the request goes in compact form (`compactDoc`: `outlets` table plus `[id, outlet index, lang, title]`) with one added sentence in the instruction (`COMPACT_NOTE`); the validator reads the original request. `options.compact = false` sends the whole request as the build writes it. The build's own requests, `data/prompt.json` and the recorded-answer keys (`sha256(user_text)`) are unchanged by this section.
 
+## 23. The table of the outlets (`board.cases[sid].coverage`) and the first screen of an event (decided 2026-11-09)
+
+Made by `parallax/coverage.py` while the board is composed (`board._case`), read by `js/coverage.js` (the board, the compare screen) and `parallax/coverage.py` `clean` / `html_block` (the page of an event, 21.1). **Rules only: no AI, no extra call** (the number of AI calls, 3 and 13, is unchanged). The table is a way of reading what is already carried: the headline of each report and the description its feed attached to it (14.1). **No article body is read or carried.**
+
+```jsonc
+"coverage": { "v": 1,
+  "outlets": [ { "name": "朝日新聞", "side": "jp" | "intl" | "gov", "lang": "ja" | "en", "desc": true | false } ],   // domestic first, then abroad, then the ministries; by first report; 14 at most
+  "rows": [ { "k": "who" | "what" | "when" | "where" | "num" | "why" | "react" | "next", "t": "ペニャ",          // 12 at most, in the order of k
+             "c": [ { "p": "…ペニャ大統領を罷免", "k": "ペニャ" } | "" | null ] } ],                           // one cell per outlet
+  "words": [ { "t": "職を離れる", "v": [ { "w": "罷免", "o": [2, 4] }, { "w": "辞任", "o": [3] } ] } ] }           // 4 at most
+```
+
+- **A cell** is `{p, k}`: `p` is a part of the outlet's own headline or description, cut at a stop, a comma or a particle and at most 30 characters (`…` marks a cut), `k` the word inside it that the row is about (it is marked on the page). `""` is **not found in that outlet's headline and description**; `null` is **not compared** (the outlet's text is in the other language: the rows of words are compared inside one language; the rows of a number, a time, a reason, a reaction and what comes next use the lists of both languages).
+- **Rows.** `who`, `what`, `where`: a name with its role, an organisation, a katakana name, an event word (`data/coverage.json` `events`), a prefecture or a place of `places.GEO`; a word that another word of the row contains goes to the one more outlets carry; a word only one outlet carries is kept once per kind. `when`: a date or a time of day as written. `num`: a figure with its unit, as written (`約`, `ほぼ`, `半数` stay), grouped by what it counts (人数・金額・割合・規模・件数), at most two groups. `why`, `react`, `next`: the first phrase of the lists in `data/coverage.json` (`を受け`、`めぐり`; `抗議`、`謝罪`; `見通し`、`検討`). The label of a row shows `n/m`: the outlets that carry it out of the outlets compared. These are counts of the table, not judgements.
+- **Words.** `words` lines up what each outlet used for the same thing (`罷免` / `弾劾` / `辞任`; `抗議` / `暴動`; `破綻` / `経営破綻`), from the sets in `data/coverage.json` (`sets`: each set is groups of words that point at one thing). A set is shown when two groups or more are used by two outlets or more. The title of a set names the thing (`職を離れる`), never a stance.
+- **What the table says.** Only the fact: `見出しと要旨には出ていない` (the legend and the title of an empty cell), and `見出しのみ` under an outlet whose feed gave no description (its row is read on the headline alone). It never says that an outlet did not report, hid or left something out, and it never says why (the silence words of 4.7 are tested against the whole output). A figure is the one written; nothing is added, rounded or summed. A list of words decides a row; a reason or a reaction written with other words is not found, and the table does not claim more than "not found among those words".
+- **Absent.** `coverage` is absent from a case of one outlet, with fewer than two rows and no words, when the extraction fails (it never stops the build), or when a quoted phrase carries a fixed word of 17 (the whole table of that event is not made). A board written before this section has none: every screen and `s/<sid>.html` show what they showed before (a placeholder is never drawn). `js/coverage.js` `coverageOf` and `coverage.clean` check the shape and cut the strings; a shape that is wrong gives no table. The archive (21.3) does not keep it: a page made from an archive entry has no table.
+- **Name gate and withheld list.** The text is quoted from headlines and descriptions, so it is of the quoted class of 17 (counted by the same words, never a reason to stop), except that the table of an event whose quotation carries a fixed word is dropped as a whole. Reports that 20.9 removes are not in the members, so they are not in the table.
+
+### 23.1 Where it is
+
+| screen | place |
+|---|---|
+| the board, the news of an event (`#case`) | after the point and the first headline of each side, before the tabs of the details |
+| the compare screen | under the headline and the count of the selected news |
+| `s/<sid>.html` | after the point (13.1), before the sides (the same table without script; a region that scrolls sideways and can take the keyboard) |
+
+The board and the compare screen keep the first rows (7: the rows that only some outlets carry first) and a button `残り N 行を見る`. A phone scrolls the table sideways with the row labels fixed; a narrow table (under 640px of its own width) shows a mark where a name, an organisation or a place is carried (the name is the label of the row) and the words where a figure, a time, a reason, a reaction or what comes next is. The three sides keep their colours (domestic, abroad, ministries).
+
+### 23.2 The first screen of an event (the board)
+
+The event opens with what a reader needs, without a press and without scrolling the card: the headline with the count of outlets and the counts of the three sides written apart (`国内 4・海外 2・官公庁 0`) beside the three-coloured bar; the point (13.1: what happened, the course, how the outlets put it differently, what to watch) large; the first headline of each side that has reports (outlet, time, the headline as published, a link to the article); the table. The tabs (`経過` `各側の見出し` `出典の一覧`) are the way down to the details. The photo is shown inside the card, small, at its top right, filling its frame; with no photo, or a small one (under 240px wide), the card has no frame for it. On a wide screen the middle column is one scroll: the event grows to its content and the row of video, related news and sources follows it (the event had a fixed share of the column and its lower part went under the row below). When the point is the detailed summary of 13.1 the one-line contrast is not shown again.

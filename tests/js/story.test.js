@@ -13,7 +13,7 @@ const ms = [
 ];
 
 test('the sections come in the order of a story', () => {
-  assert.deepEqual(STORY.map((x) => x[1]), ['要点', '経過', '各側の見出し', '出典の一覧']);
+  assert.deepEqual(STORY.map((x) => x[1]), ['要点', '媒体の比べ', '経過', '各側の見出し', '出典の一覧']);
 });
 
 test('the side of a report: the ministries by type, abroad by home, else Japan', () => {

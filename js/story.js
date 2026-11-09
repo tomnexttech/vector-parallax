@@ -11,7 +11,7 @@
  *                                                   each outlet once, in the order of its first report, with its count */
 
 export const GOV = '政府一次';
-export const STORY = [['pt', '要点'], ['tl', '経過'], ['sd', '各側の見出し'], ['src', '出典の一覧']];
+export const STORY = [['pt', '要点'], ['cv', '媒体の比べ'], ['tl', '経過'], ['sd', '各側の見出し'], ['src', '出典の一覧']];
 export const TL_CAP = 12;
 export const GAP_S = 3 * 3600;
 

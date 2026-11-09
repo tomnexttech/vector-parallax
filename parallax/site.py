@@ -21,6 +21,11 @@ from email.utils import format_datetime
 from pathlib import Path
 from urllib.parse import quote
 
+try:
+    from parallax import coverage as coverage_mod
+except ImportError:                                   # run from inside parallax/
+    import coverage as coverage_mod  # type: ignore
+
 BASE_URL = "https://tomnexttech.github.io/vector-parallax/"
 SITE = "Parallax"
 JST = timezone(timedelta(hours=9))
@@ -134,6 +139,7 @@ def make_event(sid, members, case=None, cat=None, brief=None):
         "heads": heads[:HEADS_MAX],
         "score": case.get("score") if isinstance(case.get("score"), (int, float)) else 0,
         "brief": _brief(brief),
+        "coverage": coverage_mod.clean(case.get("coverage")),      # CONTRACT 23: the table of the outlets (absent in an old board, or when it could not be made)
     }
 
 
@@ -251,7 +257,23 @@ q{display:block;font-size:14px;color:var(--mut);margin-top:4px}q::before,q::afte
 footer{font-size:13px;color:var(--mut);margin-top:16px}footer a{margin-right:12px}
 .mark{display:inline-block;border:1px solid var(--line);border-radius:6px;padding:0 6px;font-size:12px;font-weight:400;color:var(--mut);margin-left:6px;vertical-align:1px}
 .brief dl{margin:0 0 8px}.brief dt{font-size:13px;color:var(--mut);margin-top:12px}.brief dd{margin:2px 0 0}.brief dd.none{color:var(--mut)}
-.hl{font-size:16px}a.orig{font-size:13px;margin-left:8px}.tl li{padding:6px 0}.tl .hl{font-size:14px}"""
+.hl{font-size:16px}a.orig{font-size:13px;margin-left:8px}.tl li{padding:6px 0}.tl .hl{font-size:14px}
+.cov h2{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}.lg{margin-left:auto;display:inline-flex;flex-wrap:wrap;gap:2px 12px;font-size:12px;font-weight:400;color:var(--mut)}
+.lg>span{display:inline-flex;align-items:center;gap:5px}.lg>span::before{content:"";width:12px;height:10px;border-radius:3px}.lg .on::before{background:color-mix(in srgb,var(--mut) 34%,transparent)}
+.lg .off::before{background:repeating-linear-gradient(135deg,transparent 0 2px,color-mix(in srgb,var(--mut) 60%,transparent) 2px 3px);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--mut) 28%,transparent)}.lg .na::before{content:"·";width:auto;height:auto;line-height:1}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+.cv-sc{overflow-x:auto;margin:0 -8px;padding:0 8px 8px}.cv-sc:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:8px}
+.cv-t{border-collapse:separate;border-spacing:3px;width:100%;font-size:13px;line-height:1.45}.cv-t th,.cv-t td{padding:0;text-align:left;font-weight:400;vertical-align:top}
+.cv-t thead th{min-width:96px;padding:0 2px 5px;vertical-align:bottom}.cv-t thead b{position:relative;display:block;padding-top:6px}.cv-t thead b::before{content:"";position:absolute;left:0;top:0;width:100%;height:3px;border-radius:2px;background:var(--sd)}
+.cv-t thead small,.cv-t tbody th small{display:block;font-size:11px;font-weight:400;color:var(--mut);font-variant-numeric:tabular-nums}
+.cv-t tbody th{position:sticky;left:0;z-index:1;min-width:84px;max-width:132px;padding:7px 8px 6px 2px;background:var(--card)}.cv-l{display:block;font-weight:700;overflow-wrap:anywhere}
+.cv-t td{min-width:96px;border-radius:8px}.cv-t td.on{padding:6px 8px;background:color-mix(in srgb,var(--sd) 14%,transparent);box-shadow:inset 3px 0 0 var(--sd)}.cv-t td.on mark{background:none;color:inherit;font-weight:700;box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--sd) 80%,transparent)}
+.cv-t td.off{padding:6px 8px;text-align:center;color:var(--mut);background:repeating-linear-gradient(135deg,transparent 0 5px,color-mix(in srgb,var(--mut) 16%,transparent) 5px 6px)}.cv-t td.na{padding:6px 8px;text-align:center;color:var(--mut)}
+[data-side="jp"]{--sd:#b5235f}[data-side="intl"]{--sd:#0068a8}[data-side="gov"]{--sd:#7a5a12}
+@media (prefers-color-scheme:dark){[data-side="jp"]{--sd:#ff8fb8}[data-side="intl"]{--sd:#64c4ff}[data-side="gov"]{--sd:#d9b77a}}
+.cv-w{margin-top:12px;padding:12px 0 10px;border-top:1px solid var(--line)}.cv-w h3{font-size:15px;margin:0 0 8px}.cv-w ul{list-style:none;margin:0;padding:0;display:grid;gap:10px}.cv-w li{display:grid;gap:5px;padding:0;border:0}.cv-w li>b{font-size:13px;font-weight:600;color:var(--mut)}
+.cv-v{display:flex;flex-wrap:wrap;gap:6px}.cv-x{display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:2px 7px;padding:5px 11px 6px;border:1px solid var(--line);border-radius:14px}.cv-wd{font-weight:700;font-size:16px}
+.cv-d{display:inline-flex;gap:2px}.cv-d i{width:7px;height:7px;border-radius:50%;background:var(--sd)}.cv-x small{flex-basis:100%;font-size:12px;color:var(--mut)}"""
 
 
 def story_page(ev, base=BASE_URL, generated_at=None, canonical_sid=None, kept_from=None, newer_sid=None):
@@ -303,6 +325,8 @@ def story_page(ev, base=BASE_URL, generated_at=None, canonical_sid=None, kept_fr
         by = "・".join(x for x in (br.get("model"), clock(br["made_at"]) if br.get("made_at") else "") if x)
         body.append('<section class="brief"><h2>要点<span class="mark">AI</span></h2><dl>%s</dl><p class="meta">AI が書きました（%s）。元の記事で確かめてください。</p></section>'
                     % ("".join(rows), _e(by or "—")))
+    if ev.get("coverage"):
+        body.append(coverage_mod.html_block(ev["coverage"]))
     for k, _, ja in SIDES:
         hs = [h for h in ev["heads"] if h["side"] == k]
         if not hs:

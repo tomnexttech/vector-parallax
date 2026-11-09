@@ -45,6 +45,7 @@ import { initLandscape } from './landscape.js';
 import { initDial } from './dial.js';
 import { createTour, wantTour } from './tour.js';
 import { createDossier, measure, paperPick, drawShareCard, CARD_W, CARD_H } from './dossier.js';
+import { createCoverage, coverageOf } from './coverage.js';
 import { biasOf as biasIndex, sourceBase } from './bias.js';
 import { newsView, createMapNews } from './mapnews.js';
 import { createWall, wallOn, pageOf, pageHolding, perOf } from './wall.js';
@@ -650,6 +651,9 @@ function rowThumb(e) {
 const newsFresh = () => !isOld(state.data.generated_at, nowS());
 const measureOf = (e) => e.fig || (e.fig = measure(e, { order: TYPE_ORDER }));
 const dossier = createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineIcon });
+const coverage = createCoverage({ h });
+/** 媒体の比べ（CONTRACT §21）: the card of an event, or null when the case has none (an old file, a failed read) — then the screen is as it was */
+const coverageCard = (e) => { const c = e && e.case ? coverageOf(e.case.coverage) : null; return c ? coverage.node(c) : null; };
 /** バイアス度 of an event (js/bias.js): held against the outlets this build collected; the AI's term only when the AI wrote its focus lines */
 const biasOf = (e) => { if (e.bias) return e.bias; const a = new Map(e.ai ? arr(e.ai.angles).filter(isObj).map((x) => [x.item_id, str(x.focus_ja)]) : []); e.bias = biasIndex(measureOf(e), { base: sourceBase(arr(state.data && state.data.sources)), angles: a.size ? a : null }); return e.bias; };
 /** a pressed row opens in place: the whole headline, the description the outlet published (quoted), and the way to the article */
@@ -1054,15 +1058,16 @@ function caseNode(e) {
   const place = h('div', { class: 'ch-place' },
     e.geo ? lk(e.geo.name, () => searchFor(e.geo.name), `${e.geo.name} の出来事を探す`, 'banner') : h('span', { class: 'banner soft', text: e.field || '分野の外' }),
     e.geo ? h('span', { class: 'prec', text: `${e.geo.prec} · 「${e.geo.via}」から${e.geo.guessed ? '推定' : ''}` }) : h('span', { class: 'prec', text: '地名なし' }),
-    coord && state.floor && state.floor.mode() !== 'flat' ? lk(coord, () => state.floor.setMode('map'), '地図で見る', 'coord') : null,
-    h('span', { class: 'ch-tools' },
+    coord && state.floor && state.floor.mode() !== 'flat' ? lk(coord, () => state.floor.setMode('map'), '地図で見る', 'coord') : null);
+  // the tools of the card: their own row under the headline (the home hides them)
+  const tools = h('div', { class: 'ch-tools' },
       e.topics.length ? h('span', { class: 'tp' }, e.topics.map((id, i) => [i ? '・' : '', lk(flagJa(id), () => setTopic(id), `${flagJa(id)} の出来事だけ見る`)])) : null,
       e.field ? lk(e.field, () => setGenre(e.field), `${e.field} の出来事だけ見る`, 'fd', { genre: e.field }) : null,
       h('button', { type: 'button', class: 'addtask', 'aria-pressed': String(hasTask(state.tasks, saveId(e))), on: { click: () => toggleSave(e) } }, hasTask(state.tasks, saveId(e)) ? '保存済み' : '保存'),
       h('button', { type: 'button', class: 'addtask share', on: { click: () => shareEvent(e) } }, '共有'),
       h('button', { type: 'button', class: 'addtask share img', on: { click: () => shareImage(e) } }, '画像で共有'),
       speakBtn(e, 'tool'),
-      extLink(`${ISSUES}/new?title=${encodeURIComponent('掲載の停止の依頼')}`, { class: 'stopreq', title: STOP_NOTE }, '掲載の停止')));
+      extLink(`${ISSUES}/new?title=${encodeURIComponent('掲載の停止の依頼')}`, { class: 'stopreq', title: STOP_NOTE }, '掲載の停止'));
   const head = h('div', { class: 'ch-main' },
     h('div', { class: 'ch-title' },
       h('h1', { lang: e.heading.lang || null, class: e.heading.none ? 'none' : null }, headNode(e, 'h1t')),
@@ -1072,8 +1077,9 @@ function caseNode(e) {
     h('button', { type: 'button', class: 'ch-big', title: 'すべての報道を見る', on: { click: () => { setHome('board'); act.all(); } } }, num(e.n), h('span', { class: 'u', text: '社が報道' })));
   const aiLines = [];
   if (e.brief) aiLines.push(briefBox(e, aiTag));
-  if (e.summary && !e.brief) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: str(e.summary.text_ja) }), aiTag([str(e.summary.provider), str(e.summary.model)], e.summary.made_at)));
-  if (e.ai && str(e.ai.contrast_ja)) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: e.ai.contrast_ja }), aiTag(aiBy, aiAt)));
+  if (e.summary && !e.brief && str(e.summary.text_ja).trim()) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: str(e.summary.text_ja) }), aiTag([str(e.summary.provider), str(e.summary.model)], e.summary.made_at)));
+  // with a detailed summary the one-line contrast is not shown again (its row, 伝え方の違い, is in the summary)
+  if (e.ai && str(e.ai.contrast_ja) && !e.brief) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: e.ai.contrast_ja }), aiTag(aiBy, aiAt)));
   if (aiLines.length - (e.brief ? 1 : 0) > 0 || (e.heading.ai && !e.brief)) aiLines.push(h('p', { class: 'ainote', text: AI_NOTE }));
   aiLines.push(ownBox(e));
 
@@ -1096,7 +1102,7 @@ function caseNode(e) {
   const pics = picsOf(e);
   const fig = (p) => h('figure', { class: 'pfig' },
     extLink(p.link || '#', { class: 'pimg', title: `${p.outlet} の記事を開く` }, h('img', { src: p.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer',
-      on: { error: (ev) => { ev.target.closest('figure').classList.add('noimg'); ev.target.replaceWith(h('span', { class: 'pcard', text: p.outlet })); } } })),
+      on: { load: (ev) => { const i = ev.target; if (i.naturalWidth && i.naturalWidth < 240) { const d = i.closest('.dos'); if (d) d.classList.add('ph-small'); } }, error: (ev) => { ev.target.closest('figure').classList.add('noimg'); ev.target.replaceWith(h('span', { class: 'pcard', text: p.outlet })); } } })),
     h('figcaption', null, h('b', { text: p.outlet }), p.via ? ' · Google ニュース経由' : '', isNum(p.ts) ? ` ${fmtClock(p.ts)}` : ''));
   let photo = null;
   if (pics.length) {
@@ -1200,8 +1206,18 @@ function caseNode(e) {
   const toOutlet = (name) => h('button', { type: 'button', class: 'en-mo', title: 'このメディアのページ', on: { click: () => openOutlet(name) } }, name);
   const stH = (id, ja, n) => h('h3', { class: 'st-h', data: { st: id } }, ja, n != null ? h('span', { class: 'n', text: n }) : null);
   const jump = (id) => { const t = node.querySelector(`.st-h[data-st="${id}"]`); if (t) t.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' }); };
-  const nav = h('nav', { class: 'st-nav', 'aria-label': 'このニュースの節' }, STORY.map(([id, ja]) => h('button', { type: 'button', on: { click: () => jump(id) } }, ja)));
+  const covNode = coverageCard(e);
+  const nav = h('nav', { class: 'st-nav', 'aria-label': 'このニュースの詳しい節' }, STORY.filter(([id]) => id !== 'pt' && (id !== 'cv' || covNode)).map(([id, ja]) => h('button', { type: 'button', on: { click: () => jump(id) } }, ja)));
   const fl = firstLine(sd, fmtClock);
+  // the first report of each side, on the first screen: who said it, when, and the headline as published
+  const repSides = SIDES.filter(([k]) => sd[k].length);
+  const reps = repSides.length >= 2 ? h('section', { class: 'dcard t-reps', 'aria-label': '各側の最初の見出し' }, repSides.map(([k, , short]) => {
+    const it = sd[k].find((x) => str(x.title).trim()) || sd[k][0], t = str(it.title).trim();
+    return h('div', { class: 'rp', data: { side: k } },
+      h('span', { class: 'rp-k' }, h('i', { 'aria-hidden': 'true' }), short, h('b', { class: 'num', text: sd[k].length })),
+      h('span', { class: 'rp-m' }, outletOf(it) || short, isNum(it.ts) ? h('time', { class: 'num', text: fmtClock(it.ts) }) : null),
+      h('span', { class: 'rp-h', lang: it.lang === 'en' ? 'en' : null }, linkTo(it, t ? `「${t}」` : outletOf(it) || '—')));
+  })) : null;
   const point = aiLines.length ? h('div', { class: 't-ai' }, aiLines) : fl ? h('p', { class: 't-ai st-fl', text: fl }) : null;
   const tl = timeline(ms);
   const t1 = tl.length && isNum(tl[0].it.ts) ? tl[0].it.ts : null;
@@ -1252,8 +1268,8 @@ function caseNode(e) {
 
   const node = h('div', { class: 'case-in' },
     h('div', { class: 'dos' + (photo ? ' has-photo' : '') },
-      h('header', { class: 'ch dcard t-place' }, place, head), photo, status, nav,
-      stH('pt', '要点'), point, fill, figs,
+      h('header', { class: 'ch dcard t-place' }, place, head, tools), photo,
+      stH('pt', '要点'), point, reps, covNode, status, nav, fill, figs,
       stH('tl', '経過', tl.length), tlCard,
       stH('sd', '各側の見出し'), dossier.sides(m, angles, act),
       stH('src', '出典の一覧', src.length), srcCard),
@@ -1432,7 +1448,7 @@ function renderEntryView() {
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
   renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
     fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => { setHome('board'); setUi('full'); },
-    detail: entryDetail, ownBox, briefBox: (e) => briefBox(e, tagAI), measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
+    detail: entryDetail, ownBox, coverage: coverageCard, briefBox: (e) => briefBox(e, tagAI), measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
     oneSide: sideGroups(true), oneSideTitle: ONE_SIDE_TITLE, oneSideNote: ONE_SIDE_NOTE, more: entryMore,
     local: state.set.local.place ? { name: placeName(state.set.local.place), events: localList().slice(0, 5) } : null });
   const hd = $('entry').querySelector('.en-head');

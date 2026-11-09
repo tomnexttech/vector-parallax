@@ -28,6 +28,7 @@ import unicodedata
 try:
     from parallax import cluster as cluster_mod
     from parallax import counts as counts_mod
+    from parallax import coverage as coverage_mod
     from parallax import keyterms
     from parallax import photo as photo_mod
     from parallax import places as places_mod
@@ -36,6 +37,7 @@ try:
 except ImportError:                                   # run from inside parallax/
     import cluster as cluster_mod  # type: ignore
     import counts as counts_mod  # type: ignore
+    import coverage as coverage_mod  # type: ignore
     import keyterms  # type: ignore
     import photo as photo_mod  # type: ignore
     import places as places_mod  # type: ignore
@@ -550,6 +552,7 @@ def _case(c, now, kind, history_entries):
     pm = photo_mod.pick(ms, rep_title)
     ph = {"id": pm["id"], "url": pm["image"]["url"], "outlet": pm.get("outlet"), "type": pm.get("type"), "from": pm["image"].get("from")} if pm else None
     ph_skip = None if ph else (photo_mod.eligible(ms, rep_title)[1] or "no_image")
+    cov = coverage_mod.of(ms)                           # 媒体の比べ（CONTRACT §21）。作れない出来事には欄を付けない
     return {
         "sid": c["sid"], "rule_cids": c["cids"], "rep_id": c["rep"]["id"] if c["rep"] else None,
         "event": c.get("event"),
@@ -562,6 +565,7 @@ def _case(c, now, kind, history_entries):
         "heat": {"t0": first, "bin_h": bin_h, "bins": nbins, "rows": rows},
         "fingerprint": fingerprint, "by_type": list(by_type.values()),
         "asym": kind, "key_terms": terms, "lineage": lineage, "photo": ph, "photo_skip": ph_skip, "images": [ph] if ph else [],
+        **({"coverage": cov} if cov else {}),
     }
 
 

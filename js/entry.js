@@ -271,6 +271,7 @@ export function renderEntry(root, o) {
       h('div', { class: 'en-top' + (headFig ? '' : ' nop') },
         h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut}社・${m.n} 件` }), ais, o.speak ? o.speak(sel) : null),
         headFig),
+      o.coverage ? o.coverage(sel) : null,
       h('h3', { class: 'en-sub' }, '伝え方の違い'),
       h('div', { class: 'en-figs' }, share, time, words),
       h('h3', { class: 'en-sub' }, '各メディアの見出し'),

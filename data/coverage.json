@@ -1,0 +1,200 @@
+{
+  "schema": "parallax-coverage-lex/1",
+  "note": "媒体の比べ（parallax/coverage.py）が語の種類を見分ける表。空白で区切る。人の肩書き・出来事の語・理由と反応と今後の言い回し・言い方の組（同じ事を別の語で言う）。ここに無い語は行にしない",
+  "roles": "副大統領 大統領 首相 総理 首長 長官 議長 知事 市長 町長 村長 社長 会長 総裁 総書記 主席 国王 女王 皇太子 首脳 元首 党首 代表 幹事長 官房長官 大臣 外相 防衛相 財務相 経産相 容疑者 被告 議員 司令官 将軍 大使 報道官 事務総長 理事長 教授 監督",
+  "role_prefix": "前 元 新 副 現 次期 暫定",
+  "orgs": "政府 政権 省 庁 党 銀行 軍 警察 委員会 協会 連合 会社 機構 大使館 裁判所 議会 上院 下院 検察 当局 内閣 公社 組合 財団 病院 大学 当局",
+  "events": "辞任 辞職 罷免 解任 更迭 失職 退陣 弾劾 逮捕 拘束 起訴 訴追 釈放 判決 有罪 無罪 死亡 死去 負傷 重傷 行方不明 避難 被害 倒壊 浸水 停電 断水 運転見合わせ 欠航 運休 発表 表明 声明 会見 合意 協議 会談 署名 可決 否決 採決 成立 制定 改正 承認 就任 当選 落選 勝利 敗北 攻撃 空爆 侵攻 占領 制圧 撤退 後退 停戦 休戦 戦闘 衝突 銃撃 爆発 爆破 テロ 襲撃 誘拐 デモ 抗議 暴動 騒乱 破綻 倒産 凍結 閉鎖 停止 再開 引き上げ 引き下げ 利上げ 利下げ 値上げ 値下げ 買収 合併 提携 上場 急落 急騰 下落 上昇 暴落 続落 続伸 地震 津波 噴火 台風 豪雨 洪水 土砂崩れ 火災 墜落 事故 不正 汚職 疑惑 不祥事 摘発 捜索 捜査 自宅軟禁 軟禁 制裁 禁輸 関税 拒否 否定 謝罪 来日 開幕 閉幕 開催 中止 延期 感染 取り付け騒ぎ 経営破綻 訴追",
+  "kata_stop": "デジタル ニュース システム データ サービス ネット ネットワーク ビジネス コメント メディア テレビ ラジオ スポーツ イベント プロジェクト ライブ ランキング ポイント ツイート アカウント オンライン ユーザー ホーム センター ミサイル ロボット マグニチュード ブルームバーグ ロイター ブルームバーグ共同 コロナ ウイルス ロックバンド グループ ファン メンバー ステージ",
+  "why": "を受け を受けて を巡り を巡って をめぐり をめぐって をめぐる めぐり めぐって 巡り 巡って に伴い 伴い を理由に が原因 のため を背景に きっかけ に端を発 を踏まえ",
+  "react": "抗議 反発 批判 非難 反対 歓迎 支持 懸念 憂慮 謝罪 反論 要求 警告 呼びかけ 呼び掛け 訴え 不満 怒り 衝撃 動揺 困惑 追及 否定 拒否",
+  "next": "見通し 見込み 方針 予定 今後 可能性 恐れ おそれ 注意 警戒 検討 へ向け 目指 臨む 控え",
+  "en": {
+    "events": "resign,impeach,arrest,charged,killed,dead,death,injured,protest,strike,attack,ceasefire,talks,sanctions,earthquake,eruption,collapse,vote",
+    "why": "after,over,amid,following,because,due to",
+    "react": "condemn,criticis,criticiz,protest,welcomed,warned,concern,demanded,apolog,denied,rejected",
+    "next": "will,plans to,expected to,set to,could,may,likely,vows to",
+    "stop": "The A An In On At After Before With For And But Of To From By As Is Are Was Were His Her Its Their This That What Who How Why When Where New Over Under Amid Why How Monday Tuesday Wednesday Thursday Friday Saturday Sunday January February March April May June July August September October November December"
+  },
+  "sets": [
+    {
+      "id": "leave",
+      "t": "職を離れる",
+      "ja": [
+        "辞任 辞職 退陣",
+        "罷免 解任 更迭 失職",
+        "弾劾"
+      ],
+      "en": [
+        "resign",
+        "impeach",
+        "oust,removed,dismiss,fired"
+      ]
+    },
+    {
+      "id": "protest",
+      "t": "街頭の動き",
+      "ja": [
+        "デモ 抗議行動 抗議デモ",
+        "抗議",
+        "暴動 騒乱 暴徒",
+        "衝突"
+      ],
+      "en": [
+        "protest",
+        "riot,unrest",
+        "clash"
+      ]
+    },
+    {
+      "id": "retreat",
+      "t": "軍の動き",
+      "ja": [
+        "撤退 撤収",
+        "後退 転進",
+        "侵攻 侵略 進攻",
+        "攻撃",
+        "軍事行動 作戦"
+      ],
+      "en": [
+        "withdraw,retreat",
+        "invasion,invade",
+        "attack,strike"
+      ]
+    },
+    {
+      "id": "seize",
+      "t": "支配する",
+      "ja": [
+        "占領 占拠",
+        "制圧 掌握",
+        "解放"
+      ],
+      "en": [
+        "occupy,seize",
+        "capture",
+        "liberate"
+      ]
+    },
+    {
+      "id": "detain",
+      "t": "身柄を押さえる",
+      "ja": [
+        "逮捕",
+        "拘束 連行",
+        "軟禁 自宅軟禁",
+        "釈放"
+      ],
+      "en": [
+        "arrest",
+        "detain",
+        "house arrest"
+      ]
+    },
+    {
+      "id": "dead",
+      "t": "亡くなる",
+      "ja": [
+        "死亡",
+        "死去",
+        "犠牲",
+        "殺害 殺傷 虐殺"
+      ],
+      "en": [
+        "dead,died,death",
+        "killed",
+        "massacre"
+      ]
+    },
+    {
+      "id": "fail",
+      "t": "経営が行き詰まる",
+      "ja": [
+        "破綻 経営破綻",
+        "倒産",
+        "経営危機",
+        "取り付け騒ぎ"
+      ],
+      "en": [
+        "collapse,collapsed",
+        "bankrupt",
+        "bank run"
+      ]
+    },
+    {
+      "id": "fall",
+      "t": "値が下がる",
+      "ja": [
+        "急落 暴落",
+        "下落 値下がり",
+        "続落",
+        "大幅安"
+      ],
+      "en": [
+        "plunge,plummet",
+        "fall,fell,drop",
+        "slump"
+      ]
+    },
+    {
+      "id": "rise",
+      "t": "値が上がる",
+      "ja": [
+        "急騰 高騰",
+        "上昇 値上がり",
+        "続伸",
+        "大幅高"
+      ],
+      "en": [
+        "surge,soar",
+        "rise,rose,gain",
+        "rally"
+      ]
+    },
+    {
+      "id": "wrong",
+      "t": "不正の言い方",
+      "ja": [
+        "不正",
+        "不祥事",
+        "汚職",
+        "疑惑 疑い"
+      ],
+      "en": [
+        "corruption",
+        "scandal",
+        "allegation,alleged"
+      ]
+    },
+    {
+      "id": "push",
+      "t": "圧力の言い方",
+      "ja": [
+        "制裁",
+        "圧力",
+        "措置",
+        "禁輸"
+      ],
+      "en": [
+        "sanction",
+        "pressure",
+        "ban,embargo"
+      ]
+    },
+    {
+      "id": "conflict",
+      "t": "対立の言い方",
+      "ja": [
+        "緊張",
+        "対立",
+        "危機",
+        "緊迫"
+      ],
+      "en": [
+        "tension",
+        "standoff",
+        "crisis"
+      ]
+    }
+  ]
+}

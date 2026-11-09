@@ -73,6 +73,8 @@ export const EN = {
   // the board's news
   '共有': 'Share', '保存済み': 'Saved', '最初の報道から': 'Since the first report', '最初に報じた': 'First reported', '最新': 'Latest', '事件': 'Case',
   '要点': 'Key points', '経過': 'Timeline', '各側の見出し': 'Headlines by side', '出典の一覧': 'Sources', 'このニュースの節': 'Sections of this news',
+  // the table of the outlets (js/coverage.js): the page's words only; the outlets' words in the cells stay as published
+  '媒体の比べ': 'Outlets compared', '出ている': 'Carried', '見出しと要旨には出ていない': 'Not found in the headline or description', '照合なし': 'Not compared', '見出しのみ': 'Headline only', '言い方の違い': 'Choice of words', '行を減らす': 'Show fewer rows', '各側の最初の見出し': 'First headline of each side', 'このニュースの詳しい節': 'Details of this news',
   '内訳を開く': 'Show parts', '内訳を閉じる': 'Hide parts', '国内で最初の報道': 'First report in Japan', '海外で最初の報道': 'First report abroad', '差': 'Gap',
   '着目した語': 'Words noted', '全報道': 'All reports', '原文を開く': 'Open original', '元の記事を開く': 'Open the original article', 'もう一つの見出し': 'Another headline',
   'ラベル': 'Labels', 'ラベルは話題の分類です。重要度や責任の有無は示しません': 'Labels classify the topic; they say nothing of importance, wrongdoing or blame', 'ブラウザに合わせる': 'Follow the browser', 'まとめた理由': 'Why grouped', 'まとめた手': 'Grouped by', '共通の語': 'Shared words', '地名': 'Places', '時刻の幅': 'Time span', '鍵語': 'Key terms',
@@ -128,6 +130,7 @@ const PAT = [
   [/^(\d[\d,.]*) 件を一覧で見る$/, (m) => `List all ${m[1]}`],
   [/^残り (\d+) 件を一覧で見る$/, (m) => `The other ${m[1]} in the list`],
   [/^残り (\d+) 件を見る$/, (m) => `Show the other ${m[1]}`],
+  [/^残り (\d+) 行を見る$/, (m) => `Show ${m[1]} more rows`],
   [/^残り (\d+) 件$/, (m) => `${m[1]} more`],
   [/^(\d+(?:\.\d+)?) ?分前$/, (m) => `${m[1]} min ago`],
   [/^(\d+(?:\.\d+)?) ?時間前$/, (m) => `${m[1]} h ago`],
