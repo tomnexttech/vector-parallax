@@ -27,6 +27,7 @@
  * symbols are plain lines written here. */
 import { genreIcon, genreShort } from './genres.js';
 import { STATIONS, videosOf, playOfVideo, embedSrc } from './tv.js';
+import { isShow, trimCover } from './stage.js';
 
 export const GOV = '政府一次';
 export const CARDS = 6;
@@ -111,6 +112,9 @@ export function firstLine(s, clock) {
   return ps.length ? `最初に報じた ${ps.join('／')}${gap}` : '';
 }
 
+/** a headline in 「」; the quotes inside it become 『』 so that two openings never stand together */
+export const quoted = (t) => `「${str(t).replace(/「/g, '『').replace(/」/g, '』')}」`;
+
 export function lineIcon(k, cls = '') {
   const s = document.createElementNS(SVG_NS, 'svg');
   s.setAttribute('viewBox', '0 0 20 20');
@@ -146,9 +150,11 @@ export function renderEntry(root, o) {
       } } }) : genreIcon(f),
       withBadge ? badge(f) : null, on ? h('span', { class: 'en-on', text: '表示中' }) : null);
   };
-  const titleEl = (t, cls, tag = 'span') => h(tag, { class: cls }, t.ai ? h('span', { class: 'aimk', text: 'AI' }) : null, t.ai ? t.text : `「${t.text}」`,
+  const titleEl = (t, cls, tag = 'span') => h(tag, { class: cls }, t.ai ? h('span', { class: 'aimk', text: 'AI' }) : null, t.ai ? t.text : quoted(t.text),
     !t.ai && t.outlet ? h('span', { class: 'en-o', text: `（${t.outlet}）` }) : null);
-  const counts = (m) => h('span', { class: 'en-c' }, SIDES.map(([k, , short]) => h('span', { class: m[k].length ? 'en-k' : 'en-k zero', data: { side: k } }, lineIcon(k), short, h('b', { text: m[k].length }))));
+  // the outlets of each side, as the first card of the home counts them (国内 8 社・海外 4 社), not the reports
+  const outs = (list) => new Set((Array.isArray(list) ? list : []).filter((it) => it && typeof it === 'object').map(outletOf).filter(Boolean)).size;
+  const counts = (m) => h('span', { class: 'en-c' }, SIDES.map(([k, , short]) => h('span', { class: m[k].length ? 'en-k' : 'en-k zero', data: { side: k } }, lineIcon(k), short, h('b', { text: outs(m[k]) }), h('span', { class: 'u', text: '社' }))));
 
   const head = h('header', { class: 'en-head' },
     h('h2', null, '今日の注目ニュース', h('span', { class: 'n', text: `${events.length} 件` })),
@@ -156,7 +162,10 @@ export function renderEntry(root, o) {
   if (!sel) { root.replaceChildren(head, h('p', { class: 'empty big', text: 'ニュース 0 件' })); return; }
 
   const prev = root.querySelector('.en-cards'), keep = prev ? prev.scrollLeft : null;   // the strip stays where the visitor left it
-  const cards = h('div', { class: 'en-cards', role: 'group', 'aria-label': '今日の注目ニュース' }, events.map((e) => {
+  // the show (js/stage.js): three cards that carry a photo, the one shown first
+  const show = isShow();
+  const shown = show ? [sel, ...events.filter((e) => e !== sel && photo(e))].filter((e) => events.includes(e)).slice(0, 3) : events;
+  const cards = h('div', { class: 'en-cards', role: 'group', 'aria-label': '今日の注目ニュース' }, shown.map((e) => {
     const p = photo(e), m = meas(e), on = e === sel;
     return h('button', { type: 'button', class: 'en-card', data: { genre: fieldOf(e) }, 'aria-pressed': String(on), on: { click: () => o.pick(e.key) } },
       fig(e, p, 'card', true, on), p ? h('span', { class: 'en-cr', text: credit(p) }) : null, titleEl(titleOf(e), 'en-h'), h('span', { class: 'en-bar' }, ratio(m)), counts(m));
@@ -204,7 +213,7 @@ export function renderEntry(root, o) {
   // a press on a headline opens the outlet's own description, quoted, and the link to the article
   const item = (it) => {
     const link = o.safeUrl(it.link), t2 = str(it.title).trim(), d = str(it.desc).trim(), en = it.lang === 'en' ? 'en' : null;
-    const head = t2 ? `「${t2}」` : outletOf(it) || '—';
+    const head = t2 ? quoted(t2) : outletOf(it) || '—';
     return h('li', null,
       h('span', { class: 'en-m' }, o.outlet && outletOf(it) ? h('button', { type: 'button', class: 'en-mo', title: 'このメディアが扱ったニュース', on: { click: () => o.outlet(outletOf(it)) } }, outletOf(it)) : h('b', { text: outletOf(it) || '—' }), str(it.type) ? h('span', { class: 'en-ty', text: it.type }) : null, h('span', { class: 'mt', text: isNum(it.ts) ? fmt.clock(it.ts) : '—' })),
       link || d ? h('details', { class: 'en-d' },
@@ -266,16 +275,20 @@ export function renderEntry(root, o) {
       titleEl(titleOf(e), 'en-ost'), h('span', { class: 'en-osm' }, h('span', { text: genreShort(fieldOf(e)) }), h('span', { class: 'num', text: `${nOf(e)}社` }))))))
       : h('p', { class: 'en-osn', text: `${str(loc.name)}のニュースは今はありません。` })) : null;
 
-  root.replaceChildren(head, pick, locEl,
+  // each scene is one screen on a wide display (css: the stage block); elsewhere a scene draws no box of its own
+  const scene = (k, ...kids) => h('div', { class: 'en-scene', data: { scene: k } }, ...kids);
+  const cov = o.coverage ? o.coverage(sel) : null;
+  root.replaceChildren(scene('pick', head, pick), locEl,
     h('section', { class: 'en-sel', data: { genre: f }, 'aria-label': '選んだニュースの伝え方' },
-      h('div', { class: 'en-top' + (headFig ? '' : ' nop') },
+      scene('story', h('div', { class: 'en-top' + (headFig ? '' : ' nop') },
         h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut}社・${m.n} 件` }), ais, o.speak ? o.speak(sel) : null),
-        headFig),
-      o.coverage ? o.coverage(sel) : null,
-      h('h3', { class: 'en-sub' }, '伝え方の違い'),
-      h('div', { class: 'en-figs' }, share, time, words),
-      h('h3', { class: 'en-sub' }, '各メディアの見出し'),
-      has.length ? h('div', { class: 'en-cols', style: `--n:${has.length}` }, has.map(col)) : null,
-      missEl, vidEl, o.absent(sel), foot), osEl);
+        headFig)),
+      cov ? scene('cover', cov) : null,
+      scene('figs', h('h3', { class: 'en-sub' }, '伝え方の違い'),
+        h('div', { class: 'en-figs' }, share, time, words)),
+      scene('heads', h('h3', { class: 'en-sub' }, '各メディアの見出し'),
+        has.length ? h('div', { class: 'en-cols', style: `--n:${has.length}` }, has.map(col)) : null),
+      scene('rest', missEl, vidEl, o.absent(sel), foot)), osEl);
   if (keep != null) cards.scrollLeft = keep;
+  if (show) trimCover(root.querySelector('.cv-t'));
 }

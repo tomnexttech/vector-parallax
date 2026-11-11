@@ -290,16 +290,22 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
   function cols(p) {
     if (p.tier === 'split') {
       // one headline's own words a column, the names of the points small before it
+      // a headline's words only when they stand whole (no … at either end); else the names of the points. A column with nothing a
+      // reader can take in (no point, or only the time, 時期) is left out, and the others share the width
+      const whole = (x) => x.phrase && x.phrase !== x.name && !/^[…‥.]|[…‥]$/.test(x.phrase);
       const quote = (list) => {
-        const hit = list.find((x) => x.phrase && x.phrase !== x.name);
+        const hit = list.find(whole);
         if (!hit) return h('ul', null, list.map((x) => h('li', null, h('span', { class: 'p', text: x.name }))));
         return h('ul', null, h('li', { title: hit.outlet || null }, h('span', { class: 'k', text: list.map((x) => x.name).join('・') }), h('span', { class: 'p', text: hit.phrase })));
       };
-      const col = (k) => h('div', { class: 'hr-col', data: { col: k } }, h('h3', { text: COL_JA[k] }),
-        p.points[k].length ? quote(phrasesOf(p.cov, k, p.points[k])) : h('p', { class: 'hr-none', text: '—' }));
-      return h('div', { class: 'hr-cols' }, col('jp'), col('both'), col('intl'));
+      const ph = (k) => phrasesOf(p.cov, k, p.points[k]).filter((x) => x.name !== '時期' || whole(x));
+      const ks = ['jp', 'both', 'intl'].filter((k) => ph(k).length);
+      if (ks.length) {
+        const col = (k) => h('div', { class: 'hr-col', data: { col: k } }, h('h3', { text: COL_JA[k] }), quote(ph(k)));
+        return h('div', { class: ks.length === 3 ? 'hr-cols' : ks.length === 2 ? 'hr-cols two' : 'hr-cols one' }, ks.map(col));
+      }
     }
-    if (p.tier === 'both') {
+    if (p.tier === 'split' || p.tier === 'both') {
       const side = (k) => h('div', { class: 'hr-col hr-heads', data: { col: k } }, h('h3', { text: SIDE_JA[k] }),
         h('ul', null, p.heads.filter((x) => x.side === k).slice(0, 2).map((x) => h('li', null, h('span', { class: 'o', text: x.outlet }), h('span', { class: 't', text: x.title })))));
       return h('div', { class: 'hr-cols two' }, side('jp'), side('intl'));

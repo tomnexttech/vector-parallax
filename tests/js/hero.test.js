@@ -141,7 +141,7 @@ test('the page: the card has its place in the home, its files are in the shell, 
   }
 });
 
-test('the card on screen: one bar split at its centre, three columns, three buttons, the sides named in words', () => {
+test('the card on screen: one bar split at its centre, the columns that say something, three buttons, the sides named in words', () => {
   const made = [];
   const h = (tag, attrs, ...kids) => { const el = { tag, attrs: attrs || {}, kids: kids.flat(4).filter((k) => k != null && k !== false) }; made.push(el); return el; };
   const root = { hidden: true, replaceChildren() {} };
@@ -153,7 +153,9 @@ test('the card on screen: one bar split at its centre, three columns, three butt
   assert.deepEqual(buttons.filter((b) => /hr-b/.test(b.attrs.class)).map(text), ['元の記事', '束ねた理由', '比べる']);
   for (const b of buttons.filter((x) => /hr-b/.test(x.attrs.class))) b.attrs.on.click();
   assert.deepEqual(seen, [['open', 's1'], ['why', 's1'], ['compare', 's1']]);
-  assert.deepEqual(made.filter((e) => e.tag === 'h3').map(text), ['国内だけ', '両方', '海外だけ']);
+  // abroad carries only the time (時期) here: a column a reader can take nothing from is left out, the other two share the width
+  assert.deepEqual(made.filter((e) => e.tag === 'h3').map(text), ['国内だけ', '両方']);
+  assert.ok(made.some((e) => e.tag === 'div' && e.attrs.class === 'hr-cols two'));
   const halves = made.filter((e) => e.attrs.class === 'hr-half');
   assert.deepEqual(halves.map((x) => x.attrs.data.side), ['jp', 'intl']);
   const sp = made.find((e) => e.attrs.class === 'hr-split');

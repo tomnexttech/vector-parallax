@@ -155,17 +155,18 @@ export function whyText(why) {
 
 export const radius = (n) => 3 + Math.min(9, Math.sqrt(Math.max(0, n || 0)) * 2.2);
 
-export function hit(pos, g, x, y) {
+export function hit(pos, g, x, y, rs = 1) {
   let best = -1, bd = Infinity;
   for (let i = 0; i < pos.length; i++) {
-    const dx = pos[i].x - x, dy = pos[i].y - y, d = dx * dx + dy * dy, r = radius(g.nodes[i].n) + 8;
+    const dx = pos[i].x - x, dy = pos[i].y - y, d = dx * dx + dy * dy, r = radius(g.nodes[i].n) * rs + 8;
     if (d <= r * r && d < bd) { bd = d; best = i; }
   }
   return best;
 }
 
 /** colors: { ink, ink3, line, sel, jp, intl, gov, plate }. label(sid) -> the headline to write at a point (only the chosen and its ties) */
-export function draw(ctx, g, pos, { w, h, sel = null, colors = {}, label = () => '' } = {}) {
+// big (a stage): the ties are drawn in the colour of the chosen and named by their headline after the number of their row
+export function draw(ctx, g, pos, { w, h, sel = null, colors = {}, label = () => '', fs = 13, rs = 1, big = false } = {}) {
   if (!ctx || !g) return;
   const c = { ink: '#ddd', ink3: '#888', line: 'rgba(128,128,128,.35)', sel: '#5ac8f0', jp: '#bbb', intl: '#888', gov: '#666', plate: 'rgba(0,0,0,.6)', ...colors };
   ctx.clearRect(0, 0, w, h);
@@ -176,37 +177,39 @@ export function draw(ctx, g, pos, { w, h, sel = null, colors = {}, label = () =>
     const lit = on && (e.a === sel || e.b === sel);
     if (on && !lit) continue;
     ctx.strokeStyle = lit ? c.sel : c.line;
-    ctx.lineWidth = 0.6 + e.w * (lit ? 4 : 2.4);
+    ctx.lineWidth = (0.6 + e.w * (lit ? 4 : 2.4)) * rs;
     ctx.beginPath(); ctx.moveTo(pos[i].x, pos[i].y); ctx.lineTo(pos[j].x, pos[j].y); ctx.stroke();
   }
   for (let i = 0; i < g.nodes.length; i++) {
-    const nd = g.nodes[i], p = pos[i], r = radius(nd.n);
+    const nd = g.nodes[i], p = pos[i], r = radius(nd.n) * rs;
     if (on && !on.has(nd.sid)) { ctx.globalAlpha = 0.18; }
-    ctx.fillStyle = nd.sid === sel ? c.sel : c.ink3;
+    ctx.fillStyle = nd.sid === sel ? c.sel : big && on && on.has(nd.sid) ? c.ink : big ? c.ink2 || c.ink3 : c.ink3;
     ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.fill();
     // the share of each side: a short bar under the point, never a fill of the point
     const tot = nd.sides.jp + nd.sides.intl + nd.sides.gov;
     if (tot > 0 && r >= 5) {
       let x0 = p.x - r;
-      for (const k of ['jp', 'intl', 'gov']) { const bw = (nd.sides[k] / tot) * r * 2; if (bw > 0) { ctx.fillStyle = c[k]; ctx.fillRect(x0, p.y + r + 2, bw, 2); x0 += bw; } }
+      for (const k of ['jp', 'intl', 'gov']) { const bw = (nd.sides[k] / tot) * r * 2; if (bw > 0) { ctx.fillStyle = c[k]; ctx.fillRect(x0, p.y + r + 2 * rs, bw, 2 * rs); x0 += bw; } }
     }
     ctx.globalAlpha = 1;
   }
   if (!on) return;
-  ctx.font = '13px system-ui, sans-serif';
+  ctx.font = `${fs}px system-ui, sans-serif`;
   ctx.textBaseline = 'middle';
   const tag = (text, x, y, color) => {
     if (!text) return;
     const t = text.length > 28 ? text.slice(0, 27) + '…' : text, tw = ctx.measureText(t).width;
+    y = Math.min(h - fs, Math.max(fs, y));
     const px = Math.min(w - tw - 6, Math.max(4, x - tw / 2));
-    ctx.fillStyle = c.plate; ctx.fillRect(px - 4, y - 10, tw + 8, 20);
+    ctx.fillStyle = c.plate; ctx.fillRect(px - 4, y - (fs + 7) / 2, tw + 8, fs + 7);
     ctx.fillStyle = color; ctx.fillText(t, px, y);
   };
   // the tied news carry the number of their row in the list under the figure; the words of each tie are in that list
   const si = g.by.get(sel);
   tiesOf(g, sel).forEach((t, n) => {
     const j = g.by.get(t.sid);
-    tag(String(n + 1), pos[j].x, pos[j].y - radius(g.nodes[j].n) - 12, c.sel);
+    const tx = big ? `${n + 1}  ${label(t.sid) || ''}`.trim() : String(n + 1);
+    tag(tx, pos[j].x, pos[j].y + (big && pos[j].y > pos[si].y ? 1 : -1) * (radius(g.nodes[j].n) * rs + Math.round(fs * 12 / 13)), big ? c.ink : c.sel);
   });
-  tag(label(sel), pos[si].x, pos[si].y - radius(g.nodes[si].n) - 12, c.ink);
+  tag(label(sel), pos[si].x, pos[si].y + (big ? 1 : -1) * (radius(g.nodes[si].n) * rs + Math.round(fs * 12 / 13)), c.ink);
 }

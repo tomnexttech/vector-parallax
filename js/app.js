@@ -3356,6 +3356,7 @@ function heroWire() {
 // the search that forgives how a word is written, the ties between news, the app on the home screen, and the mail draft (docs/app.md)
 import { expand as appExpand, matcherOf as appMatcherOf, aliasGroups, narrow as appNarrowOf, archiveHits, archiveDays, toHash as qToHash, fromHash as qFromHash,
   SPANS as Q_SPANS, SIDES as Q_SIDES, SORTS as Q_SORTS, F0 as Q_F0, sidOf as appSid, hasReaction, hasLife } from './search.js';
+import { isStage, u as stageU, focusView } from './stage.js';
 import { graphOf, graphFromPairs, connected as netConnected, layout as netLayout, tiesOf, listOf as netList, whyText, hit as netHit, draw as netDraw } from './netview.js';
 import { standalone as isStandalone, wantIosSheet, closeIosSheet, offlineLine } from './install.js';
 import { loadAddr, saveAddr, clearAddr, bodyOf as mailBody, subjectOf as mailSubject, mailtoOf, itemsOf as mailItems, MAX as MAIL_MAX } from './mail.js';
@@ -3490,7 +3491,7 @@ function netClose() {
 }
 function netColors() {
   const cs = getComputedStyle(document.documentElement), v = (n, d) => cs.getPropertyValue(n).trim() || d;
-  return { ink: v('--ink', '#ddd'), ink3: v('--ink-3', '#888'), line: v('--line-2', 'rgba(128,128,128,.3)'), sel: v('--cyan', '#5ac8f0'), jp: v('--ink-2', '#bbb'), intl: v('--cyan-l', '#5ac8f0'), gov: v('--ink-4', '#666'), plate: v('--pane', '#1c1c1e') };
+  return { ink: v('--ink', '#ddd'), ink2: v('--ink-2', '#bbb'), ink3: v('--ink-3', '#888'), line: v('--line-2', 'rgba(128,128,128,.3)'), sel: v('--cyan', '#5ac8f0'), jp: v('--ink-2', '#bbb'), intl: v('--cyan-l', '#5ac8f0'), gov: v('--ink-4', '#666'), plate: v('--pane', '#1c1c1e') };
 }
 function netRender(relayout) {
   const g = appS.net.g, n = appS.net;
@@ -3500,13 +3501,20 @@ function netRender(relayout) {
   const box = $('net-fig'), cv = $('net-cv');
   box.hidden = n.mode !== 'map';
   if (n.mode === 'map') {
-    const w = Math.max(280, Math.floor(box.clientWidth)), hh = Math.max(240, Math.min(Math.floor(window.innerHeight * 0.58), Math.round(w * 0.7)));
+    const st = isStage(window);
+    // on a wide screen the figure fills its cell of the window (css: the stage block), inside the cell's own padding
+    const cs = st ? getComputedStyle(box) : null, pad = (a, b) => (cs ? (parseFloat(cs[a]) || 0) + (parseFloat(cs[b]) || 0) : 0);
+    const w = Math.max(280, Math.floor(box.clientWidth - pad('paddingLeft', 'paddingRight')));
+    const hh = st ? Math.max(240, Math.floor(box.clientHeight - pad('paddingTop', 'paddingBottom'))) : Math.max(240, Math.min(Math.floor(window.innerHeight * 0.58), Math.round(w * 0.7)));
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     if (relayout || !n.pos || n.w !== w || n.h !== hh) { n.pos = netLayout(g, { w, h: hh }); n.w = w; n.h = hh; }
     cv.width = w * dpr; cv.height = hh * dpr; cv.style.width = w + 'px'; cv.style.height = hh + 'px';
     const ctx = cv.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    netDraw(ctx, g, n.pos, { w, h: hh, sel: n.sel, colors: netColors(), label: netTitle });
+    // on a stage the chosen news moves to the middle of the figure and its ties are drawn out around it (js/stage.js focusView)
+    const si = n.sel && g.by.has(n.sel) ? g.by.get(n.sel) : -1;
+    n.view = st && si >= 0 ? focusView(n.pos, si, tiesOf(g, n.sel).map((t) => g.by.get(t.sid)), w, hh) : n.pos;
+    netDraw(ctx, g, n.view, { w, h: hh, sel: n.sel, colors: netColors(), label: netTitle, fs: st ? Math.round(24 * stageU(window)) : 13, rs: st ? 1.6 : 1, big: st });
   }
   // the list: the ties of the chosen news, else every tie, heaviest first. The same list is what a screen reader reads
   const rows = n.sel ? tiesOf(g, n.sel).map((t) => ({ a: n.sel, b: t.sid, w: t.w, why: t.why })) : netList(g, { cap: 60 });
@@ -3541,7 +3549,7 @@ function netWire() {
   for (const b of document.querySelectorAll('#net-mode button')) b.addEventListener('click', () => { appS.net.mode = b.dataset.m; netRender(false); });
   $('net-cv').addEventListener('click', (ev) => {
     const n = appS.net, r = $('net-cv').getBoundingClientRect();
-    const i = n.pos ? netHit(n.pos, n.g, ev.clientX - r.left, ev.clientY - r.top) : -1;
+    const i = n.pos ? netHit(n.view || n.pos, n.g, ev.clientX - r.left, ev.clientY - r.top, isStage(window) ? 1.6 : 1) : -1;
     n.sel = i >= 0 ? n.g.nodes[i].sid : null;
     netRender(false);
   });
