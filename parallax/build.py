@@ -701,7 +701,7 @@ def run_ai(requests, provider, prompt, items, now):
     """-> (block_results {bid: [...]} 答えのあった塊だけ, ai_run の一部)"""
     run = {"calls": 0, "calls_failed": 0, "errors": [], "blocks_sent": 0, "blocks_ok": 0, "calls_skipped": 0,
            "dropped_ids": 0, "dup_ids": 0, "unassigned_ids": 0, "flags_vetoed": 0, "quoted_fields": 0,
-           "report_words": 0, "silence_words": 0, "name_words": 0}
+           "report_words": 0, "silence_words": 0, "name_words": 0, "block_models": {}}
     results = {}
     for n, req in enumerate(requests):
         user_text = ai_mod.render_user_text(prompt, req["doc"])
@@ -727,8 +727,75 @@ def run_ai(requests, provider, prompt, items, now):
             run["name_words"] += gate_names_in_stories(stories)
             res["blocks"][bid] = _demote_headlineless(req, bid, stories)
         run["blocks_ok"] += len(res["blocks"])
+        for bid in res["blocks"]:                              # どの型がこの塊に答えたか（主と予備が混じる build で塊ごとに判る）
+            run["block_models"][bid] = getattr(provider, "model", None)
         results.update(res["blocks"])
     return results, run
+
+
+AI_HISTORY_MAX = 120                          # stats.json の ai_history に残す build の数（3 時間ごとで約 15 日）
+TIERS = ("primary", "mixed", "fallback", "none")
+
+
+def answer_record(provider):
+    """本物の provider が実際に答えた型の記録。-> {"tier","answered_models","fallback_reason","trail"} | {}（記録済み・試験の provider）。
+    tier: primary = 答えた call が全部主の型 / mixed = 主と予備 / fallback = 全部予備 / none = どの call も答えなかった。
+    fallback_reason: 主の型が答えなかった最初の試行の理由（"503"・"429 day"・"429 minute"・"429 unknown"・"timeout"・"budget" など）。主が全部答えれば None。"""
+    if not isinstance(provider, ai_mod.GeminiProvider):
+        return {}
+    chain = provider.chain_models
+    got = [m for m in provider.answered if m]
+    if not got:
+        tier = "none"
+    elif all(m == chain[0] for m in got):
+        tier = "primary"
+    elif any(m == chain[0] for m in got):
+        tier = "mixed"
+    else:
+        tier = "fallback"
+    reason = None
+    if tier != "primary":
+        for a in provider.trail:
+            if a["model"] in (chain[0], None) and a["err"] != "ok":
+                reason = a["err"] if a["status"] in (None, 200) else "%d%s" % (a["status"], " " + a["quota"] if a["quota"] else "")
+                break
+        if reason is None and provider.trail and provider.trail[0]["model"] != chain[0]:
+            reason = "main_out"                    # 主の型が同じ build の前の call で外れていた
+    counts = {}
+    for m in got:
+        counts[m] = counts.get(m, 0) + 1
+    return {"tier": tier, "answered_models": [{"model": m, "calls": counts[m]} for m in chain if m in counts],
+            "fallback_reason": reason, "trail": list(provider.trail)}
+
+
+def answered_model_name(provider):
+    """画面の「AI」の印の横に出す型の名。答えた型を鎖の順に（主と予備が混じれば "a + b"）。答えが無ければ直近に送った型。"""
+    rec = answer_record(provider)
+    if rec.get("answered_models"):
+        return " + ".join(x["model"] for x in rec["answered_models"])
+    return getattr(provider, "model", None) if provider else None
+
+
+def ai_history(prev_stats, stats, limit=AI_HISTORY_MAX):
+    """前の stats.json の ai_history に、この build の 1 行を足す。-> {"builds":[...新しい順], "totals":{tier: n}}。
+    1 行 = {"at","tier","model","reason","summary_tier"}。見出しは入れない。"""
+    rows = []
+    if isinstance(prev_stats, dict):
+        h = prev_stats.get("ai_history")
+        if isinstance(h, dict) and isinstance(h.get("builds"), list):
+            rows = [r for r in h["builds"] if isinstance(r, dict)]
+    ai = stats.get("ai") or {}
+    m, s = ai.get("merge") or {}, ai.get("summary") or {}
+    row = {"at": stats.get("generated_at"), "tier": m.get("tier") or ("rules_only" if ai.get("status") in ("off", "nokey") else ai.get("status")),
+           "model": m.get("model"), "reason": m.get("fallback_reason"), "summary_tier": s.get("tier")}
+    if not rows or rows[0].get("at") != row["at"]:
+        rows.insert(0, row)
+    rows = rows[:limit]
+    totals = {}
+    for r in rows:
+        k = r.get("tier") or "unknown"
+        totals[k] = totals.get(k, 0) + 1
+    return {"builds": rows, "totals": totals, "limit": limit}
 
 
 def make_ai_run(status, provider, prompt, now, run=None, note_ja=""):
@@ -741,8 +808,8 @@ def make_ai_run(status, provider, prompt, now, run=None, note_ja=""):
     if provider is not None:
         at = getattr(provider, "made_at", None) if isinstance(provider, ai_mod.RecordedProvider) else now
     return {"status": status, "provider": getattr(provider, "name", None) if provider else None,
-            "model": getattr(provider, "model", None) if provider else None, "at": at,
-            "prompt_version": prompt.get("version"),
+            "model": answered_model_name(provider), "at": at,
+            "prompt_version": prompt.get("version"), **answer_record(provider),
             "calls": base["calls"], "calls_failed": base["calls_failed"], "errors": base["errors"],
             "attempts": budget.used if budget is not None else base["calls"], "call_limit": MERGE_CALL_LIMIT,
             "fallback_attempts": getattr(getattr(provider, "fallback_budget", None), "used", 0), "fallback_limit": MERGE_FALLBACK_LIMIT,
@@ -752,7 +819,7 @@ def make_ai_run(status, provider, prompt, now, run=None, note_ja=""):
             "unassigned_ids": base["unassigned_ids"],
             "merges": 0, "splits": 0, "flags_vetoed": base["flags_vetoed"],
             "quoted_fields": base["quoted_fields"], "report_words": base["report_words"], "silence_words": base["silence_words"],
-            "name_words": base["name_words"],
+            "name_words": base["name_words"], "block_models": dict(base.get("block_models") or {}),
             "withheld_text": {"contrast_ja": 0, "flag_note_ja": 0}, "note_ja": note_ja}
 
 
@@ -996,7 +1063,8 @@ def summary_stage(stories, by_id, now, prompt, provider, status_if_none, cache, 
     sm = [s["summary"] for s in stories if "summary" in s]
     sm_all = sm + [s["brief"] for s in stories if "brief" in s]
     budget = getattr(provider, "budget", None) if provider is not None else None
-    summary_run = {"status": status, "provider": getattr(provider, "name", None) if provider else None, "model": getattr(provider, "model", None),
+    summary_run = {"status": status, "provider": getattr(provider, "name", None) if provider else None, "model": answered_model_name(provider),
+                   **answer_record(provider),
                    "at": max((x["made_at"] for x in sm_all), default=None), "prompt_version": pv,
                    "targets": len(targets), "cache_hits": hits, "summarized": len(sm),
                    "calls": run["calls"], "calls_failed": run["calls_failed"], "calls_skipped": run["calls_skipped"],
@@ -1594,6 +1662,8 @@ def make_stats(data, raw_items, now, window_h, board_counts=None):
                    "merge": {"provider": run.get("provider"), "model": run.get("model"), "calls": run["calls"],
                              "attempts": run.get("attempts", run["calls"]), "calls_failed": run["calls_failed"],
                              "limit": run.get("call_limit", MERGE_CALL_LIMIT), "named_outlets": run.get("named_outlets", 0),
+                             "fallback_attempts": run.get("fallback_attempts", 0), "tier": run.get("tier"), "fallback_reason": run.get("fallback_reason"),
+                             "answered_models": run.get("answered_models"), "trail": run.get("trail"),
                              "report_words": run.get("report_words", 0), "silence_words": run.get("silence_words", 0), "name_words": run.get("name_words", 0), "withheld_text": run.get("withheld_text", {"contrast_ja": 0, "flag_note_ja": 0})},
                    "summary": {"status": sr.get("status", "off"), "provider": sr.get("provider"), "model": sr.get("model"),
                                "calls": sr.get("calls", 0), "attempts": sr.get("attempts", 0),
@@ -1601,6 +1671,8 @@ def make_stats(data, raw_items, now, window_h, board_counts=None):
                                "targets": sr.get("targets", 0), "cache_hits": sr.get("cache_hits", 0),
                                "left_out": sr.get("left_out", 0), "shown_provider": sr.get("shown_provider"),
                                "named_outlets": sr.get("named_outlets", 0),
+                               "fallback_attempts": sr.get("fallback_attempts", 0), "tier": sr.get("tier"), "fallback_reason": sr.get("fallback_reason"),
+                               "answered_models": sr.get("answered_models"),
                                "at": sr.get("at")},
                    "summarized": sum(1 for s in data["stories"] if "summary" in s)}}
 
@@ -1761,7 +1833,14 @@ def main(argv=None):
         return 2
     write_json(a.out, data)
     board_counts = write_extras(data, items, now, Path(a.out).parent, w_removed) if a.extras else None
-    write_json(a.stats or Path(a.out).with_name("stats.json"), make_stats(data, items, now, a.window_h, board_counts))
+    stats_path = a.stats or Path(a.out).with_name("stats.json")
+    stats = make_stats(data, items, now, a.window_h, board_counts)
+    try:                                              # 前の build の stats.json（Actions の控えから戻る）の ai_history を引き継ぐ
+        prev_stats = json.loads(Path(stats_path).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        prev_stats = None
+    stats["ai_history"] = ai_history(prev_stats, stats)
+    write_json(stats_path, stats)
     print("withheld sources=%d items=%d photos=%d removed=%d photos_cleared=%d" % (w_counts["sources"], w_counts["items"], w_counts["photos"], w_counts["items_removed"], w_counts["photos_cleared"]))
     if not (a.no_ai or a.dump_requests):              # 要約の控え。点検に通った回だけ書く。--no-ai と --dump-requests は読むだけ
         write_json(cache_path, cache)
@@ -1769,6 +1848,12 @@ def main(argv=None):
         print("ai error %s: %s" % (code, ai_mod.error_message(code, "en", prompt)))
     for model, status, detail in ai_mod.HTTP_DETAILS:
         print("ai http model=%s status=%d detail=%s" % (model, status, detail))
+    for part, r in (("merge", data["ai_run"]), ("summary", data["ai_run"].get("summary") or {})):
+        if r.get("tier"):
+            print("ai answered part=%s tier=%s model=%s reason=%s trail=%s" % (part, r["tier"], r.get("model") or "-", r.get("fallback_reason") or "-",
+                  ",".join("%s:%s" % (x["model"] or "-", x["status"] if x["status"] is not None else x["err"]) for x in r.get("trail") or [])))
+    h = stats["ai_history"]
+    print("ai history builds=%d %s" % (len(h["builds"]), " ".join("%s=%d" % (k, h["totals"][k]) for k in sorted(h["totals"]))))
     n_null = sum(1 for it in data["items"].values() if it["title"] is None)
     run = data["ai_run"]
     print("edition=%s items=%d rule_clusters=%d blocks=%d calls=%d stories=%d null_title=%d ai=%s"

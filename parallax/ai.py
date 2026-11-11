@@ -30,6 +30,8 @@ BUSY_BACKOFF_BASE_S = 10.0                    # その後の待ち: 10 秒、30 
 BUSY_BACKOFF_MAX_S = 60.0                     # 1 回の待ちの上限
 SWITCH_STATUSES = (429, 500, 503)             # この番号の後のやり直しは、鎖の次の型へ移る
 RETRY_CODES = ("quota", "http", "timeout", "network")   # 認証・形・遮断・途切れはやり直しても変わらない
+OUT_STATUSES = (404,)                         # この番号の型は、同じ build の間は二度と送らない（名の変更・廃止）
+TRAIL_MAX = 40                                # 試行の記録（公開の stats に載る）の上限
 _ROOT = Path(__file__).resolve().parent.parent
 _messages = None
 
@@ -112,6 +114,31 @@ def _error_detail(text, key):
     return re.sub(r"\d{6,}", "#", s).strip()[:200]
 
 
+def quota_kind(text):
+    """429 の本文から枠の種類を読む。-> ("day" | "minute" | "unknown", retry_delay_s | None)。
+    Gemini の 429 は details の QuotaFailure.violations[].quotaId（…PerDay… / …PerMinute…）と RetryInfo.retryDelay（"38s"）を持つ。"""
+    kind, delay = "unknown", None
+    try:
+        details = (json.loads(text).get("error") or {}).get("details") or []
+    except Exception:
+        details = []
+    for d in details if isinstance(details, list) else []:
+        if not isinstance(d, dict):
+            continue
+        for v in d.get("violations") or []:
+            q = "%s %s" % ((v or {}).get("quotaId") or "", (v or {}).get("quotaMetric") or "") if isinstance(v, dict) else ""
+            if "PerDay" in q or "per_day" in q:
+                kind = "day"
+            elif kind != "day" and ("PerMinute" in q or "per_minute" in q):
+                kind = "minute"
+        rd = d.get("retryDelay")
+        if isinstance(rd, str):
+            m = re.match(r"^(\d+(?:\.\d+)?)s$", rd.strip())
+            if m:
+                delay = float(m.group(1))
+    return kind, delay
+
+
 def _reply_text(outer):
     """Gemini の返答（JSON を読んだ物）から本文を取る。-> (text | None, err)"""
     if not isinstance(outer, dict):
@@ -165,7 +192,12 @@ class GeminiProvider:
         self._key = key                      # 外へ出さない（repr にも出さない）
         self.model = model                   # 直近に送った型 = 答えた型
         self._chain = chain
-        self._pos = 0                        # 鎖の中の今の位置。前へだけ進む（混んでいた型へは、同じ build の間は戻らない）
+        self._pos = 0                        # 鎖の中の今の位置。1 回の call の中では前へだけ進む
+        self._out = set()                    # 同じ build の間は送らない型の位置（日の枠切れの 429・404）
+        self._no_return = set()              # 次の call の初めに戻らない型の位置（種類の読めない 429。これまでの「前へだけ」と同じ扱い）。
+                                             # 混雑（500・503）・分の枠の 429・時間切れの型には、次の call でまた鎖の前から試す
+        self.trail = []                      # 試行ごとの {"model","status","err","quota"}（公開してよい物だけ。本文・鍵は入れない）
+        self.answered = []                   # call ごとに答えた型（答えなければ None）
         self.timeout = timeout
         self._transport = transport or _default_transport
         self.max_output_tokens = int(max_output_tokens)
@@ -205,6 +237,8 @@ class GeminiProvider:
     def _first_with_room(self, start):
         """鎖の start 以降で、試行の残りがある最初の型の位置。無ければ None。"""
         for i in range(start, len(self._chain)):
+            if i in self._out:
+                continue
             b = self._budget_for(i)
             if b is None or b.used < b.limit:
                 return i
@@ -218,7 +252,12 @@ class GeminiProvider:
 
     def call(self, system, user_text, schema):
         """やり直しは RETRY_CODES の時だけ、最大 RETRIES 回。待ちは _wait_s。429・500・503 の後は鎖の次の型へ移る（末尾なら同じ型）。
-        主の型の試行は budget、予備の型の試行は fallback_budget で数え、次に送れる型が無ければそこで止める（最後の本物の誤りを返す）。"""
+        主の型の試行は budget、予備の型の試行は fallback_budget で数え、次に送れる型が無ければそこで止める（最後の本物の誤りを返す）。
+        call の初めには、送れる型のうち鎖の一番前（ふつうは主の型）へ戻る。日の枠を使い切った型・404 の型は同じ build の間は飛ばし、
+        枠の種類の読めない 429 の型へは戻らない。"""
+        start = next((i for i in range(self._pos) if i not in self._no_return and self._first_with_room(i) == i), None)
+        if start is not None:
+            self._pos = start
         raw, err = self._call_once(system, user_text, schema)
         for n in range(self.retries):
             if err not in RETRY_CODES:
@@ -233,11 +272,14 @@ class GeminiProvider:
             if err2 == "budget":
                 break
             raw, err = raw2, err2
+        self.answered.append(self.model if raw is not None and not err else None)
         return raw, err
 
     def _call_once(self, system, user_text, schema):
         i = self._first_with_room(self._pos)
         if i is None:
+            if len(self.trail) < TRAIL_MAX:
+                self.trail.append({"model": None, "status": None, "err": "budget", "quota": None})
             return None, "budget"
         self._pos = i
         self.model = self._chain[i]
@@ -246,31 +288,45 @@ class GeminiProvider:
             b.take()
         url, headers, body = self.build_request(system, user_text, schema)
         self._last_status = None
+        raw, err, quota = self._send(url, headers, body, i)
+        if len(self.trail) < TRAIL_MAX:
+            self.trail.append({"model": self.model, "status": self._last_status, "err": err or "ok", "quota": quota})
+        return raw, err
+
+    def _send(self, url, headers, body, i):
+        """-> (raw | None, err, quota_kind | None)。429 の日の枠・種類不明と 404 は、その型を同じ build の間は外す。"""
         try:
             status, text = self._transport(url, headers, body, self.timeout)
         except (socket.timeout, TimeoutError):
-            return None, "timeout"
+            return None, "timeout", None
         except urllib.error.URLError as e:
-            return None, "timeout" if isinstance(getattr(e, "reason", None), (socket.timeout, TimeoutError)) else "network"
+            return None, "timeout" if isinstance(getattr(e, "reason", None), (socket.timeout, TimeoutError)) else "network", None
         except OSError:
-            return None, "network"
+            return None, "network", None
         except Exception:
-            return None, "network"
+            return None, "network", None
         self._last_status = status
         if not (200 <= status < 300):
             HTTP_DETAILS.append((self.model, status, _error_detail(text, self._key)))
         if status in (401, 403):
-            return None, "auth"
+            return None, "auth", None
         if status == 429:
-            return None, "quota"
+            kind, _ = quota_kind(text)
+            if kind == "day":                   # 日の枠は同じ日のうちに戻らない
+                self._out.add(i)
+            elif kind == "unknown":             # 種類が読めない時は、これまで通り次の call で戻らない側に倒す
+                self._no_return.add(i)
+            return None, "quota", kind
+        if status in OUT_STATUSES:
+            self._out.add(i)
         if not (200 <= status < 300):
-            return None, "http"
+            return None, "http", None
         try:
             outer = json.loads(text)
         except ValueError:
-            return None, "json"
+            return None, "json", None
         raw, err = _reply_text(outer)
-        return (raw, "") if raw is not None else (None, err)
+        return (raw, "", None) if raw is not None else (None, err, None)
 
 
 # ---------------------------------------------------------------- 記録済み

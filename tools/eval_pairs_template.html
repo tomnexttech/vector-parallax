@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>束ねの採点</title>
+<style>
+:root{
+  --ground:#0C1620; --panel:#132331; --line:#24384A; --text:#F4F7FA; --dim:#9FB0BF; --ice:#8FD3F4;
+  --same:#5FC79A; --diff:#F08A7E; --unsure:#C9B66B;
+  --font:"Hiragino Sans","Yu Gothic UI","Noto Sans JP","Meiryo",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ground);color:var(--text);font-family:var(--font);height:100%}
+body{display:flex;flex-direction:column;min-height:100vh}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--ice);outline-offset:3px}
+.bar{height:4px;background:var(--line)}
+.bar i{display:block;height:100%;width:0;background:var(--ice);transition:width .2s}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:14px 24px 0;color:var(--dim);font-size:15px}
+header b{color:var(--text);font-weight:600;font-variant-numeric:tabular-nums}
+main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:16px 24px;max-width:1280px;width:100%;margin:0 auto}
+.q{margin:0 0 18px;font-size:17px;color:var(--dim);font-weight:400}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;min-height:220px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:15px;color:var(--dim)}
+.meta .o{color:var(--text);font-weight:600}
+.title{font-size:clamp(20px,2.3vw,28px);line-height:1.55;font-weight:600;margin:0;flex:1;overflow-wrap:anywhere}
+.side a{color:var(--ice);font-size:15px;text-underline-offset:3px;align-self:flex-start;padding:6px 0}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px}
+.choice{min-height:92px;border-radius:14px;border:2px solid var(--line);background:transparent;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:22px;font-weight:600}
+.choice small{font-size:14px;color:var(--dim);font-weight:400}
+.choice[data-v=same]{border-color:var(--same)} .choice[data-v=diff]{border-color:var(--diff)} .choice[data-v=unsure]{border-color:var(--unsure)}
+.choice[data-v=same]:hover,.choice[data-v=same].on{background:rgba(95,199,154,.18)}
+.choice[data-v=diff]:hover,.choice[data-v=diff].on{background:rgba(240,138,126,.18)}
+.choice[data-v=unsure]:hover,.choice[data-v=unsure].on{background:rgba(201,182,107,.18)}
+.nav{display:flex;justify-content:space-between;align-items:center;margin-top:16px;color:var(--dim);font-size:14px;gap:12px;flex-wrap:wrap}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px 16px;cursor:pointer;color:var(--text);font-size:15px}
+.ghost:hover{border-color:var(--ice)}
+.primary{background:var(--ice);color:#06202E;border:0;border-radius:12px;padding:16px 24px;font-size:18px;font-weight:700;cursor:pointer}
+.done h1{font-size:30px;margin:0 0 8px}
+.done p{color:var(--dim);margin:0 0 18px;line-height:1.7;max-width:70ch}
+.tally{display:grid;grid-template-columns:repeat(3,minmax(0,180px));gap:14px;margin:0 0 22px}
+.tally div{border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.tally b{display:block;font-size:30px;font-variant-numeric:tabular-nums}
+.tally span{color:var(--dim);font-size:14px}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.ai{border-top:1px solid var(--line);padding-top:18px;margin-top:8px}
+.ai h2{font-size:18px;margin:0 0 6px}
+.ai table{border-collapse:collapse;width:100%;font-size:14px;margin-top:10px}
+.ai td,.ai th{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+.ai th{color:var(--dim);font-weight:400}
+.tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:13px;border:1px solid}
+.t-same{border-color:var(--same);color:var(--same)} .t-diff{border-color:var(--diff);color:var(--diff)} .t-unsure{border-color:var(--unsure);color:var(--unsure)}
+[hidden]{display:none!important}
+@media (max-width:760px){
+  header,main{padding-left:16px;padding-right:16px}
+  .pair{grid-template-columns:1fr}
+  .side{min-height:0}
+  .choice{min-height:76px;font-size:19px}
+  .tally{grid-template-columns:repeat(3,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="bar" aria-hidden="true"><i id="bar"></i></div>
+<header><span>束ねの採点</span><span><b id="pos">1</b> / <b id="tot">0</b>　残り <b id="left">0</b></span></header>
+
+<main id="score">
+  <p class="q">この二つの見出しは、同じ出来事を伝えていますか。</p>
+  <div class="pair">
+    <article class="side" id="sa"></article>
+    <article class="side" id="sb"></article>
+  </div>
+  <div class="choices" role="group" aria-label="判定">
+    <button class="choice" data-v="same">同じ出来事<small>1</small></button>
+    <button class="choice" data-v="diff">別の出来事<small>2</small></button>
+    <button class="choice" data-v="unsure">判らない<small>3</small></button>
+  </div>
+  <div class="nav">
+    <button class="ghost" id="back">一つ戻る（←）</button>
+    <span id="saved">付けた印はこの端末に残ります。閉じても続きから始まります。</span>
+    <button class="ghost" id="tofinish">終わりの画面へ</button>
+  </div>
+</main>
+
+<main id="finish" class="done" hidden>
+  <h1 id="ftitle">採点が終わりました</h1>
+  <p id="fnote">結果を書き出して保存してください。ファイルには人の印だけが入ります。</p>
+  <div class="tally">
+    <div><b id="nsame">0</b><span>同じ出来事</span></div>
+    <div><b id="ndiff">0</b><span>別の出来事</span></div>
+    <div><b id="nunsure">0</b><span>判らない</span></div>
+  </div>
+  <div class="row">
+    <button class="primary" id="export">結果を書き出す（JSON）</button>
+    <button class="ghost" id="resume">採点に戻る</button>
+    <button class="ghost" id="reset">印をすべて消す</button>
+  </div>
+  <section class="ai" id="aibox" hidden>
+    <h2>AI による下読み（人の採点ではありません）</h2>
+    <p>人の印と食い違った組だけを並べます。下読みは書き出す結果の「ai_prelabel」に分けて入り、人の数には入りません。</p>
+    <button class="ghost" id="showai">食い違いを見る</button>
+    <div id="ailist" hidden></div>
+  </section>
+</main>
+
+<script>
+const DATA = /*__DATA__*/null;
+const KEY = 'parallax-score-' + DATA.key;
+const P = DATA.pairs, N = P.length;
+const LABEL = { same: '同じ出来事', diff: '別の出来事', unsure: '判らない' };
+const $ = id => document.getElementById(id);
+let st = { human: {}, started_at: null, i: 0 };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.human) st = s; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); $('saved').textContent = '付けた印はこの端末に残ります。閉じても続きから始まります。'; } catch (e) { $('saved').textContent = 'この端末に残せません。終わる前に書き出してください。'; } };
+const fmt = ts => { if (!ts) return '時刻なし'; const d = new Date(ts * 1000); const p = n => String(n).padStart(2, '0');
+  return `${d.getMonth() + 1}月${d.getDate()}日 ${p(d.getHours())}:${p(d.getMinutes())}`; };
+const safe = u => /^https?:\/\//i.test(u || '') ? u : '';
+function side(el, s) {
+  el.replaceChildren();
+  const m = document.createElement('div'); m.className = 'meta';
+  const o = document.createElement('span'); o.className = 'o'; o.textContent = s.outlet || '媒体不明';
+  const t = document.createElement('span'); t.textContent = fmt(s.ts);
+  m.append(o, t);
+  const h = document.createElement('p'); h.className = 'title'; h.textContent = s.title; if (s.lang) h.lang = s.lang;
+  el.append(m, h);
+  const u = safe(s.link);
+  if (u) { const a = document.createElement('a'); a.href = u; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = '元の記事を開く'; el.append(a); }
+}
+const count = () => { const c = { same: 0, diff: 0, unsure: 0 }; for (const k in st.human) c[st.human[k].v]++; return c; };
+const firstOpen = () => { const j = P.findIndex(p => !st.human[p.pid]); return j < 0 ? N : j; };
+function show() {
+  const done = Object.keys(st.human).length;
+  $('bar').style.width = (100 * done / N) + '%';
+  $('tot').textContent = N; $('left').textContent = N - done;
+  if (st.i >= N) return finish();
+  $('score').hidden = false; $('finish').hidden = true;
+  const p = P[st.i];
+  $('pos').textContent = st.i + 1;
+  side($('sa'), p.a); side($('sb'), p.b);
+  const cur = st.human[p.pid] && st.human[p.pid].v;
+  document.querySelectorAll('.choice').forEach(b => b.classList.toggle('on', b.dataset.v === cur));
+}
+function mark(v) {
+  if (st.i >= N) return;
+  if (!st.started_at) st.started_at = Math.floor(Date.now() / 1000);
+  st.human[P[st.i].pid] = { v, at: Math.floor(Date.now() / 1000) };
+  const ahead = P.findIndex((p, j) => j > st.i && !st.human[p.pid]);
+  st.i = ahead >= 0 ? ahead : firstOpen();
+  save(); show();
+}
+function finish() {
+  $('score').hidden = true; $('finish').hidden = false;
+  const c = count(), done = c.same + c.diff + c.unsure;
+  $('nsame').textContent = c.same; $('ndiff').textContent = c.diff; $('nunsure').textContent = c.unsure;
+  $('ftitle').textContent = done >= N ? '採点が終わりました' : `${N} 組のうち ${done} 組を採点しました`;
+  $('fnote').textContent = done >= N ? '結果を書き出して保存してください。ファイルには人の印と、分けた欄に AI の下読みが入ります。'
+    : 'このまま書き出せます。残りは「採点に戻る」から続けられます。';
+  $('aibox').hidden = !(done >= N && Object.keys(DATA.ai_prelabel || {}).length);
+  $('export').focus();
+}
+$('export').onclick = () => {
+  const out = { schema: 'parallax-pairs-score/1', key: DATA.key, seed: DATA.seed, pairs: N,
+    started_at: st.started_at, exported_at: Math.floor(Date.now() / 1000), human: st.human,
+    ai_prelabel: { note: 'AI による下読み。人の採点ではない', labels: DATA.ai_prelabel || {} } };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' }));
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  a.download = `parallax_score_${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.json`;
+  document.body.append(a); a.click(); a.remove();
+};
+$('resume').onclick = () => { st.i = firstOpen(); if (st.i >= N) st.i = N - 1; save(); show(); };
+$('tofinish').onclick = () => { st.i = N; save(); show(); };
+$('reset').onclick = () => { if (confirm('付けた印をすべて消します。書き出したファイルは消えません。')) { st = { human: {}, started_at: null, i: 0 }; save(); show(); } };
+$('back').onclick = () => { if (st.i > 0) { st.i = Math.min(st.i, N) - 1; save(); show(); } };
+$('showai').onclick = () => {
+  const box = $('ailist'); box.hidden = false; box.replaceChildren();
+  const t = document.createElement('table');
+  t.innerHTML = '<tr><th>番</th><th>見出し</th><th>人</th><th>AI の下読み</th></tr>';
+  for (const p of P) {
+    const h = st.human[p.pid] && st.human[p.pid].v, a = DATA.ai_prelabel[p.pid];
+    if (!h || !a || h === a) continue;
+    const tr = document.createElement('tr');
+    const td = (x, cls) => { const e = document.createElement('td'); if (cls) { const s = document.createElement('span'); s.className = 'tag ' + cls; s.textContent = x; e.append(s); } else e.textContent = x; return e; };
+    tr.append(td(String(p.n)), td(p.a.title + ' ／ ' + p.b.title), td(LABEL[h], 't-' + h), td(LABEL[a], 't-' + a));
+    tr.querySelector('td').style.cursor = 'pointer';
+    tr.onclick = () => { st.i = P.indexOf(p); save(); show(); };
+    t.append(tr);
+  }
+  if (t.rows.length === 1) { box.textContent = '食い違いはありません。'; return; }
+  box.append(t);
+};
+document.querySelectorAll('.choice').forEach(b => b.onclick = () => mark(b.dataset.v));
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
+  if ($('score').hidden) return;
+  const v = { '1': 'same', '2': 'diff', '3': 'unsure' }[e.key];
+  if (v) { e.preventDefault(); mark(v); }
+  else if (e.key === 'ArrowLeft' || e.key === 'Backspace') { e.preventDefault(); $('back').click(); }
+  else if (e.key === 'ArrowRight' && st.i < N - 1) { st.i++; save(); show(); }
+});
+if (st.i >= N && Object.keys(st.human).length < N) st.i = firstOpen();
+show();
+</script>
+</body>
+</html>

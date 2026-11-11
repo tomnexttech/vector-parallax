@@ -52,11 +52,13 @@ function loadSw() {
   const self = { addEventListener: (k, fn) => { L[k] = fn; }, location: { origin: 'https://site.test' }, skipWaiting: () => {}, clients: { claim: () => {} } };
   const store = new Map();
   const caches = {
-    open: async () => ({ addAll: async (xs) => { for (const x of xs) store.set(x, 'shell:' + x); }, put: async (req, res) => { store.set(new URL(req.url).pathname, res); } }),
+    open: async () => ({ addAll: async (xs) => { for (const x0 of xs) { const x = typeof x0 === 'string' ? x0 : x0.url; store.set(x, 'shell:' + x); } }, put: async (req, res) => { store.set(new URL(req.url).pathname, res); } }),
     keys: async () => [], delete: async () => true,
     match: async (req) => { const p = typeof req === 'string' ? req : new URL(req.url).pathname; return store.get(p) || store.get(p.replace(/^\//, '')) || null; },
   };
-  const ctx = vm.createContext({ self, caches, URL, Response: { error: () => 'ERROR' }, fetch: async () => { throw new Error('offline'); }, Promise });
+  // the worker asks for the shell past the HTTP cache: new Request(url, { cache: 'reload' })
+  const Request = function (url, init) { this.url = url; this.cache = (init || {}).cache; };
+  const ctx = vm.createContext({ self, caches, URL, Request, Response: { error: () => 'ERROR' }, fetch: async () => { throw new Error('offline'); }, Promise });
   vm.runInContext(src + '\n;globalThis.__SHELL = SHELL; globalThis.__CACHE = CACHE;', ctx);
   return { L, store, ctx };
 }

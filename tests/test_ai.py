@@ -241,8 +241,9 @@ class FallbackChain(unittest.TestCase):
         p, seen, sleeps = self.make(lambda m: 200 if m == "step-1" else 503)
         self.assertEqual(p.call("s", "u", {}), ('{"blocks":[]}', ""))
         self.assertEqual((seen, sleeps, p.model), (["main-m", "step-1"], [10.0], "step-1"))
-        p.call("s", "u", {})                                              # 混んでいた主の型へは戻らない
-        self.assertEqual(seen, ["main-m", "step-1", "step-1"])
+        p.call("s", "u", {})                                              # 混雑は一時の物。次の call はまた主の型から試す
+        self.assertEqual(seen, ["main-m", "step-1", "main-m", "step-1"])
+        self.assertEqual(p.answered, ["step-1", "step-1"])
         self.assertEqual(p.chain_models, ("main-m", "step-1", "step-2"))
         self.assertEqual(p.fallback_models, ("step-1", "step-2"))
 
@@ -257,8 +258,8 @@ class FallbackChain(unittest.TestCase):
         p, seen, sleeps = self.make(lambda m: 503 if m == "main-m" else 200, budget=main, fallback_budget=fb)
         for _ in range(3):
             self.assertEqual(p.call("s", "u", {})[1], "")
-        self.assertEqual(seen, ["main-m", "step-1", "step-1", "step-1"])
-        self.assertEqual((main.used, fb.used), (1, 3))                    # 主の型は 1 回だけ。予備の 3 回は予備の上限に数える
+        self.assertEqual(seen, ["main-m", "step-1", "main-m", "step-1", "step-1"])
+        self.assertEqual((main.used, fb.used), (2, 3))                    # 主の型は上限の 2 回まで。予備の 3 回は予備の上限に数える
 
     def test_the_fallback_has_a_limit_of_its_own_and_all_503_ends_as_http_then_budget(self):
         main, fb = ai.CallBudget(2), ai.CallBudget(4)
@@ -266,10 +267,10 @@ class FallbackChain(unittest.TestCase):
         self.assertEqual(p.call("s", "u", {}), (None, "http"))
         self.assertEqual(seen, ["main-m", "step-1", "step-2"])
         self.assertEqual(p.call("s", "u", {}), (None, "http"))
-        self.assertEqual(seen[3:], ["step-2", "step-2"])                  # 末尾の型では同じ型にとどまる。予備の 4 回目で止まる
-        self.assertEqual((main.used, fb.used), (1, 4))
+        self.assertEqual(seen[3:], ["main-m", "step-1", "step-2"])        # 次の call は主の型から。予備の 4 回目で止まる
+        self.assertEqual((main.used, fb.used), (2, 4))
         self.assertEqual(p.call("s", "u", {}), (None, "budget"))
-        self.assertEqual(len(seen), 5)
+        self.assertEqual(len(seen), 6)
         self.assertTrue(sleeps and all(s >= 10.0 for s in sleeps))
 
     def test_a_timeout_stays_on_the_model_and_a_spent_main_budget_hands_over(self):
@@ -291,6 +292,74 @@ class FallbackChain(unittest.TestCase):
         p = ai.GeminiProvider(FAKE_KEY, "main-m", fallback_models=["main-m", "step-1", "step-1"])
         self.assertEqual(p.chain_models, ("main-m", "step-1"))            # 同じ名は一度だけ
         self.assertEqual(gem(lambda *a: (200, "{}"), fallback_model="lite").chain_models, ("gemini-test-model", "lite"))
+
+
+def quota_body(quota_id, delay="38s"):
+    return json.dumps({"error": {"code": 429, "status": "RESOURCE_EXHAUSTED", "message": "quota",
+                                 "details": [{"@type": "type.googleapis.com/google.rpc.QuotaFailure",
+                                              "violations": [{"quotaMetric": "generativelanguage.googleapis.com/x",
+                                                              "quotaId": quota_id}]},
+                                             {"@type": "type.googleapis.com/google.rpc.RetryInfo", "retryDelay": delay}]}})
+
+
+class ReturnToTheMainModel(unittest.TestCase):
+    """11/11 の構築（主の型へ 1 回・予備へ 3 回）の型: 一度の混雑で build の残り全部が予備に落ちていた。
+    混雑・分の枠は一時の物として次の call で主の型へ戻り、日の枠と 404 だけは同じ build の間は外す。"""
+
+    def make(self, answer, **kw):
+        seen, sleeps = [], []
+
+        def tr(url, headers, body, timeout):
+            m = url.split("/models/")[1].split(":")[0]
+            seen.append(m)
+            st, text = answer(m, len(seen))
+            return (200, ok_body('{"blocks":[]}')) if st == 200 else (st, text)
+        kw.setdefault("fallback_models", ["step-1", "step-2"])
+        kw.setdefault("budget", ai.CallBudget(2))
+        kw.setdefault("fallback_budget", ai.CallBudget(4))
+        return ai.GeminiProvider(FAKE_KEY, "main-m", transport=tr, sleep=sleeps.append, **kw), seen, sleeps
+
+    def test_the_1931_pattern_now_gives_the_second_call_to_the_main_model(self):
+        p, seen, _ = self.make(lambda m, n: (503, "{}") if n <= 2 else (200, ""))
+        self.assertEqual(p.call("s", "u", {})[1], "")
+        self.assertEqual(p.call("s", "u", {})[1], "")
+        self.assertEqual(seen, ["main-m", "step-1", "step-2", "main-m"])
+        self.assertEqual(p.answered, ["step-2", "main-m"])
+        self.assertEqual([(a["model"], a["status"], a["err"]) for a in p.trail],
+                         [("main-m", 503, "http"), ("step-1", 503, "http"), ("step-2", 200, "ok"), ("main-m", 200, "ok")])
+
+    def test_a_daily_quota_takes_the_model_out_for_the_build(self):
+        day = quota_body("GenerateRequestsPerDayPerProjectPerModel-FreeTier")
+        p, seen, _ = self.make(lambda m, n: (429, day) if m == "main-m" else (200, ""))
+        p.call("s", "u", {}); p.call("s", "u", {})
+        self.assertEqual(seen, ["main-m", "step-1", "step-1"])
+        self.assertEqual(p.trail[0]["quota"], "day")
+
+    def test_a_minute_quota_comes_back_on_the_next_call(self):
+        minute = quota_body("GenerateRequestsPerMinutePerProjectPerModel-FreeTier", "12s")
+        p, seen, _ = self.make(lambda m, n: (429, minute) if n == 1 else (200, ""))
+        p.call("s", "u", {}); p.call("s", "u", {})
+        self.assertEqual(seen, ["main-m", "step-1", "main-m"])
+        self.assertEqual(p.trail[0]["quota"], "minute")
+        self.assertEqual(ai.quota_kind(minute), ("minute", 12.0))
+
+    def test_an_unreadable_429_keeps_the_old_forward_only_rule(self):
+        p, seen, _ = self.make(lambda m, n: (429, "{}") if n == 1 else (200, ""))
+        p.call("s", "u", {}); p.call("s", "u", {})
+        self.assertEqual(seen, ["main-m", "step-1", "step-1"])
+        self.assertEqual(ai.quota_kind("not json"), ("unknown", None))
+
+    def test_a_404_goes_straight_to_the_fallback_and_stays_out(self):
+        p, seen, _ = self.make(lambda m, n: (404, "{}") if m == "main-m" else (200, ""))
+        self.assertEqual(p.call("s", "u", {})[1], "")
+        p.call("s", "u", {})
+        self.assertEqual(seen, ["main-m", "step-1", "step-1"])           # 名の変わった型を二度送らない
+
+    def test_the_trail_holds_no_key_and_no_message_text(self):
+        p, _, _ = self.make(lambda m, n: (429, quota_body("PerDay " + FAKE_KEY)) if n == 1 else (200, ""))
+        p.call("s", "u", {})
+        self.assertNotIn(FAKE_KEY, json.dumps(p.trail))
+        self.assertEqual(set(p.trail[0]), {"model", "status", "err", "quota"})
 
 
 class ChainInPrompt(unittest.TestCase):
@@ -329,7 +398,7 @@ class ChainInPrompt(unittest.TestCase):
         self.assertEqual(run["errors"], ["http", "http"])
         self.assertEqual(build.ai_status(p, run), "error")
         ar = build.make_ai_run("error", p, PROMPT, 0, run)
-        self.assertEqual((ar["attempts"], ar["call_limit"], ar["fallback_attempts"], ar["fallback_limit"]), (1, 2, 4, 4))
+        self.assertEqual((ar["attempts"], ar["call_limit"], ar["fallback_attempts"], ar["fallback_limit"]), (2, 2, 4, 4))
         self.assertTrue(sleeps and all(s >= 10.0 for s in sleeps))
 
 
