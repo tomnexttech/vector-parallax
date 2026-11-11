@@ -43,7 +43,7 @@ import { createConnect } from './connect.js';
 import { createSettingsPanel } from './settings_panel.js';
 import { initLandscape } from './landscape.js';
 import { initDial } from './dial.js';
-import { createTour, wantTour } from './tour.js';
+import { createTour, wantTour, markTour } from './tour.js';
 import { createDossier, measure, paperPick, drawShareCard, CARD_W, CARD_H } from './dossier.js';
 import { createCoverage, coverageOf } from './coverage.js';
 import { biasOf as biasIndex, sourceBase } from './bias.js';
@@ -502,7 +502,7 @@ function renderAiLine() {
   const parts = [h('span', { class: 'al-h', text: '国内と海外の両方' })];
   if (state.hasAI && ai != null) { parts.push(h('span', { class: 'al-k', text: 'AI' }), n(ai, state.view === 'ai')); if (ch.of === 'snapshot') parts.push(h('span', { class: 'al-u', text: '前回のまとめ' })); }
   else if (!state.stSnap) parts.push(h('span', { class: 'al-k off', text: 'AI 停止中' }));   // with a dot at the end of the line, the word is said once
-  if (both != null) parts.push(h('i', { class: 'al-sep', 'aria-hidden': 'true' }), h('span', { class: 'al-k', text: '自動' }), n(both, state.view === 'rules'));
+  if (both != null) parts.push(h('i', { class: 'al-sep', 'aria-hidden': 'true' }), h('span', { class: 'al-k', text: '規則' }), n(both, state.view === 'rules'));
   parts.push(h('button', { type: 'button', class: 'al-go', on: { click: () => { if (state.hasAI && ai != null && state.view !== 'ai') setView('ai'); setTopic('cross'); if (narrow()) $('p-pri').scrollIntoView({ block: 'start' }); } } }, '一覧'));
   el.replaceChildren(...parts, viewEl());
   (phoneBar.matches ? $('tb').querySelector('.meters') : el).append(statEl());
@@ -1153,8 +1153,8 @@ function caseNode(e) {
   const flags = e.ruleFlags.map((f) => { const t = flagText(f); return t ? h('li', { class: 'flag-row', title: t.tip }, h('span', { class: 'flag', text: t.ja }), h('span', { class: 'rl', text: '自動' })) : null; });
   const ae = e.case && state.board ? arr(state.board.asymmetry).find((a) => isObj(a) && a.sid === e.case.sid) : null;
   const al = ae && str(ae.label_ja) ? { ja: plainWord(ae.label_ja), rule: str(((state.board.asym_labels || {})[ae.kind] || {}).rule) } : null;
-  if (isObj(al)) flags.unshift(h('li', { class: 'flag-row', title: str(al.rule) }, h('span', { class: 'flag', text: str(al.ja) }), h('span', { class: 'rl', text: '自動' })));
-  if (e.topics.length) flags.unshift(h('li', { class: 'flag-row' }, h('span', { class: 'tpf', text: e.topics.map(flagJa).join('・') }), h('span', { class: 'rl', text: '自動' })));
+  if (isObj(al)) flags.unshift(h('li', { class: 'flag-row', title: str(al.rule) }, h('span', { class: 'flag', text: str(al.ja) }), h('span', { class: 'rl', text: '規則' })));
+  if (e.topics.length) flags.unshift(h('li', { class: 'flag-row' }, h('span', { class: 'tpf', text: e.topics.map(flagJa).join('・') }), h('span', { class: 'rl', text: '規則' })));
   const vetoed = [];   // the AI does not label (A4): what the rules removed from an AI's labels is not shown
   const b = e.basis;
   const wordLinks = (words) => words.map((w, i) => [i ? '、' : '', lk(w, () => searchFor(w), `「${w}」で探す`)]);
@@ -2998,7 +2998,7 @@ import { readHero, pickHeroes, createHero, sameFromBasis, cleanSame, gapText } f
 import { mountOrb } from './orb.js';
 import { scriptOf, createGuide } from './guide.js';
 import { isDemo, runReset, createIdle, readFrozen, freeze, unfreeze, frozenFetch, demoKey } from './demo.js';
-import { ORDER_JA, available as orderAvail, orderOf, countsOf, diffOf, TOP as ORDER_TOP } from './bubble.js';
+import { ORDER_JA, available as orderAvail, orderOf, countsOf, diffOf, hbOf, TOP as ORDER_TOP } from './bubble.js';
 import { flowItems, createSwipe } from './swipe.js';
 import { voiceFor } from './speak.js';
 import { titleOf as entryTitleOf } from './entry.js';
@@ -3016,6 +3016,13 @@ function hxSame(e) {
   const sid = hxSid(e);
   const r = HX.rel && isObj(HX.rel.same) && sid ? cleanSame(HX.rel.same[sid]) : null;
   return r || sameFromBasis(e && e.basis);
+}
+/** the media table of a card's event: the event on screen, else the board's case of the same id (the AI view's events carry other ids) */
+function hxCov(p) {
+  const e = heroEntry(p);
+  if (e && e.case && isObj(e.case.coverage)) return e.case.coverage;
+  const c = state.board && isObj(state.board.cases) ? state.board.cases[p.sid] : null;
+  return isObj(c) && isObj(c.coverage) ? c.coverage : null;
 }
 function hxReaction(sid) {
   const ev = HX.reaction && isObj(HX.reaction.events) ? HX.reaction.events[sid] : null;
@@ -3058,20 +3065,54 @@ function hxWhy(p) {
   const out = [];
   if (!same) { hxLayer('束ねた理由', h('p', { class: 'empty', text: '根拠のデータがありません' })); return; }
   out.push(h('p', { class: 'hr-by' }, h('b', { text: same.by === 'ai' ? 'AI' : '規則' }),
-    same.by === 'ai' && run ? h('span', { class: 'num', text: ` ${[str(run.provider), str(run.model)].filter(Boolean).join(' ')}${isNum(run.at) ? '・' + fmtShort(run.at) : ''}` }) : null,
-    same.rule_groups > 1 ? h('span', { text: `・規則の束 ${same.rule_groups} つ` }) : null));
+    same.by === 'ai' && run ? h('span', { class: 'num', text: ` ${[...new Set([str(run.provider), str(run.model)].filter(Boolean))].join(' ').replace(/^(\w+) (\1-)/i, '$2')}${isNum(run.at) ? '・' + fmtShort(run.at) : ''}` }) : null));
   const dl = [];
   if (same.words.length) dl.push(['一致した語', h('span', { class: 'hr-chips' }, same.words.map((w) => h('span', { class: 'hr-chip', text: w })))]);
   if (same.places.length) dl.push(['場所', same.places.map(pj).join('・')]);
   if (isNum(same.span_s)) dl.push(['最初と最後の差', gapText(same.span_s)]);
   if (dl.length) out.push(h('dl', { class: 'hr-dl' }, dl.map(([k, v]) => [h('dt', { text: k }), h('dd', null, v)])));
   const links = same.links.slice(0, 2).filter((l) => ttl(l.a) && ttl(l.b));
-  if (links.length) out.push(h('section', { class: 'hr-sh-g' }, h('h3', { text: '似ている見出しの対' }), links.map((l) => h('div', { class: 'hr-pair' },
-    h('p', null, mark(ttl(l.a), l.words)), h('p', null, mark(ttl(l.b), l.words)),
-    h('p', { class: 'hr-pm num', text: [l.places.length ? l.places.map(pj).join('・') : '', isNum(l.dt_min) ? `差 ${gapText(l.dt_min * 60)}` : ''].filter(Boolean).join('　') })))));
-  if (same.ai_joined.length) out.push(h('section', { class: 'hr-sh-g' }, h('h3', { text: 'AI が結んだ束の間' }), h('ul', { class: 'hr-aj' }, same.ai_joined.map((j) => h('li', null,
-    j.best && j.best.words.length ? h('span', { class: 'hr-chips' }, j.best.words.map((w) => h('span', { class: 'hr-chip', text: w }))) : h('span', { class: 'hr-none', text: '規則では一致が見つからない' }))))));
+  // a pair: the words both headlines share, each word one hue in both lines, joined by one line between the two (hxPairLines)
+  const pairWords = (l) => arr(l.words).filter((w) => w && ttl(l.a).includes(w) && ttl(l.b).includes(w)).slice(0, 4);
+  const markPair = (text, ws) => {
+    if (!ws.length) return [text];
+    const sorted = [...ws].sort((a, b) => b.length - a.length);
+    const re = new RegExp(`(${sorted.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
+    const seen = new Set();
+    return text.split(re).map((part, k) => { if (!(k % 2)) return part; const n = ws.indexOf(part); const first = !seen.has(part); seen.add(part); return h('mark', { data: { w: n, first: first ? '1' : '0' }, text: part }); });
+  };
+  if (links.length) out.push(h('section', { class: 'hr-sh-g' }, h('h3', { text: '似ている見出しの対' }), links.map((l) => { const ws = pairWords(l); return h('div', { class: 'hr-pair' },
+    h('p', { class: 'hr-pa' }, markPair(ttl(l.a), ws)), h('p', { class: 'hr-pb' }, markPair(ttl(l.b), ws)),
+    h('p', { class: 'hr-pm num', text: [l.places.length ? l.places.map(pj).join('・') : '', isNum(l.dt_min) ? `差 ${gapText(l.dt_min * 60)}` : ''].filter(Boolean).join('　') })); })));
+  // what the AI added between the rule's groups: the shared words when there are some, else only how many
+  const aj = same.ai_joined.filter((j) => j.best && j.best.words.length);
+  if (same.ai_joined.length) out.push(h('section', { class: 'hr-sh-g' }, h('h3', null, h('span', { text: 'AI が足したつながり' }), h('b', { class: 'num hr-ajn', text: ` ${same.ai_joined.length}` })),
+    aj.length ? h('ul', { class: 'hr-aj' }, aj.map((j) => h('li', null, h('span', { class: 'hr-chips' }, j.best.words.map((w) => h('span', { class: 'hr-chip', text: w })))))) : null));
   hxLayer('束ねた理由', out);
+  requestAnimationFrame(hxPairLines);
+}
+/** one line from each shared word in the first headline of a pair to the same word in the second, in that word's hue */
+function hxPairLines() {
+  const lay = $('hr-layer'); if (!lay || lay.hidden) return;
+  for (const pair of lay.querySelectorAll('.hr-pair')) {
+    const old = pair.querySelector('svg.hr-pl'); if (old) old.remove();
+    const top = [...pair.querySelectorAll('.hr-pa mark[data-first="1"]')], bot = pair.querySelectorAll('.hr-pb mark[data-first="1"]');
+    if (!top.length) continue;
+    const box = pair.getBoundingClientRect();
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'hr-pl'); svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('width', String(box.width)); svg.setAttribute('height', String(box.height));
+    for (const a of top) {
+      const b = [...bot].find((x) => x.dataset.w === a.dataset.w); if (!b) continue;
+      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      ln.setAttribute('x1', (ra.left + ra.width / 2 - box.left).toFixed(1)); ln.setAttribute('y1', (ra.bottom - box.top).toFixed(1));
+      ln.setAttribute('x2', (rb.left + rb.width / 2 - box.left).toFixed(1)); ln.setAttribute('y2', (rb.top - box.top).toFixed(1));
+      ln.setAttribute('data-w', a.dataset.w);
+      svg.append(ln);
+    }
+    pair.prepend(svg);
+  }
 }
 function hxCompare(p) {
   const e = heroEntry(p);
@@ -3087,7 +3128,11 @@ function hxPaintSpeak() {
   const on = HX.guide && HX.guide.key() != null;
   b.hidden = !(HX.guide && HX.guide.can());
   b.setAttribute('aria-pressed', String(on));
-  b.textContent = on ? '止める' : '読み上げ';
+  const ic = on ? '<svg viewBox="0 0 20 20" aria-hidden="true"><rect x="5.5" y="5.5" width="9" height="9" rx="1.5"/></svg>'
+    : '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 7.5h3l4-3.5v12l-4-3.5h-3z"/><path class="w" d="M13.5 7a4 4 0 0 1 0 6M15.6 5a7 7 0 0 1 0 10"/></svg>';
+  b.innerHTML = `${ic}<span>${on ? '止める' : '読み上げ'}</span>`;
+  const s = HX.stageBtn;
+  if (s) { s.setAttribute('aria-pressed', String(on)); s.setAttribute('aria-label', on ? '止める' : '読み上げ'); s.disabled = b.hidden; }
 }
 function hxRead(p) {
   p = p || (HX.hero && HX.hero.current());
@@ -3097,7 +3142,9 @@ function hxRead(p) {
 }
 function hxOrbBox() {
   if (HX.orbBox) return HX.orbBox;
-  const stage = h('div', { class: 'hr-stage' });
+  // the orb itself is the button of the voice; the button beside it says so with a speaker
+  const stage = h('button', { type: 'button', class: 'hr-stage', 'aria-label': '読み上げ', 'aria-pressed': 'false', on: { click: () => hxRead() } });
+  HX.stageBtn = stage;
   HX.speakBtn = h('button', { type: 'button', class: 'hr-speak', 'aria-pressed': 'false', on: { click: () => hxRead() } }, '読み上げ');
   HX.cap = h('p', { class: 'hr-cap', 'aria-live': 'polite' });
   HX.orbBox = h('div', { class: 'hr-orb' }, stage, HX.speakBtn, HX.cap);
@@ -3113,6 +3160,7 @@ function hxSetOrder(kind) {
   if (kind === HX.order) return;
   HX.prev = { kind: HX.order, counts: hxCounts(hxOrder(HX.order)) };
   HX.order = kind;
+  HX.anim = true;
   hxBubble();
 }
 function hxBubble() {
@@ -3130,6 +3178,16 @@ function hxBubble() {
     h('p', null, h('span', { class: 'k', text: '自分' }), h('span', { class: 'me-bar' }, dossier.ratioBar({ jp: Array(m.sides.jp), intl: Array(m.sides.intl), gov: Array(m.sides.gov) })), h('b', { class: 'num', text: `${m.n} 件` })),
     h('p', null, h('span', { class: 'k', text: '全体' }), h('span', { class: 'me-bar' }, dossier.ratioBar({ jp: Array(tot.jp), intl: Array(tot.intl), gov: Array(tot.gov) })), h('b', { class: 'num', text: `${hxPool().length} 件` })),
     h('button', { type: 'button', class: 'hr-b', on: { click: () => { clearReads(store); state.reads = []; HX.prev = null; hxBubble(); renderReads(); } } }, '記録を消す')) : null;
+  // the switch of order moves the rows: each kept row slides from where it was, a row that left the top stays faded below for a moment
+  const before = new Map([...box.querySelectorAll('.hr-row[data-k]')].map((el) => [el.dataset.k, el.getBoundingClientRect().top]));
+  const moving = HX.anim && before.size; HX.anim = false;
+  const topKeys = new Set(list.slice(0, ORDER_TOP).map((e) => e.key));
+  const gone = moving ? [...before.keys()].filter((k) => !topKeys.has(k)).map((k) => state.byKey.get(k)).filter(Boolean) : [];
+  const pop = HX.order === 'popular';
+  const row = (e, cls) => h('li', { class: cls || null }, h('button', { type: 'button', class: 'hr-row', data: { k: e.key }, tabindex: cls ? '-1' : null, 'aria-hidden': cls ? 'true' : null, on: { click: () => { setSect('home'); setUi('simple'); pickEntry(e.key); } } },
+    mark(e), h('span', { class: 't', text: entryTitleOf(e).text }),
+    pop && hbOf(e, HX.reaction) ? h('span', { class: 'hb num', title: 'はてなブックマーク' }, h('span', { class: 'k', text: 'はてな' }), String(hbOf(e, HX.reaction))) : null,
+    h('span', { class: 'n num', text: `${e.n} 社` })));
   box.replaceChildren(h('section', { class: 'hr-ord', 'aria-labelledby': 'hr-ord-h' },
     h('div', { class: 'hr-ord-top' },
       h('h2', { id: 'hr-ord-h', text: '並び順' }),
@@ -3137,10 +3195,17 @@ function hxBubble() {
         : h('span', { class: 'hr-ord-one', text: ORDER_JA[HX.order] }),
       h('button', { type: 'button', class: 'hr-b hr-flow', on: { click: () => hxFlow() } }, '流す')),
     diffs.length ? h('ul', { class: 'hr-diff', 'aria-live': 'polite' }, diffs.map((d) => h('li', null, h('span', { text: d.ja }), h('b', { class: 'num', text: `${d.from} 件 → ${d.to} 件` })))) : null,
-    h('ol', { class: 'hr-top' }, list.slice(0, ORDER_TOP).map((e) => h('li', null, h('button', { type: 'button', class: 'hr-row', on: { click: () => { setSect('home'); setUi('simple'); pickEntry(e.key); } } },
-      mark(e), h('span', { class: 't', text: entryTitleOf(e).text }), h('span', { class: 'n num', text: `${e.n} 社` }))))),
+    h('ol', { class: 'hr-top' + (pop ? ' hr-pop' : '') }, list.slice(0, ORDER_TOP).map((e) => row(e)), gone.map((e) => row(e, 'hr-gone'))),
     mine));
+  if (!moving || reducedMotion()) { for (const el of box.querySelectorAll('.hr-gone')) el.remove(); return; }
+  for (const el of box.querySelectorAll('.hr-top > li:not(.hr-gone) .hr-row[data-k]')) {
+    const was = before.get(el.dataset.k); if (was == null) continue;
+    const d = was - el.getBoundingClientRect().top; if (Math.abs(d) < 1) continue;
+    el.animate([{ transform: `translateY(${d}px)` }, { transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.2,.7,.2,1)' });
+  }
+  setTimeout(() => { for (const el of box.querySelectorAll('.hr-gone')) el.remove(); }, 1800);
 }
+const reducedMotion = () => { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 function hxFlow(at = 0) {
   if (!HX.swipe || !state.data) return false;
   const items = flowItems(hxOrder(HX.order), { sidesOf, outletOf, titleOf: entryTitleOf });
@@ -3158,7 +3223,10 @@ function hxRender() {
     picks = pickHeroes(state.es, { sidesOf, outletOf, oneSideOf, leadPool, titleOf: entryTitleOf, sameOf: hxSame, reactionOf: hxReaction });
     gen = state.data.generated_at;
   } else return;
+  // the media table of the event on screen: the card's columns quote its headlines' own words, its findings count its outlets
+  picks = picks.map((p) => { const cov = hxCov(p); return cov ? { ...p, cov } : p; });
   HX.hero.render(picks, { gen, now: nowS(), keep: true });
+  if (HX.cueWanted && HX.hero.current()) { HX.cueWanted = false; setTimeout(() => HX.hero.cue(window), 500); }
 }
 async function hxSides() {
   const dir = hxDir();
@@ -3169,7 +3237,7 @@ async function hxSides() {
 }
 async function hxData() {
   if (!state.data) { if (HX.orb) HX.orb.setState('error'); return; }
-  const g = state.data.generated_at;
+  const g = `${state.data.generated_at}:${state.board ? 'b' : ''}`;   // drawn again when the board (its media tables) arrives after the data
   if (HX.gen === g) return;
   HX.gen = g; HX.loaded = true;
   await hxSides();
@@ -3254,6 +3322,9 @@ function heroWire() {
     open: hxOpen, why: hxWhy, compare: hxCompare, orbSlot: hxOrbBox, oneSideNote: ONE_SIDE_NOTE,
     change: (p) => { root.hidden = !p; if (HX.guide && HX.guide.key() != null && (!p || HX.guide.key() !== p.sid)) HX.guide.stop(); hxPaintSpeak(); } } });
   HX.swipe = createSwipe({ h, root: $('hr-flow'), fmt: { clock: fmtShort }, on: { title: '流す', get orderJa() { return ORDER_JA[HX.order]; }, open: (k) => { HX.swipe.close(); setSect('home'); setUi('simple'); pickEntry(k); } } });
+  // AI | 規則: the card is drawn again, and a count of outlets that changed lights once (js/hero.js)
+  for (const id of ['v-ai', 'v-rules']) $(id).addEventListener('click', () => setTimeout(hxRender, 0));
+  window.addEventListener('resize', () => requestAnimationFrame(hxPairLines), { passive: true });
   $('hr-layer').addEventListener('click', (ev) => { if (ev.target === $('hr-layer')) hxLayerClose(); });
   $('hr-layer').addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); hxLayerClose(); return; }
@@ -3612,6 +3683,8 @@ async function main() {
   document.documentElement.dataset.size = state.set.look.size;
   if (!hashView && state.set.news.view !== 'auto') state.view = state.set.news.view;
   state.panel = createSettingsPanel({ root: $('set-layer'), get: () => state.set, set: (n) => applySettings(n), info: settingsInfo,
+    // the bar keeps 更新 only; the other meters are read here, as they stand when the window is drawn
+    extra: (sec) => (sec === 'news' ? h('div', { class: 'set-meters' }, ['m-src', 'm-ai', 'm-new'].map((id) => $(id)).filter((el) => el && !el.hidden).map((el) => { const c = el.cloneNode(true); c.removeAttribute('id'); for (const x of c.querySelectorAll('[id]')) x.removeAttribute('id'); return c; })) : null),
     watch: { get: () => state.watch, set: (l) => setWatch(l) },
     view: { get: () => ({ count: (state.vwNow || state.vw).count, layout: state.vw.layout, counts: countsFor(window.innerWidth, window.innerHeight).map((c) => [c, COUNT_JA[c]]), layouts: LAYOUTS.map((l) => [l, LAYOUT_JA[l]]) }), setCount, setLayout },
     ai: {
@@ -3675,7 +3748,7 @@ async function main() {
   try { history.replaceState({ ...(isObj(history.state) ? history.state : {}), ps: screenNow() }, '', location.href); } catch { /* */ }
   screenReady = true; paintScreen();
   // the first visit: a short tour over the simple view, which stays open after it (js/tour.js); 使い方 in the bar shows it again
-  state.tour = createTour({ doc: document, win: window, storage: store, onEnd: () => { setUi('simple'); $('entry').scrollTop = 0; window.scrollTo(0, 0); } });
+  state.tour = createTour({ doc: document, win: window, storage: store, onEnd: () => { if (state.ui === 'simple') setUi('full'); setHome('home'); setSect('home'); window.scrollTo(0, 0); } });
   $('tour-btn').addEventListener('click', () => { setSect('home'); setUi('simple'); state.tour.open(); });
   state.sceneMode = 'auto';
   getJson(dataDir() + 'scenes.json').then((c) => { state.scenes = isObj(c) && c.schema === 'parallax-scenes/1' ? c : null; sceneTick(); });
@@ -3800,7 +3873,9 @@ async function main() {
     let hit = (askSid && find(askSid)) || (askT && find(askT));
     if (!hit && askSid && state.view === 'ai') { setView('rules'); hit = find(askSid); }
     if (hit) openSheet('case');
-  } else if (state.sect === 'home' && wantTour(store, location.search)) { setUi('simple'); state.tour.open(); }
+  } else if (state.sect === 'home' && qs.get('tour') === '1') { setUi('simple'); state.tour.open(); }
+  else if (state.sect === 'home' && wantTour(store, location.search)) { markTour(store); HX.cueWanted = true; }
+  hxData();   // the card with the board's media tables, now that both are in (nothing sets data-load, so the observer does not see this moment)   // the first visit stays on the home's first card: its three buttons light once in turn (the tour is under ?)
   state.autoNext = Date.now() + AUTO_MS;
   loadHaz(); loadSide(); loadEval(); loadDefaultModel();
   setInterval(tick, 30000);

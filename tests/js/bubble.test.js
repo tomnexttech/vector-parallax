@@ -19,7 +19,7 @@ test('the orders that cannot be made are not offered', () => {
   assert.equal(orderOf(es, 'popular', { sidesOf: sides }), null);
   assert.equal(orderOf(es, 'mine', { sidesOf: sides, reads: { n: MIN_READS - 1 } }), null);
   assert.equal(orderOf(es, 'nonsense', { sidesOf: sides }), null);
-  assert.deepEqual(Object.values(ORDER_JA), ['人気順', '自分の読み方順', '全体']);
+  assert.deepEqual(Object.values(ORDER_JA), ['人気順', '自分の読み方順', 'PARALLAX']);
 });
 
 test('全体: more sides first, then more kinds of outlet; 人気順: the bookmarks counted by the build', () => {

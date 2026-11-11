@@ -32,7 +32,7 @@ export const EN = {
   '6 時間より前のニュースなので、急上昇は出せません。': 'These headlines were collected more than 6 hours ago, so there is no rising order.',
   // the band, the screens and the tabs
   'ニュース': 'News', '地図': 'Map', '市場': 'Markets', '政治': 'Politics', '災害': 'Disasters', '映像': 'Video', '保存': 'Saved',
-  'その他': 'More', '検索': 'Search', '設定': 'Settings', '表示': 'View', '自動': 'Rules', 'メディア': 'Outlets', '更新': 'Updated', '前回から': 'Since last visit',
+  'その他': 'More', '検索': 'Search', '設定': 'Settings', '表示': 'View', '自動': 'Auto', '規則': 'Rules', 'メディア': 'Outlets', '更新': 'Updated', '前回から': 'Since last visit',
   'データと AI': 'Data and AI', '使い方': 'How to use', '区画': 'Screens', '検索と操作（Ctrl+K）': 'Search and actions (Ctrl+K)',
   '声で操作（v）': 'Voice control (v)', '声で操作': 'Voice control', 'データと AI（i）': 'Data and AI (i)', '外観 ダーク': 'Appearance: dark', '外観 ライト': 'Appearance: light',
   '外観': 'Appearance', '設定（,）': 'Settings (,)', '欄へ移る': 'Go to a pane', '言語': 'Language', '閉じる': 'Close', '検索と操作': 'Search and actions', '結果': 'Results',
@@ -115,7 +115,7 @@ export const EN = {
   '最初の一枚': 'First card', '両方': 'Both', '元の記事': 'Articles', '束ねた理由': 'Why grouped', '読み上げ': 'Read aloud', '並び順': 'Order', '人気順': 'Most bookmarked',
   '自分の読み方順': 'Like my reading', '全体': 'Everything', '流す': 'Swipe', '前へ': 'Previous', '前の側': 'Previous side', '次の側': 'Next side', '最初から': 'Start over', '続ける': 'Continue',
   'この版で固定': 'Keep this edition', '固定を外す': 'Release the edition', 'デモ': 'Demo', '前の候補': 'Previous card', '次の候補': 'Next card', 'ほかの候補': 'Other cards',
-  '一致した語': 'Words in common', '場所': 'Places', '最初と最後の差': 'First to last', '似ている見出しの対': 'Similar headline pairs', 'AI が結んだ束の間': 'Groups the AI joined',
+  '一致した語': 'Words in common', '場所': 'Places', '最初と最後の差': 'First to last', '似ている見出しの対': 'Similar headline pairs', 'AI が結んだ束の間': 'Groups the AI joined', 'AI が足したつながり': 'Links the AI added', 'はてな': 'Hatena',
   '規則では一致が見つからない': 'The rules find nothing in common', '根拠のデータがありません': 'No basis in the data', '規則': 'Rules', '自分': 'Me', '社': 'outlets', '読込中です': 'Loading',
   'ニュースがありません': 'No news', 'AI が付けた見出し': 'A title the AI wrote', '国内・海外・官公庁の見出し': 'Headlines of Japan, abroad and the ministries',
   '地方紙・小さな媒体だけのニュース': 'News of local and small outlets only', '海外だけのニュース': 'News of outlets abroad only', '暮らしのラベル': 'Daily-life label',

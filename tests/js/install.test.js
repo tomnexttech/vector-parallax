@@ -51,16 +51,15 @@ function loadSw() {
   const L = {};
   const self = { addEventListener: (k, fn) => { L[k] = fn; }, location: { origin: 'https://site.test' }, skipWaiting: () => {}, clients: { claim: () => {} } };
   const store = new Map();
+  const reloads = [];  // the install takes each file past the HTTP cache (cache: 'reload')
   const caches = {
-    open: async () => ({ addAll: async (xs) => { for (const x0 of xs) { const x = typeof x0 === 'string' ? x0 : x0.url; store.set(x, 'shell:' + x); } }, put: async (req, res) => { store.set(new URL(req.url).pathname, res); } }),
+    open: async () => ({ addAll: async (xs) => { for (const x of xs) { const k = typeof x === 'string' ? x : x.url; store.set(k, 'shell:' + k); if (typeof x !== 'string') reloads.push(x.cache); } }, put: async (req, res) => { store.set(new URL(req.url).pathname, res); } }),
     keys: async () => [], delete: async () => true,
     match: async (req) => { const p = typeof req === 'string' ? req : new URL(req.url).pathname; return store.get(p) || store.get(p.replace(/^\//, '')) || null; },
   };
-  // the worker asks for the shell past the HTTP cache: new Request(url, { cache: 'reload' })
-  const Request = function (url, init) { this.url = url; this.cache = (init || {}).cache; };
-  const ctx = vm.createContext({ self, caches, URL, Request, Response: { error: () => 'ERROR' }, fetch: async () => { throw new Error('offline'); }, Promise });
+  const ctx = vm.createContext({ self, caches, URL, Request: class { constructor(u, o) { this.url = u; this.cache = o && o.cache; } }, Response: { error: () => 'ERROR' }, fetch: async () => { throw new Error('offline'); }, Promise });
   vm.runInContext(src + '\n;globalThis.__SHELL = SHELL; globalThis.__CACHE = CACHE;', ctx);
-  return { L, store, ctx };
+  return { L, store, ctx, reloads };
 }
 
 test('the service worker keeps the app files, and answers a page from the cache when offline', async () => {

@@ -47,7 +47,7 @@ function icon(paths) {
 }
 const clone = (x) => JSON.parse(JSON.stringify(x));
 
-export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
+export function createSettingsPanel({ root, get, set, info, watch, ai, view, extra }) {
   let sec = 'tv', open = false, msg = null, resetArm = 0, back = null, aiMsg = null, aiBusy = false;
   const file = h('input', { type: 'file', accept: 'application/json,.json', hidden: true, tabindex: '-1', 'aria-hidden': 'true' });
   file.addEventListener('change', onFile);
@@ -117,7 +117,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
         on: { click: () => change((n) => { n.news[`${k}_off`] = []; }) } }, label);
       return [
         group('', [
-          row('最初に開く見方', '自動は、AI のまとめがあれば AI を使います。上の帯でいつでも替えられます', seg('view', '最初に開く見方', s.news.view, [['auto', '自動'], ['ai', 'AI'], ['rules', '自動']], (n, v) => { n.news.view = v; })),
+          row('最初に開く見方', '自動は、AI のまとめがあれば AI を使います。上の帯でいつでも替えられます', seg('view', '最初に開く見方', s.news.view, [['auto', '自動'], ['ai', 'AI'], ['rules', '規則']], (n, v) => { n.news.view = v; })),
           row('見出しの言語', 'AI の題が無いニュースは、メディアの見出しをそのまま出します', seg('lang', '見出しの言語', s.news.lang, [['ja', '日本語'], ['en', 'English'], ['orig', '元の見出し']], (n, v) => { n.news.lang = v; })),
           row('国内と海外', '国内と海外の両方が載せたニュースは必ず出します', seg('scope', '国内と海外', s.news.scope, [['all', '両方'], ['jp', '国内'], ['intl', '海外']], (n, v) => { n.news.scope = v; })),
           row('地元のニュース', 'ホームと「比べる」に、選んだ地名のニュースを出します。選択はこのブラウザにだけ保存します', h('select', { class: 'set-sel', 'aria-label': '地元のニュース', data: { f: 'local' }, on: { change: (ev) => { const v = ev.target.value; change((n) => { n.local.place = v; }); } } },
@@ -314,7 +314,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view }) {
       h('div', { class: 'set-cols' },
         h('nav', { class: 'set-side', 'aria-label': '設定の区分' }, SECTIONS.map(([k, ja, p]) => h('button', {
           type: 'button', class: 'set-nav', 'aria-current': k === sec ? 'page' : null, data: { k, f: `nav-${k}` }, on: { click: () => go(k) } }, icon(p), h('span', { text: ja })))),
-        h('div', { class: 'set-main' }, h('h3', { class: 'set-h', text: title }), BODY[sec](s, inf), file)));
+        h('div', { class: 'set-main' }, h('h3', { class: 'set-h', text: title }), typeof extra === 'function' ? extra(sec) : null, BODY[sec](s, inf), file)));
     const again = fkey && root.querySelector(`[data-f="${CSS.escape(fkey)}"]`);
     if (again && !again.disabled) again.focus({ preventScroll: true });
   }

@@ -153,6 +153,69 @@ export function sameFromBasis(basis) {
   return cleanSame({ by: basis.by, words: basis.words, places: basis.places, span_s: basis.time_span, links: [], ai_joined: [] });
 }
 
+/** the words of the headlines themselves for a column of the card: for each row name, the phrase one outlet of that side carries
+ *  (the media table's own cell, CONTRACT 23). Without the table, or a row of that name, the name alone. */
+export function phrasesOf(cov, col, names) {
+  const list = arr(names).filter((n) => typeof n === 'string' && n);
+  const nm = (n) => (n === 'いつ' ? '時期' : n);
+  if (!isObj(cov) || !Array.isArray(cov.outlets) || !Array.isArray(cov.rows)) return list.map((name) => ({ name: nm(name), phrase: '', outlet: '' }));
+  const sideAt = cov.outlets.map((o) => (isObj(o) ? o.side : null));
+  return list.map((name) => {
+    const r = cov.rows.find((x) => isObj(x) && (x.t === name || rowName(x) === name));
+    const cells = r ? arr(r.c).map((c, i) => ({ c, i })).filter(({ c, i }) => isObj(c) && str(c.p).trim() && (col === 'both' ? sideAt[i] === 'jp' || sideAt[i] === 'intl' : sideAt[i] === col)) : [];
+    const hit = cells[0];
+    const o = hit && cov.outlets[hit.i];
+    return { name: nm(name), phrase: hit ? str(hit.c.p).trim() : '', outlet: isObj(o) ? str(o.name) : '' };
+  });
+}
+
+/** a finding as a row of dots, one dot an outlet: carried (on) or not (off), grouped by side. From the board's outlet numbers when the
+ *  media table is on the page, else from the counted values of the finding's own fixed sentence. null: a finding not of this shape. */
+export function dotsOf(f, cov) {
+  if (!isObj(f)) return null;
+  const sideAt = isObj(cov) && Array.isArray(cov.outlets) ? cov.outlets.map((o) => (isObj(o) ? o.side : null)) : null;
+  const order = ['jp', 'intl', 'gov'];
+  if (f.kind === 'only_side') {
+    const row = sideAt && f.row ? arr(cov.rows).find((r) => isObj(r) && r.k === f.row) : null;
+    const m = /^(.+?)は(?=(国内|海外|官公庁) )/.exec(f.text);
+    const label = row ? rowName(row) : m ? (m[1].replace(/^「|」$/g, '') === 'いつ' ? '時期' : m[1].replace(/^「|」$/g, '')) : '';
+    if (!label) return null;
+    let groups = null;
+    if (sideAt && (f.outlets.length || f.others.length)) {
+      const on = new Set(f.outlets), all = [...new Set([...f.outlets, ...f.others])];
+      groups = order.map((k) => ({ side: k, on: all.filter((i) => sideAt[i] === k && on.has(i)).length, off: all.filter((i) => sideAt[i] === k && !on.has(i)).length }));
+    } else {
+      const [a, b] = f.text.split('、');
+      const count = (s, k) => { const x = new RegExp(`${SIDE_JA[k]} (\\d+) 社`).exec(s || ''); return x ? Number(x[1]) : 0; };
+      groups = order.map((k) => ({ side: k, on: count(a, k), off: count(b, k) }));
+    }
+    groups = groups.filter((g) => g.on + g.off > 0);
+    return groups.length ? { label, sets: [{ word: '', groups }] } : null;
+  }
+  if (f.kind === 'word_choice') {
+    const [label, rest] = f.text.split('：');
+    if (!label || !rest) return null;
+    const w = sideAt ? arr(cov.words).find((x) => isObj(x) && x.t === label) : null;
+    const sets = [...rest.matchAll(/「([^」]+)」(\d+) 社/g)].map(([, word, n]) => {
+      const v = w ? arr(w.v).find((x) => isObj(x) && x.w === word) : null;
+      if (v && arr(v.o).length) return { word, groups: order.map((k) => ({ side: k, on: arr(v.o).filter((i) => sideAt[i] === k).length, off: 0 })).filter((g) => g.on) };
+      return { word, groups: [{ side: null, on: Number(n), off: 0 }] };
+    });
+    return sets.length ? { label, sets } : null;
+  }
+  return null;
+}
+
+/** the headline the card leads with: an outlet's own when the card's title was written by the AI, the AI's one sentence kept for below */
+export function leadOf(p) {
+  if (!isObj(p) || !isObj(p.title)) return { text: '', lang: 'ja', outlet: '', ai: '' };
+  if (!p.title.ai) return { text: p.title.text, lang: p.title.lang, outlet: p.title.outlet, ai: '' };
+  const hs = arr(p.heads);
+  const x = hs.find((y) => y.outlet && y.outlet === p.title.outlet) || hs.find((y) => y.side === 'jp') || hs[0];
+  if (!x) return { text: p.title.text, lang: p.title.lang, outlet: '', ai: '' };
+  return { text: x.title, lang: /[぀-ヿ一-鿿]/.test(x.title) ? 'ja' : 'en', outlet: x.outlet, ai: p.title.text };
+}
+
 export function splitOf(p) {
   const s = isObj(p) && isObj(p.sides) ? p.sides : {};
   const jp = cnt(s.jp && s.jp.outlets), intl = cnt(s.intl && s.intl.outlets), gov = cnt(s.gov && s.gov.outlets);
@@ -215,19 +278,25 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
   let picks = [], i = 0, meta = {};
   const call = (k, ...a) => (typeof on[k] === 'function' ? on[k](...a) : undefined);
 
-  function bar(p) {
+  function bar(p, extra = '') {
     const sp = splitOf(p);
     const half = (k, w) => h('span', { class: 'hr-half', data: { side: k } }, h('i', { style: `width:${(w * 100).toFixed(1)}%` }));
     const lab = sp.jp && sp.intl ? `国内 ${sp.jp} 社、海外 ${sp.intl} 社` : sp.jp ? `国内 ${sp.jp} 社` : `海外 ${sp.intl} 社`;
-    return h('div', { class: 'hr-split', role: 'img', 'aria-label': lab },
+    return h('div', { class: 'hr-split' + extra, role: 'img', 'aria-label': lab },
       h('span', { class: 'hr-n', data: { side: 'jp' } }, h('span', { class: 'k', text: '国内' }), h('b', { class: 'num', text: sp.jp }), h('span', { class: 'u', text: '社' })),
       h('span', { class: 'hr-bar', 'aria-hidden': 'true' }, half('jp', sp.wJp), h('span', { class: 'hr-mid' }), half('intl', sp.wIntl)),
       h('span', { class: 'hr-n', data: { side: 'intl' } }, h('span', { class: 'k', text: '海外' }), h('b', { class: 'num', text: sp.intl }), h('span', { class: 'u', text: '社' })));
   }
   function cols(p) {
     if (p.tier === 'split') {
+      // one headline's own words a column, the names of the points small before it
+      const quote = (list) => {
+        const hit = list.find((x) => x.phrase && x.phrase !== x.name);
+        if (!hit) return h('ul', null, list.map((x) => h('li', null, h('span', { class: 'p', text: x.name }))));
+        return h('ul', null, h('li', { title: hit.outlet || null }, h('span', { class: 'k', text: list.map((x) => x.name).join('・') }), h('span', { class: 'p', text: hit.phrase })));
+      };
       const col = (k) => h('div', { class: 'hr-col', data: { col: k } }, h('h3', { text: COL_JA[k] }),
-        p.points[k].length ? h('ul', null, p.points[k].map((t) => h('li', { text: t }))) : h('p', { class: 'hr-none', text: '—' }));
+        p.points[k].length ? quote(phrasesOf(p.cov, k, p.points[k])) : h('p', { class: 'hr-none', text: '—' }));
       return h('div', { class: 'hr-cols' }, col('jp'), col('both'), col('intl'));
     }
     if (p.tier === 'both') {
@@ -240,37 +309,70 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
       h('ul', null, p.heads.filter((x) => x.side === k).slice(0, 2).map((x) => h('li', null, h('span', { class: 'o', text: x.outlet }), h('span', { class: 't', text: x.title }))))),
       h('p', { class: 'hr-note', text: on.oneSideNote || '' }));
   }
+  function dots(d) {
+    const g = (x) => h('span', { class: 'hr-dg', data: { side: x.side || 'n' } },
+      Array.from({ length: x.on }, () => h('i', { class: 'on' })), Array.from({ length: x.off }, () => h('i', { class: 'off' })));
+    return h('span', { class: 'hr-dots', 'aria-hidden': 'true' }, d.sets.map((s) => h('span', { class: 'hr-ds' }, s.word ? h('span', { class: 'w', text: `「${s.word}」` }) : null, s.groups.map(g))));
+  }
+  function finding(f, cov) {
+    const d = dotsOf(f, cov);
+    if (!d) return h('li', { data: { kind: f.kind } }, h('p', { class: 'hr-ft', text: f.text }));
+    return h('li', { data: { kind: f.kind } }, h('details', { class: 'hr-fd' },
+      h('summary', null, h('span', { class: 'hr-fl', text: d.label }), dots(d), h('span', { class: 'sr', text: f.text })),
+      h('p', { class: 'hr-ft', 'aria-hidden': 'true', text: f.text })));
+  }
   function card(p) {
     const n = picks.length;
     const old = isNum(meta.gen) && isNum(meta.now) && meta.now - meta.gen > 6 * 3600;
-    return h('article', { class: 'hr-card', data: { tier: p.tier }, 'aria-labelledby': 'hr-t' },
+    const lead = leadOf(p);
+    const flash = (k) => (last && last.sid === p.sid && last[k] !== p.sides[k].outlets ? ' hr-flash' : '');
+    const stepBtn = (d) => h('button', { type: 'button', class: 'hr-step', 'aria-label': d < 0 ? '前の候補' : '次の候補', on: { click: () => step(d) } }, d < 0 ? '‹' : '›');
+    let sx = null, sy = null;
+    const swipe = n > 1 ? {
+      pointerdown: (ev) => { if (ev.pointerType === 'mouse') return; sx = ev.clientX; sy = ev.clientY; },
+      pointerup: (ev) => { if (sx == null) return; const dx = ev.clientX - sx, dy = ev.clientY - sy; sx = null; if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1); },
+      pointercancel: () => { sx = null; },
+    } : null;
+    const sp = bar(p, flash('jp') || flash('intl'));
+    return h('article', { class: 'hr-card', data: { tier: p.tier }, 'aria-labelledby': 'hr-t', on: swipe },
       h('div', { class: 'hr-main' },
         h('p', { class: 'hr-meta' + (old ? ' stale' : '') }, isNum(meta.gen) ? h('time', { class: 'num', text: `${short(meta.gen)} 時点` }) : null,
-          p.title.ai ? h('span', { class: 'aimk', title: 'AI が付けた見出し', text: 'AI' }) : null),
-        h('h2', { class: 'hr-t', id: 'hr-t', lang: p.title.lang === 'en' ? 'en' : null, text: p.title.text }),
-        bar(p),
+          lead.outlet ? h('span', { class: 'hr-src', text: lead.outlet }) : null,
+          n > 1 ? h('span', { class: 'hr-pos num', 'aria-live': 'polite', text: `${i + 1} / ${n}` }) : null),
+        h('div', { class: 'hr-head' + (n > 1 ? ' hr-head-nav' : '') }, n > 1 ? stepBtn(-1) : null,
+          h('h2', { class: 'hr-t', id: 'hr-t', lang: lead.lang === 'en' ? 'en' : null, text: lead.text }),
+          n > 1 ? stepBtn(1) : null),
+        sp,
         p.sides.gov.outlets ? h('p', { class: 'hr-gov' }, h('span', { text: '官公庁' }), h('b', { class: 'num', text: p.sides.gov.outlets })) : null,
         cols(p),
-        p.findings.length ? h('ul', { class: 'hr-find' }, p.findings.map((f) => h('li', { data: { kind: f.kind }, text: f.text }))) : null,
+        p.findings.length ? h('ul', { class: 'hr-find' }, p.findings.map((f) => finding(f, p.cov))) : null,
+        lead.ai ? h('p', { class: 'hr-ai' }, h('span', { class: 'aimk', text: 'AI' }), h('span', { text: lead.ai })) : null,
         h('div', { class: 'hr-acts' },
           h('button', { type: 'button', class: 'hr-b', on: { click: () => call('open', p) } }, '元の記事'),
           h('button', { type: 'button', class: 'hr-b', on: { click: () => call('why', p) } }, '束ねた理由'),
           h('button', { type: 'button', class: 'hr-b hr-go', on: { click: () => call('compare', p) } }, '比べる'))),
-      h('div', { class: 'hr-side' }, call('orbSlot', p) || null),
-      n > 1 ? h('nav', { class: 'hr-nav', 'aria-label': 'ほかの候補' },
-        h('button', { type: 'button', class: 'hr-step', 'aria-label': '前の候補', on: { click: () => step(-1) } }, '‹'),
-        h('span', { class: 'num', 'aria-live': 'polite', text: `${i + 1} / ${n}` }),
-        h('button', { type: 'button', class: 'hr-step', 'aria-label': '次の候補', on: { click: () => step(1) } }, '›')) : null);
+      h('div', { class: 'hr-side' }, call('orbSlot', p) || null));
   }
+  let last = null;
   function paint() {
     if (!root) return;
-    if (!picks.length) { root.hidden = true; root.replaceChildren(); call('change', null); return; }
+    if (!picks.length) { root.hidden = true; root.replaceChildren(); last = null; call('change', null); return; }
     root.hidden = false;
-    root.replaceChildren(card(picks[i]));
-    call('change', picks[i]);
+    const p = picks[i];
+    root.replaceChildren(card(p));
+    last = { sid: p.sid, jp: p.sides.jp.outlets, intl: p.sides.intl.outlets };
+    call('change', p);
+  }
+  /** the first look: the card's three buttons light once, one after another (no card of words over them) */
+  function cue(win) {
+    const w = win || globalThis;
+    const at = (k) => (root && root.querySelectorAll ? root.querySelectorAll('.hr-acts .hr-b')[k] : null);   // read each time: the card may be drawn again meanwhile
+    const n = root && root.querySelectorAll ? root.querySelectorAll('.hr-acts .hr-b').length : 0;
+    for (let k = 0; k < n; k++) w.setTimeout(() => { const b = at(k); if (!b) return; b.classList.remove('hr-cue'); void b.offsetWidth; b.classList.add('hr-cue'); w.setTimeout(() => { const c = at(k); if (c) c.classList.remove('hr-cue'); }, 1400); }, 350 + k * 700);
+    return n;
   }
   function render(list, m = {}) { const was = picks[i] && picks[i].sid; picks = arr(list).slice(0, MAX_PICKS); meta = m || {}; const k = picks.findIndex((p) => p.sid === was); i = m.keep && k >= 0 ? k : 0; paint(); }
   function go(k) { if (!picks.length) return false; i = ((k % picks.length) + picks.length) % picks.length; paint(); return true; }
   function step(d) { return go(i + d); }
-  return { render, go, step, index: () => i, current: () => picks[i] || null, picks: () => picks.slice(), clear: () => render([]) };
+  return { render, go, step, cue, index: () => i, current: () => picks[i] || null, picks: () => picks.slice(), clear: () => render([]) };
 }

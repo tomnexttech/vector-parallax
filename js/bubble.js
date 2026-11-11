@@ -14,7 +14,7 @@
  *   available({ reaction, reads }) -> ['popular'?, 'mine'?, 'all'] */
 
 export const ORDERS = ['popular', 'mine', 'all'];
-export const ORDER_JA = { popular: '人気順', mine: '自分の読み方順', all: '全体' };
+export const ORDER_JA = { popular: '人気順', mine: '自分の読み方順', all: 'PARALLAX' };
 export const TOP = 10;
 export const MIN_READS = 5;
 export const SMALL_TYPES = ['地方紙', '専門', '政党機関紙', '週刊誌', '独立系'];
