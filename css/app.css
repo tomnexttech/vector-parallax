@@ -3719,10 +3719,11 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
 .hr-step { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--hs-edge); background: var(--hc-fill); font-size: 22px; line-height: 1; color: var(--ink); }
 .hr-step:hover { background: var(--hc-hover); }
 
-/* the orb: always on a dark lens, so the ice-white points read in both appearances */
+/* the orb sits on the pane's own backdrop; only the light appearance keeps a dark lens so the ice-white points still read */
 .hr-orb { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 260px; }
 .hr-stage { position: relative; width: 100%; aspect-ratio: 1; border-radius: 50%; overflow: hidden;
-  background: radial-gradient(circle at 50% 45%, #0d1a22 0%, #05080b 62%, #000 100%); box-shadow: inset 0 0 0 1px rgba(214, 236, 246, .14), 0 18px 40px rgba(0, 0, 0, .28); }
+  background: transparent; box-shadow: none; }
+:root[data-theme="light"] .hr-stage { background: radial-gradient(circle at 50% 45%, #0d1a22 0%, #05080b 62%, #000 100%); box-shadow: inset 0 0 0 1px rgba(214, 236, 246, .14), 0 18px 40px rgba(0, 0, 0, .28); }
 .orb-cv { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .hr-speak { min-height: 44px; min-width: 120px; padding: 0 22px; border-radius: var(--r-pill); border: 1px solid var(--hs-edge); background: var(--hc-fill); box-shadow: var(--hc-hi); color: var(--ink); font: 600 var(--fs-4)/1 var(--f-text); }
 .hr-speak[aria-pressed="true"] { background: var(--ink-hi); color: var(--win); }
