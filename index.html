@@ -68,6 +68,7 @@
     </div>
     <div class="tb-r">
       <button type="button" class="search" id="cmd-btn" aria-haspopup="dialog" title="検索と操作（Ctrl+K）"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M13 13l4.5 4.5"/></svg><span id="cmd-t">検索</span><kbd id="cmd-kbd">Ctrl K</kbd></button>
+      <!-- app:begin --><div id="app-slot" class="app-slot"></div><!-- app:end -->
       <button type="button" class="tbb icon" id="voice-btn" hidden aria-label="声で操作" title="声で操作（v）"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="7.5" y="2.5" width="5" height="9.5" rx="2.5"/><path d="M4.5 9.5a5.5 5.5 0 0 0 11 0M10 15v2.5"/></svg></button>
       <button type="button" class="tbb tx-i" id="own-btn" aria-haspopup="dialog" title="自分の AI"><span class="ic"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3l1.7 4.3L16 9l-4.3 1.7L10 15l-1.7-4.3L4 9l4.3-1.7z"/><path d="M15.5 13.5v3M14 15h3"/></svg></span><span class="tx">自分の AI</span></button>
       <button type="button" class="tbb tx-i" id="about-btn" title="データと AI（i）"><span class="ic">i</span><span class="tx">データと AI</span></button>
@@ -113,6 +114,7 @@
   </section>
 
   <main class="board" id="board">
+    <!-- hero:begin --><section class="hero" id="hero" aria-label="最初の一枚" hidden></section><!-- hero:end -->
     <div class="home-bar" id="home-bar">
       <div class="home-tt">
         <h2 class="home-t">今日のニュース</h2>
@@ -236,6 +238,23 @@
   <div class="set-layer" id="set-layer" hidden><section class="setwin" role="dialog" aria-modal="true" aria-labelledby="set-title"></section></div>
   <div class="set-layer own-layer" id="own-layer" hidden><section class="setwin ownwin" role="dialog" aria-modal="true" aria-labelledby="own-title"></section></div>
   <p class="fatal" id="fatal" role="alert" hidden></p>
+  <!-- app:begin:tail -->
+  <p class="note-bar err app-off" id="app-off" role="status" hidden></p>
+  <div class="set-layer app-layer" id="net-layer" hidden><section class="appwin netwin" role="dialog" aria-modal="true" aria-labelledby="net-t">
+    <header class="app-h"><h2 id="net-t">つながり</h2><span class="pc num" id="net-c"></span>
+      <div class="seg" id="net-mode" role="group" aria-label="表示"><button type="button" data-m="list" aria-pressed="true">一覧</button><button type="button" data-m="map" aria-pressed="false">図</button></div>
+      <button type="button" class="tbb" id="net-x">閉じる</button></header>
+    <div class="app-body"><div class="net-fig" id="net-fig" hidden><canvas id="net-cv" aria-hidden="true"></canvas></div><div class="net-list" id="net-list"></div><p class="net-how" id="net-how"></p></div>
+  </section></div>
+  <div class="set-layer app-layer" id="mail-layer" hidden><section class="appwin mailwin" id="mail-win" role="dialog" aria-modal="true" aria-labelledby="mail-t"></section></div>
+  <section class="ios-sheet" id="ios-sheet" role="dialog" aria-label="ホーム画面に追加" hidden></section>
+  <!-- app:end:tail -->
 </div>
+<!-- hero:begin:tail -->
+<div class="hr-layer" id="hr-layer" hidden><section class="hr-sheet" role="dialog" aria-modal="true" aria-labelledby="hr-sh-t"></section></div>
+<div class="fl-layer" id="hr-flow" role="dialog" aria-modal="true" aria-labelledby="fl-title" hidden></div>
+<div class="dm-bar" id="hr-demo" role="group" aria-label="デモ" hidden></div>
+<div class="dm-warn" id="hr-warn" role="alertdialog" aria-labelledby="hr-warn-t" hidden><p class="dm-t" id="hr-warn-t">10 秒後に最初に戻ります</p><button type="button" class="dm-b">続ける</button></div>
+<!-- hero:end:tail -->
 </body>
 </html>

@@ -195,6 +195,436 @@
         "standoff",
         "crisis"
       ]
+    },
+    {
+      "id": "taxcut",
+      "t": "税を下げる",
+      "ja": [
+        "減税",
+        "負担軽減 負担の軽減",
+        "税率引き下げ 税率の引き下げ"
+      ],
+      "en": [
+        "tax cut",
+        "tax relief"
+      ]
+    },
+    {
+      "id": "taxup",
+      "t": "負担を上げる",
+      "ja": [
+        "増税",
+        "負担増 負担拡大",
+        "保険料引き上げ 保険料の引き上げ"
+      ],
+      "en": [
+        "tax hike,tax increase",
+        "higher premium"
+      ]
+    },
+    {
+      "id": "priceup",
+      "t": "値段を上げる",
+      "ja": [
+        "値上げ",
+        "価格改定 改定",
+        "価格転嫁"
+      ],
+      "en": [
+        "price hike,raise prices",
+        "price increase"
+      ]
+    },
+    {
+      "id": "prices",
+      "t": "物価の言い方",
+      "ja": [
+        "物価高 物価上昇",
+        "インフレ",
+        "生活費"
+      ],
+      "en": [
+        "inflation",
+        "cost of living"
+      ]
+    },
+    {
+      "id": "wage",
+      "t": "賃金の言い方",
+      "ja": [
+        "賃上げ",
+        "ベースアップ ベア",
+        "最低賃金"
+      ],
+      "en": [
+        "pay rise,wage increase,wage hike",
+        "minimum wage"
+      ]
+    },
+    {
+      "id": "aidpay",
+      "t": "給付の言い方",
+      "ja": [
+        "給付 給付金",
+        "補助 補助金",
+        "支援金",
+        "手当"
+      ],
+      "en": [
+        "payment,handout",
+        "subsid",
+        "allowance"
+      ]
+    },
+    {
+      "id": "rate",
+      "t": "金利の言い方",
+      "ja": [
+        "利上げ",
+        "利下げ",
+        "据え置き 現状維持"
+      ],
+      "en": [
+        "rate hike,raise rates,raised rates",
+        "rate cut,cut rates",
+        "hold rates,unchanged"
+      ]
+    },
+    {
+      "id": "yen",
+      "t": "円の動き",
+      "ja": [
+        "円安",
+        "円高"
+      ],
+      "en": [
+        "weaker yen,yen weak",
+        "stronger yen,yen strength"
+      ]
+    },
+    {
+      "id": "tariff",
+      "t": "関税の言い方",
+      "ja": [
+        "関税",
+        "追加関税 報復関税",
+        "貿易戦争 貿易摩擦"
+      ],
+      "en": [
+        "tariff",
+        "trade war"
+      ]
+    },
+    {
+      "id": "jobcut",
+      "t": "人を減らす",
+      "ja": [
+        "人員削減",
+        "リストラ",
+        "希望退職 早期退職",
+        "解雇"
+      ],
+      "en": [
+        "layoff,job cuts",
+        "restructur",
+        "fired workers"
+      ]
+    },
+    {
+      "id": "outage",
+      "t": "止まる・不具合",
+      "ja": [
+        "障害 通信障害 システム障害",
+        "不具合",
+        "トラブル"
+      ],
+      "en": [
+        "outage",
+        "glitch",
+        "disruption"
+      ]
+    },
+    {
+      "id": "leak",
+      "t": "情報が漏れる",
+      "ja": [
+        "流出",
+        "漏洩 漏えい",
+        "不正アクセス",
+        "サイバー攻撃"
+      ],
+      "en": [
+        "leak",
+        "breach",
+        "hack",
+        "cyberattack"
+      ]
+    },
+    {
+      "id": "migrant",
+      "t": "国を移る人",
+      "ja": [
+        "移民",
+        "難民",
+        "外国人労働者",
+        "不法移民 不法滞在"
+      ],
+      "en": [
+        "migrant",
+        "refugee",
+        "asylum",
+        "illegal immigra"
+      ]
+    },
+    {
+      "id": "armed",
+      "t": "武装した人の呼び方",
+      "ja": [
+        "武装勢力",
+        "テロリスト テロ組織",
+        "反政府勢力",
+        "過激派"
+      ],
+      "en": [
+        "militant",
+        "terrorist",
+        "rebel",
+        "insurgent"
+      ]
+    },
+    {
+      "id": "deal",
+      "t": "合意の言い方",
+      "ja": [
+        "合意",
+        "妥結",
+        "大筋合意 基本合意",
+        "決裂"
+      ],
+      "en": [
+        "agreement,agreed,deal",
+        "accord",
+        "collapsed talks,talks collapse"
+      ]
+    },
+    {
+      "id": "truce",
+      "t": "戦闘を止める",
+      "ja": [
+        "停戦",
+        "休戦",
+        "戦闘停止 一時停止"
+      ],
+      "en": [
+        "ceasefire",
+        "truce",
+        "pause in fighting"
+      ]
+    },
+    {
+      "id": "captive",
+      "t": "捕らわれた人",
+      "ja": [
+        "人質",
+        "拘束者 被拘束者",
+        "捕虜"
+      ],
+      "en": [
+        "hostage",
+        "detainee",
+        "prisoner"
+      ]
+    },
+    {
+      "id": "strike",
+      "t": "攻撃の言い方",
+      "ja": [
+        "空爆",
+        "爆撃",
+        "ミサイル攻撃",
+        "報復"
+      ],
+      "en": [
+        "airstrike,air strike",
+        "bombing,bombard",
+        "retaliat"
+      ]
+    },
+    {
+      "id": "result",
+      "t": "選挙の結果",
+      "ja": [
+        "勝利",
+        "圧勝 大勝",
+        "辛勝",
+        "敗北 惨敗"
+      ],
+      "en": [
+        "win,won,victory",
+        "landslide",
+        "defeat,lost"
+      ]
+    },
+    {
+      "id": "suspect",
+      "t": "疑われた人の呼び方",
+      "ja": [
+        "容疑者",
+        "被告 被告人",
+        "犯人"
+      ],
+      "en": [
+        "suspect",
+        "defendant",
+        "perpetrator,gunman"
+      ]
+    },
+    {
+      "id": "pushback",
+      "t": "反応の言い方",
+      "ja": [
+        "反発",
+        "批判",
+        "懸念",
+        "歓迎"
+      ],
+      "en": [
+        "backlash",
+        "critici",
+        "concern",
+        "welcome"
+      ]
+    },
+    {
+      "id": "ask",
+      "t": "求め方",
+      "ja": [
+        "要求",
+        "要請",
+        "求める"
+      ],
+      "en": [
+        "demand",
+        "urge",
+        "call for,calls for,called for"
+      ]
+    },
+    {
+      "id": "say",
+      "t": "述べ方",
+      "ja": [
+        "表明",
+        "示唆",
+        "明言",
+        "否定"
+      ],
+      "en": [
+        "announce",
+        "signal,hint",
+        "deny,denied"
+      ]
+    },
+    {
+      "id": "talk",
+      "t": "話し合いの言い方",
+      "ja": [
+        "会談",
+        "協議",
+        "交渉"
+      ],
+      "en": [
+        "summit",
+        "talks",
+        "negotiat"
+      ]
+    },
+    {
+      "id": "damage",
+      "t": "建物の被害",
+      "ja": [
+        "倒壊",
+        "損壊",
+        "全壊 半壊",
+        "浸水"
+      ],
+      "en": [
+        "destroyed",
+        "damaged",
+        "flooded"
+      ]
+    },
+    {
+      "id": "help",
+      "t": "助けの言い方",
+      "ja": [
+        "支援",
+        "援助",
+        "寄付"
+      ],
+      "en": [
+        "aid",
+        "assistance",
+        "donat"
+      ]
+    },
+    {
+      "id": "rule",
+      "t": "規制の言い方",
+      "ja": [
+        "規制",
+        "禁止",
+        "制限",
+        "義務化"
+      ],
+      "en": [
+        "regulat",
+        "ban,prohibit",
+        "restrict",
+        "mandat"
+      ]
+    },
+    {
+      "id": "redo",
+      "t": "やり直しの言い方",
+      "ja": [
+        "見直し",
+        "撤回",
+        "凍結",
+        "延期"
+      ],
+      "en": [
+        "review",
+        "withdraw,scrap",
+        "freeze,froze",
+        "postpone,delay"
+      ]
+    },
+    {
+      "id": "warn",
+      "t": "警告の言い方",
+      "ja": [
+        "警告",
+        "注意喚起",
+        "警戒"
+      ],
+      "en": [
+        "warn",
+        "alert",
+        "caution"
+      ]
+    },
+    {
+      "id": "quake",
+      "t": "揺れの伝え方",
+      "ja": [
+        "震度",
+        "マグニチュード",
+        "津波"
+      ],
+      "en": [
+        "magnitude",
+        "tsunami"
+      ]
     }
   ]
 }

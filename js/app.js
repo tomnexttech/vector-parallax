@@ -359,7 +359,7 @@ function priorityOf(es) {
   }
   return uniq([...watched, ...es.filter((e) => e.topics.length && e.n >= 2).sort((a, b2) => b2.n - a.n || (b2.last || 0) - (a.last || 0))]).slice(0, PRI_CAP);
 }
-const matchesQ = (e) => !state.q || e.hay.toLowerCase().includes(state.q.toLowerCase());
+const matchesQ = (e) => !state.q || appMatch(e);   // app:hook (js/search.js: the ways of writing a word)
 /** hidden by the settings: off every list and the map, except a priority row, which stays as a folded tag. One press shows all for this visit */
 const vis = (e) => !e.hid || state.showHid;
 const folded = (e) => !!e.hid && !state.showHid && !state.unfold.has(e.key);
@@ -367,7 +367,7 @@ const folded = (e) => !!e.hid && !state.showHid && !state.unfold.has(e.key);
 const inGenre = (e) => state.genre === GENRE_ALL || e.field === state.genre;
 function shownPri() { return shownPriAll().filter(inGenre); }
 function shownPriAll() {
-  if (state.q) return searchOf(state.es.filter((e) => !e.foldedInto && matchesQ(e)), { ...state.qf, now: nowS(), sideN: (e, k) => measureOf(e)[k].length, outletOf }).slice(0, 200);
+  if (state.q) return appNarrow(state.es.filter((e) => !e.foldedInto && matchesQ(e))).slice(0, 200);   // app:hook (wraps searchOf)
   const t = state.topic;
   if (t === 'cross') return state.es.filter((e) => !e.foldedInto && e.cover === 'both').sort((a, b) => b.n - a.n || (b.last || 0) - (a.last || 0)).slice(0, 200);
   return t === 'all' ? state.pri : t === 'watch' ? state.pri.filter((e) => e.hits.length) : state.pri.filter((e) => e.topics.includes(t));
@@ -702,17 +702,9 @@ function searchFor(w) {
   if (p && (narrow() || !p.offsetParent)) p.scrollIntoView({ block: 'start' });
   else if ($('pri-b')) $('pri-b').scrollTop = 0;
 }
-/** the search narrowed: when, which side, which outlet, and the order (js/newsdesk.js) */
-function qBar() {
-  const f = state.qf, set = (k, v) => { state.qf = { ...state.qf, [k]: v }; renderPri(); renderAnom(); };
-  const seg = (k, label, opts) => h('div', { class: 'qf-g', role: 'group', 'aria-label': label }, h('span', { class: 'qf-l', text: label }),
-    opts.map(([v, ja]) => h('button', { type: 'button', class: 'qf-b', 'aria-pressed': String(f[k] === v), on: { click: (ev) => { ev.stopPropagation(); set(k, v); } } }, ja)));
-  const outs = outletsOf(state.es.filter((e) => !e.foldedInto && matchesQ(e)), outletOf).slice(0, 120);
-  const sel = h('select', { class: 'qf-s', 'aria-label': 'メディア', on: { change: (ev) => set('outlet', ev.target.value) } },
-    h('option', { value: '' }, 'すべてのメディア'), outs.map((o) => h('option', { value: o.name, selected: f.outlet === o.name ? true : null, data: { raw: '1' } }, `${o.name}（${o.n}）`)));
-  return h('div', { class: 'qf' }, seg('span', '期間', SPANS), seg('side', '側', SEARCH_SIDES), h('div', { class: 'qf-g' }, h('span', { class: 'qf-l', text: 'メディア' }), sel), seg('sort', '並べ替え', SORTS));
-}
-function clearSearch() { $('q').value = ''; state.q = ''; state.qf = { ...QF0 }; renderPri(); renderAnom(); renderFields(); paintCmdBtn(); }
+/** the search narrowed: the ways of writing, when, which side, field, outlet, and the order (js/search.js, wrapping js/newsdesk.js) */
+function qBar() { return appQBar(); }   // app:hook
+function clearSearch() { $('q').value = ''; state.q = ''; state.qf = { ...QF0 }; appClearHash(); renderPri(); renderAnom(); renderFields(); paintCmdBtn(); }   // app:hook
 /** the field icons: at the head of the priority list (PC), as a strip above the board (phones), and in the simple view */
 function genreEl() {
   return genreBar({ fields: [...FIELDS, OTHER_FIELD], counts: genreCounts(state.pri), total: state.pri.length, active: state.genre, onPick: setGenre });
@@ -754,7 +746,7 @@ function renderPri() {
   const qOut = state.q ? [h('p', { class: 'q-out' }, h('span', { text: `「${state.q}」で探している` }), lk('解除', clearSearch, '検索をやめて全部に戻す', 'r-a')), qBar()] : null;
   const fold = narrow() && !state.priAll && !state.q && list.length > 5;
   const showN = fold ? list.slice(0, 5) : list;
-  $('pri-b').replaceChildren(qOut, showN.length ? h('ul', { class: 'rows' }, showN.map((e) => row(e, { thumb: true }))) : h('p', { class: 'empty', text: state.q ? '一致 0 件' : '0 件' }),
+  $('pri-b').replaceChildren(qOut, showN.length ? h('ul', { class: 'rows' }, showN.map((e) => row(e, { thumb: true }))) : state.q ? appEmpty() : h('p', { class: 'empty', text: '0 件' }), state.q ? appArchive() : null,   // app:hook
     fold ? h('button', { type: 'button', class: 'more', on: { click: () => { state.priAll = true; renderPri(); } } }, `残り ${list.length - 5} 件`) : null,
     h('p', { class: 'pfoot legend', text: `ラベルは${FLAG_LEGEND}` }));
   syncAutoLine();
@@ -876,7 +868,7 @@ function related(e) {
 }
 /** under the event: the related headlines of this fetch, and the source of every report, the government's own documents first */
 function renderUnder(e, sorted) {
-  const rel = related(e);
+  const rel = appRelated(e) || related(e);   // app:hook (data/relations.json when there)
   $('rel-c').textContent = `${rel.length} 件`;
   $('rel-b').replaceChildren(rel.length ? h('ul', { class: 'rows mini' }, rel.map((x) => h('li', { class: 'r', on: { click: () => select(x.o.key, true) } },
     h('span', { class: 'rt', lang: x.o.heading.lang || null, text: x.o.heading.text }),
@@ -1446,7 +1438,11 @@ reader.onChange(() => { for (const b of document.querySelectorAll('button.speak'
 function renderEntryView() {
   if (state.ui !== 'simple' || !state.data) return;
   const run = isObj(state.data.ai_run) ? state.data.ai_run : {};
-  renderEntry($('entry'), { h, events: entryEvents(state.pri.filter(inGenre)), sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
+  // a news chosen from elsewhere (the first card's 比べる) that is not among the cards becomes the first card, so 比べる shows that news
+  let evs = entryEvents(state.pri.filter(inGenre));
+  const want = state.entrySel != null ? state.byKey.get(state.entrySel) : null;
+  if (want && !want.foldedInto && !evs.includes(want)) evs = [want, ...evs].slice(0, Math.max(1, evs.length));
+  renderEntry($('entry'), { h, events: evs, sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
     fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => { setHome('board'); setUi('full'); },
     detail: entryDetail, ownBox, coverage: coverageCard, briefBox: (e) => briefBox(e, tagAI), measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
     oneSide: sideGroups(true), oneSideTitle: ONE_SIDE_TITLE, oneSideNote: ONE_SIDE_NOTE, more: entryMore,
@@ -2767,7 +2763,7 @@ function newsNow() {
     h('div', { class: 'nw-l' }, genreEl(), h('div', { class: 'chips' }, priChips()),
       state.q ? h('p', { class: 'q-out' }, h('span', { text: `「${state.q}」で探している` }), lk('解除', clearSearch, '検索をやめて全部に戻す', 'r-a')) : null,
       state.q ? qBar() : null,
-      list.length ? h('ul', { class: 'rows' }, list.map((e) => row(e, { press: pressNews }))) : h('p', { class: 'empty', text: state.q ? '一致 0 件' : '0 件' })),
+      list.length ? h('ul', { class: 'rows' }, list.map((e) => row(e, { press: pressNews }))) : state.q ? appEmpty() : h('p', { class: 'empty', text: '0 件' }), state.q ? appArchive() : null),   // app:hook
     stacked() ? null : h('div', { class: 'nw-r', id: 'nw-case' }, cur() ? caseNode(cur()) : null))] };
 }
 function newsPaper() {
@@ -2995,6 +2991,610 @@ const api = {
 };
 export const actions = createActions(api);
 
+// ==== hero:begin ====
+// The first card of the home (js/hero.js), the orb and the voice (js/orb.js, js/guide.js), the booth (js/demo.js), the orders of the news
+// (js/bubble.js) and the news one to a screen (js/swipe.js). heroWire() is called once from main(), before the data is fetched.
+import { readHero, pickHeroes, createHero, sameFromBasis, cleanSame, gapText } from './hero.js';
+import { mountOrb } from './orb.js';
+import { scriptOf, createGuide } from './guide.js';
+import { isDemo, runReset, createIdle, readFrozen, freeze, unfreeze, frozenFetch, demoKey } from './demo.js';
+import { ORDER_JA, available as orderAvail, orderOf, countsOf, diffOf, TOP as ORDER_TOP } from './bubble.js';
+import { flowItems, createSwipe } from './swipe.js';
+import { voiceFor } from './speak.js';
+import { titleOf as entryTitleOf } from './entry.js';
+
+const HX = { hero: null, orb: null, guide: null, file: null, gen: null, rel: undefined, reaction: undefined, impact: undefined, order: 'all', prev: null,
+  swipe: null, demo: false, idle: null, frozen: null, back: null, orbBox: null, cap: null, speakBtn: null, loaded: false };
+const hxDir = () => { const dp = dataPath(); return (dp.path || DEFAULT_DATA).replace(/[^/]*$/, ''); };
+const hxSid = (e) => (e && e.case && e.case.sid) || (e && e.obj && e.obj.sid) || null;
+function heroEntry(p) {
+  if (!p) return null;
+  return state.es.find((e) => !e.foldedInto && hxSid(e) === p.sid) || (p.key && state.byKey.get(p.key)) || state.es.find((e) => e.obj && e.obj.sid === p.sid) || null;
+}
+const hxPoint = (e) => (e && e.summary && str(e.summary.text_ja).trim() ? { text: str(e.summary.text_ja).trim(), ai: true } : null);
+function hxSame(e) {
+  const sid = hxSid(e);
+  const r = HX.rel && isObj(HX.rel.same) && sid ? cleanSame(HX.rel.same[sid]) : null;
+  return r || sameFromBasis(e && e.basis);
+}
+function hxReaction(sid) {
+  const ev = HX.reaction && isObj(HX.reaction.events) ? HX.reaction.events[sid] : null;
+  if (!isObj(ev)) return null;
+  return { hb: isObj(ev.hb) && isNum(ev.hb.sum) ? ev.hb.sum : null, yt: isObj(ev.yt) && isNum(ev.yt.views) ? ev.yt.views : null, at: isNum(HX.reaction.generated_at) ? HX.reaction.generated_at : null };
+}
+
+// ---- the layer of the card's two lists (元の記事, 束ねた理由)
+function hxLayer(title, body) {
+  const lay = $('hr-layer'), box = lay.firstElementChild;
+  HX.back = document.activeElement;
+  box.replaceChildren(h('header', { class: 'hr-sh-h' }, h('h2', { id: 'hr-sh-t', text: title }), h('button', { type: 'button', class: 'hr-b', on: { click: hxLayerClose } }, '閉じる')), h('div', { class: 'hr-sh-b' }, body));
+  lay.hidden = false;
+  const first = box.querySelector('button'); if (first) first.focus();
+}
+function hxLayerClose() {
+  const lay = $('hr-layer'); if (!lay || lay.hidden) return false;
+  lay.hidden = true; lay.firstElementChild.replaceChildren();
+  if (HX.back && HX.back.focus) { try { HX.back.focus(); } catch { /* */ } }
+  return true;
+}
+function hxOpen(p) {
+  const row = (x) => h('li', { data: { side: x.side } }, h('span', { class: 'hr-o' }, h('span', { class: 'hr-dot' }), x.outlet, x.ts ? h('time', { class: 'num', text: ` ${fmtShort(x.ts)}` }) : null),
+    x.link ? h('a', { href: x.link, target: '_blank', rel: 'noopener noreferrer', text: x.title }) : h('span', { text: x.title }));
+  const groups = ['jp', 'intl', 'gov'].map((k) => [k, p.heads.filter((x) => x.side === k)]).filter(([, l]) => l.length);
+  hxLayer('元の記事', groups.map(([k, l]) => h('section', { class: 'hr-sh-g' }, h('h3', { text: { jp: '国内', intl: '海外', gov: '官公庁' }[k] }), h('ul', { class: 'hr-heads-l' }, l.map(row)))));
+}
+function hxWhy(p) {
+  const e = heroEntry(p);
+  const same = p.same || (e ? hxSame(e) : null);
+  const run = state.data && isObj(state.data.ai_run) ? state.data.ai_run : null;
+  const items = state.ix ? state.ix.items : {};
+  const mark = (text, words) => {
+    const ws = arr(words).filter((w) => w && text.includes(w)).sort((a, b) => b.length - a.length);
+    if (!ws.length) return [text];
+    const re = new RegExp(`(${ws.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g');
+    return text.split(re).map((part, k) => (k % 2 ? h('mark', { text: part }) : part));
+  };
+  const ttl = (id) => str(items[id] && items[id].title);
+  const out = [];
+  if (!same) { hxLayer('束ねた理由', h('p', { class: 'empty', text: '根拠のデータがありません' })); return; }
+  out.push(h('p', { class: 'hr-by' }, h('b', { text: same.by === 'ai' ? 'AI' : '規則' }),
+    same.by === 'ai' && run ? h('span', { class: 'num', text: ` ${[str(run.provider), str(run.model)].filter(Boolean).join(' ')}${isNum(run.at) ? '・' + fmtShort(run.at) : ''}` }) : null,
+    same.rule_groups > 1 ? h('span', { text: `・規則の束 ${same.rule_groups} つ` }) : null));
+  const dl = [];
+  if (same.words.length) dl.push(['一致した語', h('span', { class: 'hr-chips' }, same.words.map((w) => h('span', { class: 'hr-chip', text: w })))]);
+  if (same.places.length) dl.push(['場所', same.places.map(pj).join('・')]);
+  if (isNum(same.span_s)) dl.push(['最初と最後の差', gapText(same.span_s)]);
+  if (dl.length) out.push(h('dl', { class: 'hr-dl' }, dl.map(([k, v]) => [h('dt', { text: k }), h('dd', null, v)])));
+  const links = same.links.slice(0, 2).filter((l) => ttl(l.a) && ttl(l.b));
+  if (links.length) out.push(h('section', { class: 'hr-sh-g' }, h('h3', { text: '似ている見出しの対' }), links.map((l) => h('div', { class: 'hr-pair' },
+    h('p', null, mark(ttl(l.a), l.words)), h('p', null, mark(ttl(l.b), l.words)),
+    h('p', { class: 'hr-pm num', text: [l.places.length ? l.places.map(pj).join('・') : '', isNum(l.dt_min) ? `差 ${gapText(l.dt_min * 60)}` : ''].filter(Boolean).join('　') })))));
+  if (same.ai_joined.length) out.push(h('section', { class: 'hr-sh-g' }, h('h3', { text: 'AI が結んだ束の間' }), h('ul', { class: 'hr-aj' }, same.ai_joined.map((j) => h('li', null,
+    j.best && j.best.words.length ? h('span', { class: 'hr-chips' }, j.best.words.map((w) => h('span', { class: 'hr-chip', text: w }))) : h('span', { class: 'hr-none', text: '規則では一致が見つからない' }))))));
+  hxLayer('束ねた理由', out);
+}
+function hxCompare(p) {
+  const e = heroEntry(p);
+  if (!e) { toast('読込中です'); return; }
+  hxLayerClose();
+  setSect('home'); setUi('simple'); pickEntry(e.key);
+  $('entry').scrollTop = 0;
+}
+
+// ---- the orb and the voice
+function hxPaintSpeak() {
+  const b = HX.speakBtn; if (!b) return;
+  const on = HX.guide && HX.guide.key() != null;
+  b.hidden = !(HX.guide && HX.guide.can());
+  b.setAttribute('aria-pressed', String(on));
+  b.textContent = on ? '止める' : '読み上げ';
+}
+function hxRead(p) {
+  p = p || (HX.hero && HX.hero.current());
+  if (!p || !HX.guide) return false;
+  if (HX.guide.key() != null) { HX.guide.stop(); return false; }
+  return HX.guide.play(p.sid, scriptOf(p, { point: hxPoint(heroEntry(p)) }));
+}
+function hxOrbBox() {
+  if (HX.orbBox) return HX.orbBox;
+  const stage = h('div', { class: 'hr-stage' });
+  HX.speakBtn = h('button', { type: 'button', class: 'hr-speak', 'aria-pressed': 'false', on: { click: () => hxRead() } }, '読み上げ');
+  HX.cap = h('p', { class: 'hr-cap', 'aria-live': 'polite' });
+  HX.orbBox = h('div', { class: 'hr-orb' }, stage, HX.speakBtn, HX.cap);
+  requestAnimationFrame(() => { if (!HX.orb) HX.orb = mountOrb(stage, { size: 220 }); HX.orb.setState(HX.loaded ? 'idle' : 'thinking'); });
+  return HX.orbBox;
+}
+
+// ---- 並び順 and 流す
+const hxPool = () => state.es.filter((e) => !e.foldedInto && vis(e));
+function hxOrder(kind) { return orderOf(hxPool(), kind, { sidesOf, reaction: HX.reaction, reads: readMix(state.reads) }) || []; }
+function hxCounts(list) { return countsOf(list, { sidesOf, impact: HX.impact, top: ORDER_TOP }); }
+function hxSetOrder(kind) {
+  if (kind === HX.order) return;
+  HX.prev = { kind: HX.order, counts: hxCounts(hxOrder(HX.order)) };
+  HX.order = kind;
+  hxBubble();
+}
+function hxBubble() {
+  const box = $('hr-bub'); if (!box) return;
+  if (!state.data) { box.replaceChildren(); return; }
+  const m = readMix(state.reads);
+  const kinds = orderAvail({ reaction: HX.reaction, reads: m });
+  if (!kinds.includes(HX.order)) HX.order = 'all';
+  const list = hxOrder(HX.order), now = hxCounts(list);
+  const diffs = HX.prev && HX.prev.kind !== HX.order ? diffOf(HX.prev.counts, now) : [];
+  const mark = (e) => { const s = sidesOf(e); return h('span', { class: 'hr-sm', 'aria-hidden': 'true' }, ['jp', 'intl', 'gov'].filter((k) => s[k].length).map((k) => h('i', { data: { side: k } }))); };
+  const tot = { jp: 0, intl: 0, gov: 0 };
+  for (const e of hxPool()) { const s = sidesOf(e); for (const k of Object.keys(tot)) tot[k] += s[k].length; }
+  const mine = m.n >= 5 ? h('div', { class: 'hr-me' },
+    h('p', null, h('span', { class: 'k', text: '自分' }), h('span', { class: 'me-bar' }, dossier.ratioBar({ jp: Array(m.sides.jp), intl: Array(m.sides.intl), gov: Array(m.sides.gov) })), h('b', { class: 'num', text: `${m.n} 件` })),
+    h('p', null, h('span', { class: 'k', text: '全体' }), h('span', { class: 'me-bar' }, dossier.ratioBar({ jp: Array(tot.jp), intl: Array(tot.intl), gov: Array(tot.gov) })), h('b', { class: 'num', text: `${hxPool().length} 件` })),
+    h('button', { type: 'button', class: 'hr-b', on: { click: () => { clearReads(store); state.reads = []; HX.prev = null; hxBubble(); renderReads(); } } }, '記録を消す')) : null;
+  box.replaceChildren(h('section', { class: 'hr-ord', 'aria-labelledby': 'hr-ord-h' },
+    h('div', { class: 'hr-ord-top' },
+      h('h2', { id: 'hr-ord-h', text: '並び順' }),
+      kinds.length > 1 ? h('div', { class: 'seg hr-seg', role: 'group', 'aria-label': '並び順' }, kinds.map((k) => h('button', { type: 'button', 'aria-pressed': String(k === HX.order), on: { click: () => hxSetOrder(k) } }, ORDER_JA[k])))
+        : h('span', { class: 'hr-ord-one', text: ORDER_JA[HX.order] }),
+      h('button', { type: 'button', class: 'hr-b hr-flow', on: { click: () => hxFlow() } }, '流す')),
+    diffs.length ? h('ul', { class: 'hr-diff', 'aria-live': 'polite' }, diffs.map((d) => h('li', null, h('span', { text: d.ja }), h('b', { class: 'num', text: `${d.from} 件 → ${d.to} 件` })))) : null,
+    h('ol', { class: 'hr-top' }, list.slice(0, ORDER_TOP).map((e) => h('li', null, h('button', { type: 'button', class: 'hr-row', on: { click: () => { setSect('home'); setUi('simple'); pickEntry(e.key); } } },
+      mark(e), h('span', { class: 't', text: entryTitleOf(e).text }), h('span', { class: 'n num', text: `${e.n} 社` }))))),
+    mine));
+}
+function hxFlow(at = 0) {
+  if (!HX.swipe || !state.data) return false;
+  const items = flowItems(hxOrder(HX.order), { sidesOf, outletOf, titleOf: entryTitleOf });
+  HX.swipe.open(items, at);
+  return true;
+}
+
+// ---- the card itself
+function hxRender() {
+  if (!HX.hero) return;
+  const fileOk = HX.file && HX.file.picks.length && (!state.data || !isNum(state.data.generated_at) || !isNum(HX.file.latest_generated_at) || HX.file.latest_generated_at === state.data.generated_at);   // hero.json is made from one latest.json: another edition's card would point at news this page does not hold (11-11: 比べる said 読込中です)
+  let picks, gen;
+  if (fileOk) { picks = HX.file.picks; gen = HX.file.latest_generated_at || HX.file.generated_at; }
+  else if (state.data) {
+    picks = pickHeroes(state.es, { sidesOf, outletOf, oneSideOf, leadPool, titleOf: entryTitleOf, sameOf: hxSame, reactionOf: hxReaction });
+    gen = state.data.generated_at;
+  } else return;
+  HX.hero.render(picks, { gen, now: nowS(), keep: true });
+}
+async function hxSides() {
+  const dir = hxDir();
+  const [rel, rea, imp] = await Promise.all(['relations.json', 'reaction.json', 'impact.json'].map((f) => getJson(dir + f)));
+  HX.rel = isObj(rel) && rel.schema === 'parallax-relations/1' ? rel : null;
+  HX.reaction = isObj(rea) && rea.schema === 'parallax-reaction/1' ? rea : null;
+  HX.impact = isObj(imp) && imp.schema === 'parallax-impact/1' ? imp : null;
+}
+async function hxData() {
+  if (!state.data) { if (HX.orb) HX.orb.setState('error'); return; }
+  const g = state.data.generated_at;
+  if (HX.gen === g) return;
+  HX.gen = g; HX.loaded = true;
+  await hxSides();
+  hxRender(); hxBubble();
+  // the first look starts at the card: the list's own follow of the first event (select) must not carry the page past it
+  if (!HX.touched && HX.hero && HX.hero.current()) {
+    const top = () => { if (HX.touched) return; window.scrollTo(0, 0); for (const el of [document.scrollingElement, document.body, $('board')]) if (el) el.scrollTop = 0; };
+    top(); requestAnimationFrame(top); setTimeout(top, 400);
+  }
+  if (HX.orb) HX.orb.setState('idle');
+  if (new URLSearchParams(location.search).get('flow') === '1' && !HX.flowOnce) { HX.flowOnce = true; hxFlow(); }
+}
+
+// ---- the booth
+function hxReset() {
+  runReset({
+    speech: () => { if (HX.guide) HX.guide.stop(); reader.stop(); },
+    layers: () => { if (HX.swipe) HX.swipe.close(); hxLayerClose(); if (state.sheet) closeSheet(); if (state.palette && state.palette.isOpen()) state.palette.close(); if (state.panel && state.panel.isOpen()) state.panel.close(); if (state.about) closeAbout(); if (state.tour && state.tour.isOpen()) state.tour.close(); hxWarn(false); },
+    search: () => { if (state.q || $('q').value) clearSearch(); paintCmdBtn(); },
+    order: () => { HX.order = 'all'; HX.prev = null; },
+    genre: () => { if (state.genre !== GENRE_ALL) setGenre(GENRE_ALL); state.topic = 'all'; },
+    screen: () => { if (state.ui === 'simple') setUi('full'); setHome('home'); setSect('home'); },
+    reads: () => { clearReads(store); state.reads = []; renderReads(); },
+    tasks: () => { setTasks([]); },
+    hero: () => { hxRender(); if (HX.hero) HX.hero.go(0); hxBubble(); },
+    scroll: () => { window.scrollTo(0, 0); for (const id of ['board', 'entry', 'sect']) { const el = $(id); if (el) el.scrollTop = 0; } const f = $('hero'); if (f) { try { f.focus({ preventScroll: true }); } catch { /* */ } } },
+  });
+  if (HX.idle) HX.idle.touch();
+}
+function hxWarn(on, sec) {
+  const w = $('hr-warn'); if (!w) return;
+  if (!on) { w.hidden = true; return; }
+  const t = w.querySelector('.dm-t');
+  if (t) t.textContent = `${sec} 秒後に最初に戻ります`;
+  if (w.hidden) { w.hidden = false; const b = w.querySelector('button'); if (b) b.focus(); }
+}
+function hxPaintDemo() {
+  const bar = $('hr-demo'); if (!bar) return;
+  const f = HX.frozen;
+  bar.replaceChildren(
+    f ? h('span', { class: 'dm-at num' }, '固定 ', h('time', { text: fmtShort(Math.floor(f.at / 1000)) })) : null,
+    h('button', { type: 'button', class: 'dm-b', on: { click: hxFreeze } }, f ? '固定を外す' : 'この版で固定'),
+    h('button', { type: 'button', class: 'dm-b dm-reset', on: { click: hxReset } }, '最初から'));
+  bar.hidden = false;
+}
+async function hxFreeze() {
+  try {
+    if (HX.frozen) { await unfreeze({ caches: window.caches, store }); HX.frozen = null; toast('固定を外しました'); }
+    else { const r = await freeze({ caches: window.caches, fetch: HX.netFetch || window.fetch.bind(window), store, base: hxDir(), gen: state.data && state.data.generated_at }); HX.frozen = { at: r.at, gen: r.gen }; toast(`この版で固定しました（${r.n} ファイル）`); }
+  } catch { toast('この端末では固定できません。ブラウザの保存領域が使えません'); }
+  hxPaintDemo();
+}
+
+function heroWire() {
+  const root = $('hero');
+  if (!root) return;
+  HX.demo = isDemo(location.search);
+  if (HX.demo) {
+    document.documentElement.dataset.demo = '1';
+    HX.frozen = readFrozen(store);
+    if (HX.frozen && window.caches) { HX.netFetch = window.fetch.bind(window); window.fetch = frozenFetch(HX.netFetch, window.caches, hxDir()); }
+    $('hr-warn').querySelector('button').addEventListener('click', () => { if (HX.idle) HX.idle.touch(); hxWarn(false); });
+    HX.idle = createIdle({ held: () => !!(HX.guide && HX.guide.key() != null), onWarn: hxWarn, onReset: hxReset });
+    // a person's touch only: the lists that scroll themselves (js/autoscroll.js) must not hold the clock
+    for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) window.addEventListener(ev, () => HX.idle.touch(), { capture: true, passive: true });
+    setInterval(() => HX.idle.tick(), 1000);
+    window.addEventListener('keydown', (ev) => {
+      const k = demoKey(ev); if (!k) return;
+      if (HX.swipe && HX.swipe.isOpen() && k !== 'reset') return;
+      ev.preventDefault(); ev.stopPropagation();
+      if (k === 'reset') hxReset(); else if (k === 'prev') HX.hero.step(-1); else if (k === 'next') HX.hero.step(1); else hxRead();
+    }, { capture: true });
+    hxPaintDemo();
+  }
+  root.tabIndex = -1;
+  for (const ev of ['pointerdown', 'keydown', 'wheel', 'touchstart']) window.addEventListener(ev, () => { HX.touched = true; }, { capture: true, passive: true, once: true });
+  const cardBox = h('div', { class: 'hr-host' }), bub = h('div', { id: 'hr-bub' });
+  root.replaceChildren(cardBox, bub);
+  HX.guide = createGuide({ win: window, voiceFor, onState: (st) => { if (HX.orb) HX.orb.setState(st === 'speaking' ? 'speaking' : 'idle'); hxPaintSpeak(); },
+    onCaption: (t) => { if (HX.cap) HX.cap.textContent = t; }, onBoundary: () => { if (HX.orb) HX.orb.pulse(); } });
+  HX.hero = createHero({ h, root: cardBox, fmt: { clock: fmtClock, short: fmtShort }, on: {
+    open: hxOpen, why: hxWhy, compare: hxCompare, orbSlot: hxOrbBox, oneSideNote: ONE_SIDE_NOTE,
+    change: (p) => { root.hidden = !p; if (HX.guide && HX.guide.key() != null && (!p || HX.guide.key() !== p.sid)) HX.guide.stop(); hxPaintSpeak(); } } });
+  HX.swipe = createSwipe({ h, root: $('hr-flow'), fmt: { clock: fmtShort }, on: { title: '流す', get orderJa() { return ORDER_JA[HX.order]; }, open: (k) => { HX.swipe.close(); setSect('home'); setUi('simple'); pickEntry(k); } } });
+  $('hr-layer').addEventListener('click', (ev) => { if (ev.target === $('hr-layer')) hxLayerClose(); });
+  $('hr-layer').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); hxLayerClose(); return; }
+    if (ev.key !== 'Tab') return;   // a modal layer: Tab goes round inside it
+    const fs = [...$('hr-layer').querySelectorAll('button, a[href]')];
+    if (!fs.length) return;
+    const a = document.activeElement, first = fs[0], last = fs[fs.length - 1];
+    if (ev.shiftKey && a === first) { ev.preventDefault(); last.focus(); } else if (!ev.shiftKey && a === last) { ev.preventDefault(); first.focus(); }
+  });
+  // the small file first: the card is drawn before latest.json arrives
+  getJson(hxDir() + 'hero.json').then((j) => { HX.file = readHero(j); if (HX.file && HX.file.picks.length) hxRender(); });
+  // then the full data: the same choice is made here when the file is missing, broken or older than the data on screen
+  const mo = new MutationObserver((rs) => {
+    const de = document.documentElement;
+    if (!de.hasAttribute('data-load')) hxData();
+    // back on the home: 自分の読み方順 counts what was opened meanwhile
+    if (HX.loaded && rs.some((r) => r.attributeName === 'data-screen') && de.dataset.screen === 'home') hxBubble();
+  });
+  mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-load', 'data-screen'] });
+  setInterval(() => { if (state.data && state.data.generated_at !== HX.gen) hxData(); }, 60000);
+  // while the card is being looked at, the lead story below does not walk by itself: its step follows the list with scrollIntoView and
+  // would carry the page away from the card every 12 seconds (seen on the iPad held upright and on the desktop board)
+  if (window.IntersectionObserver) new IntersectionObserver((es) => { for (const e of es) HX.inView = e.isIntersecting; document.documentElement.toggleAttribute('data-hero-in', HX.inView && !root.hidden); }, { threshold: 0.25 }).observe(root);
+  setInterval(() => { if (HX.inView && !root.hidden) state.pausedUntil = Math.max(state.pausedUntil, Date.now() + 1500); }, 1000);
+  window.addEventListener('parallax-theme', () => { if (HX.orb) HX.orb.pulse(); });
+}
+// ==== hero:end ====
+// ==== app:begin ====
+// the search that forgives how a word is written, the ties between news, the app on the home screen, and the mail draft (docs/app.md)
+import { expand as appExpand, matcherOf as appMatcherOf, aliasGroups, narrow as appNarrowOf, archiveHits, archiveDays, toHash as qToHash, fromHash as qFromHash,
+  SPANS as Q_SPANS, SIDES as Q_SIDES, SORTS as Q_SORTS, F0 as Q_F0, sidOf as appSid, hasReaction, hasLife } from './search.js';
+import { graphOf, graphFromPairs, connected as netConnected, layout as netLayout, tiesOf, listOf as netList, whyText, hit as netHit, draw as netDraw } from './netview.js';
+import { standalone as isStandalone, wantIosSheet, closeIosSheet, offlineLine } from './install.js';
+import { loadAddr, saveAddr, clearAddr, bodyOf as mailBody, subjectOf as mailSubject, mailtoOf, itemsOf as mailItems, MAX as MAIL_MAX } from './mail.js';
+
+const appS = { groups: [], off: [], xk: null, x: null, m: () => true, reaction: null, impact: null, rel: null, graph: null, archive: null, archiveAt: 0, hero: null,
+  net: { open: false, mode: 'auto', sel: null, pos: null, g: null, back: null }, bip: null };
+function appIcon(paths, cls) {
+  const SV = 'http://www.w3.org/2000/svg', svg = document.createElementNS(SV, 'svg');
+  svg.setAttribute('viewBox', '0 0 20 20'); svg.setAttribute('aria-hidden', 'true');
+  if (cls) svg.setAttribute('class', cls);
+  for (const d of paths) { const p = document.createElementNS(SV, 'path'); p.setAttribute('d', d); svg.append(p); }
+  return svg;
+}
+const appEvBySid = () => { const m = new Map(); for (const e of state.es) { const s = appSid(e); if (s && !e.foldedInto && !m.has(s)) m.set(s, e); } return m; };
+function appX() {
+  const k = `${state.q}|${appS.off.join(',')}|${appS.groups.length}`;
+  if (appS.xk !== k) { appS.xk = k; appS.x = appExpand(state.q, { groups: appS.groups, off: appS.off }); appS.m = appMatcherOf(appS.x, appS.off); }
+  return appS;
+}
+/** the choices of the search; the page's own reset (QF0) says 'all' for the span, which is the whole window here */
+function appF() { const f = { ...Q_F0, ...state.qf }; if (f.span === 'all') f.span = '36h'; return f; }
+function appMatch(e) { return appX().m(e); }
+function appNarrow(list) {
+  appX();
+  return appNarrowOf(list, appF(), { now: nowS(), sideN: (e, k) => measureOf(e)[k].length, outletOf, reaction: appS.reaction, impact: appS.impact });
+}
+function appSetQf(k, v) { state.qf = { ...state.qf, [k]: v }; renderPri(); renderAnom(); }
+function appSyncHash() {
+  if (!state.q || state.sect !== 'news') return;
+  const want = qToHash(state.q, appF(), appS.off);
+  appS.lastHash = want;
+  if (location.hash !== want) try { history.replaceState(null, '', want); } catch { /* file: pages */ }
+}
+/** the search was cleared: its address goes too, so a reload does not bring it back */
+function appClearHash() { if (location.hash.startsWith('#q=')) try { history.replaceState(null, '', location.pathname + location.search + (state.sect === 'news' ? '#news' : '')); } catch { /* */ } appS.off = []; }
+/** the narrowing over the result: the other ways of writing a word, then the span, the side, the field, the outlet, the order */
+function appQBar() {
+  const f = appF();
+  appSyncHash();
+  const seg = (k, label, opts) => h('div', { class: 'qf-g', role: 'group', 'aria-label': label }, h('span', { class: 'qf-l', text: label }),
+    opts.map(([v, ja]) => h('button', { type: 'button', class: 'qf-b', 'aria-pressed': String(f[k] === v), on: { click: (ev) => { ev.stopPropagation(); appSetQf(k, v); } } }, ja)));
+  const tog = (k, label) => h('button', { type: 'button', class: 'qf-b', 'aria-pressed': String(!!f[k]), on: { click: (ev) => { ev.stopPropagation(); appSetQf(k, !f[k]); } } }, label);
+  const wh = isNum(state.data && state.data.window_h) ? state.data.window_h : 36;
+  const spans = Q_SPANS.map(([v, ja]) => [v, v === '36h' ? `${wh} 時間` : ja]);
+  const sorts = Q_SORTS.filter(([v]) => v !== 'react' || hasReaction(appS.reaction));
+  const chips = appS.x ? appS.x.chips : [];
+  const chipRow = chips.length ? h('div', { class: 'qf-g app-alts', role: 'group', 'aria-label': '言い換え' }, h('span', { class: 'qf-l', text: '言い換え' }),
+    chips.map((c) => h('button', { type: 'button', class: 'qf-b app-alt', 'aria-pressed': String(c.on), title: c.on ? `「${c.text}」を外す` : `「${c.text}」でも探す`,
+      on: { click: (ev) => { ev.stopPropagation(); const t = c.text; appS.off = c.on ? [...appS.off, t] : appS.off.filter((x) => x !== t); renderPri(); renderAnom(); } } }, c.text))) : null;
+  const fields = [...FIELDS, OTHER_FIELD];
+  const fsel = h('select', { class: 'qf-s', 'aria-label': '分野', on: { change: (ev) => appSetQf('field', ev.target.value) } },
+    h('option', { value: '' }, 'すべての分野'), fields.map((x) => h('option', { value: x, selected: f.field === x ? true : null }, x)));
+  const outs = outletsOf(state.es.filter((e) => !e.foldedInto && matchesQ(e)), outletOf).slice(0, 120);
+  const osel = h('select', { class: 'qf-s', 'aria-label': 'メディア', on: { change: (ev) => appSetQf('outlet', ev.target.value) } },
+    h('option', { value: '' }, 'すべてのメディア'), outs.map((o) => h('option', { value: o.name, selected: f.outlet === o.name ? true : null, data: { raw: '1' } }, `${o.name}（${o.n}）`)));
+  const share = h('button', { type: 'button', class: 'qf-b app-share', on: { click: (ev) => { ev.stopPropagation(); appSyncHash(); shareLink(`「${state.q}」の検索`, location.href); } } }, '共有');
+  const rest = [seg('span', '期間', spans),
+    h('div', { class: 'qf-g', role: 'group', 'aria-label': '絞る' }, h('span', { class: 'qf-l', text: '絞る' }), tog('only', '片側だけ'), hasLife(appS.impact) ? tog('life', '暮らし') : null),
+    h('div', { class: 'qf-g' }, h('span', { class: 'qf-l', text: '分野' }), fsel), h('div', { class: 'qf-g' }, h('span', { class: 'qf-l', text: 'メディア' }), osel),
+    seg('sort', '並べ替え', sorts)];
+  if (!narrow()) return h('div', { class: 'qf' }, chipRow, seg('side', '側', Q_SIDES), ...rest, share);
+  // a phone: the side and the other ways stay in view, the rest folds under one line that says how many are chosen
+  const nOn = [f.span !== Q_F0.span, !!f.only, !!f.life, !!f.field, !!f.outlet, f.sort !== Q_F0.sort].filter(Boolean).length;
+  const det = h('details', { class: 'app-more' }, h('summary', { class: 'qf-b' }, nOn ? `絞り込み ${nOn}` : '絞り込み'), h('div', { class: 'qf app-more-b' }, ...rest));
+  det.open = !!appS.moreOpen;
+  det.addEventListener('toggle', () => { appS.moreOpen = det.open; });
+  return h('div', { class: 'qf' }, chipRow, seg('side', '側', Q_SIDES), h('div', { class: 'qf-g app-more-r' }, det, share));
+}
+function appEmpty() {
+  const f = appF();
+  return h('div', { class: 'empty app-none' }, h('p', { text: `「${state.q}」は見つかりません。` }),
+    f.span !== '7d' ? h('button', { type: 'button', class: 'tbb', on: { click: (ev) => { ev.stopPropagation(); appSetQf('span', '7d'); } } }, '期間を 7 日にする') : null);
+}
+async function appLoadArchive() {
+  if (appS.archive || appS.archiveAt) return;
+  appS.archiveAt = Date.now();
+  const idx = await getJson(dataDir() + 'archive/index.json');
+  const days = await Promise.all(archiveDays(idx).map((d) => getJson(`${dataDir()}archive/${d}.json`)));
+  appS.archive = { ok: !!idx, days: days.filter(isObj) };
+  if (state.q) renderPri();
+}
+/** seven days: the past days' news that match, under the result, each to its own page */
+function appArchive() {
+  if (appF().span !== '7d') return null;
+  if (!appS.archive) { appLoadArchive(); return h('p', { class: 'empty', text: '7 日分を読み込み中' }); }
+  if (!appS.archive.ok) return h('p', { class: 'empty', text: '7 日分を読めませんでした' });
+  const skip = new Set(appEvBySid().keys());
+  const hits = archiveHits(appS.archive.days, appX().x, appS.off, { skip });
+  return h('section', { class: 'app-arch', 'aria-label': '過去 7 日' }, h('h3', null, '過去 7 日', h('span', { class: 'n num', text: ` ${hits.length}` })),
+    hits.length ? h('ul', { class: 'rows' }, hits.map((x) => h('li', { class: 'r' }, h('a', { class: 'rt', href: `s/${x.sid}.html`, text: x.title || '—' }),
+      h('span', { class: 'rm', text: [x.date, `${x.n_outlets}社`, x.outlet].filter(Boolean).join('　') })))) : h('p', { class: 'empty', text: '0 件' }));
+}
+/** the related news of the detail: the ties of data/relations.json with the words they rest on; null keeps the page's own measure */
+function appRelated(e) {
+  if (!appS.graph || appS.graph.method.from !== 'relations' || !appS.graph.by.has(appSid(e))) return null;
+  const by = appEvBySid();
+  return tiesOf(appS.graph, appSid(e)).map((t) => ({ o: by.get(t.sid), shared: [whyText(t.why)].filter(Boolean), place: false })).filter((x) => x.o && !x.o.hid).slice(0, 6);
+}
+// ---- the ties between news (js/netview.js)
+function netGraph() {
+  if (appS.graph) return appS.graph;
+  const es = state.es.filter((e) => !e.foldedInto && vis(e) && e.n >= 2).sort((a, b) => b.n - a.n).slice(0, 400);
+  const sid = (e) => appSid(e) || e.key;
+  const keep = new Set(es);
+  const nodes = es.map((e) => { const m = measureOf(e); return { sid: sid(e), cat: e.field, n: e.n, sides: { jp: m.jp.length, intl: m.intl.length, gov: m.gov.length }, terms: [] }; });
+  const pairs = [];
+  for (const e of es) for (const r of related(e)) if (keep.has(r.o)) pairs.push({ a: sid(e), b: sid(r.o), words: r.shared, places: r.place && r.o.geo ? [r.o.geo.name] : [] });
+  return graphFromPairs(nodes, pairs);
+}
+function netEvent(s) { return appEvBySid().get(s) || state.byKey.get(s) || null; }
+const netTitle = (s) => { const e = netEvent(s); return e ? e.heading.text : ''; };
+/** only the news this page can name and open: a tie to a news that is not in this edition's list would be a row with one side blank (11-11) */
+function netKnown(g) {
+  if (!g) return g;
+  const nodes = g.nodes.filter((x) => netEvent(x.sid)), by = new Map(nodes.map((x, i) => [x.sid, i]));
+  return { ...g, nodes, by, edges: g.edges.filter((e) => by.has(e.a) && by.has(e.b)) };
+}
+function netOpen() {
+  const L = $('net-layer');
+  if (!L || !state.data) return;
+  appS.net.g = netConnected(netKnown(netGraph())); appS.net.open = true; appS.net.back = document.activeElement;
+  if (!appS.net.mode || appS.net.mode === 'auto') appS.net.mode = narrow() ? 'list' : 'map';
+  L.hidden = false;
+  netRender(true);
+  $('net-x').focus();
+}
+function netClose() {
+  const L = $('net-layer');
+  if (!L || L.hidden) return;
+  L.hidden = true; appS.net.open = false;
+  if (appS.net.back && appS.net.back.focus) appS.net.back.focus();
+}
+function netColors() {
+  const cs = getComputedStyle(document.documentElement), v = (n, d) => cs.getPropertyValue(n).trim() || d;
+  return { ink: v('--ink', '#ddd'), ink3: v('--ink-3', '#888'), line: v('--line-2', 'rgba(128,128,128,.3)'), sel: v('--cyan', '#5ac8f0'), jp: v('--ink-2', '#bbb'), intl: v('--cyan-l', '#5ac8f0'), gov: v('--ink-4', '#666'), plate: v('--pane', '#1c1c1e') };
+}
+function netRender(relayout) {
+  const g = appS.net.g, n = appS.net;
+  if (!g) return;
+  $('net-c').textContent = `結ばれた ${g.nodes.length} 件・${g.edges.length} 本`;
+  for (const b of document.querySelectorAll('#net-mode button')) b.setAttribute('aria-pressed', String(b.dataset.m === n.mode));
+  const box = $('net-fig'), cv = $('net-cv');
+  box.hidden = n.mode !== 'map';
+  if (n.mode === 'map') {
+    const w = Math.max(280, Math.floor(box.clientWidth)), hh = Math.max(240, Math.min(Math.floor(window.innerHeight * 0.58), Math.round(w * 0.7)));
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (relayout || !n.pos || n.w !== w || n.h !== hh) { n.pos = netLayout(g, { w, h: hh }); n.w = w; n.h = hh; }
+    cv.width = w * dpr; cv.height = hh * dpr; cv.style.width = w + 'px'; cv.style.height = hh + 'px';
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    netDraw(ctx, g, n.pos, { w, h: hh, sel: n.sel, colors: netColors(), label: netTitle });
+  }
+  // the list: the ties of the chosen news, else every tie, heaviest first. The same list is what a screen reader reads
+  const rows = n.sel ? tiesOf(g, n.sel).map((t) => ({ a: n.sel, b: t.sid, w: t.w, why: t.why })) : netList(g, { cap: 60 });
+  const open = (s) => { const e = netEvent(s); if (e) { netClose(); openCase(e.key); } };
+  const head = n.sel ? h('div', { class: 'net-sel' }, h('b', { text: netTitle(n.sel) || '—' }),
+    h('span', { class: 'net-acts' }, h('button', { type: 'button', class: 'tbb', on: { click: () => open(n.sel) } }, '開く'), h('button', { type: 'button', class: 'tbb', on: { click: () => { n.sel = null; netRender(false); } } }, '全部に戻す'))) : null;
+  $('net-list').replaceChildren(head, rows.length ? h('ul', { class: 'net-rows' }, rows.map((r, i) => h('li', null,
+    h('button', { type: 'button', class: 'net-r' + (n.sel ? ' num-r' : ''), on: { click: () => { n.sel = n.sel === r.b ? r.a : r.b; netRender(false); } } },
+      n.sel ? h('span', { class: 'net-i num', text: String(i + 1) }) : null,
+      n.sel ? null : h('span', { class: 'net-t', text: netTitle(r.a) || '—' }), h('span', { class: 'net-t', text: netTitle(r.b) || '—' }),
+      h('span', { class: 'net-why', text: whyText(r.why) || '一致した語なし' }))))) : h('p', { class: 'empty', text: '0 件' }));
+  $('net-how').textContent = g.method.from === 'relations' ? `計り方：${g.method.sim || '—'}・AI なし` : '計り方：この頁が集めた見出しの共通の語と場所・AI なし';
+}
+/** a window over the page keeps Tab inside it, from the last control back to the first */
+function appTrap(L) {
+  L.addEventListener('keydown', (ev) => {
+    if (ev.key !== 'Tab') return;
+    const fs = [...L.querySelectorAll('button, a[href], input, select, textarea, [tabindex="0"]')].filter((x) => !x.closest('[hidden]') && x.offsetParent !== null);
+    if (!fs.length) return;
+    const first = fs[0], last = fs[fs.length - 1];
+    if (ev.shiftKey && document.activeElement === first) { ev.preventDefault(); last.focus(); }
+    else if (!ev.shiftKey && document.activeElement === last) { ev.preventDefault(); first.focus(); }
+  });
+}
+function netWire() {
+  const L = $('net-layer');
+  if (!L) return;
+  appTrap(L);
+  L.addEventListener('click', (ev) => { if (ev.target === L) netClose(); });
+  L.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); netClose(); } });
+  $('net-x').addEventListener('click', netClose);
+  for (const b of document.querySelectorAll('#net-mode button')) b.addEventListener('click', () => { appS.net.mode = b.dataset.m; netRender(false); });
+  $('net-cv').addEventListener('click', (ev) => {
+    const n = appS.net, r = $('net-cv').getBoundingClientRect();
+    const i = n.pos ? netHit(n.pos, n.g, ev.clientX - r.left, ev.clientY - r.top) : -1;
+    n.sel = i >= 0 ? n.g.nodes[i].sid : null;
+    netRender(false);
+  });
+  let rt = 0;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (appS.net.open) netRender(false); }, 160); });
+}
+// ---- the mail draft (js/mail.js)
+function mailDraft(addr) {
+  const by = appEvBySid();
+  const heroSid = appS.hero && Array.isArray(appS.hero.picks) && appS.hero.picks[0] ? str(appS.hero.picks[0].sid) : '';
+  const board = state.board ? { ...state.board, priority: uniq([heroSid, ...arr(state.board.priority)].filter(Boolean)) } : null;
+  const areaJa = {};
+  if (appS.impact) for (const a of arr(appS.impact.areas)) if (isObj(a)) areaJa[a.id] = str(a.ja);
+  const outN = (xs) => new Set(xs.map(outletOf).filter(Boolean)).size;
+  const items = mailItems([...by.values()], { board, impact: appS.impact, sidOf: appSid, sides: (e) => { const m = measureOf(e); return { jp: outN(m.jp), intl: outN(m.intl) }; },
+    pageOf: (s) => new URL(`s/${s}.html`, location.href).href, cap: 5, areaJa });
+  const home = new URL('./', location.href).href;
+  const body = mailBody({ when: fmtShort(nowS()).split(' ')[0], built: fmtShort(state.data.generated_at), items, more: home });
+  return { body, href: mailtoOf(addr, mailSubject(fmtShort(nowS()).split(' ')[0]), body) };
+}
+function mailOpen() {
+  const L = $('mail-layer');
+  if (!L || !state.data) return;
+  appS.mailBack = document.activeElement;
+  const saved = loadAddr(store);
+  const inp = h('input', { id: 'mail-to', type: 'email', inputmode: 'email', autocomplete: 'email', maxlength: '254', value: saved, placeholder: 'you@example.com' });
+  const pre = h('pre', { class: 'mail-pre', tabindex: '0', 'aria-label': '下書きの本文' });
+  const cnt = h('span', { class: 'mail-n num' });
+  const go = h('a', { class: 'tbb mail-go', href: 'mailto:' }, 'メールで送る');
+  const paint = () => { const d = mailDraft(inp.value); pre.textContent = d.body; cnt.textContent = `${d.body.length} / ${MAIL_MAX} 字`; go.setAttribute('href', d.href); };
+  inp.addEventListener('input', paint);
+  const msg = h('p', { class: 'mail-msg', role: 'status' });
+  const share = navigator.share ? h('button', { type: 'button', class: 'tbb', on: { click: async () => { try { await navigator.share({ title: mailSubject(fmtShort(nowS()).split(' ')[0]), text: pre.textContent }); } catch { /* closed */ } } } }, '共有') : null;
+  $('mail-win').replaceChildren(
+    h('header', { class: 'app-h' }, h('h2', { id: 'mail-t', text: 'メール' }), h('button', { type: 'button', class: 'tbb', id: 'mail-x', on: { click: mailClose } }, '閉じる')),
+    h('div', { class: 'app-body' },
+      h('label', { class: 'mail-l', for: 'mail-to' }, '宛先（この端末だけに保存）'), inp,
+      h('div', { class: 'mail-acts' },
+        h('button', { type: 'button', class: 'tbb', on: { click: () => { msg.textContent = saveAddr(store, inp.value) ? 'この端末に保存しました' : 'アドレスの形を確かめてください'; } } }, 'この端末に保存'),
+        h('button', { type: 'button', class: 'tbb', on: { click: () => { clearAddr(store); inp.value = ''; paint(); msg.textContent = 'アドレスを消しました'; } } }, '消す')),
+      msg,
+      h('div', { class: 'mail-ph' }, h('b', { text: '本文' }), cnt), pre,
+      h('div', { class: 'mail-acts' }, go, share),
+      h('p', { class: 'mail-note' }, '決まった時刻に届けるメールはありません。', h('a', { href: 'feed.xml' }, 'RSS（feed.xml）'), 'をお使いのメールの仕組みに登録できます。')));
+  paint();
+  L.hidden = false;
+  inp.focus();
+}
+function mailClose() { const L = $('mail-layer'); if (!L || L.hidden) return; L.hidden = true; if (appS.mailBack && appS.mailBack.focus) appS.mailBack.focus(); }
+// ---- the app on the home screen (js/install.js)
+function iosSheet() {
+  const L = $('ios-sheet');
+  if (!L) return;
+  const close = () => { closeIosSheet(store); L.hidden = true; };
+  L.replaceChildren(h('h2', { text: 'ホーム画面に追加' }),
+    h('ol', null, h('li', null, '共有ボタン ', appIcon(['M10 2.8v9.4', 'M6.6 6.1L10 2.8l3.4 3.3', 'M6 8.5H4.5v8.7h11V8.5H14'], 'ios-share'), ' を押す'), h('li', null, '「ホーム画面に追加」を選ぶ')),
+    h('button', { type: 'button', class: 'tbb', on: { click: close } }, '閉じる'));
+  L.hidden = false;
+}
+function appOffline() {
+  const el = $('app-off');
+  if (!el) return;
+  const x = offlineLine({ online: navigator.onLine !== false, generatedAt: state.data ? state.data.generated_at : null, now: nowS(), clock: fmtShort });
+  el.hidden = !x;
+  el.textContent = x ? x.text : '';
+  if (x) $('m-gen').dataset.tone = 'bad'; else if (state.data) $('m-gen').dataset.tone = isOld(state.data.generated_at, nowS()) ? 'warn' : 'ok';
+}
+async function appLoad() {
+  const d = dataDir();
+  const [al, re, im, rl, he] = await Promise.all(['aliases.json', 'reaction.json', 'impact.json', 'relations.json', 'hero.json'].map((f) => getJson(d + f)));
+  appS.groups = aliasGroups(al);
+  appS.reaction = isObj(re) && re.schema === 'parallax-reaction/1' ? re : null;
+  appS.impact = isObj(im) && im.schema === 'parallax-impact/1' ? im : null;
+  appS.graph = graphOf(rl);
+  appS.hero = isObj(he) && he.schema === 'parallax-hero/1' ? he : null;
+  appS.xk = null;
+  if (state.q) { renderPri(); renderAnom(); }
+}
+function appFromHash() {
+  const x = qFromHash(location.hash);
+  if (x && location.hash === appS.lastHash) return true;   // the address this page wrote itself
+  if (x) { appS.off = x.off; searchFor(x.q); state.qf = { ...state.qf, ...x.f }; setSect('news', 'now'); renderPri(); renderAnom(); paintCmdBtn(); appSyncHash(); return true; }
+  const k = location.hash.replace('#', '');
+  if (k === 'find') { history.replaceState(null, '', location.pathname + location.search); state.palette.open(); return true; }
+  if (k === 'net') { history.replaceState(null, '', location.pathname + location.search); netOpen(); return true; }
+  if (k === 'mail') { history.replaceState(null, '', location.pathname + location.search); mailOpen(); return true; }
+  return false;
+}
+function appWire() {
+  const slot = $('app-slot');
+  if (slot) {
+    const ic = (d) => appIcon(d);
+    slot.replaceChildren(
+      h('button', { type: 'button', class: 'tbb icon app-b', id: 'net-btn', 'aria-label': 'つながり', title: 'つながり', on: { click: netOpen } },
+        ic(['M5.6 6.6l3.4 6.8', 'M6.5 5.4l6.6-.8', 'M14.2 6.6l-3.3 6.8', 'M6.1 5.2a1.8 1.8 0 1 1-3.6 0a1.8 1.8 0 1 1 3.6 0', 'M17.5 4.4a1.8 1.8 0 1 1-3.6 0a1.8 1.8 0 1 1 3.6 0', 'M11.8 15a1.8 1.8 0 1 1-3.6 0a1.8 1.8 0 1 1 3.6 0'])),
+      h('button', { type: 'button', class: 'tbb icon app-b', id: 'mail-btn', 'aria-label': 'メール', title: 'メール', on: { click: mailOpen } }, ic(['M3 5.5h14v9H3z', 'M3.4 6l6.6 5 6.6-5'])));
+  }
+  // the related pane: the whole network one press away
+  const rc = $('rel-c');
+  if (rc && !$('rel-net')) rc.after(h('button', { type: 'button', class: 'lk r-a', id: 'rel-net', on: { click: (ev) => { ev.stopPropagation(); netOpen(); } } }, 'つながり'));
+  const sbr = document.querySelector('#sb .sb-r');
+  if (sbr && !$('sb-mail')) sbr.prepend(
+    h('button', { type: 'button', class: 'app-sb', id: 'inst-btn', hidden: true, on: { click: async () => { const p = appS.bip; if (!p) return; appS.bip = null; $('inst-btn').hidden = true; try { await p.prompt(); } catch { /* closed */ } } } }, 'ホーム画面に追加'),
+    h('button', { type: 'button', class: 'app-sb', id: 'sb-mail', on: { click: mailOpen } }, 'メールで送る'));
+  netWire();
+  const ml = $('mail-layer');
+  if (ml) appTrap(ml);
+  if (ml) { ml.addEventListener('click', (ev) => { if (ev.target === ml) mailClose(); }); ml.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { ev.stopPropagation(); mailClose(); } }); }
+  window.addEventListener('beforeinstallprompt', (ev) => { ev.preventDefault(); appS.bip = ev; if ($('inst-btn')) $('inst-btn').hidden = false; });
+  window.addEventListener('appinstalled', () => { appS.bip = null; if ($('inst-btn')) $('inst-btn').hidden = true; });
+  const off = $('app-off');
+  if (off && $('flash')) $('flash').after(off);
+  window.addEventListener('online', appOffline); window.addEventListener('offline', appOffline);
+  appOffline();
+  window.addEventListener('hashchange', appFromHash);
+  appLoad().then(() => appFromHash());
+  // once on an iPhone or iPad Safari that has not added the page: the two steps, after the first look at the page
+  // not at the booth (?demo=1): the next visitor would find the steps over the first card
+  if (!HX.demo && wantIosSheet({ ua: navigator.userAgent, touch: navigator.maxTouchPoints || 0, isStandalone: isStandalone(window), store })) {
+    setTimeout(() => { if (!document.querySelector('.set-layer:not([hidden]), .sheet-layer:not([hidden]), #cmd:not([hidden]), .tour:not([hidden])')) iosSheet(); }, 15000);
+  }
+}
+// ==== app:end ====
+
 async function main() {
   const hv = location.hash.replace('#', '');
   const hashView = hv === 'rules' || hv === 'ai' ? hv : '';
@@ -3003,6 +3603,7 @@ async function main() {
   state.tasks = loadTasks(store);
   state.reads = loadReads(store);
   state.set = loadSettings(store);
+  heroWire();
   applyUiLang();
   $('lang-btn').addEventListener('click', () => applySettings({ ...state.set, look: { ...state.set.look, ui: $('lang-btn').dataset.to || 'en' } }));
   state.own = loadOwnAI(store); state.ownAsk = new Map();
@@ -3192,6 +3793,7 @@ async function main() {
   const first = firstShown();
   if (first) { select(first.key, false); followTv(first); }
   endLoad();
+  appWire();   // app:hook (the app's region, after the first data)
   // a link to one event: it opens over the home screen, whichever view holds it
   const qs = new URLSearchParams(location.search), askSid = qs.get('sid'), askT = qs.get('t');
   if (askSid || askT) {

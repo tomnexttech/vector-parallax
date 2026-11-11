@@ -4,7 +4,8 @@
  * 守る線: 材料は見出しと要旨だけ。出ていないのは「見出しと要旨には出ていない」という事実だけで、報じなかった・隠したとは書かない。
  * 媒体の意図は書かない。数は書かれた通り。AI は使わない（語の抜き出しと束ねは規則）。この欄が無い・壊れている時は coverageOf が null を返し、呼ぶ側は何も出さない（今までの表示）。
  *
- *   coverageOf(raw)                -> { outlets, rows, words } | null     検査して整える（文字は切り詰め、番号は範囲内だけ）
+ *   coverageOf(raw)                -> { outlets, rows, words, findings } | null     検査して整える（文字は切り詰め、番号は範囲内だけ）
+ *   findingsOf(raw, n)             -> [{ kind, row, outlets, others, side, text, evidence }]   どこが違うか（§23.1。決まった型の文だけ・型の外は落とす）
  *   leadRows(cov, n)               -> rows    最初に見せる行: 一部の媒体にだけ出ている行を先に、元の並びのまま
  *   gapsOf(row)                    -> { have, none, na }
  *   createCoverage({ h })          -> { node(cov, opt), table(cov, opt), words(cov) }
@@ -12,6 +13,12 @@
 export const KIND_JA = { who: '誰', what: '何', when: 'いつ', where: 'どこ', num: '数', why: '理由', react: '反応', next: '今後' };
 export const SIDE_JA = { jp: '国内', intl: '海外', gov: '官公庁' };
 export const LEAD_ROWS = 7;
+export const FIND_KINDS = ['only_side', 'word_choice', 'num_diff', 'lead_differs', 'first_gap'];
+export const FIND_JA = { only_side: '載せた点', word_choice: '言葉の選び方', num_diff: '数', lead_differs: '見出しの最初の語', first_gap: '最初の時刻' };
+/** the sentence under its label: a sentence that starts with the label's own words (見出しの最初の語：…) loses them there, and keeps them on the first card */
+export const unlabel = (f) => { const l = FIND_JA[f && f.kind], t = String((f && f.text) || ''); return l && t.startsWith(l + '：') ? t.slice(l.length + 1) : t; };
+/** the words a finding may never use (CONTRACT 4.7: what is not in the collected headlines is not "not reported") */
+const SILENT = /報じなかった|報じていない|報じず|報じられなかった|報道しなかった|報道していない|報道せず|伝えなかった|伝えていない|黙殺|did not report|didn't report|not reported by|failed to report|no coverage/i;
 /** the rows named by a word of the report itself: the narrow table keeps only a mark in the cell (the word is the row's name) */
 export const TERM_KINDS = ['who', 'what', 'where'];
 const SIDES = Object.keys(SIDE_JA);
@@ -19,6 +26,18 @@ const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const arr = (v) => (Array.isArray(v) ? v : []);
 const str = (v) => (typeof v === 'string' ? v : '');
 const clip = (s, n) => Array.from(s).slice(0, n).join('');
+
+const idx = (v, n) => [...new Set(arr(v).filter((i) => Number.isInteger(i) && i >= 0 && i < n))].sort((a, b) => a - b);
+export function findingsOf(raw, n) {
+  return arr(raw).filter(isObj).filter((f) => FIND_KINDS.includes(f.kind)).map((f) => {
+    const text = clip(str(f.text).trim(), 160);
+    if (!text || SILENT.test(text)) return null;
+    return {
+      kind: f.kind, row: KIND_JA[f.row] ? f.row : null, outlets: idx(f.outlets, n), others: idx(f.others, n), side: SIDES.includes(f.side) ? f.side : null, text,
+      evidence: arr(f.evidence).filter((e) => isObj(e) && Number.isInteger(e.o) && e.o >= 0 && e.o < n).slice(0, 4).map((e) => ({ o: e.o, p: clip(str(e.p), 60), k: clip(str(e.k), 40) })),
+    };
+  }).filter(Boolean).slice(0, 5);
+}
 
 export function coverageOf(raw) {
   try {
@@ -41,7 +60,7 @@ export function coverageOf(raw) {
       v: arr(w.v).filter(isObj).map((x) => ({ w: clip(str(x.w).trim(), 30), o: [...new Set(arr(x.o).filter((i) => Number.isInteger(i) && i >= 0 && i < outlets.length))].sort((a, b) => a - b) })).filter((x) => x.w && x.o.length).slice(0, 6),
     })).filter((w) => w.t && w.v.length >= 2).slice(0, 4);
     if (rows.length < 2 && !words.length) return null;
-    return { outlets, rows, words };
+    return { outlets, rows, words, findings: findingsOf(raw.findings, outlets.length) };
   } catch { return null; }
 }
 
@@ -96,6 +115,12 @@ export function createCoverage({ h }) {
         h('i', { class: 'cv-d', 'aria-hidden': 'true' }, x.o.slice(0, 6).map((i) => h('i', { data: { side: cov.outlets[i].side } }))),
         h('small', { text: x.o.slice(0, 3).map((i) => cov.outlets[i].name).join('・') + (x.o.length > 3 ? ` ほか ${x.o.length - 3}` : '') }))))))));
   }
+  /** where the outlets differ: a few lines of fixed form, above the table (CONTRACT 23.1) */
+  function findings(cov) {
+    const list = cov && Array.isArray(cov.findings) ? cov.findings : [];
+    if (!list.length) return null;
+    return h('div', { class: 'cv-w cv-f' }, h('h4', { text: '違い' }), h('ul', null, list.map((f, i) => h('li', { data: { kind: f.kind } }, i && list[i - 1].kind === f.kind ? null : h('b', { text: FIND_JA[f.kind] }), h('span', { text: unlabel(f) })))));   // a label once for the sentences of one kind
+  }
   /** the sign that the table runs on to the right: the outlets that are not wholly in view are counted, the right edge fades (css), the label sits above the table.
    *  It is measured on the page (the sizes are only known there), after each paint, on a scroll and on a resize; without a page (a test) nothing is measured and nothing is shown. */
   const watchScroll = (wrap, box, hint) => {
@@ -129,7 +154,7 @@ export function createCoverage({ h }) {
     return h('section', { class: 'cov', 'aria-label': '媒体の比べ' },
       h('h3', { class: 'st-h', data: { st: 'cv' } }, '媒体の比べ',
         h('span', { class: 'cv-lg' }, h('span', { class: 'on', text: '出ている' }), h('span', { class: 'off', text: '見出しと要旨には出ていない' }), hasNa ? h('span', { class: 'na', text: '照合なし' }) : null)),
-      wrap, btn, words(cov));
+      findings(cov), wrap, btn, words(cov));
   }
-  return { node, table, words };
+  return { node, table, words, findings };
 }

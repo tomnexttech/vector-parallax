@@ -27,6 +27,7 @@ export const PAGES = {
   news: { url: '#news' }, paper: { url: '#news/paper' }, map: { url: '#map', wait: 6500 },
   market: { url: '#market' }, politics: { url: '#politics' }, disaster: { url: '#disaster' }, video: { url: '#video' }, saved: { url: '#saved' },
   settings: { url: '#home', act: click('set-btn') }, ownai: { url: '#home', act: click('own-btn') },
+  search: { url: '#q=%E3%82%A2%E3%83%A1%E3%83%AA%E3%82%AB' }, ties: { url: '#net' }, mail: { url: '#mail' },   // the app branch's search, ties and mail draft (docs/app.md)
 };
 
 export function serve(dir) {

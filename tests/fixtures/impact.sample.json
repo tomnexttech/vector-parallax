@@ -1,0 +1,135 @@
+{
+ "schema": "parallax-impact/1",
+ "generated_at": 1794380000,
+ "latest_generated_at": 1794376400,
+ "vocab": "lifewords/1",
+ "caveat": "語の表による機械の判定で、精度は測っていません。当たった語を根拠として出します。",
+ "rule": {
+  "strong": 2,
+  "weak": 1,
+  "threshold": 2
+ },
+ "areas": [
+  {
+   "id": "tax",
+   "ja": "税・社会保険"
+  },
+  {
+   "id": "price",
+   "ja": "物価・家計"
+  },
+  {
+   "id": "work",
+   "ja": "雇用・賃金"
+  },
+  {
+   "id": "care",
+   "ja": "医療・介護"
+  },
+  {
+   "id": "pension",
+   "ja": "年金"
+  },
+  {
+   "id": "kids",
+   "ja": "子育て・教育"
+  },
+  {
+   "id": "home",
+   "ja": "住まい"
+  },
+  {
+   "id": "energy",
+   "ja": "電気・ガス"
+  },
+  {
+   "id": "data",
+   "ja": "個人情報・通信"
+  },
+  {
+   "id": "move",
+   "ja": "交通"
+  }
+ ],
+ "events": {
+  "s3000000000c3": {
+   "areas": [
+    "tax",
+    "price"
+   ],
+   "hits": [
+    "社会保険料",
+    "保険料",
+    "負担",
+    "家計"
+   ],
+   "stage": "検討",
+   "primary": false,
+   "mainstream_n": 2,
+   "quiet": false,
+   "n_outlets": 2
+  },
+  "s4000000000d4": {
+   "areas": [
+    "care"
+   ],
+   "hits": [
+    "介護報酬"
+   ],
+   "stage": "意見募集",
+   "primary": true,
+   "mainstream_n": 0,
+   "quiet": true,
+   "n_outlets": 2
+  }
+ },
+ "docs": [
+  {
+   "kind": "gazette",
+   "title": "〔政令〕架空保険法施行令の一部を改正する政令（年金の受給開始の年齢）",
+   "url": "https://example.test/kanpo/z1",
+   "date": "2026-11-11",
+   "areas": [
+    "pension"
+   ],
+   "hits": [
+    "年金",
+    "受給開始"
+   ],
+   "sid": null,
+   "mainstream_n": 0
+  },
+  {
+   "kind": "bill",
+   "title": "〔衆議院で審議中〕電気料金の負担の軽減のための法律案",
+   "url": "https://example.test/bill/z2",
+   "date": "2026-11-11",
+   "areas": [
+    "energy"
+   ],
+   "hits": [
+    "電気料金"
+   ],
+   "sid": null,
+   "mainstream_n": 0
+  },
+  {
+   "kind": "pubcomment",
+   "title": "介護報酬の見直し案に関する意見募集について",
+   "url": "https://example.test/pc/d41",
+   "date": "2026-11-11",
+   "areas": [
+    "care"
+   ],
+   "hits": [
+    "介護報酬"
+   ],
+   "sid": "s4000000000d4",
+   "mainstream_n": 0
+  }
+ ],
+ "counts": {
+  "events": 2,
+  "quiet": 1
+ }
+}

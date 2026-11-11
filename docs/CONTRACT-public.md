@@ -1303,3 +1303,123 @@ The board and the compare screen keep the first rows (7: the rows that only some
 ### 23.2 The first screen of an event (the board)
 
 The event opens with what a reader needs, without a press and without scrolling the card: the headline with the count of outlets and the counts of the three sides written apart (`国内 4・海外 2・官公庁 0`) beside the three-coloured bar; the point (13.1: what happened, the course, how the outlets put it differently, what to watch) large; the first headline of each side that has reports (outlet, time, the headline as published, a link to the article); the table. The tabs (`経過` `各側の見出し` `出典の一覧`) are the way down to the details. The photo is shown inside the card, small, at its top right, filling its frame; with no photo, or a small one (under 240px wide), the card has no frame for it. On a wide screen the middle column is one scroll: the event grows to its content and the row of video, related news and sources follows it (the event had a fixed share of the column and its lower part went under the row below). When the point is the detailed summary of 13.1 the one-line contrast is not shown again.
+
+### 23.3 Where the outlets differ (`coverage.findings`, decided 2026-11-11)
+
+The table folded into a few lines of fixed form. Made with the table by `parallax/coverage.py` (`_findings`), from the same material (headlines and descriptions only); read by `js/coverage.js` `findingsOf` and `coverage.clean_findings`, shown above the table under `違い` (board, compare screen, `s/<sid>.html`) and on the first card (26). Absent when there is none; a reader treats a missing list as `[]`.
+
+```jsonc
+"findings": [ { "kind": "only_side" | "word_choice" | "num_diff" | "lead_differs" | "first_gap",   // 5 at most, in this order of kinds
+                "row": "num" | null,          // the k of the row it comes from (null for word_choice, lead_differs, first_gap)
+                "outlets": [0, 2], "others": [1],   // numbers of coverage.outlets: see the table below
+                "side": "jp" | "intl" | "gov" | null,
+                "text": "人数は国内 3 社が載せ、海外 2 社の見出しと要旨には出ていない",
+                "evidence": [ { "o": 0, "p": "…300人が抗議", "k": "300人" } ] } ]   // cells as in 23 (4 at most)
+```
+
+| kind | when | fixed sentence (only the parts in 〔〕 change) | outlets / others |
+|---|---|---|---|
+| only_side (2 at most) | a row some outlets carry and others (compared, `""`) do not; kept when the carriers and the others are each one side, or two outlets or more carry it, or the row is a number, reason, reaction or what comes next | 〔row〕は〔side n 社・…〕が載せ、〔side m 社・…〕の見出しと要旨には出ていない | carriers / not found |
+| word_choice (2 at most) | a set of `words` used by three outlets or more in all | 〔set〕：「〔word〕」〔n〕 社・「〔word〕」〔m〕 社 | users of the first word / of the second |
+| num_diff (1) | a number row whose values (same unit; `約` and the notation `bn` / `billion` aside) differ | 〔what〕が違う：〔value〕（〔outlets〕）・〔value〕（〔outlets〕） | the most common value / the others |
+| lead_differs (1) | the first big word (a who / what / where row) of the headlines of two sides differs, in the same language | 見出しの最初の語：〔side〕は「〔word〕」・〔side〕は「〔word〕」 | that side's outlets / the other's |
+| first_gap (1) | the first collected headline of one side is an hour or more before the next side's | 〔side〕が〔side〕より 〔h 時間 m 分〕 早く報じた | the first outlet / the next side's first |
+
+The line of 23 holds: only "not found in the headline and description", never "did not report", hid or why; the silence words of 4.7 (`data/prompt.json`) are tested on every sentence when it is made and again by both readers (a sentence that has one is dropped). The sets of `data/coverage.json` were raised from 12 to 42 on 2026-11-11 (names of things, never of a stance).
+
+## 24. Relations (`data/relations.json`, `parallax-relations/1`, decided 2026-11-11)
+
+Made by `parallax/relations.py` after the news build (26.1) from `data/latest.json` and `data/board.json` only (no network, **no AI**). Read by `js/relations.js` (`relationsOf`, `relatedOf`, `groupOf`, `sameOf`, `whyParts`, `sameSummary`). Not committed; shipped with the page.
+
+```jsonc
+{ "schema": "parallax-relations/1", "generated_at": 0, "latest_generated_at": 0,
+  "method": { "sim": "tfidf-bigram+terms+places", "k": 5, "min_w": 0.18, "ai": false, "weights": {…}, "group_w": 0.22 },
+  "nodes":  [ { "sid": "s…", "cat": "国際" | null, "n_outlets": 8, "sides": { "jp": 5, "intl": 3, "gov": 0 }, "terms": ["…"], "first_ts": 0, "last_ts": 0 } ],
+  "edges":  [ { "a": "s…", "b": "s…", "w": 0.41,          // a < b; each node keeps its k heaviest; one edge per pair
+                "why": { "words": ["…"], "places": ["US"], "aliases": [["エヌビディア", "Nvidia"]], "nums": ["30"], "dt_h": 5.2, "lineage": false } } ],
+  "groups": [ { "gid": "g1", "sids": ["s…"], "n": 3, "terms": ["…"] } ],      // components of edges with w >= group_w, 3 nodes or more, 12 at most, 40 sids listed; no name
+  "same":   { "<sid>": { "by": "rule" | "ai", "rule_cids": ["c…"], "rule_groups": 2,
+                         "links": [ { "a": "<item id>", "b": "<item id>", "sim": 0.52, "words": [], "places": [], "aliases": [], "nums": [], "dt_min": 48 } ],   // 6 at most, most alike first
+                         "ai": { "model": "…", "at": 0 },                      // by ai only
+                         "ai_joined": [ { "cids": ["c…", "c…"], "best": { /* a link */ } } ] } },   // by ai only: the rule clusters the AI joined, measured by the rule
+  "counts": { "nodes": 0, "edges": 0, "groups": 0, "same": 0, "secs": 0 } }
+```
+
+- **Nodes**: the events of two outlets or more and every case of the board, 400 at most (most outlets, then newest).
+- **Weight** `w = 0.55·cos + 0.25·shared terms / all terms + 0.10 (a place) + 0.10 (an alias) + 0.05 (a number)`, at most 1. `cos` is the TF-IDF cosine of the two-character pieces of kanji / katakana runs and of English words of the headlines, descriptions and AI headlines of the event; a piece found in more than a quarter of the nodes is not used. Terms are the big words of 18.5 (`keyterms`); places are `places.py` hits that are not weak, compared by their coordinates (`アメリカ` = `US`); numbers carry a unit and are 10 or more. Aliases are `data/aliases.json` (99 groups: organisations, companies, office-holders, things; a katakana word matches only outside a longer katakana word, an English word at word bounds); an alias found in more than 8% of the nodes is not a reason.
+- **Reason first**: a pair is joined only with a shared term, two shared words of the headlines (3 characters or more / capitalised), two aliases, an alias and a number, or a place and a number, and `w >= 0.18`. Across languages that leaves places, numbers and aliases only. What cannot be found is not joined (the AI is not asked).
+- **same** is written for every event of two outlets or more. `links` are pairs of headlines of different outlets with what they share. For an event the AI regrouped (`by: "ai"`), `ai_joined` measures each pair of the rule clusters it joined by the same rule; when nothing is shared, `words`, `places` and `aliases` stay `[]` and the page says `規則では一致が見つからない`. The answer of the AI is not changed and gets no reason field (`data/prompt.json` and the recorded answers are unchanged). A page regrouped with the visitor's key (22) finds its entry by `rule_cids`.
+- **Time**: measured in the test (400 nodes under 5 s; the 185 nodes of the public data of 2026-11-11 take 0.6 s).
+- The page uses `edges` for the related news of an event when the file is there, and its own rule (`app.js` `related()`) when it is not.
+
+## 25. Reaction and the labels of daily life (decided 2026-11-11)
+
+### 25.1 `data/reaction.json` (`parallax-reaction/1`)
+
+Made by `parallax/reaction.py` after the news build. Public values only, no key, **no AI**. Read by `js/reaction.js`. A reaction is **an amount of attention, never for or against**: no screen says 賛成・反対 or 炎上. Every value goes with the time it was read.
+
+```jsonc
+{ "schema": "parallax-reaction/1", "generated_at": 0, "latest_generated_at": 0,
+  "sources": { "hatena": { "ok": true, "err": "", "n": 285, "fetched_at": 0 }, "youtube": { … }, "wikipedia": { … } },
+  "items":  { "<item id>": { "hb": 12 } },                 // bookmarks of that headline's URL (0 is a value; a URL that could not be read is not listed)
+  "events": { "<sid>": { "hb": { "sum": 140, "max": 96, "n": 6, "by_side": { "jp": 130, "intl": 10, "gov": 0 }, "at": 0 },
+                          "yt": { "views": 52000, "n": 2, "at": 0 },
+                          "wiki": [ { "title": "…", "lang": "ja", "views": [0, 0, 0, 0, 0, 0, null], "from": "2026-11-04", "to": "2026-11-10" } ] } },
+  "not_used": [ { "name": "…", "why": "…", "url": "https://…" } ] }
+```
+
+- **Hatena Bookmark**: the headline URLs of the events of 24 (nodes), 50 per call, 3 s between calls, 1200 URLs at most; no user name, no comment is read.
+- **YouTube**: `parallax/video.py` keeps `media:statistics views` of the channel feed it already reads as `stories[].videos[].views`, with `views_at` (the time of the read); reaction sums them per event. No video matched: `ok: true, n: 0`; videos without a count: `ok: false`.
+- **Wikipedia**: for the 15 events with most outlets, the first 3 big words (generic words and words ending in 氏 / さん skipped) are looked up as article titles of the same language in the page-view API, one call a second; a title is kept when its busiest day of the last 7 complete days (UTC) had 20 views or more (a redirect or an empty page is not kept), 3 at most per event. A missing day is `null`.
+- **Failure**: a source that cannot be read is `ok: false` with the reason and no values (nothing is filled); the others still come. The whole step keeps the previous file when it raises, and never stops the deploy (continue-on-error). 10 minutes at most.
+
+### 25.2 `data/impact.json` (`parallax-impact/1`)
+
+Made by `parallax/impact.py` from `latest.json` and `politics.json`; read by `js/impact.js`. A label of daily life (`暮らし` on the page; the area by `areas[].ja`), apart from the six labels of 18.2.
+
+```jsonc
+{ "schema": "parallax-impact/1", "generated_at": 0, "latest_generated_at": 0, "vocab": "lifewords/1", "caveat": "…", "rule": { "strong": 2, "weak": 1, "threshold": 2 },
+  "areas":  [ { "id": "tax", "ja": "税・社会保険" }, … ],          // tax price work care pension kids home energy data move
+  "events": { "<sid>": { "areas": ["tax"], "hits": ["社会保険料", "引き上げ"], "stage": "検討" | "法案" | "閣議決定" | "成立" | "施行" | "意見募集" | null,
+                          "primary": true, "mainstream_n": 1, "quiet": true, "n_outlets": 2 } },
+  "docs":   [ { "kind": "bill" | "gazette" | "pubcomment", "title": "…", "url": "https://…", "date": "2026-11-10", "areas": ["care"], "hits": ["介護報酬"], "sid": null | "<sid>", "mainstream_n": 0 } ],   // 30 at most, newest first
+  "counts": { "events": 0, "quiet": 0 } }
+```
+
+- **Rule**: `data/lifewords.json` (written by hand, public): per area, strong words count 2 and weak words 1; an area of 2 or more is labelled. An event with no policy word of the table and no primary document gets no label. `hits` are the words found and the page shows them as the reason. The precision is not measured and not claimed (`caveat`).
+- **quiet** is a count only: a primary document (`政府一次`, the gazette, the bills, a public comment) among the reports and at most one mainstream headline (`sources.MAINSTREAM_TYPES`, domestic). The page says `主要な媒体の見出し n 社`; never 隠されている or 報じない.
+- **Public comments**: `politics.json` gains `pubcomment` (the items of `egov-pc`, the e-Gov public-comment RSS already among the sources, 24 at most). Its terms: 25.3.
+
+### 25.3 The terms of the sources (read 2026-11-11)
+
+| source | primary page | what it says / how it is used |
+|---|---|---|
+| Hatena Bookmark count | https://developer.hatena.ne.jp/ja/documents/bookmark/apis/getcount | no key; up to 50 URLs per call; leave seconds between successive calls. Counts only |
+| YouTube channel feeds | https://www.youtube.com/t/terms | the public Atom feed already read for 18.14; the view count is a value of that feed |
+| Wikimedia page views | https://wikitech.wikimedia.org/wiki/Analytics/AQS/Pageviews , https://foundation.wikimedia.org/wiki/Policy:Wikimedia_Foundation_User-Agent_Policy | no key; a User-Agent with a contact (`tomnexttech@users.noreply.github.com`); one call a second |
+| e-Gov public comments | https://public-comment.e-gov.go.jp/contents/terms | 公共データ利用規約（PDL1.0）: the source must be named (the page shows the outlet `e-Gov` and the link) |
+| not used | https://news.yahoo.co.jp/robots.txt , https://docs.x.com/x-api/getting-started/pricing , https://docs.bsky.app/docs/api/app-bsky-feed-search-posts | listed in `reaction.not_used` with the reason |
+
+## 26. The first card (`data/hero.json`, `parallax-hero/1`, decided 2026-11-11)
+
+Made by `parallax/hero.py` from `latest.json`, `board.json`, `relations.json` and `reaction.json`; **30 000 bytes at most** (the later picks are dropped first), so the home can draw its first card before `latest.json` (MBs) arrives.
+
+```jsonc
+{ "schema": "parallax-hero/1", "generated_at": 0, "latest_generated_at": 0, "ai": "ok" | "off" | …,   // ai_run.status of that build
+  "picks": [ { "sid": "s…", "tier": "split" | "both" | "one_side",
+               "title": { "text": "…", "outlet": "…" | null, "lang": "ja", "ai": false, "model": "…", "at": 0 },   // model / at only when ai
+               "n_outlets": 8, "first_ts": 0, "last_ts": 0,
+               "sides": { "jp": { "n": 5, "outlets": 4, "first_ts": 0 }, "intl": { … }, "gov": { … } },
+               "points": { "jp": ["人数"], "intl": ["いつ"], "both": ["国防長官"] },   // names of coverage rows, by the side(s) that carry them (4 each)
+               "findings": [ { "kind": "…", "text": "…", "side": null } ],          // 23.3, 3 at most
+               "heads": [ { "id": "…", "side": "jp", "outlet": "…", "ts": 0, "title": "…", "link": "https://…", "lang": "ja" } ],   // 2 per side
+               "same": { "by": "rule", "rule_groups": 1, "links": [ … ], "ai": { … }, "ai_joined": [ … ] },   // 24 same, 2 links
+               "reaction": null | { "hb": 140, "hb_at": 0, "yt": null, "yt_at": null },
+               "photo": null | { "url": "https://…", "outlet": "…" } } ] }
+```
+
+Picks (fixed by `tests/test_hero_pick.py`), tier by tier, 5 at most: **split**: two outlets or more both at home and abroad, a table and at least one finding (more findings, more outlets, newer first); **both**: headlines at home and abroad (more outlets, newer); **one_side**: one side only with two outlets or more (as `oneSideOf`). None: `picks: []` and the home stays as it was (nothing is made up).
+
+### 26.1 The build step
+
+`python -m parallax.extras --only relations,impact,reaction,hero` runs after the news build in `.github/workflows/update.yml` (continue-on-error, 14 minutes at most). A file that cannot be made keeps the previous one. `tools/assemble_site.py` ships the four files and `data/aliases.json`, `data/lifewords.json`. The fixtures `tests/fixtures/{relations,reaction,impact,hero}.sample.json` are made by `tests/fixtures/make_data_samples.py` from invented headlines (no real one), and a test checks that the committed samples are what the code makes. **Without AI** (`ai_run.status` off) every file and the findings are still made (`tests/test_hero_pick.py` `NoAITests`).

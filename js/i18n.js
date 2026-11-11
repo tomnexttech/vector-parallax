@@ -111,6 +111,24 @@ export const EN = {
   '集めた記事の中に、このニュースが見当たらなかったメディアです。': 'Outlets where this news was not found among the collected articles. Only within what was collected.',
   'AI が、言語の違う見出しを同じニュースにまとめています。AI の文には「AI」の印が付きます。': 'The AI groups the headlines of one news across languages. Text the AI wrote carries the AI mark. Nothing is judged true or false.',
   'Ctrl+K でニュースも操作も探せます。字の大きさとダーク・ライトは設定で変えられます。': 'Find news and actions from this box (Ctrl+K). Type size and dark or light are in the settings.',
+  // hero:begin
+  '最初の一枚': 'First card', '両方': 'Both', '元の記事': 'Articles', '束ねた理由': 'Why grouped', '読み上げ': 'Read aloud', '並び順': 'Order', '人気順': 'Most bookmarked',
+  '自分の読み方順': 'Like my reading', '全体': 'Everything', '流す': 'Swipe', '前へ': 'Previous', '前の側': 'Previous side', '次の側': 'Next side', '最初から': 'Start over', '続ける': 'Continue',
+  'この版で固定': 'Keep this edition', '固定を外す': 'Release the edition', 'デモ': 'Demo', '前の候補': 'Previous card', '次の候補': 'Next card', 'ほかの候補': 'Other cards',
+  '一致した語': 'Words in common', '場所': 'Places', '最初と最後の差': 'First to last', '似ている見出しの対': 'Similar headline pairs', 'AI が結んだ束の間': 'Groups the AI joined',
+  '規則では一致が見つからない': 'The rules find nothing in common', '根拠のデータがありません': 'No basis in the data', '規則': 'Rules', '自分': 'Me', '社': 'outlets', '読込中です': 'Loading',
+  'ニュースがありません': 'No news', 'AI が付けた見出し': 'A title the AI wrote', '国内・海外・官公庁の見出し': 'Headlines of Japan, abroad and the ministries',
+  '地方紙・小さな媒体だけのニュース': 'News of local and small outlets only', '海外だけのニュース': 'News of outlets abroad only', '暮らしのラベル': 'Daily-life label',
+  'この端末では固定できません。ブラウザの保存領域が使えません': 'This device cannot keep an edition: the browser\'s storage is not available', '固定を外しました': 'Edition released',
+  // hero:end
+  // app:begin
+  言い換え: 'Also as', 片側だけ: 'One side only', 暮らし: 'Daily life', 反応が多い順: 'Most reaction', すべての分野: 'All fields', '36 時間': '36 hours', '7 日': '7 days',
+  '期間を 7 日にする': 'Search 7 days', '過去 7 日': 'Past 7 days', '7 日分を読み込み中': 'Loading 7 days', '7 日分を読めませんでした': 'The 7 days could not be read',
+  つながり: 'Ties', 図: 'Graph', 開く: 'Open', 全部に戻す: 'Show all', 一致した語なし: 'No shared words',
+  メール: 'Mail', メールで送る: 'Write the mail', '宛先（この端末だけに保存）': 'To (kept on this device only)', この端末に保存: 'Save on this device', 消す: 'Delete', 本文: 'Body',
+  この端末に保存しました: 'Saved on this device', アドレスの形を確かめてください: 'Check the address', アドレスを消しました: 'Address deleted',
+  ホーム画面に追加: 'Add to Home Screen', '「ホーム画面に追加」を選ぶ': 'Choose "Add to Home Screen"',
+  // app:end
 };
 
 const map = (x) => (Object.prototype.hasOwnProperty.call(EN, x) ? EN[x] : null);

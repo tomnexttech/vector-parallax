@@ -27,7 +27,7 @@ BEFORE_S = 12 * 3600      # a video may come this long before the first report o
 AFTER_S = 36 * 3600       # ... and this long after the last one
 TITLE_MAX = 120
 VID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
-_NS = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015"}
+_NS = {"a": "http://www.w3.org/2005/Atom", "yt": "http://www.youtube.com/xml/schemas/2015", "media": "http://search.yahoo.com/mrss/"}
 _ROW = re.compile(r"\{\s*id:\s*'(\w+)',\s*short:\s*'([^']+)',\s*name:\s*'([^']+)',\s*ch:\s*'(UC[\w-]{22})',\s*mode:\s*'(\w+)'")
 
 
@@ -64,7 +64,12 @@ def parse_feed(text, st):
         title = _title(en.findtext("a:title", "", _NS))
         ts = _epoch(en.findtext("a:published", "", _NS))
         if VID_RE.match(vid) and title and ts:
-            out.append({"id": vid, "title": title, "ts": ts, "station": st["id"]})
+            row = {"id": vid, "title": title, "ts": ts, "station": st["id"]}
+            stat = en.find("media:group/media:community/media:statistics", _NS)      # 視聴回数（公開のフィードにある値。CONTRACT 25.1）
+            raw = stat.get("views") if stat is not None else None
+            if isinstance(raw, str) and raw.isdigit():
+                row["views"] = int(raw)
+            out.append(row)
     out.sort(key=lambda v: -v["ts"])
     return out
 
@@ -169,6 +174,6 @@ def attach(data, items, now, get=None, blocked=None, sts=None):
     hit = match(data.get("stories", []), items, videos, now, names)
     by_sid = {s.get("sid"): s for s in data.get("stories", [])}
     for sid, vs in hit.items():
-        by_sid[sid]["videos"] = [dict(v) for v in vs]
+        by_sid[sid]["videos"] = [dict(v, views_at=int(now)) if "views" in v and now is not None else dict(v) for v in vs]
     return {"stations": len(sts), "ok": len(sts) - len(failed), "failed": failed, "fetched": len(videos),
             "events": len(hit), "videos": len({v["id"] for vs in hit.values() for v in vs}), "names": names}

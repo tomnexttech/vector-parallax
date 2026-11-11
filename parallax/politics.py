@@ -41,6 +41,7 @@ PER_PARTY = 5
 BILLS_MAX = 40
 GAZETTE_MAX = 24
 AUDIT_MAX = 12
+PUBCOMMENT_MAX = 24
 
 
 def _row(it):
@@ -571,6 +572,7 @@ def compose(items, now=None, get=None, robots=None):
     out["gazette"] = _newest([_row(i) for i in items if i.get("source_id") == "primary-kanpo"], GAZETTE_MAX)
     out["audit"] = _newest([_row(i) for i in items if i.get("source_id") == "primary-jbaudit"], AUDIT_MAX)
     out["office"] = _newest([_row(i) for i in items if i.get("source_id") in ("kantei",)], 8)
+    out["pubcomment"] = _newest([_row(i) for i in items if i.get("source_id") == "egov-pc"], PUBCOMMENT_MAX)   # e-Gov の意見募集（CONTRACT 25.2 の一次資料）
     out["parties"] = parties_from(items)
     for key, sid in (("bills", ("primary-shugiin", "primary-sangiin")), ("gazette", ("primary-kanpo",)), ("audit", ("primary-jbaudit",))):
         if not any(i.get("source_id") in sid for i in items):

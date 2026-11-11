@@ -1,16 +1,26 @@
 {
+  "id": "./",
   "name": "VECTOR PARALLAX",
   "short_name": "Parallax",
-  "description": "同じ出来事を、日本と海外の源・官公庁の資料・地図・災害・市場と一画面で並べる盤。",
+  "description": "国内と海外のメディア、官公庁の発表を並べて読めるニュースサイト。",
   "lang": "ja",
+  "dir": "ltr",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone"],
+  "orientation": "any",
   "background_color": "#1c1d1f",
   "theme_color": "#26272a",
+  "categories": ["news"],
   "icons": [
-    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "検索", "url": "./#find", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "つながり", "url": "./#net", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "メール", "url": "./#mail", "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }

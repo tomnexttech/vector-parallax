@@ -364,6 +364,162 @@ def _word_sets(cols):
     return out[:MAX_WORDS]
 
 
+# ---------------------------------------------------------------- どこが違うか（findings。CONTRACT §23.1）
+# 表と言い方の違いを、決まった型の数行に畳む。文の型は下の FIND_TEXT だけで、変えるのは〔〕の所（数えた値・行の名・媒体の名）だけ。
+# 守る線は §23 と同じ：見出しと要旨に「出ていない」という事実だけ。報じなかった・隠した・意図は書かない（沈黙の語の検査も掛ける）。
+
+FIND_KINDS = ("only_side", "word_choice", "num_diff", "lead_differs", "first_gap")
+FIND_MAX = 5
+FIND_CAP = {"only_side": 2, "word_choice": 2, "num_diff": 1, "lead_differs": 1, "first_gap": 1}
+FIRST_GAP_S = 3600                # 側どうしの最初の見出しの時刻の差がこれ以上の時だけ
+_SJ = {"jp": "国内", "intl": "海外", "gov": "官公庁"}
+_MAG = {"billion": "b", "bn": "b", "million": "m", "m": "m", "trillion": "t"}
+_NUM_HEAD = re.compile(r"^(?:約|およそ|ほぼ|計|最大|少なくとも|のべ|延べ|累計)\s*")
+_SIL = {}
+
+
+def _silent(text):
+    """「報じなかった」系の語を含む文は出さない（CONTRACT §4.7。語は data/prompt.json の silence_words）"""
+    if "w" not in _SIL:
+        try:
+            sw = json.loads((ROOT / "data" / "prompt.json").read_text(encoding="utf-8")).get("silence_words") or {}
+        except (OSError, ValueError):
+            sw = {}
+        _SIL["w"] = [unicodedata.normalize("NFKC", w).lower() for w in (sw.get("ja") or []) + (sw.get("en") or [])]
+    t = unicodedata.normalize("NFKC", text).lower()
+    return any(w in t for w in _SIL["w"])
+
+
+def _by_side(cols, idx):
+    """[媒体の番号] -> 「国内 3 社・海外 1 社」"""
+    n = OrderedDict()
+    for i in sorted(idx, key=lambda i: SIDE_ORDER[cols[i].side]):
+        n[cols[i].side] = n.get(cols[i].side, 0) + 1
+    return "・".join("%s %d 社" % (_SJ[s], k) for s, k in n.items())
+
+
+def _row_name(r):
+    if r["k"] in ("who", "what", "where"):
+        return "「%s」" % r["t"]
+    if r["k"] == "num" and "・" in r["t"]:
+        return r["t"].split("・", 1)[1]
+    return "時期" if r["k"] == "when" else r["t"]                      # 表の行の名「いつ」は問いの形なので、文の中では「時期」（js/hero.js の rowName と同じ）
+
+
+def _num_key(k):
+    """数のセルの語 -> (値, 単位)。「約300人」と「300人」は同じ値。比べられない物は None"""
+    t = _NUM_HEAD.sub("", unicodedata.normalize("NFKC", k or "").strip()).replace(",", "")
+    m = re.match(r"^([$€£¥]?)\s?(\d+(?:\.\d+)?)\s?(万|億|兆|千|百|million|billion|trillion|bn|m)?\s?(.*)$", t, re.I)
+    if not m:
+        return None
+    unit = (m.group(1) + (m.group(4) or "")).strip().lower()
+    mag = _MAG.get((m.group(3) or "").lower(), m.group(3) or "")
+    return (m.group(2).rstrip("0").rstrip(".") if "." in m.group(2) else m.group(2)) + mag, unit
+
+
+def _dur(s):
+    h, m = divmod(int(round(abs(s) / 60.0)), 60)
+    return ("%d 時間 %d 分" % (h, m)) if h and m else ("%d 時間" % h) if h else ("%d 分" % m)
+
+
+def _findings(cols, rows, words):
+    out = {k: [] for k in FIND_KINDS}
+    # 片側だけ：一部の媒体にだけ出ている行（側の分かれ目が綺麗な物・数や理由の行・2 社以上が載せた物を先に）
+    cand = []
+    for j, r in enumerate(rows):
+        have = [i for i, c in enumerate(r["c"]) if c]
+        none = [i for i, c in enumerate(r["c"]) if c == ""]
+        if not have or not none:
+            continue
+        sh, so = {cols[i].side for i in have}, {cols[i].side for i in none}
+        split = len(sh) == 1 and len(so) == 1 and sh != so
+        if not (split or len(have) >= 2 or r["k"] in ("num", "why", "react", "next")):
+            continue
+        score = (3 if split else 0) + (1 if r["k"] in ("num", "why", "react", "next") else 0) + (1 if len(have) >= 2 else 0)
+        cand.append((-score, j, r, have, none, sh))
+    for _s, _j, r, have, none, sh in sorted(cand, key=lambda x: (x[0], x[1])):
+        out["only_side"].append({
+            "kind": "only_side", "row": r["k"], "outlets": have, "others": none, "side": next(iter(sh)) if len(sh) == 1 else None,
+            "text": "%sは%sが載せ、%sの見出しと要旨には出ていない" % (_row_name(r), _by_side(cols, have), _by_side(cols, none)),
+            "evidence": [{"o": i, "p": r["c"][i]["p"], "k": r["c"][i]["k"]} for i in have[:3]]})
+    # 言葉の選び方：同じ事を指す語の組（data/coverage.json の sets）で、媒体が別の語を選んだ物
+    for w in words:
+        v = w["v"]
+        if len(v) < 2 or sum(len(x["o"]) for x in v) < 3:
+            continue
+        ev = []
+        for x in v[:2]:
+            hit = cols[x["o"][0]].find(x["w"], nocase=True)
+            if hit:
+                p, s, e = hit
+                ev.append({"o": x["o"][0], "p": _snip(p, s, e, _CUT + _SUB, 12, 12), "k": p[s:e]})
+        out["word_choice"].append({
+            "kind": "word_choice", "row": None, "outlets": list(v[0]["o"]), "others": list(v[1]["o"]), "side": None,
+            "text": "%s：%s" % (w["t"], "・".join("「%s」%d 社" % (x["w"], len(x["o"])) for x in v[:3])), "evidence": ev})
+    # 数の違い：同じ種類・同じ単位の数で、値が違う物
+    for r in rows:
+        if r["k"] != "num":
+            continue
+        vals = OrderedDict()
+        for i, c in enumerate(r["c"]):
+            if c:
+                key = _num_key(c["k"])
+                if key:
+                    vals.setdefault(key, []).append(i)
+        units = {u for (_v, u) in vals}
+        if len(vals) < 2 or len(units) != 1:
+            continue
+        groups = sorted(vals.items(), key=lambda kv: (-len(kv[1]), kv[1][0]))
+        a, b = groups[0][1], [i for _k, g in groups[1:] for i in g]
+        names = lambda g: "・".join(cols[i].name for i in g[:2]) + (" ほか %d" % (len(g) - 2) if len(g) > 2 else "")
+        out["num_diff"].append({
+            "kind": "num_diff", "row": "num", "outlets": a, "others": b, "side": None,
+            "text": "%sが違う：%s" % (_row_name(r), "・".join("%s（%s）" % (r["c"][g[0]]["k"], names(g)) for _k, g in groups[:3])),
+            "evidence": [{"o": g[0], "p": r["c"][g[0]]["p"], "k": r["c"][g[0]]["k"]} for _k, g in groups[:3]]})
+    # 見出しの最初の語：側ごとに、見出しが最初に出した大きな語（誰・何・どこの行の語）。同じ言語の側どうしだけ比べる
+    terms = [r for r in rows if r["k"] in ("who", "what", "where")]
+    lead = {}
+    for i, c in enumerate(cols):
+        best = None
+        for r in terms:
+            if r["c"][i] is None or not c.pieces:
+                continue
+            pos = c.pieces[0].find(r["t"]) if c.lang == "ja" else c.pieces[0].lower().find(r["t"].lower())
+            if pos >= 0 and (best is None or pos < best[0]):
+                best = (pos, r["t"])
+        if best:
+            lead.setdefault(c.side, OrderedDict()).setdefault(best[1], []).append(i)
+    sides = [s for s in ("jp", "intl", "gov") if s in lead]
+    for a_i, sa in enumerate(sides):
+        for sb in sides[a_i + 1:]:
+            wa = max(lead[sa].items(), key=lambda kv: (len(kv[1]), -kv[1][0]))
+            wb = max(lead[sb].items(), key=lambda kv: (len(kv[1]), -kv[1][0]))
+            if wa[0] != wb[0] and cols[wa[1][0]].lang == cols[wb[1][0]].lang:
+                out["lead_differs"].append({
+                    "kind": "lead_differs", "row": None, "outlets": wa[1], "others": wb[1], "side": None,
+                    "text": "見出しの最初の語：%sは「%s」・%sは「%s」" % (_SJ[sa], wa[0], _SJ[sb], wb[0]),
+                    "evidence": [{"o": wa[1][0], "p": _snip(cols[wa[1][0]].pieces[0], 0, 0, _CUT, 0, 24), "k": wa[0]},
+                                 {"o": wb[1][0], "p": _snip(cols[wb[1][0]].pieces[0], 0, 0, _CUT, 0, 24), "k": wb[0]}]})
+    # 最初の見出しの時刻の差（集めた見出しの時刻。側ごとの最初）
+    first = {}
+    for i, c in enumerate(cols):
+        if isinstance(c.first, (int, float)) and not isinstance(c.first, bool):
+            if c.side not in first or c.first < cols[first[c.side]].first:
+                first[c.side] = i
+    fs = sorted(first.items(), key=lambda kv: cols[kv[1]].first)
+    if len(fs) >= 2:
+        (s0, i0), (s1, i1) = fs[0], fs[1]
+        gap = cols[i1].first - cols[i0].first
+        if gap >= FIRST_GAP_S:
+            out["first_gap"].append({
+                "kind": "first_gap", "row": None, "outlets": [i0], "others": [i1], "side": s0,
+                "text": "%sが%sより %s 早く報じた" % (_SJ[s0], _SJ[s1], _dur(gap)), "evidence": []})
+    got = []
+    for k in FIND_KINDS:
+        got += [f for f in out[k] if not _silent(f["text"])][:FIND_CAP[k]]
+    return got[:FIND_MAX]
+
+
 # ---------------------------------------------------------------- 全体
 
 _NG = {}
@@ -411,10 +567,17 @@ def _of(members):
     words = _word_sets(cols)
     if len(rows) < 2 and not words:
         return None
-    return {"v": VERSION,
-            "outlets": [{"name": c.name, "side": c.side, "lang": c.lang, "desc": bool(c.desc)} for c in cols],
-            "rows": [{"k": r["k"], "t": r["t"], "c": r["c"]} for r in rows],
-            "words": [{"t": w["t"], "v": w["v"]} for w in words]}
+    try:
+        found = _findings(cols, rows, words)
+    except Exception:                                                       # 畳めなくても表は出す
+        found = []
+    out = {"v": VERSION,
+           "outlets": [{"name": c.name, "side": c.side, "lang": c.lang, "desc": bool(c.desc)} for c in cols],
+           "rows": [{"k": r["k"], "t": r["t"], "c": r["c"]} for r in rows],
+           "words": [{"t": w["t"], "v": w["v"]} for w in words]}
+    if found:
+        out["findings"] = found
+    return out
 
 
 
@@ -468,9 +631,32 @@ def clean(raw):
         rows, words = rows[:14], words[:MAX_WORDS]
         if len(rows) < 2 and not words:
             return None
-        return {"outlets": outlets, "rows": rows, "words": words}
+        return {"outlets": outlets, "rows": rows, "words": words, "findings": clean_findings(raw.get("findings"), len(outlets))}
     except Exception:
         return None
+
+
+def _idx(v, n):
+    return sorted({i for i in (v if isinstance(v, list) else []) if isinstance(i, int) and not isinstance(i, bool) and 0 <= i < n})
+
+
+def clean_findings(raw, n):
+    """findings を読む側の検査（js/coverage.js findingsOf と同じ）。型の外の物・番号の外は落とす。-> list（無ければ []）"""
+    out = []
+    for f in raw if isinstance(raw, list) else []:
+        if not isinstance(f, dict) or f.get("kind") not in FIND_KINDS:
+            continue
+        text = _str(f.get("text"), 160)
+        if not text or _silent(text):
+            continue
+        ev = []
+        for e in f.get("evidence") if isinstance(f.get("evidence"), list) else []:
+            if isinstance(e, dict) and isinstance(e.get("o"), int) and not isinstance(e.get("o"), bool) and 0 <= e["o"] < n:
+                ev.append({"o": e["o"], "p": _str(e.get("p"), 60), "k": _str(e.get("k"), 40)})
+        out.append({"kind": f["kind"], "row": f.get("row") if f.get("row") in KINDS else None,
+                    "outlets": _idx(f.get("outlets"), n), "others": _idx(f.get("others"), n),
+                    "side": f.get("side") if f.get("side") in _SIDES else None, "text": text, "evidence": ev[:4]})
+    return out[:FIND_MAX]
 
 
 def gaps(row):
@@ -498,6 +684,13 @@ SIDE_JA = {"jp": "国内", "intl": "海外", "gov": "官公庁"}
 KIND_JA = {"who": "誰", "what": "何", "when": "いつ", "where": "どこ", "num": "数", "why": "理由", "react": "反応", "next": "今後"}
 TERM_KINDS = ("who", "what", "where")
 LEAD_ROWS = 7
+FIND_JA = {"only_side": "載せた点", "word_choice": "言葉の選び方", "num_diff": "数", "lead_differs": "見出しの最初の語", "first_gap": "最初の時刻"}
+
+
+def _unlabel(f):
+    """ラベルの下に出す文: ラベルと同じ語で始まる文（見出しの最初の語：…）はその語を落とす。最初の一枚では文だけなので落とさない"""
+    lab, t = FIND_JA.get(f.get("kind"), ""), f.get("text") or ""
+    return t[len(lab) + 1:] if lab and t.startswith(lab + "：") else t
 
 
 def _esc(s):
@@ -539,6 +732,9 @@ def html_block(cov, heading="媒体の比べ"):
     has_na = any(x is None for r in cov["rows"] for x in r["c"])
     lg = '<span class="lg"><span class="on">出ている</span><span class="off">見出しと要旨には出ていない</span>%s</span>' % ('<span class="na">照合なし</span>' if has_na else "")
     out = ['<section class="cov" aria-label="%s"><h2>%s%s</h2>' % (_esc(heading), _esc(heading), lg)]
+    if cov.get("findings"):
+        out.append('<div class="cv-w cv-f"><h3>違い</h3><ul>%s</ul></div>'
+                   % "".join("<li>%s<span>%s</span></li>" % ("" if i and cov["findings"][i - 1]["kind"] == f["kind"] else "<b>%s</b>" % _esc(FIND_JA[f["kind"]]), _esc(_unlabel(f))) for i, f in enumerate(cov["findings"])))
     if cov["rows"]:
         out.append('<div class="cv-sc" role="region" tabindex="0" aria-label="媒体の比べの表（横に流せます）"><table class="cv-t"><thead><tr><th scope="col"><span class="sr">内容の点</span></th>%s</tr></thead><tbody>%s</tbody></table></div>' % (head, "".join(body)))
     if cov["words"]:

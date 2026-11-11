@@ -76,6 +76,15 @@ jobs:
         continue-on-error: true
         run: python -m parallax.extras
 
+      # CONTRACT 24-26: made from the news build, after it. relations / impact / hero use no network and no AI; reaction reads public counts
+      # (Hatena Bookmark counts, Wikimedia page views; the YouTube view counts are already in latest.json) with no key, 3 s between Hatena calls and
+      # 10 minutes at most. A failure keeps the previous file (or none) and never stops the deploy. The terms of each source: docs/CONTRACT-public.md 25.3.
+      - name: Relations, impact, reaction and the first card
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 14
+        run: python -m parallax.extras --only relations,impact,reaction,hero
+
       # Also CONTRACT 21: s/<sid>.html for each event, feed.xml / feed-oneside.xml / feed-<field>.xml, and data/archive/ (seven days). The archive of the
       # last deploy is read back from the public address (not from git, not from the cache); when it cannot be read the site carries today only. Counts only in the log.
       - name: Assemble the site (page + data)

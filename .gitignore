@@ -15,6 +15,10 @@ data/markets.json
 data/summary_cache.json
 data/recorded.json
 data/og_robots.json
+data/relations.json
+data/reaction.json
+data/impact.json
+data/hero.json
 data/*.tmp
 _site/
 # working notes: not part of the public repository

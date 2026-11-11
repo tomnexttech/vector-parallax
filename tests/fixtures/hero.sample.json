@@ -1,0 +1,538 @@
+{
+ "schema": "parallax-hero/1",
+ "generated_at": 1794380000,
+ "latest_generated_at": 1794376400,
+ "ai": "ok",
+ "picks": [
+  {
+   "sid": "s1000000000a1",
+   "tier": "split",
+   "title": {
+    "text": "架空国 国防長官の弾劾決議案を議員が提出 300人が抗議",
+    "outlet": "東都新聞",
+    "lang": "ja",
+    "ai": false
+   },
+   "n_outlets": 5,
+   "first_ts": 1794336800,
+   "last_ts": 1794345200,
+   "sides": {
+    "jp": {
+     "n": 3,
+     "outlets": 3,
+     "first_ts": 1794344000
+    },
+    "intl": {
+     "n": 2,
+     "outlets": 2,
+     "first_ts": 1794336800
+    },
+    "gov": {
+     "n": 0,
+     "outlets": 0,
+     "first_ts": null
+    }
+   },
+   "points": {
+    "jp": [
+     "弾劾"
+    ],
+    "intl": [
+     "罷免",
+     "今後"
+    ],
+    "both": [
+     "下院",
+     "国防長官",
+     "抗議",
+     "反応"
+    ]
+   },
+   "findings": [
+    {
+     "kind": "only_side",
+     "text": "「弾劾」は国内 3 社が載せ、海外 2 社の見出しと要旨には出ていない",
+     "side": "jp"
+    },
+    {
+     "kind": "only_side",
+     "text": "「罷免」は海外 2 社が載せ、国内 3 社の見出しと要旨には出ていない",
+     "side": "intl"
+    },
+    {
+     "kind": "word_choice",
+     "text": "職を離れる：「弾劾」3 社・「罷免」2 社",
+     "side": null
+    }
+   ],
+   "heads": [
+    {
+     "id": "a1000000000000a1",
+     "side": "jp",
+     "outlet": "東都新聞",
+     "ts": 1794344000,
+     "title": "架空国 国防長官の弾劾決議案を議員が提出 300人が抗議",
+     "link": "https://example.test/a1000000000000a1",
+     "lang": "ja"
+    },
+    {
+     "id": "a1000000000000a2",
+     "side": "jp",
+     "outlet": "北日本通信",
+     "ts": 1794344600,
+     "title": "架空国の国防長官 弾劾決議案提出 与党は反発",
+     "link": "https://example.test/a1000000000000a2",
+     "lang": "ja"
+    },
+    {
+     "id": "a1000000000000a4",
+     "side": "intl",
+     "outlet": "ワールド通信",
+     "ts": 1794336800,
+     "title": "架空国下院 国防長官の罷免を求める決議案 5000人が抗議",
+     "link": "https://example.test/a1000000000000a4",
+     "lang": "ja"
+    },
+    {
+     "id": "a1000000000000a5",
+     "side": "intl",
+     "outlet": "グローブ報道",
+     "ts": 1794337700,
+     "title": "下院議員が国防長官の罷免決議案を提出",
+     "link": "https://example.test/a1000000000000a5",
+     "lang": "ja"
+    }
+   ],
+   "same": {
+    "by": "rule",
+    "rule_groups": 1,
+    "links": [
+     {
+      "a": "a1000000000000a1",
+      "b": "a1000000000000a2",
+      "sim": 0.852,
+      "words": [
+       "国防長官",
+       "架空国"
+      ],
+      "places": [],
+      "aliases": [],
+      "nums": [],
+      "dt_min": 10
+     },
+     {
+      "a": "a1000000000000a4",
+      "b": "a1000000000000a5",
+      "sim": 0.676,
+      "words": [
+       "国防長官",
+       "下院議員"
+      ],
+      "places": [],
+      "aliases": [],
+      "nums": [],
+      "dt_min": 15
+     }
+    ]
+   },
+   "reaction": {
+    "hb": 45,
+    "hb_at": 1794380000,
+    "yt": null,
+    "yt_at": null
+   },
+   "photo": null
+  },
+  {
+   "sid": "s5600000000e5",
+   "tier": "both",
+   "title": {
+    "text": "架空港沖の大型船の座礁と油の流出",
+    "outlet": null,
+    "lang": "ja",
+    "ai": true,
+    "at": 1794372800,
+    "model": "fake-model-1"
+   },
+   "n_outlets": 4,
+   "first_ts": 1794362000,
+   "last_ts": 1794366200,
+   "sides": {
+    "jp": {
+     "n": 2,
+     "outlets": 2,
+     "first_ts": 1794362000
+    },
+    "intl": {
+     "n": 2,
+     "outlets": 2,
+     "first_ts": 1794365600
+    },
+    "gov": {
+     "n": 0,
+     "outlets": 0,
+     "first_ts": null
+    }
+   },
+   "points": {
+    "jp": [],
+    "intl": [],
+    "both": []
+   },
+   "findings": [],
+   "heads": [
+    {
+     "id": "e5000000000000e1",
+     "side": "jp",
+     "outlet": "東都新聞",
+     "ts": 1794362000,
+     "title": "架空港で大型船が座礁 油の流出を確認",
+     "link": "https://example.test/e5000000000000e1",
+     "lang": "ja"
+    },
+    {
+     "id": "e5000000000000e2",
+     "side": "jp",
+     "outlet": "北日本通信",
+     "ts": 1794362300,
+     "title": "架空港 座礁した大型船から油が流出",
+     "link": "https://example.test/e5000000000000e2",
+     "lang": "ja"
+    },
+    {
+     "id": "f6000000000000f1",
+     "side": "intl",
+     "outlet": "ワールド通信",
+     "ts": 1794365600,
+     "title": "架空港の沖合で油の回収始まる 漁業に影響も",
+     "link": "https://example.test/f6000000000000f1",
+     "lang": "ja"
+    },
+    {
+     "id": "f6000000000000f2",
+     "side": "intl",
+     "outlet": "グローブ報道",
+     "ts": 1794366200,
+     "title": "架空港沖 回収作業が続く",
+     "link": "https://example.test/f6000000000000f2",
+     "lang": "ja"
+    }
+   ],
+   "same": {
+    "by": "ai",
+    "rule_groups": 2,
+    "ai": {
+     "model": "fake-model-1",
+     "at": 1794372800
+    },
+    "links": [
+     {
+      "a": "e5000000000000e1",
+      "b": "e5000000000000e2",
+      "sim": 0.926,
+      "words": [
+       "架空港",
+       "大型船",
+       "座礁",
+       "流出"
+      ],
+      "places": [],
+      "aliases": [],
+      "nums": [],
+      "dt_min": 5
+     },
+     {
+      "a": "f6000000000000f1",
+      "b": "f6000000000000f2",
+      "sim": 0.473,
+      "words": [],
+      "places": [],
+      "aliases": [],
+      "nums": [],
+      "dt_min": 10
+     }
+    ],
+    "ai_joined": [
+     {
+      "cids": [
+       "c000000000005",
+       "c000000000006"
+      ],
+      "best": {
+       "a": "e5000000000000e2",
+       "b": "f6000000000000f1",
+       "sim": 0.315,
+       "words": [
+        "架空港"
+       ],
+       "places": [],
+       "aliases": [],
+       "nums": [],
+       "dt_min": 55
+      }
+     }
+    ]
+   },
+   "reaction": {
+    "hb": 36,
+    "hb_at": 1794380000,
+    "yt": null,
+    "yt_at": null
+   },
+   "photo": null
+  },
+  {
+   "sid": "sa000000000j1",
+   "tier": "both",
+   "title": {
+    "text": "架空電機 半導体の新工場を建設へ",
+    "outlet": "南海放送",
+    "lang": "ja",
+    "ai": false
+   },
+   "n_outlets": 2,
+   "first_ts": 1794376400,
+   "last_ts": 1794377000,
+   "sides": {
+    "jp": {
+     "n": 1,
+     "outlets": 1,
+     "first_ts": 1794376400
+    },
+    "intl": {
+     "n": 1,
+     "outlets": 1,
+     "first_ts": 1794377000
+    },
+    "gov": {
+     "n": 0,
+     "outlets": 0,
+     "first_ts": null
+    }
+   },
+   "points": {
+    "jp": [],
+    "intl": [],
+    "both": []
+   },
+   "findings": [],
+   "heads": [
+    {
+     "id": "j1000000000000j1",
+     "side": "jp",
+     "outlet": "南海放送",
+     "ts": 1794376400,
+     "title": "架空電機 半導体の新工場を建設へ",
+     "link": "https://example.test/j1000000000000j1",
+     "lang": "ja"
+    },
+    {
+     "id": "j1000000000000j2",
+     "side": "intl",
+     "outlet": "World Wire",
+     "ts": 1794377000,
+     "title": "Fictive Electric to build a new semiconductor plant",
+     "link": "https://example.test/j1000000000000j2",
+     "lang": "en"
+    }
+   ],
+   "same": {
+    "by": "rule",
+    "rule_groups": 1,
+    "links": [
+     {
+      "a": "j1000000000000j1",
+      "b": "j1000000000000j2",
+      "sim": 0.0,
+      "words": [],
+      "places": [],
+      "aliases": [],
+      "nums": [],
+      "dt_min": 10
+     }
+    ]
+   },
+   "reaction": {
+    "hb": 18,
+    "hb_at": 1794380000,
+    "yt": null,
+    "yt_at": null
+   },
+   "photo": null
+  },
+  {
+   "sid": "s8000000000h8",
+   "tier": "both",
+   "title": {
+    "text": "国防長官の弾劾決議案 架空国下院が採決を延期",
+    "outlet": "東都新聞",
+    "lang": "ja",
+    "ai": false
+   },
+   "n_outlets": 2,
+   "first_ts": 1794372800,
+   "last_ts": 1794373400,
+   "sides": {
+    "jp": {
+     "n": 1,
+     "outlets": 1,
+     "first_ts": 1794372800
+    },
+    "intl": {
+     "n": 1,
+     "outlets": 1,
+     "first_ts": 1794373400
+    },
+    "gov": {
+     "n": 0,
+     "outlets": 0,
+     "first_ts": null
+    }
+   },
+   "points": {
+    "jp": [],
+    "intl": [],
+    "both": [
+     "架空国下院",
+     "国防長官",
+     "延期",
+     "弾劾"
+    ]
+   },
+   "findings": [
+    {
+     "kind": "lead_differs",
+     "text": "見出しの最初の語：国内は「国防長官」・海外は「架空国下院」",
+     "side": null
+    }
+   ],
+   "heads": [
+    {
+     "id": "h8000000000000h1",
+     "side": "jp",
+     "outlet": "東都新聞",
+     "ts": 1794372800,
+     "title": "国防長官の弾劾決議案 架空国下院が採決を延期",
+     "link": "https://example.test/h8000000000000h1",
+     "lang": "ja"
+    },
+    {
+     "id": "h8000000000000h2",
+     "side": "intl",
+     "outlet": "ワールド通信",
+     "ts": 1794373400,
+     "title": "架空国下院 国防長官の弾劾決議案の採決を延期",
+     "link": "https://example.test/h8000000000000h2",
+     "lang": "ja"
+    }
+   ],
+   "same": {
+    "by": "rule",
+    "rule_groups": 1,
+    "links": [
+     {
+      "a": "h8000000000000h1",
+      "b": "h8000000000000h2",
+      "sim": 1.0,
+      "words": [
+       "弾劾決議案",
+       "架空国下院",
+       "国防長官",
+       "採決"
+      ],
+      "places": [],
+      "aliases": [],
+      "nums": [],
+      "dt_min": 10
+     }
+    ]
+   },
+   "reaction": {
+    "hb": 18,
+    "hb_at": 1794380000,
+    "yt": null,
+    "yt_at": null
+   },
+   "photo": null
+  },
+  {
+   "sid": "s2000000000b2",
+   "tier": "both",
+   "title": {
+    "text": "架空電機 新型半導体を発表 量産は来年",
+    "outlet": "東都新聞",
+    "lang": "ja",
+    "ai": false
+   },
+   "n_outlets": 2,
+   "first_ts": 1794351200,
+   "last_ts": 1794351500,
+   "sides": {
+    "jp": {
+     "n": 1,
+     "outlets": 1,
+     "first_ts": 1794351200
+    },
+    "intl": {
+     "n": 1,
+     "outlets": 1,
+     "first_ts": 1794351500
+    },
+    "gov": {
+     "n": 0,
+     "outlets": 0,
+     "first_ts": null
+    }
+   },
+   "points": {
+    "jp": [],
+    "intl": [],
+    "both": []
+   },
+   "findings": [],
+   "heads": [
+    {
+     "id": "b2000000000000b1",
+     "side": "jp",
+     "outlet": "東都新聞",
+     "ts": 1794351200,
+     "title": "架空電機 新型半導体を発表 量産は来年",
+     "link": "https://example.test/b2000000000000b1",
+     "lang": "ja"
+    },
+    {
+     "id": "b2000000000000b2",
+     "side": "intl",
+     "outlet": "World Wire",
+     "ts": 1794351500,
+     "title": "Fictive Electric unveils new semiconductor, mass production next year",
+     "link": "https://example.test/b2000000000000b2",
+     "lang": "en"
+    }
+   ],
+   "same": {
+    "by": "rule",
+    "rule_groups": 1,
+    "links": [
+     {
+      "a": "b2000000000000b1",
+      "b": "b2000000000000b2",
+      "sim": 0.0,
+      "words": [],
+      "places": [],
+      "aliases": [],
+      "nums": [],
+      "dt_min": 5
+     }
+    ]
+   },
+   "reaction": {
+    "hb": 18,
+    "hb_at": 1794380000,
+    "yt": null,
+    "yt_at": null
+   },
+   "photo": null
+  }
+ ]
+}
