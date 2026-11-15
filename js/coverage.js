@@ -21,6 +21,13 @@ export const FIND_JA = { only_side: HEAD['find.only'], word_choice: HEAD['find.w
 const FIND_OLD = FIND_BOARD;
 /** the sentence under its label: a sentence that starts with the label's own words (見出しの最初の語：…) loses them there, and keeps them on the first card */
 export const unlabel = (f) => { const t = String((f && f.text) || ''), k = f && f.kind; for (const l of [FIND_JA[k], FIND_OLD[k]]) if (l && t.startsWith(l + '：')) return t.slice(l.length + 1); return t; };
+/** the first-report line in the words 比べる uses for its row 初報 (海外が 1時間19分 先): the build writes 国内が海外より 2 時間 16 分 早く報じた.
+ *  Both screens say which side came first in the same form, each beside what it counted (照合 6 社 here, 全 10 社 there) */
+export const leadLine = (side, span) => `${side}が ${String(span).replace(/\s+/g, '')} 先`;
+export function firstGapLine(text) {
+  const m = /^(国内|海外|官公庁)が(国内|海外|官公庁)より (.+?) ?早く報じた$/.exec(String(text || '').trim());
+  return m ? leadLine(m[1], m[3]) : null;
+}
 /** the words a finding may never use (CONTRACT 4.7: what is not in the collected headlines is not "not reported") */
 const SILENT = /報じなかった|報じていない|報じず|報じられなかった|報道しなかった|報道していない|報道せず|伝えなかった|伝えていない|黙殺|did not report|didn't report|not reported by|failed to report|no coverage/i;
 /** the rows named by a word of the report itself: the narrow table keeps only a mark in the cell (the word is the row's name) */
@@ -125,7 +132,10 @@ export function createCoverage({ h, onOutlet = null }) {
   function findings(cov) {
     const list = cov && Array.isArray(cov.findings) ? cov.findings : [];
     if (!list.length) return null;
-    return h('div', { class: 'cv-w cv-f' }, h('h4', { text: HEAD['find.title'] }), h('ul', null, list.map((f, i) => h('li', { data: { kind: f.kind } }, i && list[i - 1].kind === f.kind ? null : h('b', { text: FIND_JA[f.kind] }), h('span', { text: unlabel(f) })))));   // a label once for the sentences of one kind
+    const n = arr(cov.outlets).length;
+    // the first report among the outlets this table compares, said as 比べる says it and with what it counted
+    const line = (f) => (f.kind === 'first_gap' && firstGapLine(f.text) ? h('span', null, h('span', { class: 'cv-sc num', text: `照合 ${n} 社` }), h('span', { text: firstGapLine(f.text) })) : h('span', { text: unlabel(f) }));
+    return h('div', { class: 'cv-w cv-f' }, h('h4', { text: HEAD['find.title'] }), h('ul', null, list.map((f, i) => h('li', { data: { kind: f.kind } }, i && list[i - 1].kind === f.kind ? null : h('b', { text: FIND_JA[f.kind] }), line(f)))));   // a label once for the sentences of one kind
   }
   /** the sign that the table runs on to the right: the outlets that are not wholly in view are counted, the right edge fades (css), the label sits above the table.
    *  It is measured on the page (the sizes are only known there), after each paint, on a scroll and on a resize; without a page (a test) nothing is measured and nothing is shown. */

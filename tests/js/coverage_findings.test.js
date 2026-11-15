@@ -49,3 +49,13 @@ test('the card shows the lines above the table', () => {
   assert.ok(card.kids.indexOf(f) < card.kids.findIndex((k) => k.attrs && k.attrs.class === 'cv-wrap'));
   assert.equal(createCoverage({ h }).findings(coverageOf({ ...cov, findings: [] })), null);
 });
+
+test('初報差 says what it counted: the outlets of the table (照合 N 社), in the form 比べる uses (国内が 2時間16分 先)', () => {
+  const h = (tag, attrs, ...kids) => ({ tag, attrs: attrs || {}, kids: kids.flat(Infinity).filter((k) => k !== null && k !== undefined && k !== false) });
+  const text = (n) => (typeof n === 'string' ? n : (n.attrs.text || '') + n.kids.map(text).join(''));
+  const c = coverageOf({ ...cov, findings: [{ kind: 'first_gap', row: null, outlets: [0], others: [2], side: 'jp', text: '国内が海外より 2 時間 16 分 早く報じた', evidence: [] }] });
+  const f = createCoverage({ h }).findings(c);
+  const li = f.kids[1].kids[0];
+  assert.equal(text(li), '初報差照合 3 社国内が 2時間16分 先');
+  assert.doesNotMatch(text(li), /早く報じた/);
+});

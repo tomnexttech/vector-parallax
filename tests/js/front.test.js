@@ -215,3 +215,17 @@ test('the value\'s time: green to 3 hours, amber after 3 (a collection is late) 
   assert.match(bad.attrs.class, /stale/); assert.doesNotMatch(bad.attrs.class, /aging/);
   assert.equal(bad.attrs.text, '11/15 9:40 の値');
 });
+
+test('初報 on 比べる says what it counted (全 N 社, every outlet of the story) and who came first as 媒体比較 says it (海外が 1時間19分 先)', async () => {
+  const { leadLine, firstGapLine } = await import('../../js/coverage.js');
+  const { made, h } = mkH();
+  // 11-15: 比べる showed France 24 05:51 before 日本経済新聞 07:10, while 媒体比較 (6 of 10 outlets compared) said Japan came first
+  const m = { jp: [{ title: 'a', ts: 7 * 3600 + 600, outlet: '日本経済新聞' }, { title: 'b', ts: 9 * 3600, outlet: 'NHK' }], intl: [{ title: 'x', ts: 5 * 3600 + 3060, outlet: 'France 24' }], gov: [{ title: 'g', ts: 10 * 3600, outlet: '外務省' }], words: { jp: [], intl: [] } };
+  renderPaper({ h, paper: paperOf(m), clock: () => '', span: (s) => `${Math.floor(s / 3600)}時間${Math.floor((s % 3600) / 60)}分`, outlet: (it) => it.outlet, safeUrl: () => null });
+  const head = made.find((e) => e.attrs.role === 'rowheader' && text(e).startsWith('初報'));
+  assert.equal(text(head), '初報全 4 社', 'the row names its count: every outlet of the three sides');
+  assert.ok(made.some((e) => e.attrs.class === 'pp-ahead' && e.attrs.text === '海外が 1時間19分 先'));
+  assert.equal(leadLine('海外', '1時間19分'), firstGapLine('海外が国内より 1 時間 19 分 早く報じた'), 'the two screens say it in one form');
+  assert.equal(firstGapLine('国内が海外より 22 時間 早く報じた'), '国内が 22時間 先');
+  assert.equal(firstGapLine('ほかの文'), null);
+});

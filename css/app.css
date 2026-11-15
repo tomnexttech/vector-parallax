@@ -5595,3 +5595,25 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
   :root:not([data-show]):not(#e1):not(#e2):not(#e3):not(#e4):not(#e5):not(#e6):not(#e7):not(#e8) .gap .fr-gb i[data-side="jp"] { border-radius: 6px 0 0 6px; }
   :root:not([data-show]):not(#e1):not(#e2):not(#e3):not(#e4):not(#e5):not(#e6):not(#e7):not(#e8) .gap :is(.fr-gl, .fr-gn) { font-size: 17px; }
 }
+
+/* 初報 on both screens says what it counted: 照合 6 社 beside 媒体比較's line, 全 10 社 under 比べる's row name */
+.cv-w li .cv-sc { display: inline-block; margin-right: 8px; padding: 0 7px; border: 1px solid var(--line-2); border-radius: 999px; font-size: 0.86em; color: var(--ink-2); white-space: nowrap; }
+.pp-k .pp-sc { display: block; font-size: 12px; font-weight: 500; color: var(--ink-3); white-space: nowrap; }
+/* a phone: the sheet is the whole screen and a dialog, so it sits over the top bar (its 閉じる sat under the bar, out of reach) */
+@media (max-width: 760px) { .sheet-layer { z-index: 31; } }
+/* a finger's size on a phone and a tablet (44 px): the field chips, the outlets of 媒体比較, the small links in a list row and the sheet's buttons.
+ * The tablet widths kept 36 and 40 px and the rows of 掲載ニュース 18 px (measured 11-15 at 390 to 1024 px) */
+@media (pointer: coarse) {
+  :root:not(#z1):not(#z2):not(#z3):not(#z4):not(#z5):not(#z6):not(#z7):not(#z8):not(#z9) :is(.fr-chip, .entry .gn, .cv-om, .cv-more, #sheet .tbb, .entry .speak, .al-go, .stb, #full-btn) { min-height: 44px; }
+  :root:not(#z1):not(#z2):not(#z3):not(#z4):not(#z5):not(#z6):not(#z7):not(#z8):not(#z9) .rm .lk { display: inline-flex; align-items: center; min-height: 44px; }
+  :root:not(#z1):not(#z2):not(#z3):not(#z4):not(#z5):not(#z6):not(#z7):not(#z8):not(#z9) .rm { align-items: center; }
+  :root:not(#z1):not(#z2):not(#z3):not(#z4):not(#z5):not(#z6):not(#z7):not(#z8):not(#z9) :is(.cv-om, .rm .lk) { min-width: 44px; justify-content: center; }
+  :root:not(#z1):not(#z2):not(#z3):not(#z4):not(#z5):not(#z6):not(#z7):not(#z8):not(#z9) #sheet .ds-x { min-height: 44px; min-width: 44px; }
+  #m-gen { position: relative; }
+  #m-gen::after { content: ""; position: absolute; inset: -12px 0; }
+}
+/* a tablet (761 to 1100 px): the four ways in put the number under the name, as on a phone (at 820 px 国内 30% / 海外 70% ran past the tile's edge) */
+@media (min-width: 761px) and (max-width: 1100px) {
+  :root:not([data-show]):not(#d1):not(#d2):not(#d3):not(#d4):not(#d5):not(#d6):not(#d7) .fr-tab { flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; padding: 12px 18px; }
+  :root:not([data-show]):not(#d1):not(#d2):not(#d3):not(#d4):not(#d5):not(#d6):not(#d7) .fr-tab .fr-v { justify-content: flex-start; }
+}

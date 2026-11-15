@@ -14,6 +14,7 @@
  * counted where a headline carries it; the page says "見出しの語の数" under the bar and shows no bar with fewer than TONE_MIN words. */
 
 import { HEAD } from './heads.js';
+import { leadLine } from './coverage.js';
 
 // the ways in are short nouns from the one table of headings (js/heads.js, docs/copy-canon.md)
 export const FRONT_TABS = [['gap', HEAD['front.gap']], ['jp', HEAD['front.jp']], ['intl', HEAD['front.intl']], ['bias', HEAD['front.bias']]];
@@ -267,7 +268,7 @@ export function renderPaper(o) {
       if (n < TONE_MIN) return h('p', { class: 'pp-none pp-few-w', text: [...t.neg, ...t.pos].map((x) => `${x.w} ${x.n}`).join('・') });
       return toneBar(h, t, tmax);
     }
-    if (k === 'first') return h('p', { class: 'pp-first' }, h('b', { class: 'num', text: c.first != null ? clockOf(c.first) : '—' }), c.ahead ? h('span', { class: 'pp-ahead', text: `（${o.span(c.ahead)} 先）` }) : null);
+    if (k === 'first') return h('p', { class: 'pp-first' }, h('b', { class: 'num', text: c.first != null ? clockOf(c.first) : '—' }), c.ahead ? h('span', { class: 'pp-ahead', text: leadLine(SIDE_JA[c.side], o.span(c.ahead)) }) : null);
     const seen = new Set(c.heads.map((it) => o.outlet(it)).filter(Boolean)), rest = arr(c.names).filter((x) => !seen.has(x));
     const restEl = rest.length ? h('p', { class: 'pp-rest' }, h('span', { class: 'k num', text: `ほか ${rest.length} 社` }), ...rest.flatMap((x, i) => [i ? '・' : '', nameEl(x)])) : null;
     return h('div', { class: 'pp-hw' }, h('ol', { class: 'pp-hs' }, c.heads.map((it) => { const link = o.safeUrl ? o.safeUrl(it.link) : null; return h('li', null,
@@ -275,6 +276,8 @@ export function renderPaper(o) {
       link ? h('a', { href: link, target: '_blank', rel: 'noopener noreferrer', lang: it.lang === 'en' ? 'en' : null, text: str(it.title) || '—' }) : h('span', { lang: it.lang === 'en' ? 'en' : null, text: str(it.title) || '—' })); })), restEl);
   };
   const ROWS = ['words', 'nums', 'tone', 'first', 'heads'].map((k) => [k, HEAD[`paper.${k}`]]);
+  // the row 初報 counts every outlet of the story (媒体比較 on 詳しく見る counts the outlets it compared: 照合 6 社); each says which
+  const nAll = new Set(cols.flatMap((c) => arr(c.names))).size;
   // the words of Japan and abroad in one figure across both columns: a word both sides used sits in the middle with a bar to each side
   // a row empty on every side is one line across the columns, not the same line twice
   const none = (k) => (cols.length < 2 || cols.some((c) => c.few) ? ''
@@ -291,7 +294,7 @@ export function renderPaper(o) {
   return h('div', { class: 'pp', style: `--n:${cols.length}`, role: 'table', 'aria-label': '同じニュースの伝え方' },
     h('div', { class: 'pp-r pp-hd', role: 'row' }, h('span', { class: 'pp-k', role: 'columnheader' }), cols.map((c) => h('span', { class: 'pp-c', role: 'columnheader', data: { side: c.side } },
       o.icon ? o.icon(c.side) : null, h('span', { text: SIDE_COL[c.side] }), h('b', { class: 'num', text: c.outlets }), h('span', { class: 'pp-u', text: '社' })))),
-    ROWS.map(([k, ja]) => h('div', { class: 'pp-r', role: 'row', data: { row: k } }, h('span', { class: 'pp-k', role: 'rowheader', text: ja }),
+    ROWS.map(([k, ja]) => h('div', { class: 'pp-r', role: 'row', data: { row: k } }, h('span', { class: 'pp-k', role: 'rowheader' }, ja, k === 'first' && nAll ? h('small', { class: 'pp-sc num', text: `全 ${nAll} 社` }) : null),
       k === 'words' && wide ? wide : none(k) ? h('div', { class: 'pp-c pp-wide', role: 'cell' }, h('p', { class: 'pp-none', text: none(k) }))
         : cols.map((c) => h('div', { class: 'pp-c', role: 'cell', data: { side: c.side }, 'aria-label': SIDE_JA[c.side] }, cell(c, k))))));
 }

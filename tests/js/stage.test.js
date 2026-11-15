@@ -45,7 +45,7 @@ test('isStage asks the window and never throws; u is 1 on 1920 by 1080 and the s
 
 test('the worker keeps js/stage.js with the shell, under a new name of the cache', () => {
   assert.match(sw, /const SHELL_APP = \[[^\]]*'js\/stage\.js'/);
-  assert.match(sw, /const CACHE = 'parallax-v58';/);
+  assert.match(sw, /const CACHE = 'parallax-v59';/);
 });
 
 test('the figure of ties draws larger points and words on a stage, and the same as before elsewhere', () => {
