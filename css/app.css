@@ -5019,6 +5019,8 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
   :root[data-theme="light"][data-screen="board"]:not(#_g):not(#_h) #p-pri, :root[data-theme="light"][data-screen="board"]:not(#_g):not(#_h) #p-case { background: var(--glass-2); -webkit-backdrop-filter: var(--blur-2); backdrop-filter: var(--blur-2); box-shadow: var(--glass-hi), var(--sh-2); }
   :root[data-theme="light"][data-screen="board"]:not(#_g):not(#_h) #p-case .t-place { background: var(--glass-2); box-shadow: var(--glass-hi), var(--sh-1); }
   :root[data-theme="light"][data-screen="board"]:not(#_g):not(#_h) :is(.dcard, .sd, .nt, .t-status, .t-ai, .cov) { background: var(--well); box-shadow: none; }
+  /* the wide rule (4346) zeroes the padding and corners of .cov; where the well brings its ground back, the room and the round corners come back with it */
+  :root[data-theme="light"][data-screen="board"]:not(#_g):not(#_h) .cov { padding: 20px 24px 18px; border-radius: 18px; }
   /* the right column holds the counts only (no taller than the screen); the market, the politics, the disasters, the map and the media go to the
    * row under the news, side by side, each at most 360px (its ⤢ opens the whole) */
   :root[data-screen="board"]:not(#_g):not(#_h) .board:not([data-floor="map"]):not([data-wall="1"]) { grid-template-columns: minmax(300px, 21%) repeat(12, minmax(0, 1fr)); grid-template-rows: none; grid-auto-rows: max-content; grid-auto-flow: row dense; }
