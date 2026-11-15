@@ -1425,7 +1425,7 @@ a.en-a:hover { text-decoration: underline; }
 .tab[data-genre]::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--gc, var(--ink-4)); vertical-align: 1px; }
 .gtag { display: inline-flex; align-items: center; gap: 4px; color: var(--gc, var(--ink-2)); font-weight: var(--fw-2); }
 .gtag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.stale, .stale b, .stale time { color: var(--amber) !important; }
+.stale, .stale b, .stale time { color: var(--red) !important; }   /* an old value is red (11-15, docs/design-1115.md §7) */
 .meter.stale[data-bad="1"], .meter.stale[data-bad="1"] b, .meter.stale[data-bad="1"] time, .meter.stale[data-bad="1"] span { color: var(--red) !important; }
 .meter[data-tone]::before, .dot { content: ""; flex: none; align-self: center; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-4); }
 .meter[data-tone=""]::before { content: none; }
@@ -3008,7 +3008,7 @@ div.rk { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1f
 :root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-place .banner { background: rgba(6, 8, 20, .5); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .16); }
 :root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-big .u { display: inline-block; margin: 6px -6px 0 0; padding: 1px 6px 2px; border-radius: 999px; background: rgba(6, 8, 20, .42); }
 :root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .pane:not(#p-case):not(#p-pri) .ph { border-radius: 24px 24px 0 0; background: linear-gradient(rgba(6, 8, 20, .42), rgba(6, 8, 20, 0)); }
-:root[data-theme="light"][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-place .banner { background: rgba(255, 255, 255, .78); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); }
+:root[data-theme="light"][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-place .banner { background: rgba(255, 255, 255, .78); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); color: var(--ink); }
 :root[data-theme="light"][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-case .ch-rn { color: #1d1d1f; }
 :root[data-theme="light"][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #p-rank .ph .pc { color: #00587a; }
 :root:not([data-theme="light"])[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) .home-lead { color: #dcdce2; }
@@ -4038,6 +4038,188 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
 @media (pointer: coarse) and (min-width: 761px) { .tb .tbb, .tb .search, .tb .seg button { position: relative; } .tb .tbb::after, .tb .search::after, .tb .seg button::after { content: ""; position: absolute; inset: -9px -3px; } }
 /* ==== integrate:end ==== */
 
+/* ==== meeting-1115:begin ==== */
+/* after the meeting of 11-14 (docs/design-1115.md). Colour on data only (the three sides, red for breaking and old), one ink for the
+ * interface; a white ground with grey panes in light; the type by place: a Mincho for the lead headline only, Plex for every other word,
+ * figures in Plex's tabular numbers. The home shows three things: the three ways in, the card, one panel. */
+:root {
+  --f-display: var(--f-text);
+  --f-serif: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+  --f-fig: "Barlow Semi Condensed", "IBM Plex Sans", var(--f-text);
+  --f-num: var(--f-text);
+  --g-pol: #c3c3c8; --g-intl: #c3c3c8; --g-eco: #c3c3c8; --g-sec: #c3c3c8; --g-tech: #c3c3c8; --g-mkt: #c3c3c8; --g-oth: #c3c3c8;
+  --lift: 0 1px 2px rgba(0, 0, 0, .3), 0 12px 32px -16px rgba(0, 0, 0, .6);
+}
+:root[data-theme="light"] {
+  --win: #ffffff; --pane: #f3f4f6; --pane-2: #e9ebef; --tb: #ffffff; --raise: #ffffff; --raise-h: #e9ebef; --well: #e9ebef;
+  --ink: #16181d; --ink-2: #3d4148; --ink-3: #646a73; --ink-4: #80868f; --ink-hi: #16181d;
+  --line: rgba(16, 24, 40, .08); --line-2: rgba(16, 24, 40, .14); --edge: rgba(16, 24, 40, .08);
+  --cyan: #16181d; --cyan-a: rgba(22, 24, 29, .07); --cyan-b: rgba(22, 24, 29, .04); --cyan-l: rgba(22, 24, 29, .4); --cyan-fill: #3d4148;
+  --lit-e: rgba(22, 24, 29, .5); --lit-box: 0 0 0 1.5px #16181d; --lit-line: none; --num-glow: none;
+  --red: #d70015;
+  --g-pol: #3d4148; --g-intl: #3d4148; --g-eco: #3d4148; --g-sec: #3d4148; --g-tech: #3d4148; --g-mkt: #3d4148; --g-oth: #3d4148;
+  /* the home: no coloured ground, no light behind the glass; panes are grey fills, the lifted card alone is white with a shadow */
+  --hg-ground: #ffffff; --hg-glow: none; --hg-discs: none;
+  --hs-fill: #f3f4f6; --hs-edge: transparent; --hs-hi: none; --hs-shadow: none; --hs-blur: none; --hp-blur: none;
+  --hc-fill: #e9ebef; --hc-edge: transparent; --hc-hi: none; --hc-hover: #e9ebef; --hc-on: #e1e4e9;
+  --h-ink3: #4b5058; --hk: rgba(16, 24, 40, .08);
+  --lift: 0 1px 2px rgba(16, 24, 40, .06), 0 12px 32px -16px rgba(16, 24, 40, .22);
+  /* the board: grey sheets on the white ground, its panes plain white on them, no inner light */
+  --bt-fill: #ffffff; --bt-edge: rgba(16, 24, 40, .06); --bt-hi: none; --bt-chip: rgba(16, 24, 40, .06); --tp-on: #ffffff; --hs-lite: none; --glass: #ffffff; --glass-2: #ffffff;
+}
+/* the board's filters of 注目ニュース: one row that runs sideways, not three rows over half the pane */
+#pri-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+#pri-chips::-webkit-scrollbar { display: none; }
+#pri-chips > * { flex: none; }
+.num, time.num, b.num { font-variant-numeric: tabular-nums; }
+
+/* ---- the home: three things, one column */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board.board { display: flex; flex-direction: column; gap: 24px;
+  padding: 24px max(16px, calc((100% - 1200px) / 2)) 48px; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board.board > :not(#front):not(#hero):not(#gap) { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board #hr-bub { display: none; }
+.front, .gap { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board > .front { display: grid; gap: 12px; order: 0; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board > .hero { order: 1; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board > .gap { display: block; order: 2; }
+
+.fr-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.fr-tab { display: flex; flex-direction: column; justify-content: space-between; gap: 8px; min-height: 88px; padding: 16px 20px; text-align: left; cursor: pointer;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--pane); color: var(--ink); font: inherit; transition: background var(--t-1); }
+.fr-tab:hover { background: var(--pane-2); }
+.fr-tab .fr-k { font: 700 20px/1.35 var(--f-text); }
+.fr-tab .fr-v { font: 500 15px/1.4 var(--f-text); color: var(--ink-2); }
+.fr-tab[aria-selected="true"] { background: var(--ink); border-color: var(--ink); color: var(--win); box-shadow: var(--lit-box); }
+.fr-tab[aria-selected="true"] .fr-v { color: inherit; opacity: .8; }
+.fr-tab:focus-visible, .fr-chip:focus-visible, .fr-row:focus-visible, .fr-gl.ev:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.fr-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+.fr-chips::-webkit-scrollbar { display: none; }
+.fr-chip { flex: none; min-height: 36px; padding: 0 14px; border: 1px solid var(--line-2); border-radius: var(--r-pill); background: none; color: var(--ink-2); font: 500 13px/1 var(--f-text); white-space: nowrap; cursor: pointer; }
+.fr-chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--win); }
+
+.gap { padding: 20px 24px; border-radius: 10px; background: var(--pane); color: var(--ink); }
+.fr-h h2 { margin: 0 0 14px; font: 700 20px/1.35 var(--f-text); color: var(--ink); }
+.fr-gap { display: grid; grid-template-columns: minmax(7em, 12em) minmax(0, 1fr) max-content; column-gap: 16px; }
+.fr-gap.ev { grid-template-columns: minmax(10em, 26em) minmax(0, 1fr) max-content; }
+.fr-ax, .fr-gr { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; }
+.fr-ax { margin: 0 0 6px; font-size: 12px; color: var(--ink-3); }
+.fr-axm { display: grid; grid-template-columns: 1fr 1fr; }
+.fr-axm span:first-child { text-align: right; padding-right: 10px; }
+.fr-axm span:last-child { padding-left: 10px; }
+.fr-gr { min-height: 40px; border-top: 1px solid var(--line); }
+.fr-gl { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 15px/1.4 var(--f-text); color: var(--ink); }
+.fr-gl.ev { padding: 0; border: 0; background: none; text-align: left; cursor: pointer; min-height: 40px; }
+.fr-gl.ev:hover { text-decoration: underline; }
+.fr-gb { position: relative; height: 14px; }
+.fr-gb::before { content: ""; position: absolute; left: 50%; top: -8px; bottom: -8px; width: 1px; background: var(--ink-3); }
+.fr-gb i { position: absolute; top: 0; bottom: 0; width: var(--w); background: var(--sd); border-radius: 3px; }
+.fr-gb i[data-side="jp"] { right: 50%; }
+.fr-gb i[data-side="intl"] { left: 50%; }
+.fr-gn { font-size: 13px; color: var(--ink-2); text-align: right; white-space: nowrap; }
+.fr-foot { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px 14px; margin: 12px 0 0; font-size: 12px; color: var(--ink-3); }
+.gap .fr-at.stale, #board .hr-meta.stale time, #board .hr-meta .stale { color: var(--red); }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #genre-strip { display: none; }
+.fr-one { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.fr-og h3 { display: flex; align-items: baseline; gap: 8px; margin: 0; padding-top: 8px; border-top: 3px solid var(--sd); font: 700 16px/1.45 var(--f-text); }
+.fr-og ul, .fr-bias { margin: 6px 0 0; padding: 0; list-style: none; }
+.fr-row { display: block; width: 100%; min-height: 44px; padding: 10px 0; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--ink); text-align: left; font: 400 15px/1.5 var(--f-text); cursor: pointer; }
+.fr-row:hover { color: var(--ink-2); }
+.fr-br { display: grid; grid-template-columns: minmax(0, 1fr) minmax(60px, 140px) 3em; align-items: center; gap: 12px; }
+.fr-bt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fr-bm { height: 8px; overflow: hidden; border-radius: 4px; background: var(--pane-2); }
+.fr-bm i { display: block; height: 100%; background: var(--ink-2); }
+.fr-br b { text-align: right; font-weight: 700; }
+.fr-empty { margin: 4px 0; font-size: 15px; line-height: 1.6; color: var(--ink-2); }
+
+/* ---- the card */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card { border-radius: 16px; }
+:root[data-theme="light"][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card { background: #fff; border: 1px solid var(--line); box-shadow: var(--lift); }
+#board .hr-card.has-ph { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr) auto; grid-template-areas: "ph main side"; }
+.hr-ph { grid-area: ph; margin: 0; min-width: 0; }
+.hr-ph img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; background: var(--pane-2); }
+.hr-ph figcaption { margin-top: 6px; font-size: 12px; color: var(--ink-3); }
+#board .hr-t { font: 700 40px/1.25 var(--f-serif); letter-spacing: 0; color: var(--ink); }
+.hr-lab { font: 700 13px/1.4 var(--f-text); color: var(--ink); }
+.hr-facts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 20px; margin: 0; font-size: 15px; }
+.hr-fc { display: inline-flex; align-items: baseline; gap: 4px; }
+.hr-fc::before { content: ""; align-self: center; width: 10px; height: 10px; margin-right: 4px; border-radius: 2px; background: var(--sd); }
+.hr-fc .k, .hr-first .k { color: var(--ink-2); }
+.hr-fc b, .hr-first b { font: 700 20px/1 var(--f-text); color: var(--ink); }
+.hr-fc .u { font-size: 13px; color: var(--ink-3); }
+.hr-fc.zero { opacity: .5; }
+.hr-first { display: inline-flex; align-items: baseline; gap: 6px; }
+.hr-share { display: grid; gap: 6px; max-width: min(100%, 520px); }
+.hr-sb { display: flex; gap: 2px; height: 10px; overflow: hidden; border-radius: 5px; background: var(--pane-2); }
+.hr-sb i { display: block; height: 100%; background: var(--sd); }
+.hr-sl { font-size: 13px; color: var(--ink-2); }
+#board .hr-acts { display: flex; flex-wrap: wrap; gap: 12px; }
+#board .hr-acts .hr-b { min-height: 44px; padding: 0 22px; border-radius: var(--r-pill); font: 700 15px/1 var(--f-text); }
+#board .hr-acts .hr-go { background: var(--ink); color: var(--win); border-color: var(--ink); }
+
+/* ---- the compare: the newspapers side by side, rows aligned */
+.pp { display: grid; grid-template-columns: 9em repeat(var(--n), minmax(0, 1fr)); column-gap: 24px; margin: 8px 0 16px; }
+.pp-r { display: contents; }
+.pp-r > * { padding: 12px 0; border-top: 1px solid var(--line); min-width: 0; }
+.pp-hd > * { border-top: 0; padding-top: 0; }
+.pp-hd .pp-c { display: flex; align-items: baseline; gap: 8px; padding-top: 10px; border-top: 3px solid var(--sd); font: 700 16px/1.4 var(--f-text); color: var(--sd); }
+.pp-hd .pp-c b { color: var(--ink); }
+.pp-hd .pp-c .en-i { width: 18px; height: 18px; align-self: center; fill: none; stroke: currentColor; stroke-width: 1.5; }
+.pp-k { font: 700 13px/1.5 var(--f-text); color: var(--ink-2); }
+.pp-c { font-size: 15px; line-height: 1.6; color: var(--ink); }
+.pp-ws, .pp-ns, .pp-hs { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.pp-ws small { margin-left: 4px; font-size: 12px; color: var(--ink-3); }
+.pp-ns li.only { font-weight: 700; text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; text-decoration-color: var(--sd); }
+.pp-hs { display: grid; gap: 10px; }
+.pp-ho { display: flex; gap: 8px; font-size: 12px; color: var(--ink-3); }
+.pp-ho b { font-weight: 700; color: var(--ink-2); }
+.pp-hs a { color: var(--ink); text-decoration: none; }
+.pp-hs a:hover { text-decoration: underline; }
+.pp-none, .pp-few { margin: 0; font-size: 13px; color: var(--ink-3); }
+.pp-tone { display: grid; gap: 4px; }
+.pp-tb { position: relative; display: block; height: 10px; }
+.pp-tb::before { content: ""; position: absolute; left: 50%; top: -4px; bottom: -4px; width: 1px; background: var(--ink-3); }
+.pp-tb i { position: absolute; top: 0; bottom: 0; width: var(--w); background: var(--ink-2); border-radius: 3px; }
+.pp-tb i.neg { right: 50%; }
+.pp-tb i.pos { left: 50%; background: var(--ink-3); }
+.pp-tl { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.pp-tn { font-size: 12px; color: var(--ink-3); }
+.pp-first b { font: 700 20px/1 var(--f-text); }
+.pp-ahead { margin-left: 6px; font-size: 13px; color: var(--ink-2); }
+.en-figs.one { grid-template-columns: minmax(0, 1fr); max-width: 640px; }
+.entry .en-sel .en-st { font-family: var(--f-serif); font-weight: 700; }
+@media (max-width: 760px) {
+  .pp { grid-template-columns: minmax(0, 1fr); }
+  .pp-r { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); column-gap: 12px; border-top: 1px solid var(--line); }
+  .pp-r > * { border-top: 0; }
+  .pp-r > .pp-k { grid-column: 1 / -1; padding-bottom: 0; }
+  .pp-hd > .pp-k { display: none; }
+  .pp-c { font-size: 14px; }
+}
+
+/* ---- the board: one weight for a pane's title, a label of ties that never folds one letter a line */
+:root[data-screen="board"] .st-h, .cov > .st-h { font-weight: 700; }
+
+/* ---- a phone: the three ways in are tabs that run sideways, the card's headline 28px, 16px at the sides */
+@media (max-width: 760px) {
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board.board { padding: 12px 16px 32px; gap: 16px; }
+  .fr-tabs { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .fr-tab { flex: 0 0 auto; min-width: 46%; min-height: 72px; padding: 12px 14px; scroll-snap-align: start; }
+  .fr-tab .fr-k { font-size: 17px; }
+  .fr-tab .fr-v { font-size: 13px; }
+  .fr-chip { min-height: 44px; }
+  #board .hr-card, #board .hr-card.has-ph { grid-template-columns: minmax(0, 1fr); grid-template-areas: "ph" "main"; padding: 16px; }
+  #board .hr-card .hr-side { display: none; }
+  #board .hr-t { font-size: 28px; }
+  .gap { padding: 16px; }
+  .fr-gap { grid-template-columns: 6.5em minmax(0, 1fr); column-gap: 10px; }
+  .fr-ax > span:last-child { display: none; }
+  .fr-gr { row-gap: 2px; padding: 6px 0; }
+  .fr-gn { grid-column: 2; text-align: left; font-size: 12px; }
+  .fr-one { grid-template-columns: minmax(0, 1fr); }
+}
+@media (pointer: coarse) { .fr-chip { min-height: 44px; } }
+/* ==== meeting-1115:end ==== */
+
 /* ==== stage:begin ==== */
 /* the stage: a wide screen (a projector, a laptop at 16:9) shows each screen as one composed frame of 1920 by 1080 units, the same frame
  * scaled on any wide screen. The @media is the STAGE of js/stage.js (tests/js/stage.test.js). A tablet, a phone and a 4:3 window never
@@ -4388,5 +4570,152 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
   :root[data-show]:not(#_s) #p-mapnews { padding-top: calc(var(--u) * 24); }
   :root[data-show]:not(#_s) .en-tx > :not(.en-g, h2, .en-tot, .en-ai) { display: none; }
   :root[data-show]:not(#_s) .en-fig .en-vh { font-size: calc(var(--u) * 28); }
+
+  /* ---- 11-15: the home in one frame — the three ways in, the card and one panel, no scroll (docs/design-1115.md §9) */
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board.board { container-type: normal; gap: calc(var(--u) * 20); padding: calc(var(--u) * 28) var(--st-x) calc(var(--u) * 28); }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-host { display: block; min-height: 0; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "main side"; padding: calc(var(--u) * 28) calc(var(--u) * 36); background: var(--hs-fill); border-radius: 16px; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card.has-ph { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr) auto; grid-template-areas: "ph main side"; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-main { gap: calc(var(--u) * 16); }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-meta { padding-right: 0; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-t { font-size: max(28px, calc(var(--u) * 48)); line-height: 1.25; -webkit-line-clamp: 2; line-clamp: 2; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-ph img { max-height: calc(var(--u) * 300); }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-acts { margin-top: 0; }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .gap { padding: calc(var(--u) * 20) calc(var(--u) * 32); }
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .fr-gr { min-height: calc(var(--u) * 40); }
+  :root[data-show][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-t { font-size: max(32px, calc(var(--u) * 56)); }
+  :root[data-show][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board :is(.fr-gl, .fr-gn, .fr-tab .fr-v, .hr-facts, .hr-sl, .fr-row) { font-size: max(15px, calc(var(--u) * 24)); }
+  :root[data-show][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board :is(.fr-tab .fr-k, .fr-h h2) { font-size: max(18px, calc(var(--u) * 30)); }
+  :root[data-show][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board :is(.fr-foot, .fr-ax, .hr-meta, .hr-fc .u) { font-size: max(13px, calc(var(--u) * 20)); }
+  :root[data-show][data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .fr-chips { display: none; }
+  /* the board: 媒体の比べ is a pane's title like the others, not the screen's headline */
+  :root[data-screen="board"]:not(#_s) .cov > .st-h { font-size: max(18px, calc(var(--u) * 24)); font-weight: 700; }
+  /* 11-15 (fin): the show's small labels of the card and its counts read from the back of a hall (20px and more at 1920) */
+  :root[data-show][data-home="home"]:not(#_f) #board :is(.hr-lab, .hr-pos, .hr-ph figcaption, .hr-fc .u, .hr-first .k, .hr-sl .k) { font-size: max(15px, calc(var(--u) * 22)); }
+  :root[data-show][data-home="home"]:not(#_f) #board :is(.hr-fc b, .hr-first b) { font-size: max(18px, calc(var(--u) * 30)); }
 }
 /* ==== stage:end ==== */
+
+/* ==== fin-1115:begin ==== */
+/* 11-15, after the critique of the meeting's build (docs/design-1115.md §3-§9): the tabs sit on the panel they change, one count of outlets
+ * on every screen, the phone's three ways in stacked, the board in three columns with one scroll, no glow discs behind the glass.
+ * It comes after the stage so it wins by order; :not(#_f) (an id that is never there) lifts a rule over the home's long selectors. */
+:root:not(#_f) { --hg-discs: none; --hg-glow: none; }
+
+/* the home: the three ways in, then the panel they change, then the card of the lead news */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board > .front { order: 0; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board > .gap { order: 1; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board > .hero { order: 2; }
+/* the chosen tab and its panel read as one piece: the panel's top edge carries the tab's ink */
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board > .gap { border-top: 3px solid var(--ink); }
+
+/* a headline breaks between phrases (Chrome 119+), never inside a word such as トラ／ンプ */
+#board .hr-t, .entry .en-st, .entry .en-h, #p-case .ch-title h1, .fr-row, .fr-gl, .pp-hs a { word-break: auto-phrase; overflow-wrap: break-word; line-break: strict; }
+
+/* the card: a side with no outlet is grey by its colour, not by fading (opacity left 13px at about 3.4:1 on white) */
+.hr-fc.zero { opacity: 1; }
+.hr-fc.zero .k, .hr-fc.zero b, .hr-fc.zero .u { color: var(--ink-3); }
+.hr-sl .k { margin-right: 8px; font-weight: 700; color: var(--ink); }
+/* 読み上げ: one short line; the orb stays off the home's card */
+.hr-speak { white-space: nowrap; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card .hr-stage { display: none; }
+:root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card .hr-side { align-items: flex-end; }
+
+/* the list of バイアス度: a head row names the number, the bar is the share of 100 */
+.fr-bh { display: grid; grid-template-columns: minmax(0, 1fr) calc(140px + 3em + 12px); gap: 12px; padding: 0 0 6px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
+.fr-bh span:last-child { text-align: right; }
+.fr-og h3 b { font-weight: 700; }
+.pp-hd .pp-c .pp-u { margin-left: -4px; font: 500 13px/1 var(--f-text); color: var(--ink-2); }
+
+/* ---- the board (詳しく見る) on a wide screen: three columns and one scroll. The list of news on the left keeps its place while the page
+ * moves (it is the one list that scrolls inside), the chosen news in the middle grows to its content, the counts on the right with the
+ * media, the hours and the fields under them. Nothing in a column is cut at its bottom any more. */
+@media (min-width: 1101px) {
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) { grid-template-columns: minmax(300px, 21%) minmax(0, 1fr) minmax(300px, 22%); grid-template-rows: max-content max-content; align-items: start; align-content: start; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c2 { grid-column: 1; grid-row: 1 / span 2; height: auto; overflow: visible; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 { grid-column: 2; grid-row: 1 / span 2; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c4 { grid-column: 3; grid-row: 1; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c1 { grid-column: 3; grid-row: 2; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > :is(.c1, .c3, .c4) { display: flex; flex-direction: column; height: auto; min-height: 0; overflow: visible; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > :is(.c1, .c3, .c4) > .pane { flex: none; overflow: visible; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > :is(.c1, .c3, .c4) > .pane > .pb { flex: none; overflow: visible; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c4 > #p-map { height: 340px; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c4 > #p-map > .pb { flex: 1; min-height: 0; overflow: hidden; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > .under { height: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > .under > .pane { min-height: 260px; overflow: visible; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > .under > .pane > .pb { overflow: visible; flex: none; }
+  /* the left column: the list of news is the one box that scrolls inside (72 rows), the ranking and one side only follow it whole */
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c2 { display: flex; flex-direction: column; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c2 > #p-pri { flex: none; height: min(640px, calc(100dvh - 160px)); }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c2 > :not(#p-pri) { flex: none; overflow: visible; }
+  :root[data-screen="board"]:not(#_f) .board:not([data-floor="map"]):not([data-wall="1"]) > .c2 > :not(#p-pri) > .pb { flex: none; overflow: visible; }
+}
+
+/* ---- the compare: the words of both sides in one figure across the columns; a row empty on every side is one line */
+.pp-wide { grid-column: 2 / -1; }
+.pp-wax { display: grid; grid-template-columns: minmax(0, 1fr) 9em minmax(0, 1fr); margin: 0 0 6px; font-size: 13px; color: var(--ink-2); }
+.pp-wax span:first-child { text-align: right; padding-right: 8px; }
+.pp-wax span:last-child { padding-left: 8px; }
+.pp-wr { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) 9em minmax(0, 1fr) 2.4em; align-items: center; gap: 0 8px; min-height: 32px; border-top: 1px solid var(--line); }
+.pp-wn { font: 600 15px/1 var(--f-text); color: var(--ink); }
+.pp-wr .pp-wn:first-child { text-align: right; }
+.pp-wb { position: relative; height: 12px; }
+.pp-wb i { position: absolute; top: 0; bottom: 0; width: var(--w); border-radius: 3px; background: var(--sd); }
+.pp-wb.jp i { right: 0; }
+.pp-wb.intl i { left: 0; }
+.pp-ww { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font: 500 15px/1.4 var(--f-text); color: var(--ink-2); }
+.pp-wr.both .pp-ww { font-weight: 700; color: var(--ink); }
+.pp-wide > .pp-tn { display: block; margin-top: 6px; text-align: right; }
+/* 社の割合 under the rows: one full-width bar and the three counts on one line, not three giant numbers in a corner */
+:root:not(#_f) .en-figs.one { max-width: none; }
+:root:not(#_f) .en-figs.one .en-lg { display: flex; flex-wrap: wrap; gap: 12px 40px; margin-top: 14px; }
+:root:not(#_f) .en-figs.one .en-lg b { font-size: 32px; font-weight: 600; }
+:root:not(#_f) .en-figs.one .en-lg .pc { margin-left: 4px; }
+/* the board: no letter under 12px (the small steps of the scale are raised on this screen only) */
+:root[data-screen="board"]:not(#_f) { --fs-0: 12px; --fs-1: 12px; --fs-2: 13px; }
+:root[data-screen="board"]:not(#_f) .hout { font-size: max(12px, .86em); }
+:root[data-screen="board"]:not(#_f) .tlead { font-size: max(12px, .78em); }
+:root[data-screen="board"]:not(#_f) #p-case small.num, :root[data-screen="board"]:not(#_f) #p-case figcaption { font-size: 12px; }
+:root[data-screen="board"]:not(#_f) .board :is(.ax, .lanes .lt) { font-size: 12px; }
+/* dark: the place's red tag carries dark ink (white on #ff6961 was 2.8:1), the faintest grey is lifted to pass 4.5:1 on the glass */
+:root:not([data-theme="light"]):not(#_f) .banner { color: #1d0807; }
+:root:not([data-theme="light"])[data-home="home"]:not(#_f) #p-case .ch-place .banner { color: #fff; }
+:root:not([data-theme="light"])[data-screen="board"]:not(#_f) { --ink-4: #9a9aa2; }
+
+/* ---- the light board: the ground white, the panes a grey fill on it (the same direction as the home: the back white, colour in front) */
+:root[data-theme="light"][data-screen="board"]:not(#_f) { --bt-fill: #f3f4f6; --bt-edge: transparent; }
+@media (min-width: 1101px) {
+  :root[data-theme="light"][data-screen="board"]:not(#_f) .col { background: transparent; border-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; padding: 0; }
+  :root[data-theme="light"][data-screen="board"]:not(#_f) .pane { border-radius: 14px; }
+  :root[data-theme="light"][data-screen="board"]:not(#_f) #p-case .t-place { background: #fff; border-radius: 14px; box-shadow: var(--lift); }
+}
+
+/* the home counts its news on the card (1 / 5); the strip's own count of the board (注目ニュース 1/72) is not shown beside it */
+:root[data-screen="home"]:not(#_f) #sb-tick { visibility: hidden; }
+
+
+/* ---- a phone: the three ways in stacked (each a full row, its number at the right), the panel under them, then the card; the bottom bar never covers the last button */
+@media (max-width: 760px) {
+  :root[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board.board { padding-bottom: calc(var(--tabs-h, 54px) + env(safe-area-inset-bottom, 0px) + 28px); }
+  :root:not(#_f) .fr-tabs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; overflow: visible; }
+  :root:not(#_f) .fr-tab { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; min-height: 52px; padding: 10px 16px; }
+  :root:not(#_f) .fr-tab .fr-k { font-size: 17px; white-space: nowrap; }
+  :root:not(#_f) .fr-tab .fr-v { font-size: 13px; text-align: right; }
+  :root:not(#_f) .fr-chip { font-size: 15px; }
+  :root:not(#_f) .fr-gl, :root:not(#_f) .fr-row { font-size: 15px; }
+  :root:not(#_f) .fr-gn { font-size: 13px; }
+  :root:not(#_f) .fr-bt { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  :root:not(#_f) .fr-br { grid-template-columns: minmax(0, 1fr) 72px 2.4em; gap: 10px; }
+  :root:not(#_f) .fr-bh { grid-template-columns: minmax(0, 1fr) auto; }
+  :root:not(#_f) .hr-facts { font-size: 15px; }
+  :root:not(#_f) .hr-fc .u, :root:not(#_f) .hr-sl, :root:not(#_f) .hr-meta, :root:not(#_f) .hr-ph figcaption { font-size: 13px; }
+  :root:not(#_f) #board .hr-ph img { aspect-ratio: 16 / 9; }
+  :root:not(#_f) .pp-c { font-size: 15px; }
+  :root:not(#_f) .pp-ho, :root:not(#_f) .pp-ws small, :root:not(#_f) .pp-k, :root:not(#_f) .pp-none, :root:not(#_f) .pp-few { font-size: 13px; }
+  :root:not(#_f) .sects :is(a, button) > span { font-size: 12px; }
+  :root:not(#_f) .fr-ax, :root:not(#_f) .fr-foot, :root:not(#_f) .ainote { font-size: 13px; }
+  :root:not(#_f) .pp-wide { grid-column: 1 / -1; }
+  :root:not(#_f) .pp-wr { grid-template-columns: 2em minmax(0, 1fr) 6.5em minmax(0, 1fr) 2em; gap: 0 6px; }
+  :root:not(#_f) .pp-wax { grid-template-columns: minmax(0, 1fr) 6.5em minmax(0, 1fr); }
+}
+/* ==== fin-1115:end ==== */

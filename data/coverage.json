@@ -8,6 +8,8 @@
   "kata_stop": "デジタル ニュース システム データ サービス ネット ネットワーク ビジネス コメント メディア テレビ ラジオ スポーツ イベント プロジェクト ライブ ランキング ポイント ツイート アカウント オンライン ユーザー ホーム センター ミサイル ロボット マグニチュード ブルームバーグ ロイター ブルームバーグ共同 コロナ ウイルス ロックバンド グループ ファン メンバー ステージ",
   "why": "を受け を受けて を巡り を巡って をめぐり をめぐって をめぐる めぐり めぐって 巡り 巡って に伴い 伴い を理由に が原因 のため を背景に きっかけ に端を発 を踏まえ",
   "react": "抗議 反発 批判 非難 反対 歓迎 支持 懸念 憂慮 謝罪 反論 要求 警告 呼びかけ 呼び掛け 訴え 不満 怒り 衝撃 動揺 困惑 追及 否定 拒否",
+  "react_tone_note": "比べる画面の反応の語（js/front.js）。react の語を否定の側と肯定の側に分けるだけで、記事も媒体も評価しない。どちらにも入れない語（謝罪 要求 呼びかけ 訴え 衝撃 動揺 困惑）は数えない",
+  "react_tone": {"neg": "抗議 反発 批判 非難 反対 懸念 憂慮 反論 警告 不満 怒り 追及 否定 拒否", "pos": "歓迎 支持", "en_neg": "condemn,criticis,criticiz,protest,warned,concern,denied,rejected", "en_pos": "welcomed"},
   "next": "見通し 見込み 方針 予定 今後 可能性 恐れ おそれ 注意 警戒 検討 へ向け 目指 臨む 控え",
   "en": {
     "events": "resign,impeach,arrest,charged,killed,dead,death,injured,protest,strike,attack,ceasefire,talks,sanctions,earthquake,eruption,collapse,vote",

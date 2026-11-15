@@ -8,10 +8,10 @@ import { STATIONS, stationFor, embedSrc } from '../../js/tv.js';
 const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
 const ev = (o = {}) => ({ titles: ['日銀が金利を据え置き'], members: [{ names: ['NHK'], type: '公共放送' }], field: '経済', cover: 'jp', ...o });
 
-test('defaults: everything shown, video muted and playing by itself, the system decides motion', () => {
+test('defaults: everything shown, video muted and played only when pressed, the system decides motion', () => {
   const d = defaults();
   assert.deepEqual(d.tv.order, STATIONS.map((x) => x.id));
-  assert.equal(d.tv.auto, true); assert.equal(d.tv.sound, false);
+  assert.equal(d.tv.auto, false); assert.equal(d.tv.sound, false);
   assert.equal(d.motion.calm, 'system');
   assert.deepEqual(d.mute, { words: [], outlets: [] });
   assert.deepEqual(d.panes.off, []);
@@ -41,7 +41,7 @@ test('a damaged file falls back field by field', () => {
     panes: { off: ['map', 'case', 'pri', 'mkt'] },
     extra: { anything: 1 },
   });
-  assert.equal(c.tv.auto, true); assert.equal(c.tv.sound, false);
+  assert.equal(c.tv.auto, false); assert.equal(c.tv.sound, false);
   assert.deepEqual(c.tv.order.slice(0, 2), ['dw', 'ann']);
   assert.equal(c.tv.order.length, STATIONS.length);
   assert.deepEqual(c.tv.off, ['sky']);

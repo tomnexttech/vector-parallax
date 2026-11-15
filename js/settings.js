@@ -48,7 +48,7 @@ export const THEMES = ['dark', 'light'];   // the appearance, dark unless chosen
 
 export function defaults() {
   return {
-    tv: { auto: true, sound: false, order: [...STATION_IDS], off: [] },
+    tv: { auto: false, sound: false, order: [...STATION_IDS], off: [] },   // a video plays when pressed (11-15: an ad started by itself on 映像)
     news: { types_off: [], fields_off: [], scope: 'all', view: 'auto', lang: 'ja' },
     mute: { words: [], outlets: [] },
     motion: { cases: true, scroll: true, calm: 'system', sound: true, hoverSound: false },

@@ -63,7 +63,8 @@ export const EN = {
   // the simple view
   '今日の注目ニュース': 'Today\'s big news', '詳しく見る': 'Detailed screen', '詳しく': 'Details', '表示中': 'Showing',
   'ニュースを選ぶと、下に見出しが並びます': 'Press a news to see below how it was told', 'ニュースを選ぶ': 'Choose a news', '選んだニュースの伝え方': 'How the chosen news was told',
-  '伝え方の違い': 'How it was told', '件数の割合': 'Share of reports', '件': '', 'バイアス度': 'Bias score', 'バイアス度の内訳を見る': 'See the parts of the bias score on the detailed screen',
+  '伝え方の違い': 'How it was told', '件数の割合': 'Share of reports', '社の割合': 'Share of outlets', 'の要約': ' summary', 'このニュース': 'This news',
+  '日本と海外の差': 'Japan and abroad', '片側だけの話': 'One side only', '偏りの大きい話': 'Most one-sided', 'バイアス度（0〜100）': 'Bias score (0-100)', '件': '', 'バイアス度': 'Bias score', 'バイアス度の内訳を見る': 'See the parts of the bias score on the detailed screen',
   '最初に報じた時刻': 'First reports', '国内と海外の差': 'Gap between Japan and abroad', '海外が先': 'abroad first', '国内が先': 'Japan first', '同じ時刻': 'same time',
   '1分未満': 'under 1 min', '件数の積み上がり': 'Reports adding up', '使った言葉の違い': 'Words used', '見出しの言葉': 'Words in the headlines', '共通する言葉': 'Shared words',
   'よく出た言葉': 'Frequent words', '各メディアの見出し': 'Each outlet\'s headline', 'は、集めたニュースには見当たりません': 'not found in the collected news',

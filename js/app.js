@@ -26,6 +26,7 @@ import { createActions } from './actions.js';
 import { loadTasks, saveTasks, addTask, toggleTask, removeTask, hasTask, loadReads, saveReads, clearReads, noteRead, readMix } from './tasks.js';
 import { speechSupported, listen, route as voiceRoute } from './voice.js';
 import { absentOutlets, absentBlock, outletProfile } from './absent.js';
+import { FRONT_TABS, keepInList, gapByField, gapByEvent, jpShare, renderFront as renderFrontEl, renderGap as renderGapEl } from './front.js';
 import { entryEvents, renderEntry, pickFirst, leadPool, lineIcon, sides as sidesOf, SIDES, original, firstLine } from './entry.js';
 import { STORY, TL_CAP, timeline, sourcesOf } from './story.js';
 import { readLines, createReader } from './speak.js';
@@ -650,6 +651,13 @@ function rowThumb(e) {
 // "new in the last six hours" is counted when the data was built: an old build must not say it as if it were now
 const newsFresh = () => !isOld(state.data.generated_at, nowS());
 const measureOf = (e) => e.fig || (e.fig = measure(e, { order: TYPE_ORDER }));
+// one entry an outlet per side (the first report of each), so a bar and a count of outlets read the same as the card's 国内 7 社
+function outletsMeasure(e) {
+  const m = measureOf(e), one = (list) => { const seen = new Set(); return arr(list).filter((it) => { const o = outletOf(it); if (!o || seen.has(o)) return false; seen.add(o); return true; }); };
+  const r = { jp: one(m.jp), intl: one(m.intl), gov: one(m.gov) };
+  r.n = r.jp.length + r.intl.length + r.gov.length;
+  return r;
+}
 const dossier = createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineIcon });
 const coverage = createCoverage({ h });
 /** 媒体の比べ（CONTRACT §21）: the card of an event, or null when the case has none (an old file, a failed read) — then the screen is as it was */
@@ -1039,7 +1047,8 @@ function caseNode(e) {
   const kept = state.snap ? state.snap.kept : null;
   const aiBy = kept ? [str(kept.snapRun.provider), str(kept.snapRun.model)] : [str(run.provider), str(run.model)];
   const aiAt = kept ? kept.aiAt : run.at;
-  const aiTag = (by, at) => { const b = by.filter(Boolean); return h('span', { class: 'by', title: b.join(' ') || null }, h('span', { class: 'aimk', text: 'AI' }), b[b.length - 1] || '—', isNum(at) ? `・${fmtShort(at)}` : ''); };
+  // the model's id stays in the tooltip; the line says only that an AI summed it up, and when
+  const aiTag = (by, at) => { const b = by.filter(Boolean); return h('span', { class: 'by', title: b.join(' ') || null }, h('span', { class: 'aimk', text: 'AI' }), 'の要約', isNum(at) ? `・${fmtShort(at)}` : ''); };
   // what a number or a word on these cards goes to: the list of reports narrowed, the search, or the outlets not seen
   let paintMem = () => {};
   const act = { home: (id) => paintMem({ home: id }), type: (ty) => paintMem({ type: ty }), all: () => paintMem({}), word: searchFor,
@@ -1064,9 +1073,10 @@ function caseNode(e) {
     h('div', { class: 'ch-title' },
       h('h1', { lang: e.heading.lang || null, class: e.heading.none ? 'none' : null }, headNode(e, 'h1t')),
       e.heading.en ? h('p', { class: 'en', lang: 'en', text: e.heading.en }) : null,
-      h('div', { class: 'ch-ratio' }, dossier.ratioBar(measureOf(e)), h('p', { class: 'ch-rn' }, SIDES.map(([k, , short]) => h('span', { class: 'rn-i', data: { side: k } }, h('i'), short, h('b', { class: 'num', text: arr(measureOf(e)[k]).length }))))),
+      // the sides counted in outlets, as the home's card and the compare screen count them (国内 7 社・海外 4 社 = 11 社が報道)
+      h('div', { class: 'ch-ratio' }, dossier.ratioBar(outletsMeasure(e)), h('p', { class: 'ch-rn' }, SIDES.map(([k, , short]) => h('span', { class: 'rn-i', data: { side: k } }, h('i'), short, h('b', { class: 'num', text: outletsMeasure(e)[k].length }), h('span', { class: 'u', text: '社' }))))),
       h('button', { type: 'button', class: 'home-open', on: { click: () => { setHome('board'); act.all(); } } }, '詳しく見る')),
-    h('button', { type: 'button', class: 'ch-big', title: 'すべての報道を見る', on: { click: () => { setHome('board'); act.all(); } } }, num(e.n), h('span', { class: 'u', text: '社が報道' })));
+    h('button', { type: 'button', class: 'ch-big', title: 'すべての報道を見る', on: { click: () => { setHome('board'); act.all(); } } }, num(outletsMeasure(e).n), h('span', { class: 'u', text: '社が報道' })));
   const aiLines = [];
   if (e.brief) aiLines.push(briefBox(e, aiTag));
   if (e.summary && !e.brief && str(e.summary.text_ja).trim()) aiLines.push(h('p', { class: 'ch-ai' }, h('span', { text: str(e.summary.text_ja) }), aiTag([str(e.summary.provider), str(e.summary.model)], e.summary.made_at)));
@@ -1405,14 +1415,14 @@ function renderMapNews() {
     onDetails: (k) => { select(k, true); if (state.sect === 'map') openSheet('case'); else $('p-case').scrollIntoView({ block: 'start' }); },
     describe: (e) => { const it = [...e.members].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity)).find((x) => typeof x.desc === 'string' && x.desc.trim()); return it ? descOf(it, safeUrl(it.link)) : null; },
     relatedOf: (e) => related(e).slice(0, 4).map((x) => ({ key: x.o.key, text: x.o.heading.text, lang: x.o.heading.lang || null, n: x.o.n, near: x.place })),
-    videoOf: (e) => { const v = videosOf(videosOfEvent(e), STATIONS, 1)[0]; if (!v) return null; const st = STATIONS.find((x) => x.id === v.station); return { v, name: st ? st.name : '', src: embedSrc(playOfVideo(v), { auto: true, sound: false }) }; },
+    videoOf: (e) => { const v = videosOf(videosOfEvent(e), STATIONS, 1)[0]; if (!v) return null; const st = STATIONS.find((x) => x.id === v.station); return { v, name: st ? st.name : '', src: embedSrc(playOfVideo(v), { auto: state.set.tv.auto, sound: false }) }; },
   });
   const view = newsView({ events: state.es.filter(matchesQ), pri: shownPri().filter((x) => !x.hid), cur: cur(), picked: state.mapPick, scope: state.mapScope, leadKey: state.mapLead, km: RADIUS_KM, nearby });
   mapNews.render(box, view);
 }
 
 // ---------------------------------------------------------------- the simple view (js/entry.js): six cards, three columns
-const tagAI = (by, at) => { const b = by.filter(Boolean); return h('span', { class: 'by', title: b.join(' ') || null }, h('span', { class: 'aimk', text: 'AI' }), b[b.length - 1] || '—', isNum(at) ? `・${fmtShort(at)}` : ''); };
+const tagAI = (by, at) => { const b = by.filter(Boolean); return h('span', { class: 'by', title: b.join(' ') || null }, h('span', { class: 'aimk', text: 'AI' }), 'の要約', isNum(at) ? `・${fmtShort(at)}` : ''); };
 function absentOf(e) {
   const first = e.members.filter((it) => isNum(it.ts)).sort((a, b) => a.ts - b.ts)[0], gen = state.data.generated_at;
   return absentBlock(absentOutlets({ members: e.members, first: first && first.ts }, arr(state.data.sources), gen), { h, when: { at: fmtShort(gen), first: fmtShort(first && first.ts) }, windowH: state.data.window_h });
@@ -1483,6 +1493,33 @@ function paintHomeSub(n) {
   const el = $('home-sub'), g = state.data && state.data.generated_at;
   if (el) el.textContent = isNum(g) ? `${fmtShort(g)} 時点・${n} 件` : `${n} 件`;
 }
+// The home's three ways in (日本と海外・片側だけ・偏り), the fields under them, and the one panel under the card (js/front.js, docs/design-1115.md §3)
+function frontPick(k) { if (!state.byKey.has(k)) return; setSect('home'); setUi('simple'); pickEntry(k); $('entry').scrollTop = 0; }
+function frontData() {
+  const f = state.frontField || null;
+  const live = state.es.filter((e) => !e.foldedInto && vis(e));
+  const inF = (e) => !f || e.field === f;
+  const gap = f ? gapByEvent(live.filter(inF), { sidesOf, titleOf: (e) => entryTitleOf(e).text, max: 8 }) : gapByField(live, { sidesOf, fields: FIELDS });
+  const all = gapByField(live, { sidesOf, fields: FIELDS });
+  const one = oneSideOf(live.filter(inF), { sidesOf, outletOf }).filter((g) => g.side === 'jp' || g.side === 'intl');
+  const bias = state.pri.filter((e) => !e.foldedInto && vis(e) && inF(e)).map((e) => ({ e, b: biasOf(e) })).filter((x) => x.b && x.b.ok)
+    .sort((a, b) => b.b.score - a.b.score).slice(0, 8).map((x) => ({ key: x.e.key, title: entryTitleOf(x.e).text, score: Math.round(x.b.score) }));
+  const n = (s) => (one.find((g) => g.side === s) || { events: [] }).events.length;
+  const share = jpShare(all);
+  // each tab says what its number is: the share over every field (not the card's one news), the count of each side's own news, the highest バイアス度 of 100
+  return { gap, one, bias, counts: { gap: share == null ? '' : `全分野 国内 ${share}%・海外 ${100 - share}%`, one: `国内だけ ${n('jp')} 件・海外だけ ${n('intl')} 件`, bias: bias.length ? `バイアス度 最高 ${bias[0].score} / 100` : '' } };
+}
+function renderFront() {
+  const fr = $('front'), gp = $('gap');
+  if (!fr || !gp || !state.data || !state.es) return;
+  if (homeMode() !== 'home') return;   // drawn for the home only; the board keeps its own panes
+  const tab = FRONT_TABS.some(([id]) => id === state.front) ? state.front : 'gap';
+  const d = frontData();
+  renderFrontEl(fr, { h, tab, field: state.frontField || null, fields: FIELDS, counts: d.counts,
+    onTab: (id) => { state.front = id; renderFront(); }, onField: (x) => { state.frontField = x; renderFront(); } });
+  renderGapEl(gp, { h, tab, field: state.frontField || null, gap: d.gap, one: d.one, bias: d.bias, gen: state.data.generated_at, now: nowS(), clock: fmtClock, short: fmtShort,
+    titleOf: (e) => entryTitleOf(e).text, pick: frontPick, detail: (k) => entryDetail(k, { bias: true }) });
+}
 // The three screens, one rule: ホーム (the front page), 詳しく見る (the board), 比べる (the simple compare view). The top bar shows which one is open;
 // every move between them is one history entry, so the browser's back button goes back to the screen before. The name and the ホーム tab always go home.
 const SCREENS = ['home', 'board', 'simple'];
@@ -1513,15 +1550,25 @@ function goScreen(name) {
 const paintHomeBtn = paintScreen;
 function setHome(m) {
   const v = m === 'board' ? 'board' : 'home';
+  const b = $('board'), was = homeMode(), wasBoard = was === 'board' && state.sect === 'home' && state.ui !== 'simple';
+  // the home and the board share #board: each screen keeps its own place (the home always opens at its top, the board where it was left)
+  if (b && wasBoard) state.boardScroll = b.scrollTop;
   if (state.ui === 'simple') quietUi('full');
   document.documentElement.dataset.home = v;
   try { window.localStorage.setItem(HOME_KEY, v); } catch { /* private window: the choice lasts until the page is closed */ }
   paintHomeBtn();
   if (state.sect !== 'home') setSect('home');
+  if (b) {
+    if (v === 'home') { b.scrollTop = 0; if (was === 'board' || wasBoard) homeLead(); }
+    else if (!wasBoard) { const y = state.boardScroll || 0; b.scrollTop = y; requestAnimationFrame(() => { b.scrollTop = y; }); }
+  }
   if (state.data) requestAnimationFrame(() => renderMap(false));
+  renderFront();
   noteScreen();
   return true;
 }
+/** back on the home: the card shows the first of the picks again, not the one the board's walk left it on */
+function homeLead() { if (typeof HX !== 'undefined' && HX.hero && HX.hero.current()) HX.hero.go(0); }
 function setUi(m) {
   state.ui = m === 'simple' ? 'simple' : 'full';
   $('app').dataset.ui = state.ui; $('entry').hidden = state.ui !== 'simple';
@@ -2109,7 +2156,7 @@ function select(key, byHand) {
   for (const el of document.querySelectorAll('.rows .r.sel')) el.classList.remove('sel');
   for (const el of document.querySelectorAll(`.rows .r[data-key="${CSS.escape(key)}"]`)) el.classList.add('sel');
   const inPri = document.querySelector(`#pri-b .r[data-key="${CSS.escape(key)}"]`);
-  if (inPri && !byHand) inPri.scrollIntoView({ block: 'nearest' });
+  if (inPri && !byHand) keepInList($('pri-b'), inPri);
   if (changed) { renderCase(); renderSources(); renderHours(); renderMap(true); renderMapNews(); followWall(); paintNewsCase(); if (byHand) { followTv(state.byKey.get(key)); recordRead(state.byKey.get(key)); } }
   syncAutoLine();
   return true;
@@ -2185,7 +2232,7 @@ function renderAll() {
     renderCase(); renderMap(false);
     renderCount(); renderHaz(); renderMkt(); renderPol(); renderTv();
     renderTicker(false); renderWatch(); renderHid(); renderEntryView(); sceneTick();
-    renderFlash(); renderRankHome(); renderLocal();
+    renderFlash(); renderRankHome(); renderLocal(); renderFront();
     if (state.panel) state.panel.render();
     if (state.about) renderAbout();
     if (state.sheet) renderSheet();
@@ -2217,7 +2264,8 @@ function syncAutoLine() {
 function autoStep() {
   if (narrow() || state.about || state.sheet || state.stopped || (state.tour && state.tour.isOpen()) || !state.set.motion.cases || setOpen() || document.hidden) return;
   if (state.sect !== 'home') return;                           // another screen is being read: the event in focus stays
-  if ($('board').dataset.wall === '1') return;                 // several events are being read: nothing moves by itself
+  if (homeMode() !== 'board' || isShow()) return;              // the home's card changes only by hand (次のニュース); the show never walks
+  if ($('board').dataset.wall === '1') return;                // several events are being read: nothing moves by itself
   const now = Date.now();
   if (now < state.pausedUntil) return;
   const line = document.querySelector('#pri-b .r.sel .autoline');
@@ -3320,6 +3368,7 @@ function heroWire() {
     onCaption: (t) => { if (HX.cap) HX.cap.textContent = t; }, onBoundary: () => { if (HX.orb) HX.orb.pulse(); } });
   HX.hero = createHero({ h, root: cardBox, fmt: { clock: fmtClock, short: fmtShort }, on: {
     open: hxOpen, why: hxWhy, compare: hxCompare, orbSlot: hxOrbBox, oneSideNote: ONE_SIDE_NOTE,
+    photo: (p) => { const e = state.es ? heroEntry(p) : null; const ph = e ? entryPhoto(e) : null; return ph && ph.kind !== 'video' ? ph : null; },
     change: (p) => { root.hidden = !p; if (HX.guide && HX.guide.key() != null && (!p || HX.guide.key() !== p.sid)) HX.guide.stop(); hxPaintSpeak(); } } });
   HX.swipe = createSwipe({ h, root: $('hr-flow'), fmt: { clock: fmtShort }, on: { title: '流す', get orderJa() { return ORDER_JA[HX.order]; }, open: (k) => { HX.swipe.close(); setSect('home'); setUi('simple'); pickEntry(k); } } });
   // AI | 規則: the card is drawn again, and a count of outlets that changed lights once (js/hero.js)
@@ -3356,7 +3405,7 @@ function heroWire() {
 // the search that forgives how a word is written, the ties between news, the app on the home screen, and the mail draft (docs/app.md)
 import { expand as appExpand, matcherOf as appMatcherOf, aliasGroups, narrow as appNarrowOf, archiveHits, archiveDays, toHash as qToHash, fromHash as qFromHash,
   SPANS as Q_SPANS, SIDES as Q_SIDES, SORTS as Q_SORTS, F0 as Q_F0, sidOf as appSid, hasReaction, hasLife } from './search.js';
-import { isStage, u as stageU, focusView } from './stage.js';
+import { isStage, isShow, u as stageU, focusView } from './stage.js';
 import { graphOf, graphFromPairs, connected as netConnected, layout as netLayout, tiesOf, listOf as netList, whyText, hit as netHit, draw as netDraw } from './netview.js';
 import { standalone as isStandalone, wantIosSheet, closeIosSheet, offlineLine } from './install.js';
 import { loadAddr, saveAddr, clearAddr, bodyOf as mailBody, subjectOf as mailSubject, mailtoOf, itemsOf as mailItems, MAX as MAIL_MAX } from './mail.js';
@@ -3669,7 +3718,8 @@ function appWire() {
   // once on an iPhone or iPad Safari that has not added the page: the two steps, after the first look at the page
   // not at the booth (?demo=1): the next visitor would find the steps over the first card
   if (!HX.demo && wantIosSheet({ ua: navigator.userAgent, touch: navigator.maxTouchPoints || 0, isStandalone: isStandalone(window), store })) {
-    setTimeout(() => { if (!document.querySelector('.set-layer:not([hidden]), .sheet-layer:not([hidden]), #cmd:not([hidden]), .tour:not([hidden])')) iosSheet(); }, 15000);
+    // after the visitor's first move, never over the first look (11-15: it covered the list 15 seconds in, untouched)
+    window.addEventListener('pointerdown', () => setTimeout(() => { if (!document.querySelector('.set-layer:not([hidden]), .sheet-layer:not([hidden]), #cmd:not([hidden]), .tour:not([hidden])')) iosSheet(); }, 4000), { once: true, passive: true });
   }
 }
 // ==== app:end ====
@@ -3777,6 +3827,7 @@ async function main() {
   goes('hours-b', () => openSheet('hours', $('p-hours')), '時間ごとの見出しを開く');
   $('about-wrap').addEventListener('click', (ev) => { if (ev.target === $('about-wrap')) closeAbout(); });
   window.addEventListener('hashchange', () => {
+    netClose();   // the window of ties belongs to the screen it was opened on
     const x = location.hash.replace('#', '');
     if (state.ix && (x === 'ai' || x === 'rules') && x !== state.view) { setView(x); return; }
     const p = parseHash(location.hash);

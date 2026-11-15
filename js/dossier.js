@@ -209,7 +209,7 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
     const key = (id) => {
       const n = m[id].length, ja = short[id];
       return h('button', { type: 'button', class: 'tl-k', data: { side: id }, disabled: n ? null : true, title: n ? `${ja}の ${n} 件を一覧で見る` : `${ja} 0 件`, on: { click: () => act.home(id) } },
-        lineIcon(id), h('span', { class: 'kl', text: ja }), h('b', { class: 'num', text: n }), h('small', { text: pct(n) }));
+        lineIcon(id), h('span', { class: 'kl', text: ja }), h('b', { class: 'num', text: n }), h('small', { text: `件 ${pct(n)}` }));
     };
     return tile('t-home', '国内と海外', '件数の比', h('div', { class: 'tl-b' }, ring(m), h('div', { class: 'tl-keys' }, key('jp'), key('intl'), m.gov.length ? key('gov') : null)), go('すべての報道を見る', () => act.all()));
   }

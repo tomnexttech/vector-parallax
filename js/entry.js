@@ -28,6 +28,7 @@
 import { genreIcon, genreShort } from './genres.js';
 import { STATIONS, videosOf, playOfVideo, embedSrc } from './tv.js';
 import { isShow, trimCover } from './stage.js';
+import { renderPaper, paperOf } from './front.js';
 
 export const GOV = '政府一次';
 export const CARDS = 6;
@@ -170,7 +171,8 @@ export function renderEntry(root, o) {
     return h('button', { type: 'button', class: 'en-card', data: { genre: fieldOf(e) }, 'aria-pressed': String(on), on: { click: () => o.pick(e.key) } },
       fig(e, p, 'card', true, on), p ? h('span', { class: 'en-cr', text: credit(p) }) : null, titleEl(titleOf(e), 'en-h'), h('span', { class: 'en-bar' }, ratio(m)), counts(m));
   }));
-  const pick = h('section', { class: 'en-pick', 'aria-label': 'ニュースを選ぶ' }, h('p', { class: 'en-hint' }, lineIcon('down'), HINT), cards);
+  // no line that tells how to use the strip (docs: no self-explaining copy): the pressed card is marked, the screen below changes
+  const pick = h('section', { class: 'en-pick', 'aria-label': 'ニュースを選ぶ' }, cards);
 
   const s = sides(sel), m = meas(sel), t = titleOf(sel), p = photo(sel), f = fieldOf(sel);
   const go = (q) => () => { const a = root.querySelector(q); if (a) a.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
@@ -184,12 +186,14 @@ export function renderEntry(root, o) {
 
   // ---- the three figures: only what the headlines can count; a figure without its data is left out
   const tile = (cls, title, body) => h('section', { class: `en-fg ${cls}` }, h('h4', { class: 'en-fh', text: title }), body);
-  const pct = (n) => (m.n ? `${Math.round((n / m.n) * 100)}%` : '');
+  // the share counted in outlets, as the card of the home and the columns above count them (国内 7 社・海外 4 社)
+  const so = { jp: outs(m.jp), intl: outs(m.intl), gov: outs(m.gov) }, sn = so.jp + so.intl + so.gov;
+  const pct = (n) => (sn ? `${Math.round((n / sn) * 100)}%` : '');
   const b = o.bias ? o.bias(sel) : null;
-  const share = tile('fg-share', '件数の割合', h('div', { class: 'en-share' },
-    h('span', { class: 'en-bigbar' }, ratio(m)),
-    h('ul', { class: 'en-lg' }, SIDES.map(([k, , short]) => h('li', { class: m[k].length ? null : 'zero', data: { side: k } },
-      lineIcon(k), h('span', { class: 'kl', text: short }), h('b', { class: 'num', text: m[k].length }), h('span', { class: 'u', text: '件' }), h('span', { class: 'pc num', text: pct(m[k].length) })))),
+  const share = tile('fg-share', '社の割合', h('div', { class: 'en-share' },
+    h('span', { class: 'en-bigbar' }, ratio({ jp: Array(so.jp), intl: Array(so.intl), gov: Array(so.gov) })),
+    h('ul', { class: 'en-lg' }, SIDES.map(([k, , short]) => h('li', { class: so[k] ? null : 'zero', data: { side: k } },
+      lineIcon(k), h('span', { class: 'kl', text: short }), h('b', { class: 'num', text: so[k] }), h('span', { class: 'u', text: '社' }), h('span', { class: 'pc num', text: pct(so[k]) })))),
     b && b.ok && o.dossier && o.detail ? h('button', { type: 'button', class: 'en-bias', title: 'バイアス度の内訳を見る', on: { click: () => o.detail(sel.key, { bias: true }) } }, o.dossier.biasMini(b), lineIcon('right')) : null));
   const firsts = SIDES.filter(([k]) => m.firstOf && m.firstOf[k]);
   const lag = isNum(m.lag) ? Math.abs(m.lag) : null;
@@ -278,15 +282,17 @@ export function renderEntry(root, o) {
   // each scene is one screen on a wide display (css: the stage block); elsewhere a scene draws no box of its own
   const scene = (k, ...kids) => h('div', { class: 'en-scene', data: { scene: k } }, ...kids);
   const cov = o.coverage ? o.coverage(sel) : null;
+  // the newspapers side by side (js/front.js): the rows in the same order in each side's column, read across
+  const paperEl = renderPaper({ h, paper: paperOf(m), clock: fmt.clock, span: fmt.span, outlet: outletOf, safeUrl: o.safeUrl, icon: (k) => lineIcon(k) });
   root.replaceChildren(scene('pick', head, pick), locEl,
     h('section', { class: 'en-sel', data: { genre: f }, 'aria-label': '選んだニュースの伝え方' },
       scene('story', h('div', { class: 'en-top' + (headFig ? '' : ' nop') },
-        h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut}社・${m.n} 件` }), ais, o.speak ? o.speak(sel) : null),
+        h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut}社・${m.n} 件${isNum(o.gen) ? `・${fmt.clock(o.gen)} の値` : ''}` }), ais, o.speak ? o.speak(sel) : null),
         headFig)),
       cov ? scene('cover', cov) : null,
-      scene('figs', h('h3', { class: 'en-sub' }, '伝え方の違い'),
-        h('div', { class: 'en-figs' }, share, time, words)),
-      scene('heads', h('h3', { class: 'en-sub' }, '各メディアの見出し'),
+      paperEl ? scene('paper', h('h3', { class: 'en-sub' }, '並べて比べる'), paperEl, h('div', { class: 'en-figs one' }, share))
+        : scene('figs', h('h3', { class: 'en-sub' }, '伝え方の違い'), h('div', { class: 'en-figs' }, share, time, words)),
+      paperEl ? null : scene('heads', h('h3', { class: 'en-sub' }, '各メディアの見出し'),
         has.length ? h('div', { class: 'en-cols', style: `--n:${has.length}` }, has.map(col)) : null),
       scene('rest', missEl, vidEl, o.absent(sel), foot)), osEl);
   if (keep != null) cards.scrollLeft = keep;

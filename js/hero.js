@@ -1,5 +1,6 @@
-/* hero — the first card of the home: one event, the outlets of Japan and abroad as one bar split at its centre, what only one side's
- * headlines carry and what both carry, the differences in fixed sentences (findings), and three buttons.
+/* hero — the first card of the home: one event, its headline, the outlets of each side, the first report, one bar of the three sides'
+ * shares (shareOf) and two buttons, 比べる and 次のニュース (docs/design-1115.md §3). The findings and the columns of what one side's
+ * headlines carry are still made here (localFindings, pointsOf, phrasesOf, dotsOf) for the screens that show them.
  *
  * The card comes from data/hero.json (parallax-hero/1, docs/final-plan-20261111.md 3.5), which is small and read before latest.json.
  * When that file is missing, broken, or older than the latest.json on screen, the same choice is made here from the events on screen.
@@ -216,6 +217,28 @@ export function leadOf(p) {
   return { text: x.title, lang: /[぀-ヿ一-鿿]/.test(x.title) ? 'ja' : 'en', outlet: x.outlet, ai: p.title.text };
 }
 
+const SIDES3 = ['jp', 'intl', 'gov'];
+/** the card's one bar: each side's outlets over all the outlets counted, in whole percents that add up to 100 */
+export function shareOf(p) {
+  const s = isObj(p) && isObj(p.sides) ? p.sides : {};
+  const n = { jp: cnt(s.jp && s.jp.outlets), intl: cnt(s.intl && s.intl.outlets), gov: cnt(s.gov && s.gov.outlets) };
+  const total = n.jp + n.intl + n.gov;
+  const pct = { jp: 0, intl: 0, gov: 0 };
+  if (total) {
+    const raw = SIDES3.map((k) => ({ k, v: (n[k] / total) * 100 }));
+    for (const x of raw) pct[x.k] = Math.floor(x.v);
+    let left = 100 - SIDES3.reduce((a, k) => a + pct[k], 0);
+    for (const x of [...raw].sort((a, b) => (b.v % 1) - (a.v % 1))) { if (left <= 0) break; if (n[x.k]) { pct[x.k]++; left--; } }
+  }
+  return { ...n, total, pct };
+}
+/** the first report of the event, whichever side carried it */
+export function firstOf(p) {
+  const s = isObj(p) && isObj(p.sides) ? p.sides : {};
+  const ts = SIDES3.map((k) => s[k] && s[k].first_ts).filter(isNum);
+  return ts.length ? Math.min(...ts) : null;
+}
+
 export function splitOf(p) {
   const s = isObj(p) && isObj(p.sides) ? p.sides : {};
   const jp = cnt(s.jp && s.jp.outlets), intl = cnt(s.intl && s.intl.outlets), gov = cnt(s.gov && s.gov.outlets);
@@ -331,32 +354,31 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
     const n = picks.length;
     const old = isNum(meta.gen) && isNum(meta.now) && meta.now - meta.gen > 6 * 3600;
     const lead = leadOf(p);
-    const flash = (k) => (last && last.sid === p.sid && last[k] !== p.sides[k].outlets ? ' hr-flash' : '');
-    const stepBtn = (d) => h('button', { type: 'button', class: 'hr-step', 'aria-label': d < 0 ? '前の候補' : '次の候補', on: { click: () => step(d) } }, d < 0 ? '‹' : '›');
     let sx = null, sy = null;
     const swipe = n > 1 ? {
       pointerdown: (ev) => { if (ev.pointerType === 'mouse') return; sx = ev.clientX; sy = ev.clientY; },
       pointerup: (ev) => { if (sx == null) return; const dx = ev.clientX - sx, dy = ev.clientY - sy; sx = null; if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1); },
       pointercancel: () => { sx = null; },
     } : null;
-    const sp = bar(p, flash('jp') || flash('intl'));
-    return h('article', { class: 'hr-card', data: { tier: p.tier }, 'aria-labelledby': 'hr-t', on: swipe },
+    // the card of the home (docs/design-1115.md §3): the headline, each side's outlets, the first report, one bar of the three sides'
+    // shares, and two buttons. A photo when the event carries one; without it the headline takes the whole width.
+    const sh = shareOf(p), first = firstOf(p), ph = call('photo', p);
+    const seg = (k) => (sh[k] ? h('i', { data: { side: k }, style: `width:${sh.pct[k]}%` }) : null);
+    const lab = SIDES3.filter((k) => sh[k]).map((k) => `${SIDE_JA[k]} ${sh.pct[k]}%`).join(' / ');
+    return h('article', { class: 'hr-card' + (ph ? ' has-ph' : ''), data: { tier: p.tier }, 'aria-labelledby': 'hr-t', on: swipe },
+      ph ? h('figure', { class: 'hr-ph' }, h('img', { src: ph.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => { const f = ev.target.closest ? ev.target.closest('.hr-ph') : null; if (f) f.remove(); } } }),
+        ph.outlet ? h('figcaption', { text: `写真：${ph.outlet}` }) : null) : null,
       h('div', { class: 'hr-main' },
-        h('p', { class: 'hr-meta' + (old ? ' stale' : '') }, isNum(meta.gen) ? h('time', { class: 'num', text: `${short(meta.gen)} 時点` }) : null,
-          lead.outlet ? h('span', { class: 'hr-src', text: lead.outlet }) : null,
+        h('p', { class: 'hr-meta' + (old ? ' stale' : '') }, h('span', { class: 'hr-lab', text: '注目ニュース' }),
+          isNum(meta.gen) ? h('time', { class: 'num', text: `${short(meta.gen)} 時点` }) : h('span', { class: 'stale', text: '未取得' }),
           n > 1 ? h('span', { class: 'hr-pos num', 'aria-live': 'polite', text: `${i + 1} / ${n}` }) : null),
-        h('div', { class: 'hr-head' + (n > 1 ? ' hr-head-nav' : '') }, n > 1 ? stepBtn(-1) : null,
-          h('h2', { class: 'hr-t', id: 'hr-t', lang: lead.lang === 'en' ? 'en' : null, text: lead.text }),
-          n > 1 ? stepBtn(1) : null),
-        sp,
-        p.sides.gov.outlets ? h('p', { class: 'hr-gov' }, h('span', { text: '官公庁' }), h('b', { class: 'num', text: p.sides.gov.outlets })) : null,
-        cols(p),
-        p.findings.length ? h('ul', { class: 'hr-find' }, p.findings.map((f) => finding(f, p.cov))) : null,
-        lead.ai ? h('p', { class: 'hr-ai' }, h('span', { class: 'aimk', text: 'AI' }), h('span', { text: lead.ai })) : null,
+        h('h2', { class: 'hr-t', id: 'hr-t', lang: lead.lang === 'en' ? 'en' : null, text: lead.text }),
+        h('p', { class: 'hr-facts' }, SIDES3.map((k) => h('span', { class: 'hr-fc' + (p.sides[k].outlets ? '' : ' zero'), data: { side: k } }, h('span', { class: 'k', text: SIDE_JA[k] }), h('b', { class: 'num', text: p.sides[k].outlets }), h('span', { class: 'u', text: '社' }))),
+          first ? h('span', { class: 'hr-first' }, h('span', { class: 'k', text: '報じ始め' }), h('b', { class: 'num', text: clock(first) })) : null),
+        sh.total ? h('div', { class: 'hr-share', role: 'img', 'aria-label': `このニュースの社の割合 ${lab}` }, h('span', { class: 'hr-sb', 'aria-hidden': 'true' }, SIDES3.map(seg)), h('span', { class: 'hr-sl num' }, h('span', { class: 'k', text: 'このニュース' }), lab)) : null,
         h('div', { class: 'hr-acts' },
-          h('button', { type: 'button', class: 'hr-b', on: { click: () => call('open', p) } }, '元の記事'),
-          h('button', { type: 'button', class: 'hr-b', on: { click: () => call('why', p) } }, '束ねた理由'),
-          h('button', { type: 'button', class: 'hr-b hr-go', on: { click: () => call('compare', p) } }, '比べる'))),
+          h('button', { type: 'button', class: 'hr-b hr-go', on: { click: () => call('compare', p) } }, '比べる'),
+          n > 1 ? h('button', { type: 'button', class: 'hr-b hr-next', on: { click: () => step(1) } }, '次のニュース') : null)),
       h('div', { class: 'hr-side' }, call('orbSlot', p) || null));
   }
   let last = null;

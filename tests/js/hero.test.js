@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { ROOT } from './helpers.js';
-import { readHero, pickHeroes, localFindings, pointsOf, splitOf, gapText, createHero, sameFromBasis, rowName, HERO_SCHEMA, MAX_PICKS, FIRST_GAP_MIN_S } from '../../js/hero.js';
+import { readHero, pickHeroes, localFindings, pointsOf, splitOf, shareOf, firstOf, gapText, createHero, sameFromBasis, rowName, HERO_SCHEMA, MAX_PICKS, FIRST_GAP_MIN_S } from '../../js/hero.js';
 import { sides, leadPool, titleOf } from '../../js/entry.js';
 import { oneSideOf } from '../../js/sections.js';
 import { SILENCE_JA } from '../../js/guide.js';
@@ -141,24 +141,33 @@ test('the page: the card has its place in the home, its files are in the shell, 
   }
 });
 
-test('the card on screen: one bar split at its centre, the columns that say something, three buttons, the sides named in words', () => {
+test('the card on screen (11-15): the headline, each side\'s outlets, one bar of the shares, 比べる and 次のニュース, the time of the data', () => {
   const made = [];
   const h = (tag, attrs, ...kids) => { const el = { tag, attrs: attrs || {}, kids: kids.flat(4).filter((k) => k != null && k !== false) }; made.push(el); return el; };
   const root = { hidden: true, replaceChildren() {} };
   const seen = [];
-  const hero = createHero({ h, root, fmt: { short: () => '11/11 15:13' }, on: { open: (p) => seen.push(['open', p.sid]), why: (p) => seen.push(['why', p.sid]), compare: (p) => seen.push(['compare', p.sid]) } });
+  const hero = createHero({ h, root, fmt: { short: () => '11/11 15:13', clock: () => '7:12' }, on: { compare: (p) => seen.push(['compare', p.sid]), photo: () => null } });
   hero.render(pickHeroes([split, both], opt), { gen: T0, now: T0 + 60 });
   const text = (el) => (el && typeof el === 'object' ? (el.attrs.text != null ? String(el.attrs.text) : '') + el.kids.map(text).join('') : String(el));
-  const buttons = made.filter((e) => e.tag === 'button');
-  assert.deepEqual(buttons.filter((b) => /hr-b/.test(b.attrs.class)).map(text), ['元の記事', '束ねた理由', '比べる']);
-  for (const b of buttons.filter((x) => /hr-b/.test(x.attrs.class))) b.attrs.on.click();
-  assert.deepEqual(seen, [['open', 's1'], ['why', 's1'], ['compare', 's1']]);
-  // abroad carries only the time (時期) here: a column a reader can take nothing from is left out, the other two share the width
-  assert.deepEqual(made.filter((e) => e.tag === 'h3').map(text), ['国内だけ', '両方']);
-  assert.ok(made.some((e) => e.tag === 'div' && e.attrs.class === 'hr-cols two'));
-  const halves = made.filter((e) => e.attrs.class === 'hr-half');
-  assert.deepEqual(halves.map((x) => x.attrs.data.side), ['jp', 'intl']);
-  const sp = made.find((e) => e.attrs.class === 'hr-split');
-  assert.equal(sp.attrs['aria-label'], '国内 2 社、海外 2 社');
+  const buttons = made.filter((e) => e.tag === 'button' && /hr-b/.test(e.attrs.class));
+  assert.deepEqual(buttons.map(text), ['比べる', '次のニュース']);
+  buttons[0].attrs.on.click();
+  assert.deepEqual(seen, [['compare', 's1']]);
+  buttons[1].attrs.on.click();
+  assert.equal(hero.index(), 1);
+  assert.ok(!made.some((e) => e.attrs.class === 'hr-cols two'), 'no columns of phrases on the home card');
+  const bar = made.find((e) => e.attrs.class === 'hr-share');
+  assert.equal(bar.attrs['aria-label'], 'このニュースの社の割合 国内 50% / 海外 50%', 'the card names whose share it is, so the tab\'s share over every field does not read as the same number');
+  assert.deepEqual(made.filter((e) => e.tag === 'i' && e.attrs.data && e.attrs.data.side).slice(0, 2).map((x) => x.attrs.data.side), ['jp', 'intl']);
   assert.ok(made.some((e) => e.tag === 'time' && /時点/.test(e.attrs.text)), 'the time of the data is on the card');
+  assert.ok(!made.some((e) => /^hr-card has-ph/.test(e.attrs.class || '')), 'no photo: the headline takes the whole width');
+});
+
+test('shareOf: whole percents that add up to 100, a side without an outlet at 0; firstOf: the earliest first report', () => {
+  const p = (jp, intl, gov) => ({ sides: { jp: { outlets: jp, first_ts: 300 }, intl: { outlets: intl, first_ts: 100 }, gov: { outlets: gov, first_ts: null } } });
+  assert.deepEqual(shareOf(p(1, 1, 1)).pct, { jp: 34, intl: 33, gov: 33 });
+  assert.deepEqual(shareOf(p(18, 41, 0)).pct, { jp: 31, intl: 69, gov: 0 });
+  assert.equal(shareOf(p(0, 0, 0)).total, 0);
+  assert.equal(firstOf(p(1, 1, 0)), 100);
+  assert.equal(firstOf({ sides: {} }), null);
 });

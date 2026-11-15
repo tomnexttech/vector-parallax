@@ -61,21 +61,16 @@ const pick = (sid) => ({ sid, tier: 'split', title: { text: 'T', outlet: 'A', la
   points: { jp: ['人数'], intl: [], both: ['協議'] }, cov,
   findings: [{ kind: 'only_side', row: null, side: null, outlets: [], others: [], text: '理由は国内 1 社・海外 1 社が載せ、国内 2 社・海外 1 社の見出しと要旨には出ていない' }], heads: [], same: null, reaction: null, key: sid });
 
-test('3, 10: the card folds each finding under its dots, and steps through the five beside its headline', () => {
-  const { made } = drawn([pick('a'), pick('b'), pick('c')]);
-  const sum = made.find((e) => e.tag === 'summary');
-  assert.ok(sum, 'a finding opens on a press');
-  const dots = made.filter((e) => e.tag === 'i' && /^(on|off)$/.test(e.attrs.class));
-  assert.equal(dots.filter((d) => d.attrs.class === 'on').length, 2);
-  assert.equal(dots.filter((d) => d.attrs.class === 'off').length, 3);
-  const head = made.find((e) => /hr-head-nav/.test(e.attrs.class || ''));
-  assert.deepEqual(head.kids.map((k) => k.tag), ['button', 'h2', 'button'], '‹ headline ›');
-  assert.ok(!made.some((e) => e.tag === 'nav'), 'no row of steps under the buttons');
+test('3, 10 (11-15): the card of the home holds the headline, the sides, one bar and two buttons; the next news by a press or a swipe', () => {
+  const { made, hero } = drawn([pick('a'), pick('b'), pick('c')]);
+  assert.ok(!made.some((e) => e.tag === 'summary'), 'the findings are not on the home card (docs/design-1115.md §3)');
+  assert.ok(!made.some((e) => e.attrs.class === 'p'), 'no column of one side\'s words: a phrase cut from its sentence is not shown');
   assert.ok(made.some((e) => e.attrs.class === 'hr-pos num' && e.attrs.text === '1 / 3'));
-  const card = made.find((e) => e.attrs.class === 'hr-card');
+  const card = made.find((e) => /^hr-card/.test(e.attrs.class || ''));
   assert.equal(typeof card.attrs.on.pointerup, 'function', 'the card is swiped sideways');
-  const p = made.filter((e) => e.attrs.class === 'p').map((e) => e.attrs.text);
-  assert.deepEqual(p, ['死者12人に', '3カ国協議']);
+  const next = made.find((e) => e.tag === 'button' && /hr-next/.test(e.attrs.class || ''));
+  next.attrs.on.click();
+  assert.equal(hero.index(), 1, '次のニュース steps to the next pick');
 });
 
 test('4: the bar has no grey track; the white line stays the centre', () => {
