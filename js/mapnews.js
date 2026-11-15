@@ -70,7 +70,7 @@ export function createMapNews({ h, lk, headNode, ratioOf, photoOf, fmtAge, fmtCl
       h('div', { class: 'mn-sh' }, e.geo ? h('b', { class: 'banner', text: e.geo.name }) : null, h('span', { class: 'mn-m' }, ratioOf(e), h('b', { class: 'num', text: e.n }), h('small', { text: '社' })), isNum(e.last) ? h('small', { text: fmtClock(e.last) }) : null),
       h('h3', { lang: e.heading.lang || null }, headNode(e, 'mn-t')),
       describe(e), play,
-      rel.length ? h('div', { class: 'mn-rel' }, h('span', { class: 'k', text: '関連ニュース' }), h('ul', null, rel.map((x) => h('li', null, lk(x.text, () => onSelect(x.key), 'この出来事を開く'))))) : null,
+      rel.length ? h('div', { class: 'mn-rel' }, h('span', { class: 'k', text: '関連' }), h('ul', null, rel.map((x) => h('li', null, lk(x.text, () => onSelect(x.key), 'この出来事を開く'))))) : null,
       h('button', { type: 'button', class: 'mn-go', on: { click: () => onDetails(e.key) } }, '詳しく見る'));
   }
   function render(box, v) {

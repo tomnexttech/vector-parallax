@@ -82,7 +82,7 @@ export function createConnect({ root, get, active, login, test, model, forget, s
       h('div', { class: 'own-btns' },
         h('button', { type: 'button', class: 'tbb', data: { f: 'own-test' }, on: { click: onTest } }, '接続を試す'),
         h('button', { type: 'button', class: 'tbb', data: { f: 'own-forget' }, on: { click: () => { forget(a.kind); say(a.kind === 'openrouter' ? 'このブラウザの鍵を消しました。OpenRouter の鍵は openrouter.ai の設定で取り消せます' : 'このブラウザの鍵を消しました'); render(); } } }, '接続を外す')),
-      h('p', { class: 'own-foot', text: `ニュース詳細の「要約」「違いを見る」「質問」と、データと AI の「実行」に使います。料金は ${a.ja} のアカウントに掛かります。` }),
+      h('p', { class: 'own-foot', text: `ニュース詳細の「要約」「違いを見る」「質問」と、データ・AI の「実行」に使います。料金は ${a.ja} のアカウントに掛かります。` }),
     ];
   }
 
@@ -90,7 +90,7 @@ export function createConnect({ root, get, active, login, test, model, forget, s
     if (!open) return;
     const fkey = (() => { const f = document.activeElement; return f && win.contains(f) && f.dataset ? f.dataset.f || '' : ''; })();
     win.replaceChildren(
-      h('header', { class: 'set-top' }, h('h2', { id: 'own-title', text: '自分の AI' }),
+      h('header', { class: 'set-top' }, h('h2', { id: 'own-title', text: 'マイ AI' }),
         h('p', { class: 'set-priv', text: 'このブラウザだけに保存' }),
         h('button', { type: 'button', class: 'ds-x', data: { f: 'own-close' }, on: { click: () => close(true) } }, '閉じる')),
       h('div', { class: 'own-body' }, body(),

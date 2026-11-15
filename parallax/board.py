@@ -210,7 +210,26 @@ def pick_rep(members, rep=None, flags_of=None):
     return max(cand, key=lambda m: (m["ts"], m.get("title", "")))
 
 
+# which country's politics (js/topics.js foreignPolitics, the same words): a desk of Japanese politics that reports another country's
+# election or office files it under 国際, not 国内政治
+_JP_POL = re.compile(r"国会|閣議|自民|立憲|維新|公明|国民民主|共産党|れいわ|参政党|衆院|参院|衆議院|参議院|首相官邸|官房長官|総選挙|統一地方選|日本の|[都道府県]議|[都道府県]知事|(Japan(ese|'s)?|LDP|Diet|Takaichi|Ishiba)", re.I)
+_ABROAD = re.compile(r"米国|アメリカ|米(?=[中露英仏独韓朝印大上下議政連州軍ァ-ヴー・、])|訪米|中国|中(?=[露朝印台])|韓国|北朝鮮|ロシア|露(?=[大政軍])|英国|イギリス|フランス|ドイツ|インド|台湾|ウクライナ|イスラエル|イラン|欧州|中間選挙|(?<![九本])州|ホワイトハウス|(US|U\.S\.|America(n)?|China|Russia|UK|Britain|France|Germany|India|Taiwan|Ukraine|Israel|Iran|EU)", re.I)
+_OFFICE = re.compile(r"選挙|選で|知事|議員|議会|大統領|上院|下院|予備選|(election|midterms?|governor|senate|congress|primary)", re.I)
+
+
+def foreign_politics(text):
+    t = unicodedata.normalize("NFKC", text or "")
+    return bool(_ABROAD.search(t) and _OFFICE.search(t) and not _JP_POL.search(t))
+
+
 def _cat(members, fl, rep):
+    cat = _cat_desk(members, fl, rep)
+    if cat == "国内政治" and foreign_politics((rep or {}).get("title")):
+        return "国際"
+    return cat
+
+
+def _cat_desk(members, fl, rep):
     votes = collections.Counter()
     for m in members:
         s = sources_mod.by_id(m.get("source_id"))

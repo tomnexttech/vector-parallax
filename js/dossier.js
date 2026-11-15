@@ -19,6 +19,7 @@
  */
 import { placeJa, placesIn } from './places.js';
 import { sides as sidesOf, SIDES } from './entry.js';
+import { HEAD } from './heads.js';
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const str = (v) => (typeof v === 'string' ? v : '');
@@ -34,6 +35,16 @@ const STOP_EN = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'as', 'in', 'on',
   'opinion', 'analysis', 'live', 'update', 'updates', 'breaking', 'watch', 'video', 'photos', 'news', 'every', 'each', 'against', 'about', 'before', 'between', 'despite', 'during', 'under', 'without', 'through',
   'has', 'have', 'had', 'below', 'above', 'still', 'many', 'much', 'one', 'two', 'three', 'first', 'last', 'next', 'top', 'big', 'key', 'major', 'then', 'them', 'while', 'back', 'down', 'get', 'gets', 'make', 'makes', 'take', 'takes', 'fall', 'falls', 'rise', 'rises']);
 const PARTICLE = /^(?:の|が|を|に|へ|で|と|は|も|や|か|から|まで|より|など|ら)/;
+/** the English words that name the same thing as one Japanese word of the news: they count on that word's row, so Japan's and abroad's
+ *  headlines meet on it (Donbas and ドンバス, membership and 加盟). Only words with one plain meaning in a headline; places are in js/places.js */
+export const GLOSS = {
+  donbas: 'ドンバス', donbass: 'ドンバス', crimea: 'クリミア', membership: '加盟', ceasefire: '停戦', truce: '停戦', sanctions: '制裁', sanction: '制裁',
+  tariff: '関税', tariffs: '関税', election: '選挙', elections: '選挙', earthquake: '地震', quake: '地震', typhoon: '台風', inflation: 'インフレ',
+  withdrawal: '撤退', cede: '割譲', cedes: '割譲', ceding: '割譲', ceded: '割譲', missile: 'ミサイル', missiles: 'ミサイル',
+  summit: '首脳会談', budget: '予算', semiconductor: '半導体', semiconductors: '半導体', nvidia: 'エヌビディア',
+  zelensky: 'ゼレンスキー', zelenskyy: 'ゼレンスキー', zelenskiy: 'ゼレンスキー', trump: 'トランプ', putin: 'プーチン', takaichi: '高市',
+};
+const GLOSS_JA = [...new Set(Object.values(GLOSS))].filter((g) => /^[ァ-ヺー]{3,}$/.test(g)).sort((a, b) => b.length - a.length);   // katakana only: a kanji word inside a compound (中間選挙) is not cut
 const TOKEN = /[一-鿿々ァ-ヺー]{2,}|[A-Za-z][A-Za-z0-9&'’.-]*[A-Za-z0-9]/g;
 
 function tokens(title) {
@@ -60,8 +71,14 @@ export function wordsOfTitle(title, exclude = []) {
   const skip = exclude.map((s) => str(s).toLowerCase()).filter(Boolean);
   const parts = tokens(title).flatMap((t) => {
     if (/^[\x20-\x7e’]+$/.test(t.w)) return [t];
-    const k = placesIn(t.w)[0], pn = k ? placeJa(k) : '';
+    const k = placesIn(t.w)[0];
+    // a run that holds a word of the glossary (ドンバス撤退可能 holds ドンバス) gives that word as a word of its own, as a place does
+    const pn = k ? placeJa(k) : GLOSS_JA.find((g) => g !== t.w && t.w.includes(g)) || '';
     if (!pn || pn === t.w || !t.w.includes(pn)) return [t];
+    if (!k) {   // a word of the glossary: the parts before and after it stay words of their own (東部ドンバス割譲 -> 東部, ドンバス, 割譲)
+      const [pre, post] = [t.w.slice(0, t.w.indexOf(pn)), t.w.slice(t.w.indexOf(pn) + pn.length)];
+      return [...(pre.length >= 2 ? [{ w: pre, start: t.start }] : []), { w: pn, start: t.start && !pre }, ...(post.length >= 2 ? [{ w: post, start: false }] : [])];
+    }
     const rest = t.w.replace(pn, '');
     return rest.length >= 2 ? [{ w: pn, start: t.start }, { w: rest, start: false }] : [{ w: pn, start: t.start }];
   });
@@ -72,7 +89,7 @@ export function wordsOfTitle(title, exclude = []) {
     if (ascii ? STOP_EN.has(low) || low.length < 3 : STOP_JA.has(w)) continue;
     if (skip.some((s) => s === low || s.includes(low))) continue;
     let name = ascii ? low : w, shown = w, place = false;
-    if (ascii) { const k = placesIn(w)[0]; if (k) { name = placeJa(k); shown = name; place = true; } }
+    if (ascii) { const k = placesIn(w)[0]; if (k) { name = placeJa(k); shown = name; place = true; } else if (GLOSS[low.replace(/['’]s$/, '')]) { name = GLOSS[low.replace(/['’]s$/, '')]; shown = name; } }
     if (seen.has(name)) continue;
     seen.add(name);
     out.push({ name, shown, place, cap: ascii && !place && /^[A-Z]/.test(w) && !start });
@@ -211,13 +228,13 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
       return h('button', { type: 'button', class: 'tl-k', data: { side: id }, disabled: n ? null : true, title: n ? `${ja}の ${n} 件を一覧で見る` : `${ja} 0 件`, on: { click: () => act.home(id) } },
         lineIcon(id), h('span', { class: 'kl', text: ja }), h('b', { class: 'num', text: n }), h('small', { text: `件 ${pct(n)}` }));
     };
-    return tile('t-home', '国内と海外', '件数の比', h('div', { class: 'tl-b' }, ring(m), h('div', { class: 'tl-keys' }, key('jp'), key('intl'), m.gov.length ? key('gov') : null)), go('すべての報道を見る', () => act.all()));
+    return tile('t-home', HEAD['tile.share'], '件数比', h('div', { class: 'tl-b' }, ring(m), h('div', { class: 'tl-keys' }, key('jp'), key('intl'), m.gov.length ? key('gov') : null)), go('すべての報道を見る', () => act.all()));
   }
 
   // DATA SOURCE of the earlier board: the type's name over its bar, the count beside it; who and how late in the tooltip
   function typeTile(m, act, who) {
     const top = m.types.slice(0, 6), max = Math.max(1, ...top.map((t) => t.n)), rest = m.types.length - top.length;
-    return tile('t-types', 'メディアの種類', `${m.types.length} 種類`, h('div', { class: 'tl-bars' },
+    return tile('t-types', HEAD['tile.types'], `${m.types.length} 種類`, h('div', { class: 'tl-bars' },
       top.map((t) => {
         const names = who && who.get(t.type);
         return h('button', { type: 'button', class: 'tl-bar', title: names && names.length ? names.join('、') : `${t.type} ${t.n} 件`, on: { click: () => act.type(t.type) } },
@@ -302,7 +319,7 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
     const max = Math.max(...rows.flatMap((r) => [r.jp, r.intl]));
     if (max < 2) return null;   // every bar a one says nothing: the two sides' cards already name the words
     const bar = (id, n) => h('span', { class: `dv-b ${id}`, data: { side: id } }, n ? h('i', { style: `width:${(n / max) * 100}%` }) : null, n ? h('small', { class: 'num', text: n }) : null);
-    return tile('t-div', '国内と海外の語', null, h('div', { class: 'dv' },
+    return tile('t-div', HEAD['tile.words'], null, h('div', { class: 'dv' },
       h('div', { class: 'dv-h' }, h('span', { class: 'j', text: '国内' }), h('span', { text: '' }), h('span', { class: 'x', text: '海外' })),
       rows.map((r) => h('button', { type: 'button', class: `dv-r${r.jp && r.intl ? ' both' : ''}`, title: `「${r.w}」で探す・国内 ${r.jp}・海外 ${r.intl}`, on: { click: () => act.word(r.w) } }, bar('jp', r.jp), h('span', { class: 'dv-w', text: r.w }), bar('intl', r.intl)))), null);
   }
@@ -312,7 +329,7 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
     const x = wordMatrix(m);
     if (x && x.outlets.length < 3) return null;   // a matrix needs more than two rows to show a pattern
     if (!x) return null;
-    return tile('t-over', '媒体と語の重なり', `${x.outlets.length}社 × ${x.words.length} 語`, h('div', { class: 'mx', style: `--c:${x.words.length}` },
+    return tile('t-over', HEAD['tile.matrix'], `${x.outlets.length}社 × ${x.words.length} 語`, h('div', { class: 'mx', style: `--c:${x.words.length}` },
       h('span', { class: 'mx-0' }), x.words.map((w, i) => h('button', { type: 'button', class: 'mx-w', title: `「${w}」で探す・${x.shared[i]}社`, on: { click: () => act.word(w) } }, h('span', { text: w }))),
       x.outlets.flatMap((o) => [h('span', { class: 'mx-o', data: { side: o.side }, text: o.name, title: o.name }),
         ...x.words.map((w) => (x.has(o.name, w) ? h('i', { class: 'mx-d', data: { side: o.side }, title: `${o.name}・${w}` }) : h('i', { class: 'mx-e' })))])), null);
@@ -321,7 +338,7 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
   // COVERAGE HEAT of the earlier board: one number on red (what came new in the last six hours), the lanes, and the first report of each side
   function timeTile(m, lanes, new6h) {
     const firstLink = (id) => {
-      const it = m.firstOf[id], ja = `${short[id]}で最初の報道`;
+      const it = m.firstOf[id], ja = `${short[id]}初報`;
       if (!it) return h('span', { class: 'tl-f off' }, h('span', { class: 'kl', text: ja }), ' —');
       const link = safeUrl(it.link), inner = [h('span', { class: 'kl', text: ja }), h('b', { class: 'num', text: fmtClock(it.ts) })];
       return link ? extLink(link, { class: 'tl-f', data: { side: id }, title: `${outletOf(it)} の記事を開く` }, ...inner) : h('span', { class: 'tl-f', data: { side: id } }, ...inner);
@@ -330,7 +347,7 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
     const big = isNum(new6h)
       ? h('div', { class: 'tl-big' }, h('i', { text: new6h > 0 ? '▲' : '▶' }), h('b', { class: 'num', text: new6h > 0 ? `+${new6h}` : '0' }), h('small', { text: '新着' }))
       : null;
-    return tile('t-time', '時間の流れ', m.first && m.last && m.last.ts > m.first.ts ? `+${fmtSpan(m.last.ts - m.first.ts)}` : null, h('div', { class: 'tl-b col' }, big, h('div', { class: 'tl-tw' }, areaSvg(m), lanes),
+    return tile('t-time', HEAD['tile.time'], m.first && m.last && m.last.ts > m.first.ts ? `+${fmtSpan(m.last.ts - m.first.ts)}` : null, h('div', { class: 'tl-b col' }, big, h('div', { class: 'tl-tw' }, areaSvg(m), lanes),
       h('div', { class: 'tl-firsts' }, firstLink('jp'), firstLink('intl'), lag != null ? h('span', { class: 'tl-f lag' }, h('span', { class: 'kl', text: '差' }), h('b', { class: 'num', text: lag < 60 ? '1分未満' : fmtSpan(lag) })) : null)), null);
   }
 
@@ -409,7 +426,7 @@ export function drawShareCard(g, d, c) {
   y += 40;
   // the share of each side: one bar, a 2px gap between the parts, the counts under it
   const sides = d.sides.filter((x) => x.n > 0), tot = sides.reduce((a, x) => a + x.n, 0), W = 500;
-  text('件数の割合', 64, y, F(500, 20), c.ink3);
+  text('件数比', 64, y, F(500, 20), c.ink3);
   let x = 64;
   for (const s of sides) {
     const w = Math.max(4, (s.n / tot) * (W - 2 * (sides.length - 1)));
@@ -425,7 +442,7 @@ export function drawShareCard(g, d, c) {
   });
   // the first report of each side, and the gap between Japan and abroad
   const X = 640;
-  text('最初に報じた時刻', X, y, F(500, 20), c.ink3);
+  text('初報時刻', X, y, F(500, 20), c.ink3);
   d.sides.forEach((s, i) => {
     const ly = y + 42 + i * 36;
     text(s.label, X, ly, F(500, 22), s.first ? c.ink : c.ink3);

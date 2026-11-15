@@ -141,7 +141,7 @@ test('the page: the card has its place in the home, its files are in the shell, 
   }
 });
 
-test('the card on screen (11-15): the headline, each side\'s outlets, one bar of the shares, 比べる and 次のニュース, the time of the data', () => {
+test('the card on screen (11-15b): the headline, each side\'s outlets, one bar of the shares, 比べる as the one main button, a pager for the next news, the time of the data', () => {
   const made = [];
   const h = (tag, attrs, ...kids) => { const el = { tag, attrs: attrs || {}, kids: kids.flat(4).filter((k) => k != null && k !== false) }; made.push(el); return el; };
   const root = { hidden: true, replaceChildren() {} };
@@ -150,11 +150,15 @@ test('the card on screen (11-15): the headline, each side\'s outlets, one bar of
   hero.render(pickHeroes([split, both], opt), { gen: T0, now: T0 + 60 });
   const text = (el) => (el && typeof el === 'object' ? (el.attrs.text != null ? String(el.attrs.text) : '') + el.kids.map(text).join('') : String(el));
   const buttons = made.filter((e) => e.tag === 'button' && /hr-b/.test(e.attrs.class));
-  assert.deepEqual(buttons.map(text), ['比べる', '次のニュース']);
+  assert.deepEqual(buttons.map(text), ['比べる'], 'one main button: the next news is the pager\'s, not a second button beside it');
   buttons[0].attrs.on.click();
   assert.deepEqual(seen, [['compare', 's1']]);
-  buttons[1].attrs.on.click();
+  const pg = made.filter((e) => e.tag === 'button' && /hr-pg/.test(e.attrs.class));
+  assert.deepEqual(pg.map((e) => e.attrs['aria-label']), ['前のニュース', '次のニュース']);
+  pg[1].attrs.on.click();
   assert.equal(hero.index(), 1);
+  pg[0].attrs.on.click();
+  assert.equal(hero.index(), 0);
   assert.ok(!made.some((e) => e.attrs.class === 'hr-cols two'), 'no columns of phrases on the home card');
   const bar = made.find((e) => e.attrs.class === 'hr-share');
   assert.equal(bar.attrs['aria-label'], 'このニュースの社の割合 国内 50% / 海外 50%', 'the card names whose share it is, so the tab\'s share over every field does not read as the same number');

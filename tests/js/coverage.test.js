@@ -97,7 +97,7 @@ test('the card: the words of the row name the term; a term row keeps a mark for 
   assert.equal(dots.length, 2);
   assert.equal(all(el, (n) => n.attrs && n.attrs.role === 'region').length, 1);
   assert.equal(all(el, (n) => n.attrs && n.attrs.tabindex === '0').length, 1);
-  assert.match(text(el), /言い方の違い/);
+  assert.match(text(el), /言い回し/);
   assert.match(text(el), /職を離れる/);
 });
 

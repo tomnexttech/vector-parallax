@@ -30,7 +30,7 @@ export function createMapUi({ map, floor, theater, events, theme, genres, genre,
   let borders = null, bordersP = null;
 
   // ---------------------------------------------------------------- what stands on the theater
-  const openBtn = el('button', 'mopen', '押すと拡大');
+  const openBtn = el('button', 'mopen', '拡大');
   openBtn.type = 'button'; openBtn.title = '地図を大きく表示（M）';
   openBtn.addEventListener('click', () => floor.setMode('map'));
 

@@ -20,7 +20,7 @@ const TILE = 512;
 const BUBBLE = 1.7;                // marksAt folds by the size of the canvas map's marks; ours are this much larger
 const ENVELOPE_KM = 900;
 const FIELD_VAR = { 国内政治: '--g-pol', 国際: '--g-intl', 経済: '--g-eco', 安全保障: '--g-sec', 技術: '--g-tech', 市場: '--g-mkt', 災害: '--g-dis', その他: '--g-oth' };
-const LOCAL_FONT = '"IBM Plex Sans JP", "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif';
+const LOCAL_FONT = '"Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, sans-serif';
 const HELP = { 'CooperativeGesturesHandler.WindowsHelpText': 'Ctrl キーを押しながらスクロールすると拡大・縮小します', 'CooperativeGesturesHandler.MacHelpText': '⌘ キーを押しながらスクロールすると拡大・縮小します', 'CooperativeGesturesHandler.MobileHelpText': '2 本の指で地図を動かします' };
 const ppd = (z) => (TILE * Math.pow(2, z)) / 360;
 const wrapLon = (l) => ((((l + 540) % 360) + 360) % 360) - 180;

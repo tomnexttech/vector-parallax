@@ -41,9 +41,23 @@ export function topicsOf(text) {
   return EXCLUDE.test(t) ? out.filter((x) => x === 'disaster') : out;
 }
 
+// which country's politics: 国内政治 is Japan's own (the Diet, the cabinet, Japan's parties, its prefectures and elections). A headline that
+// names another country or one of its states (米, 中, 州…) together with an election or an office is 国際, even from a desk of Japanese politics.
+const JP_POL = /国会|閣議|自民|立憲|維新|公明|国民民主|共産党|れいわ|参政党|衆院|参院|衆議院|参議院|首相官邸|官房長官|総選挙|統一地方選|日本の|[都道府県]議|[都道府県]知事|\b(Japan(ese|'s)?|LDP|Diet|Takaichi|Ishiba)\b/i;
+const ABROAD = /米国|アメリカ|米(?=[中露英仏独韓朝印大上下議政連州軍ァ-ヴー・、])|訪米|中国|中(?=[露朝印台])|韓国|北朝鮮|ロシア|露(?=[大政軍])|英国|イギリス|フランス|ドイツ|インド|台湾|ウクライナ|イスラエル|イラン|欧州|中間選挙|(?<![九本])州|ホワイトハウス|\b(US|U\.S\.|America(n)?|China|Russia|UK|Britain|France|Germany|India|Taiwan|Ukraine|Israel|Iran|EU)\b/i;
+const OFFICE = /選挙|選で|知事|議員|議会|大統領|上院|下院|予備選|\b(election|midterms?|governor|senate|congress|primary)\b/i;
+export function foreignPolitics(text) {
+  const t = norm(text);
+  return ABROAD.test(t) && OFFICE.test(t) && !JP_POL.test(t);
+}
+/** a field given by the build (the desk of the feed) or by the rules, set right where the country is not Japan */
+export function placeField(field, text) {
+  return field === '国内政治' && foreignPolitics(text) ? '国際' : field;
+}
+
 export function fieldOf(text, homes) {
   const t = norm(text).replace(MASK, ' ');
-  if (t && !EXCLUDE.test(t)) for (const [f, re] of FIELD_RULES) if (re.test(t)) return f;
+  if (t && !EXCLUDE.test(t)) for (const [f, re] of FIELD_RULES) if (re.test(t)) return placeField(f, t);
   const hs = Array.isArray(homes) ? homes : [];
   return hs.length && !hs.includes('jp') ? '国際' : '';
 }

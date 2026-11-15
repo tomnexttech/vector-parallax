@@ -75,8 +75,8 @@ test('the rows drawn: five rows in the same order for each side; a bar of reacti
   renderPaper({ h, paper: paperOf(m), clock: () => '9:40', span: () => '1 分', outlet: (it) => it.outlet || '', safeUrl: () => null });
   const rows = made.filter((e) => e.attrs.role === 'row' && e.attrs.data).map((e) => e.attrs.data.row);
   assert.deepEqual(rows, ['words', 'nums', 'tone', 'first', 'heads']);
-  assert.equal(made.filter((e) => e.attrs.class === 'pp-tone').length, 1, 'Japan has 4 words: a bar; abroad has none: no bar');
-  assert.ok(made.some((e) => e.attrs.text === '見出しに反応の語はありません'), 'abroad: no word, said in one line');
+  assert.equal(made.filter((e) => e.attrs.class === 'pp-tone2').length, 1, 'Japan has 4 words: a bar; abroad has none: no bar');
+  assert.ok(made.some((e) => e.attrs.text === '反応語なし'), 'abroad: no word, said in one line');
   assert.ok(made.some((e) => e.attrs.text === '見出しの語の数'), 'the bar says what it counts');
   assert.equal(TONE_MIN, 3);
 });
@@ -85,15 +85,15 @@ test('the three ways in are tabs named by what can be seen; each carries one num
   const { made, h } = mkH();
   const root = { replaceChildren() {} };
   const seen = [];
-  renderFront(root, { h, tab: 'one', field: null, fields: ['国際'], counts: { gap: '国内 62%', one: '', bias: '最大 71' }, onTab: (id) => seen.push(id), onField: (f) => seen.push(f) });
+  renderFront(root, { h, tab: 'jp', field: null, fields: ['国際'], counts: { gap: '国内 62%', jp: '', intl: '12 件', bias: '最大 71' }, onTab: (id) => seen.push(id), onField: (f) => seen.push(f) });
   const tabs = made.filter((e) => e.attrs.role === 'tab');
   assert.deepEqual(tabs.map((t) => t.kids[0].attrs.text), FRONT_TABS.map(([, ja]) => ja));
-  assert.deepEqual(FRONT_TABS.map(([, ja]) => ja), ['日本と海外の差', '片側だけの話', '偏りの大きい話'], 'named by what can be seen there');
-  assert.deepEqual(tabs.map((t) => t.attrs['aria-selected']), ['false', 'true', 'false']);
-  assert.deepEqual(tabs.map((t) => t.attrs.tabindex), ['-1', '0', '-1'], 'one tab in the order of the Tab key: the arrows move between them');
-  assert.deepEqual([tabKey('ArrowRight', 2, 3), tabKey('ArrowLeft', 0, 3), tabKey('Home', 1, 3), tabKey('End', 0, 3), tabKey('a', 0, 3)], [0, 2, 0, 2, null]);
+  assert.deepEqual(FRONT_TABS.map(([, ja]) => ja), ['国内外比較', '日本独占', '海外独占', '偏り度'], 'short nouns, Sir\'s words of 11-15');
+  assert.deepEqual(tabs.map((t) => t.attrs['aria-selected']), ['false', 'true', 'false', 'false']);
+  assert.deepEqual(tabs.map((t) => t.attrs.tabindex), ['-1', '0', '-1', '-1'], 'one tab in the order of the Tab key: the arrows move between them');
+  assert.deepEqual([tabKey('ArrowRight', 3, 4), tabKey('ArrowLeft', 0, 4), tabKey('Home', 1, 4), tabKey('End', 0, 4), tabKey('a', 0, 4)], [0, 3, 0, 3, null]);
   assert.equal(tabs[1].kids.length, 1, 'an empty count draws no number');
-  tabs[2].attrs.on.click();
+  tabs[3].attrs.on.click();
   made.find((e) => e.tag === 'button' && text(e) === '国際').attrs.on.click();
   assert.deepEqual(seen, ['bias', '国際']);
 });
@@ -107,12 +107,17 @@ test('the panel: the denominator and the value\'s own time, red when old, 未取
   assert.equal(t.attrs.text, '9:40 の値');
   assert.match(t.attrs.class, /stale/);
   assert.ok(made.some((e) => e.attrs.text === '記事 10 件'), 'the denominator in a word anyone reads');
-  assert.ok(made.some((e) => e.attrs.text === '国内 1 件 ・ 海外 9 件'), 'each row\'s counts carry their unit');
+  // the counts stand in two columns (国内・海外) under a head row, the larger side's number dark (docs/design-1115b.md §3)
+  assert.deepEqual(made.filter((e) => /fr-gn/.test(e.attrs.class || '')).map((e) => [e.attrs.text, /\bhi\b/.test(e.attrs.class)]), [['1', false], ['9', true]]);
+  assert.deepEqual(made.filter((e) => e.attrs.class === 'fr-nh').map((e) => e.attrs.text), ['国内', '海外'], 'the columns are named once, in the head row');
+  assert.ok(made.some((e) => e.tag === 'h2' && e.attrs.text === '分野別'), 'the panel is named by what it holds, not by the tab again');
+  assert.ok(made.some((e) => e.attrs.class === 'fr-tot'), 'the share over all the fields under the table');
   const bar = made.find((e) => e.tag === 'i' && e.attrs.data && e.attrs.data.side === 'intl');
   assert.equal(bar.attrs.style, '--w:40.0%');
   const b = mkH();
-  renderGap(root, { h: b.h, tab: 'one', one: [{ side: 'jp', ja: '国内だけ', events: [] }, { side: 'intl', ja: '海外だけ', events: [] }], gen: null, now: 0, clock: () => '' });
-  assert.ok(b.made.some((e) => /分野を替えると出ることがあります/.test(e.attrs.text || '')));
+  renderGap(root, { h: b.h, tab: 'intl', field: '技術', one: [{ side: 'jp', ja: '国内だけ', events: [] }, { side: 'intl', ja: '海外だけ', events: [] }], gen: null, now: 0, clock: () => '' });
+  assert.ok(b.made.some((e) => e.tag === 'h2' && e.attrs.text === '海外独占'), 'one side\'s own news under its own name');
+  assert.ok(b.made.some((e) => /「すべて」に戻すと出ることがあります/.test(e.attrs.text || '')), 'an empty list says what to do next');
   assert.ok(b.made.some((e) => e.attrs.text === '未取得'));
 });
 
@@ -123,7 +128,7 @@ test('one count of outlets on every screen: the compare columns count 社 as the
   assert.deepEqual(p.cols.map((c) => [c.n, c.outlets]), [[3, 2], [2, 1]]);
   renderPaper({ h, paper: p, clock: () => '', span: () => '', outlet: (it) => it.outlet, safeUrl: () => null });
   const head = made.filter((e) => e.attrs.role === 'columnheader' && e.attrs.data).map(text);
-  assert.deepEqual(head, ['日本の報道2社', '海外の報道1社']);
+  assert.deepEqual(head, ['国内報道2社', '海外報道1社']);
 });
 
 test('the figure of words: a word of both sides first, each side counted in all its headlines, only with both sides', () => {
@@ -170,9 +175,10 @@ test('the return to the home: the board keeps its place, the home opens at its t
   assert.match(app, /else setHome\(name\);/);
 });
 
-test('the page: one Mincho for the lead headline, no Zen Kaku Gothic New, the worker keeps js/front.js, the home holds its three parts', () => {
+test('the page: one gothic and Inter for figures (no Mincho, no Plex, no Barlow), the worker keeps js/front.js, the home holds its three parts', () => {
   const html = read('index.html');
-  assert.match(html, /family=Shippori\+Mincho\+B1/);
+  assert.match(html, /family=Noto\+Sans\+JP:wght@400;500;700&amp;family=Inter:wght@500;600;700&amp;display=swap/);
+  assert.doesNotMatch(html, /Shippori|IBM\+Plex|Barlow/);
   assert.doesNotMatch(html, /Zen\+Kaku/);
   assert.match(html, /<section class="front" id="front"[^>]*><\/section>\s*<!-- hero:begin -->/);
   assert.match(html, /<!-- hero:end -->\s*<section class="gap" id="gap"/);

@@ -158,7 +158,7 @@ export function renderEntry(root, o) {
   const counts = (m) => h('span', { class: 'en-c' }, SIDES.map(([k, , short]) => h('span', { class: m[k].length ? 'en-k' : 'en-k zero', data: { side: k } }, lineIcon(k), short, h('b', { text: outs(m[k]) }), h('span', { class: 'u', text: '社' }))));
 
   const head = h('header', { class: 'en-head' },
-    h('h2', null, '今日の注目ニュース', h('span', { class: 'n', text: `${events.length} 件` })),
+    h('h2', null, '注目ニュース', h('span', { class: 'n', text: `${events.length} 件` })),
     h('button', { type: 'button', class: 'tbb en-full', id: 'full-btn', 'aria-label': '詳しく見る', on: { click: o.full } }, h('span', { class: 'w', text: '詳しく見る' }), h('span', { class: 's', text: '詳しく' }), lineIcon('right')));
   if (!sel) { root.replaceChildren(head, h('p', { class: 'empty big', text: 'ニュース 0 件' })); return; }
 
@@ -190,7 +190,7 @@ export function renderEntry(root, o) {
   const so = { jp: outs(m.jp), intl: outs(m.intl), gov: outs(m.gov) }, sn = so.jp + so.intl + so.gov;
   const pct = (n) => (sn ? `${Math.round((n / sn) * 100)}%` : '');
   const b = o.bias ? o.bias(sel) : null;
-  const share = tile('fg-share', '社の割合', h('div', { class: 'en-share' },
+  const share = tile('fg-share', '社数比', h('div', { class: 'en-share' },
     h('span', { class: 'en-bigbar' }, ratio({ jp: Array(so.jp), intl: Array(so.intl), gov: Array(so.gov) })),
     h('ul', { class: 'en-lg' }, SIDES.map(([k, , short]) => h('li', { class: so[k] ? null : 'zero', data: { side: k } },
       lineIcon(k), h('span', { class: 'kl', text: short }), h('b', { class: 'num', text: so[k] }), h('span', { class: 'u', text: '社' }), h('span', { class: 'pc num', text: pct(so[k]) })))),
@@ -198,20 +198,20 @@ export function renderEntry(root, o) {
   const firsts = SIDES.filter(([k]) => m.firstOf && m.firstOf[k]);
   const lag = isNum(m.lag) ? Math.abs(m.lag) : null;
   const area = o.dossier && o.dossier.areaSvg ? o.dossier.areaSvg(m) : null;
-  const time = firsts.length ? tile('fg-time', '最初に報じた時刻', h('div', { class: 'en-time' },
-    lag != null ? h('p', { class: 'en-lag' }, h('span', { class: 'k', text: '国内と海外の差' }), h('b', { class: 'num', text: lag < 60 ? '1分未満' : fmt.span(lag) }),
+  const time = firsts.length ? tile('fg-time', '初報時刻', h('div', { class: 'en-time' },
+    lag != null ? h('p', { class: 'en-lag' }, h('span', { class: 'k', text: '国内外差' }), h('b', { class: 'num', text: lag < 60 ? '1分未満' : fmt.span(lag) }),
       h('span', { class: 'w', text: m.lag > 0 ? '海外が先' : m.lag < 0 ? '国内が先' : '同じ時刻' })) : null,
     h('ul', { class: 'en-firsts' }, SIDES.map(([k, , short]) => { const it = m.firstOf[k]; return h('li', { class: it ? null : 'zero', data: { side: k } },
       lineIcon(k), h('span', { class: 'kl', text: short }), h('b', { class: 'num', text: it ? fmt.short(it.ts) : '—' }), h('span', { class: 'o', text: it ? outletOf(it) : '' })); })),
-    area ? h('figure', { class: 'en-run' }, area, h('figcaption', { text: '件数の積み上がり' })) : null)) : null;
+    area ? h('figure', { class: 'en-run' }, area, h('figcaption', { text: '累計件数' })) : null)) : null;
   const wj = (m.words && m.words.jp) || [], wx = (m.words && m.words.intl) || [];
   const chip = (x) => h('span', { class: 'en-w' }, x.w, x.n > 1 ? h('small', { class: 'num', text: x.n }) : null);
   const row = (label, list, side) => (list.length ? h('div', side ? { class: 'en-wr', data: { side } } : { class: 'en-wr' },
     h('span', { class: 'k' }, side ? lineIcon(side) : null, label), h('span', { class: 'en-ws' }, list.slice(0, 6).map(chip))) : null);
   const two = s.intl.length > 0 && s.jp.length + s.gov.length > 0;
-  const rows = two ? [row('共通する言葉', wj.filter((x) => x.both), null), row(s.gov.length ? '国内・官公庁だけ' : '国内だけ', wj.filter((x) => !x.both), 'jp'), row('海外だけ', wx.filter((x) => !x.both), 'intl')].filter(Boolean)
-    : [row('よく出た言葉', wj.length ? wj : wx, wj.length ? 'jp' : 'intl')].filter(Boolean);
-  const words = rows.length ? tile('fg-words', two ? '使った言葉の違い' : '見出しの言葉', h('div', { class: 'en-words' }, rows)) : null;
+  const rows = two ? [row('共通語', wj.filter((x) => x.both), null), row(s.gov.length ? '国内・官公庁だけ' : '国内だけ', wj.filter((x) => !x.both), 'jp'), row('海外だけ', wx.filter((x) => !x.both), 'intl')].filter(Boolean)
+    : [row('頻出語', wj.length ? wj : wx, wj.length ? 'jp' : 'intl')].filter(Boolean);
+  const words = rows.length ? tile('fg-words', two ? '用語比較' : '見出し語', h('div', { class: 'en-words' }, rows)) : null;
 
   // ---- the headlines side by side: a side without a report is one line, not an empty column
   // a press on a headline opens the outlet's own description, quoted, and the link to the article
@@ -273,8 +273,8 @@ export function renderEntry(root, o) {
       g.events.length > OS_CAP && o.more ? h('button', { type: 'button', class: 'en-rest', on: { click: () => o.more(g.side) } }, `残り ${g.events.length - OS_CAP} 件を一覧で見る`) : null)))) : null;
 
   // ---- the reader's local news (settings: local.place): the news that name the place, a press shows it below as a card does
-  const locEl = loc ? h('section', { class: 'en-os en-loc', 'aria-label': '地元のニュース' },
-    h('h3', { class: 'en-sub' }, `地元のニュース（${str(loc.name)}）`, h('span', { class: 'n', text: loc.events.length })),
+  const locEl = loc ? h('section', { class: 'en-os en-loc', 'aria-label': '地元' },
+    h('h3', { class: 'en-sub' }, '地元', h('span', { class: 'en-lc', text: str(loc.name) }), h('span', { class: 'n', text: loc.events.length })),
     loc.events.length ? h('ul', { class: 'en-osl' }, loc.events.map((e) => h('li', null, h('button', { type: 'button', class: 'en-osb', 'aria-pressed': String(e === sel), on: { click: () => o.pick(e.key) } },
       titleEl(titleOf(e), 'en-ost'), h('span', { class: 'en-osm' }, h('span', { text: genreShort(fieldOf(e)) }), h('span', { class: 'num', text: `${nOf(e)}社` }))))))
       : h('p', { class: 'en-osn', text: `${str(loc.name)}のニュースは今はありません。` })) : null;
@@ -283,16 +283,17 @@ export function renderEntry(root, o) {
   const scene = (k, ...kids) => h('div', { class: 'en-scene', data: { scene: k } }, ...kids);
   const cov = o.coverage ? o.coverage(sel) : null;
   // the newspapers side by side (js/front.js): the rows in the same order in each side's column, read across
-  const paperEl = renderPaper({ h, paper: paperOf(m), clock: fmt.clock, span: fmt.span, outlet: outletOf, safeUrl: o.safeUrl, icon: (k) => lineIcon(k) });
+  const paperEl = renderPaper({ h, paper: paperOf(m), clock: fmt.clock, when: fmt.short, span: fmt.span, outlet: outletOf, safeUrl: o.safeUrl, icon: (k) => lineIcon(k), openOutlet: o.openOutlet || null });
   root.replaceChildren(scene('pick', head, pick), locEl,
     h('section', { class: 'en-sel', data: { genre: f }, 'aria-label': '選んだニュースの伝え方' },
       scene('story', h('div', { class: 'en-top' + (headFig ? '' : ' nop') },
         h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut}社・${m.n} 件${isNum(o.gen) ? `・${fmt.clock(o.gen)} の値` : ''}` }), ais, o.speak ? o.speak(sel) : null),
         headFig)),
+      // the newspapers side by side come right under the title: the screen is named for them (比べる); the media table after them
+      paperEl ? scene('paper', h('h3', { class: 'en-sub' }, '紙面比較'), paperEl, h('div', { class: 'en-figs one' }, share))
+        : scene('figs', h('h3', { class: 'en-sub' }, '伝え方'), h('div', { class: 'en-figs' }, share, time, words)),
       cov ? scene('cover', cov) : null,
-      paperEl ? scene('paper', h('h3', { class: 'en-sub' }, '並べて比べる'), paperEl, h('div', { class: 'en-figs one' }, share))
-        : scene('figs', h('h3', { class: 'en-sub' }, '伝え方の違い'), h('div', { class: 'en-figs' }, share, time, words)),
-      paperEl ? null : scene('heads', h('h3', { class: 'en-sub' }, '各メディアの見出し'),
+      paperEl ? null : scene('heads', h('h3', { class: 'en-sub' }, '各社見出し'),
         has.length ? h('div', { class: 'en-cols', style: `--n:${has.length}` }, has.map(col)) : null),
       scene('rest', missEl, vidEl, o.absent(sel), foot)), osEl);
   if (keep != null) cards.scrollLeft = keep;

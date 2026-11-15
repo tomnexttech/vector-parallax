@@ -8,6 +8,8 @@
  *   localize(root)                            every text node and title / aria-label / placeholder under root (not under SKIP)
  *   watch(root) -> stop()                     localize now and whatever the page draws later */
 
+import { HEAD_EN } from './heads.js';
+
 export const UI_LANGS = ['auto', 'ja', 'en'];
 
 export function uiLang(pref, langs) {
@@ -22,36 +24,40 @@ export const SKIP = '[data-i18n-skip],.en-w,.en-ws,.hits,.terms,.tl-hl,.mh,.en-a
 export const EN = {
   '今日のニュース': "Today's news", 'ホーム': 'Home',
   // the figures' heads and the news site's own parts (rankings, breaking line, local news, the narrowed search)
-  '件数の比': 'Share of reports', 'メディアの種類': 'Types of outlet', '国内と海外の語': 'Words in Japan and abroad', '媒体と語の重なり': 'Outlets and shared words', '時間の流れ': 'Over time', '0〜100': '0-100', '着目した語': 'Words in focus',
+  '件数の比': 'Share of reports', '0〜100': '0-100', '着目した語': 'Words in focus',
   '速報': 'Breaking', '報道が急増': 'Reports rising fast', '速報を閉じる': 'Close the breaking line', '災害の画面を開く': 'Open the disaster screen', 'このニュースを開く': 'Open this news',
   '注目度ランキング': 'Attention ranking', '注目度': 'Attention', '比べる': 'Compare', '画面': 'Screens', '急上昇': 'Rising fast', '新着': 'New in 6 h', '6 時間': '6 h', '24 時間': '24 h',
   '全部': 'All', '期間': 'Period', '側': 'Side', '並べ替え': 'Order', '報道が多い順': 'Most outlets', '新しい順': 'Newest', 'すべてのメディア': 'All outlets',
-  '地元のニュース': 'Local news', '選ばない': 'None', '都道府県': 'Prefectures', '国': 'Countries',
+  '地元': 'Local news', '選ばない': 'None', '都道府県': 'Prefectures', '国': 'Countries',
   'ホームと「比べる」に、選んだ地名のニュースを出します。選択はこのブラウザにだけ保存します': 'Shows the news that name the chosen place on the home screen and in the simple view. The choice stays in this browser',
   '報道の多い順です。': 'Ordered by the number of collected headlines.', '6 時間の新着はありません。': 'Nothing new in the last 6 hours.',
   '6 時間より前のニュースなので、急上昇は出せません。': 'These headlines were collected more than 6 hours ago, so there is no rising order.',
   // the band, the screens and the tabs
   'ニュース': 'News', '地図': 'Map', '市場': 'Markets', '政治': 'Politics', '災害': 'Disasters', '映像': 'Video', '保存': 'Saved',
   'その他': 'More', '検索': 'Search', '設定': 'Settings', '表示': 'View', '自動': 'Auto', '規則': 'Rules', 'メディア': 'Outlets', '更新': 'Updated', '前回から': 'Since last visit',
-  'データと AI': 'Data and AI', '使い方': 'How to use', '区画': 'Screens', '検索と操作（Ctrl+K）': 'Search and actions (Ctrl+K)',
+  '使い方': 'How to use', '区画': 'Screens', '検索と操作（Ctrl+K）': 'Search and actions (Ctrl+K)',
   '声で操作（v）': 'Voice control (v)', '声で操作': 'Voice control', 'データと AI（i）': 'Data and AI (i)', '外観 ダーク': 'Appearance: dark', '外観 ライト': 'Appearance: light',
   '外観': 'Appearance', '設定（,）': 'Settings (,)', '欄へ移る': 'Go to a pane', '言語': 'Language', '閉じる': 'Close', '検索と操作': 'Search and actions', '結果': 'Results',
   '↑ ↓ で選ぶ　Enter で開く　Esc で閉じる': '↑ ↓ to choose, Enter to open, Esc to close',
   'AI のまとめ': 'AI summaries', '国内と海外の両方': 'Both Japan and abroad', '一覧': 'List', '件数': 'Count', '多い': 'Many', '並べ方': 'Layout', '標準': 'Standard', '主役': 'Lead',
   // the panes of the board
-  '出来事': 'News', '注目': 'Top news', '注目ニュース': 'Top news', '関連': 'Related', '出典': 'Sources', '片側だけのニュース': 'Only some outlets', '時間': 'Hours', '分野': 'Fields',
-  '時間別の件数': 'Headlines by hour', '見出しの件数': 'Collected headlines', '期間内の見出し': 'Headlines in the window', '関連ニュース': 'Related headlines',
-  '出典とまとめ方': 'Basis and sources', '種類': 'Type', '直近 1 時間': 'Last hour', '最多': 'Peak', '注目の初報': 'First reports of top news', '各 6 件まで': 'Up to 6 each',
+  '出来事': 'News', '注目': 'Top news', '注目ニュース': 'Top news', '関連': 'Related', '出典': 'Sources', '片側だけのニュース': 'Only some outlets', 'ニュース一覧': 'All news', '最初の報道': 'First report', '時間': 'Hours', '分野': 'Fields',
+  '時間別': 'Headlines by hour', '見出し数': 'Collected headlines', '期間内の見出し': 'Headlines in the window', '関連': 'Related headlines',
+  '出典・手法': 'Basis and sources', '種類': 'Type', '直近 1 時間': 'Last hour', '最多': 'Peak', '注目の初報': 'First reports of top news', '各 6 件まで': 'Up to 6 each',
   '届かない・更新なし': 'Unreachable or not updated', '地名なし': 'No place', '地点なし': 'No place', '押すと拡大': 'Press to enlarge', '地図を閉じる': 'Close the map', '地図を閉じる（Esc）': 'Close the map (Esc)', '一本の指で動かし、二度たたくと拡大、二度たたいて上下になぞると拡大・縮小、ボタンでも拡大・縮小できます': 'Move the map with one finger; double-tap to zoom in; double-tap and hold, then drag up or down to zoom; the buttons zoom too', '記事掲載の停止を依頼する': 'Ask to remove an article',
   '掲載の停止': 'Removal', '論点で絞る': 'Narrow by topic', 'AI が書いた題': 'Title written by the AI', '報じ方の種類で絞る': 'Narrow by type of outlet',
   'すべての報道を見る': 'See all reports', 'この出来事の全報道を見る': 'See all reports of this news', 'バイアス度の内訳を見る': 'See the parts of the bias score',
   '注目を拡大': 'Enlarge top news', '媒体を拡大': 'Enlarge outlets', '災害を拡大': 'Enlarge disasters', '市場を拡大': 'Enlarge markets', '政治を拡大': 'Enlarge politics',
   '一部の媒体だけを拡大': 'Enlarge only some outlets', '時間ごとの見出しを拡大': 'Enlarge headlines by hour', '時間ごとの見出しを開く': 'Open headlines by hour',
+  // the home of 11-15b: the panel named by what it holds, the marks of a translated headline, the pager of the card
+  '分野別': 'Reports by field', '独占報道': 'Stories one side only reported', '偏り度': 'Highest bias index first',
+  '国内が多い': 'More in Japan', '海外が多い': 'More abroad', '国内寄り': 'More in Japan', '海外寄り': 'More abroad', '◀ 国内見出し': '◀ Headlines in Japan', '海外見出し ▶': 'Headlines abroad ▶', '反応語なし': 'No reaction words', 'どちらの見出しにも反応語なし': 'No reaction words on either side', '初報から': 'Since the first report', '拡大': 'Enlarge', '官公庁独占': 'Ministries only', 'どの項も、平均との差は小さい。': 'Every figure is close to the mean.', '全分野': 'All fields', '訳': 'Tr.', '英語': 'EN', '前のニュース': 'Previous story', '次のニュース': 'Next story',
+  'バイアス度 最高': 'Highest bias index',
   '媒体の一覧を開く': 'Open the list of outlets', 'AI について': 'About the AI', 'すべての分野': 'All fields', '今回多い地名': 'Places seen most this time',
   '自動のラベル・真偽は判定していない': 'Automatic labels; nothing is judged true or false', '真偽は判定していない': 'Nothing is judged true or false',
   // fields and types of outlets
   'すべて': 'All', '全て': 'All', '国際': 'World', '経済': 'Economy', '安全保障': 'Security', '技術': 'Technology', '国内政治': 'Japanese politics',
-  'お金・税金': 'Money and tax', '法': 'Law', '政治・人事': 'Politics and appointments', '国内と海外': 'Japan and abroad',
+  'お金・税金': 'Money and tax', '法': 'Law', '政治・人事': 'Politics and appointments', 
   '政府一次': 'Government primary', '通信社': 'News agency', '公共放送': 'Public broadcaster', '全国紙': 'National paper', '民放': 'Commercial TV',
   '経済紙': 'Business paper', '地方紙': 'Regional paper', '専門': 'Specialist', '海外公共': 'Public, abroad', '海外主流': 'Mainstream, abroad',
   '国家メディア': 'State media', '政党機関紙': 'Party paper', '週刊誌・タブロイド': 'Weekly or tabloid', 'シンクタンク': 'Think tank', '集約': 'Aggregator',
@@ -63,25 +69,25 @@ export const EN = {
   // the simple view
   '今日の注目ニュース': 'Today\'s big news', '詳しく見る': 'Detailed screen', '詳しく': 'Details', '表示中': 'Showing',
   'ニュースを選ぶと、下に見出しが並びます': 'Press a news to see below how it was told', 'ニュースを選ぶ': 'Choose a news', '選んだニュースの伝え方': 'How the chosen news was told',
-  '伝え方の違い': 'How it was told', '件数の割合': 'Share of reports', '社の割合': 'Share of outlets', 'の要約': ' summary', 'このニュース': 'This news',
-  '日本と海外の差': 'Japan and abroad', '片側だけの話': 'One side only', '偏りの大きい話': 'Most one-sided', 'バイアス度（0〜100）': 'Bias score (0-100)', '件': '', 'バイアス度': 'Bias score', 'バイアス度の内訳を見る': 'See the parts of the bias score on the detailed screen',
-  '最初に報じた時刻': 'First reports', '国内と海外の差': 'Gap between Japan and abroad', '海外が先': 'abroad first', '国内が先': 'Japan first', '同じ時刻': 'same time',
-  '1分未満': 'under 1 min', '件数の積み上がり': 'Reports adding up', '使った言葉の違い': 'Words used', '見出しの言葉': 'Words in the headlines', '共通する言葉': 'Shared words',
-  'よく出た言葉': 'Frequent words', '各メディアの見出し': 'Each outlet\'s headline', 'は、集めたニュースには見当たりません': 'not found in the collected news',
+  '伝え方': 'How it was told', '件数比': 'Share of reports', '社数比': 'Share of outlets', 'の要約': ' summary', 'このニュース': 'This news',
+  '国内外比較': 'Japan and abroad', '独占報道': 'One side only', '偏り度': 'Most one-sided', 'バイアス度（0〜100）': 'Bias score (0-100)', '件': '', 'バイアス度': 'Bias score', 'バイアス度の内訳を見る': 'See the parts of the bias score on the detailed screen',
+  '初報時刻': 'First reports', '国内外差': 'Gap between Japan and abroad', '海外が先': 'abroad first', '国内が先': 'Japan first', '同じ時刻': 'same time',
+  '1分未満': 'under 1 min', '累計件数': 'Reports adding up', '用語比較': 'Words used', '見出し語': 'Words in the headlines', '共通語': 'Shared words',
+  '頻出語': 'Frequent words', '各社見出し': 'Each outlet\'s headline', 'は、集めたニュースには見当たりません': 'not found in the collected news',
   '見当たらない媒体へ': 'Outlets not seen', 'ほかのニュースを選ぶ': 'Choose another news', '画像で共有': 'Share as image', '詳しく見る': 'Show details',
   '記事を開く': 'Open article', 'このメディアが扱ったニュース': 'News this outlet carried', 'このメディアのページ': 'This outlet\'s page', 'AI の文は間違うことがあります': 'AI text can be wrong',
   'AI の文は間違うことがあります。元の記事で確かめてください': 'AI text can be wrong; check the original article', '読み上げる': 'Read aloud', '止める': 'Stop',
   // the board's news
   '共有': 'Share', '保存済み': 'Saved', '最初の報道から': 'Since the first report', '最初に報じた': 'First reported', '最新': 'Latest', '事件': 'Case',
-  '要点': 'Key points', '経過': 'Timeline', '各側の見出し': 'Headlines by side', '出典の一覧': 'Sources', 'このニュースの節': 'Sections of this news',
+  '要点': 'Key points', '経過': 'Timeline', '各側見出し': 'Headlines by side', '出典一覧': 'Sources', 'このニュースの節': 'Sections of this news',
   // the table of the outlets (js/coverage.js): the page's words only; the outlets' words in the cells stay as published
-  '媒体の比べ': 'Outlets compared', '出ている': 'Carried', '見出しと要旨には出ていない': 'Not found in the headline or description', '照合なし': 'Not compared', '見出しのみ': 'Headline only', '言い方の違い': 'Choice of words', '行を減らす': 'Show fewer rows', '各側の最初の見出し': 'First headline of each side', 'このニュースの詳しい節': 'Details of this news',
+  '媒体比較': 'Outlets compared', '出ている': 'Carried', '見出しと要旨には出ていない': 'Not found in the headline or description', '照合なし': 'Not compared', '見出しのみ': 'Headline only', '言い回し': 'Choice of words', '行を減らす': 'Show fewer rows', '各側初報': 'First headline of each side', 'このニュースの詳しい節': 'Details of this news',
   '内訳を開く': 'Show parts', '内訳を閉じる': 'Hide parts', '国内で最初の報道': 'First report in Japan', '海外で最初の報道': 'First report abroad', '差': 'Gap',
   '着目した語': 'Words noted', '全報道': 'All reports', '原文を開く': 'Open original', '元の記事を開く': 'Open the original article', 'もう一つの見出し': 'Another headline',
-  'ラベル': 'Labels', 'ラベルは話題の分類です。重要度や責任の有無は示しません': 'Labels classify the topic; they say nothing of importance, wrongdoing or blame', 'ブラウザに合わせる': 'Follow the browser', 'まとめた理由': 'Why grouped', 'まとめた手': 'Grouped by', '共通の語': 'Shared words', '地名': 'Places', '時刻の幅': 'Time span', '鍵語': 'Key terms',
-  '系譜': 'Lineage', '他の出来事': 'Other news', '地震': 'Earthquakes', '台風': 'Typhoons', '規則（語の重なり）': 'Rules (shared words)', '一つの報道': 'A single report',
-  'この話題が見つからなかった媒体': 'Outlets where this was not found', '最初の報道より後から': 'Starting after the first report', '読めず': 'Could not read',
-  '官公庁の一次資料': 'Ministries\' primary papers', '全報道の出典': 'Sources of all reports', '国内の報道を一覧で見る': 'List the Japanese reports', '海外の報道を一覧で見る': 'List the reports abroad',
+  'ラベル': 'Labels', 'ラベルは話題の分類です。重要度や責任の有無は示しません': 'Labels classify the topic; they say nothing of importance, wrongdoing or blame', 'ブラウザに合わせる': 'Follow the browser', '集約理由': 'Why grouped', 'まとめた手': 'Grouped by', '地名': 'Places', '鍵語': 'Key terms',
+  '系譜': 'Lineage', '地震': 'Earthquakes', '台風': 'Typhoons', '規則（語の重なり）': 'Rules (shared words)', '一つの報道': 'A single report',
+  '未検出媒体': 'Outlets where this was not found', '最初の報道より後から': 'Starting after the first report', '読めず': 'Could not read',
+  '官公庁資料': 'Ministries\' primary papers', '全出典': 'Sources of all reports', '国内の報道を一覧で見る': 'List the Japanese reports', '海外の報道を一覧で見る': 'List the reports abroad',
   'この出来事の映像': 'Video of this news', '地図の下のニュース': 'News under the map', '種類ごとの報道の時刻': 'Report times by type', '一次資料': 'Primary paper',
   '次の写真': 'Next photo', 'キーの一覧': 'Keys',
   // disasters, markets, politics (labels only)
@@ -97,10 +103,10 @@ export const EN = {
   'ニュースのライブ': 'Live news', 'ニュースのライブ・公式・消音': 'Live news · official · muted', '自動で再生': 'Play automatically', '最初の音': 'Sound at first', '消音': 'Muted', '出す': 'On', '局': 'Channels',
   'ライブ · 国内': 'Live · Japan', '最新の動画 · 国内': 'Latest videos · Japan', 'ライブ · 海外': 'Live · abroad', '最新の動画 · 海外': 'Latest videos · abroad',
   // saved, settings
-  '保存したニュース': 'Saved news', 'このブラウザだけに保存します': 'Kept in this browser only', 'フォローする言葉': 'Words to follow', '足す': 'Add', 'フォローに当たるニュース': 'News matching what you follow',
-  '自分の読み方': 'My reading', '記録を消す': 'Clear the record', 'このブラウザだけに保存・送信しない': 'Kept in this browser only, never sent', 'ミュート': 'Mute', '動き': 'Motion',
+  '保存一覧': 'Saved news', 'このブラウザだけに保存します': 'Kept in this browser only', 'フォロー語': 'Words to follow', '足す': 'Add', 'フォロー一致': 'News matching what you follow',
+  '記録を消す': 'Clear the record', 'このブラウザだけに保存・送信しない': 'Kept in this browser only, never sent', 'ミュート': 'Mute', '動き': 'Motion',
   'ボードのパネル': 'Board panes', '自分の AI': 'My own AI', '保存と復元': 'Back up and restore', '映像の欄': 'Video pane', 'まとめ方': 'Grouping', '設定の区分': 'Settings sections',
-  '自分の AI につなぐ': 'Connect my AI', 'OpenRouter でログイン': 'Log in with OpenRouter', '鍵を貼る': 'Paste a key', '接続を試す': 'Test connection', '接続を外す': 'Disconnect', '違いを見る': 'See the differences', '聞く': 'Ask', '要約': 'Summary', '質問': 'Ask', '自分の AI で実行（任意）': 'Run with my AI (optional)',
+  'マイ AI に接続': 'Connect my AI', 'OpenRouter でログイン': 'Log in with OpenRouter', '鍵を貼る': 'Paste a key', '接続を試す': 'Test connection', '接続を外す': 'Disconnect', '違いを見る': 'See the differences', '聞く': 'Ask', '要約': 'Summary', '質問': 'Ask', 'マイ AI で実行（任意）': 'Run with my AI (optional)',
   'ダーク': 'Dark', 'ライト': 'Light', '字の大きさ': 'Type size', '大きい': 'Large', 'ダイヤル（内は論点、外は注目の出来事）': 'Dial (inside: topics, outside: top news)', 'ダイヤルを開く': 'Open the dial',
   '今の順': 'Current order', '紙面': 'Front page', '時間ごと': 'By hour', '今日の注目': 'Today\'s top news', '注目のニュース': 'Top news', 'この地点': 'This place', '詳しく見る': 'See details',
   'ニュースの並べ方': 'Ways to read the news', '下の段に出すニュース': 'News in the lower row', 'この出来事を開く': 'Open this news',
@@ -116,7 +122,7 @@ export const EN = {
   '最初の一枚': 'First card', '両方': 'Both', '元の記事': 'Articles', '束ねた理由': 'Why grouped', '読み上げ': 'Read aloud', '並び順': 'Order', '人気順': 'Most bookmarked',
   '自分の読み方順': 'Like my reading', '全体': 'Everything', '流す': 'Swipe', '前へ': 'Previous', '前の側': 'Previous side', '次の側': 'Next side', '最初から': 'Start over', '続ける': 'Continue',
   'この版で固定': 'Keep this edition', '固定を外す': 'Release the edition', 'デモ': 'Demo', '前の候補': 'Previous card', '次の候補': 'Next card', 'ほかの候補': 'Other cards',
-  '一致した語': 'Words in common', '場所': 'Places', '最初と最後の差': 'First to last', '似ている見出しの対': 'Similar headline pairs', 'AI が結んだ束の間': 'Groups the AI joined', 'AI が足したつながり': 'Links the AI added', 'はてな': 'Hatena',
+  '一致した語': 'Words in common', '場所': 'Places', '最初と最後の差': 'First to last', '類似見出し': 'Similar headline pairs', 'AI が結んだ束の間': 'Groups the AI joined', 'AI 連結': 'Links the AI added', 'はてな': 'Hatena',
   '規則では一致が見つからない': 'The rules find nothing in common', '根拠のデータがありません': 'No basis in the data', '規則': 'Rules', '自分': 'Me', '社': 'outlets', '読込中です': 'Loading',
   'ニュースがありません': 'No news', 'AI が付けた見出し': 'A title the AI wrote', '国内・海外・官公庁の見出し': 'Headlines of Japan, abroad and the ministries',
   '地方紙・小さな媒体だけのニュース': 'News of local and small outlets only', '海外だけのニュース': 'News of outlets abroad only', '暮らしのラベル': 'Daily-life label',
@@ -132,7 +138,9 @@ export const EN = {
   // app:end
 };
 
-const map = (x) => (Object.prototype.hasOwnProperty.call(EN, x) ? EN[x] : null);
+// the headings come first from their one table (js/heads.js); the rest of the page's words from EN
+const own = Object.prototype.hasOwnProperty;
+const map = (x) => (own.call(HEAD_EN, x) ? HEAD_EN[x] : own.call(EN, x) ? EN[x] : null);
 const sub = (x) => { const t = map(x); return t == null ? x : t; };
 const SIDE = { 国内: 'Japan', 海外: 'Abroad', 官公庁: 'Ministries' };
 const PAT = [
@@ -176,6 +184,7 @@ const PAT = [
   [/^映像：(.+)$/, (m) => `Video: ${m[1]}`],
   [/^半径 (\d+) km$/, (m) => `Radius ${m[1]} km`],
   [/^判定できない (\d+) 媒体$/, (m) => `${m[1]} outlets undecided`],
+  [/^判定不能 (\d+)社$/, (m) => `${m[1]} outlets undecided`], [/^ほか (\d+) 社$/, (m) => `${m[1]} more`], [/^照合 (\d+) 社／全 (\d+) 社$/, (m) => `${m[1]} of ${m[2]} outlets compared`], [/^照合 (\d+) 社$/, (m) => `${m[1]} outlets compared`], [/^1 話あたり ([\d.]+) 社(?:（平均 ([\d.]+) 社）)?$/, (m) => `${m[1]} per story${m[2] ? ` (mean ${m[2]})` : ''}`],
   [/^届かない・更新なし (\d+)$/, (m) => `Unreachable or not updated ${m[1]}`],
   [/^注目ニュース (\d+)\/(\d+)$/, (m) => `Top news ${m[1]}/${m[2]}`],
   [/^バイアス度 (\d+)$/, (m) => `Bias score ${m[1]}`],

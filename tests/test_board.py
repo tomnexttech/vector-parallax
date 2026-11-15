@@ -277,5 +277,15 @@ class Politics(unittest.TestCase):
         self.assertIn("gazette", d["failed"])               # nothing from the gazette in this run: said, not filled
 
 
+class ForeignPoliticsTest(unittest.TestCase):
+    """国内政治 is Japan's own; another country's election from a desk of Japanese politics is 国際 (js/topics.js foreignPolitics)."""
+
+    def test_foreign_election_goes_to_kokusai(self):
+        for t in ["中間選挙の注目州・ミシガン", "米中間選挙、民主党が下院を奪還", "米アラスカ州知事選で民主党の37歳新人が勝利"]:
+            self.assertTrue(board.foreign_politics(t), t)
+        for t in ["衆院選の投票率が過去最低", "首相が国会で答弁", "東京都知事選の告示", "九州の知事が会談", "米価の高騰で知事が要望"]:
+            self.assertFalse(board.foreign_politics(t), t)
+
+
 if __name__ == "__main__":
     unittest.main()

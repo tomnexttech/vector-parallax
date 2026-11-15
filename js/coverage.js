@@ -10,13 +10,17 @@
  *   gapsOf(row)                    -> { have, none, na }
  *   createCoverage({ h })          -> { node(cov, opt), table(cov, opt), words(cov) }
  */
+import { HEAD, FIND_BOARD } from './heads.js';
+
 export const KIND_JA = { who: '誰', what: '何', when: 'いつ', where: 'どこ', num: '数', why: '理由', react: '反応', next: '今後' };
 export const SIDE_JA = { jp: '国内', intl: '海外', gov: '官公庁' };
 export const LEAD_ROWS = 7;
 export const FIND_KINDS = ['only_side', 'word_choice', 'num_diff', 'lead_differs', 'first_gap'];
-export const FIND_JA = { only_side: '載せた点', word_choice: '言葉の選び方', num_diff: '数', lead_differs: '見出しの最初の語', first_gap: '最初の時刻' };
+export const FIND_JA = { only_side: HEAD['find.only'], word_choice: HEAD['find.word'], num_diff: HEAD['find.num'], lead_differs: HEAD['find.lead'], first_gap: HEAD['find.first'] };
+/** the labels the board's sentences may still start with (parallax/coverage.py writes 見出しの最初の語：…): cut there too (js/heads.js) */
+const FIND_OLD = FIND_BOARD;
 /** the sentence under its label: a sentence that starts with the label's own words (見出しの最初の語：…) loses them there, and keeps them on the first card */
-export const unlabel = (f) => { const l = FIND_JA[f && f.kind], t = String((f && f.text) || ''); return l && t.startsWith(l + '：') ? t.slice(l.length + 1) : t; };
+export const unlabel = (f) => { const t = String((f && f.text) || ''), k = f && f.kind; for (const l of [FIND_JA[k], FIND_OLD[k]]) if (l && t.startsWith(l + '：')) return t.slice(l.length + 1); return t; };
 /** the words a finding may never use (CONTRACT 4.7: what is not in the collected headlines is not "not reported") */
 const SILENT = /報じなかった|報じていない|報じず|報じられなかった|報道しなかった|報道していない|報道せず|伝えなかった|伝えていない|黙殺|did not report|didn't report|not reported by|failed to report|no coverage/i;
 /** the rows named by a word of the report itself: the narrow table keeps only a mark in the cell (the word is the row's name) */
@@ -79,7 +83,9 @@ export function leadRows(cov, n = LEAD_ROWS) {
 
 const isEn = (s) => /^[\x00-\x7f]+$/.test(s);
 
-export function createCoverage({ h }) {
+export function createCoverage({ h, onOutlet = null }) {
+  // an outlet's name at the head of its column opens 媒体の特徴 when the page gives a way to (js/traits.js)
+  const head = (o) => (onOutlet ? h('button', { type: 'button', class: 'cv-om', title: '媒体の特徴', on: { click: () => onOutlet(o.name) } }, o.name) : h('b', { text: o.name }));
   /** the sentence the outlet published, cut at the word: before, the word (marked), after */
   const mark = (text, key) => {
     const i = key ? text.indexOf(key) : -1;
@@ -102,14 +108,14 @@ export function createCoverage({ h }) {
   function table(cov, { rows } = {}) {
     const list = rows || cov.rows;
     return h('table', { class: 'cv-t' },
-      h('thead', null, h('tr', null, h('th', { scope: 'col', class: 'cv-c' }, h('span', { class: 'sr', text: '内容の点' })),
-        cov.outlets.map((o) => h('th', { scope: 'col', data: { side: o.side } }, h('b', { text: o.name }), o.desc ? null : h('small', { text: '見出しのみ' }))))),
+      h('thead', null, h('tr', null, h('th', { scope: 'col', class: 'cv-c' }, h('span', { class: 'sr', text: '項目' })),
+        cov.outlets.map((o) => h('th', { scope: 'col', data: { side: o.side } }, head(o), o.desc ? null : h('small', { text: '見出しのみ' }))))),
       h('tbody', null, list.map((r) => h('tr', { data: { k: r.k } }, label(r), r.c.map((c, i) => cell(c, cov.outlets[i], TERM_KINDS.includes(r.k)))))));
   }
   /** the choice of words: one line per thing, each word the outlets used for it */
   function words(cov) {
     if (!cov.words.length) return null;
-    return h('div', { class: 'cv-w' }, h('h4', { text: '言い方の違い' }), h('ul', null, cov.words.map((w) => h('li', null, h('b', { text: w.t }),
+    return h('div', { class: 'cv-w' }, h('h4', { text: '言い回し' }), h('ul', null, cov.words.map((w) => h('li', null, h('b', { text: w.t }),
       h('span', { class: 'cv-v' }, w.v.map((x) => h('span', { class: 'cv-x' },
         h('span', { class: 'cv-wd', lang: isEn(x.w) ? 'en' : null, text: x.w }),
         h('i', { class: 'cv-d', 'aria-hidden': 'true' }, x.o.slice(0, 6).map((i) => h('i', { data: { side: cov.outlets[i].side } }))),
@@ -119,7 +125,7 @@ export function createCoverage({ h }) {
   function findings(cov) {
     const list = cov && Array.isArray(cov.findings) ? cov.findings : [];
     if (!list.length) return null;
-    return h('div', { class: 'cv-w cv-f' }, h('h4', { text: '違い' }), h('ul', null, list.map((f, i) => h('li', { data: { kind: f.kind } }, i && list[i - 1].kind === f.kind ? null : h('b', { text: FIND_JA[f.kind] }), h('span', { text: unlabel(f) })))));   // a label once for the sentences of one kind
+    return h('div', { class: 'cv-w cv-f' }, h('h4', { text: HEAD['find.title'] }), h('ul', null, list.map((f, i) => h('li', { data: { kind: f.kind } }, i && list[i - 1].kind === f.kind ? null : h('b', { text: FIND_JA[f.kind] }), h('span', { text: unlabel(f) })))));   // a label once for the sentences of one kind
   }
   /** the sign that the table runs on to the right: the outlets that are not wholly in view are counted, the right edge fades (css), the label sits above the table.
    *  It is measured on the page (the sizes are only known there), after each paint, on a scroll and on a resize; without a page (a test) nothing is measured and nothing is shown. */
@@ -133,6 +139,7 @@ export function createCoverage({ h }) {
       wrap.toggleAttribute('data-over', over);
       wrap.toggleAttribute('data-more', rest > 0);
       wrap.toggleAttribute('data-left', box.scrollLeft > 2);
+      wrap.toggleAttribute('data-end', over && box.scrollLeft + box.clientWidth >= box.scrollWidth - 2);   // at the end: no fade over the last column
       if (rest > 0 && rest !== shown) { shown = rest; hint.textContent = `→ あと ${rest} 社`; }
     };
     box.addEventListener('scroll', measure, { passive: true });
@@ -140,7 +147,7 @@ export function createCoverage({ h }) {
     return () => { if (ro) { ro.disconnect(); ro.observe(box); if (box.firstElementChild) ro.observe(box.firstElementChild); } measure(); };   // the table itself grows when the fonts come in
   };
   /** the whole card: the table (the lead rows, the rest behind a button) and the choice of words */
-  function node(cov, { n = LEAD_ROWS } = {}) {
+  function node(cov, { n = LEAD_ROWS, total = null } = {}) {
     const lead = leadRows(cov, n), more = cov.rows.length - lead.length;
     const box = h('div', { class: 'cv-sc', role: 'region', tabindex: '0', 'aria-label': '媒体の比べの表（横に流せます）' });
     const hint = h('p', { class: 'cv-hint', 'aria-hidden': 'true' });
@@ -151,9 +158,11 @@ export function createCoverage({ h }) {
     paint();
     const hasNa = cov.rows.some((r) => r.c.some((x) => x === null));
     const btn = more > 0 ? h('button', { type: 'button', class: 'cv-more', 'aria-expanded': 'false', on: { click: () => { all = !all; btn.setAttribute('aria-expanded', String(all)); btn.textContent = all ? '行を減らす' : `残り ${more} 行を見る`; paint(); } } }, `残り ${more} 行を見る`) : null;
-    return h('section', { class: 'cov', 'aria-label': '媒体の比べ' },
-      h('h3', { class: 'st-h', data: { st: 'cv' } }, '媒体の比べ',
-        h('span', { class: 'cv-lg' }, h('span', { class: 'on', text: '出ている' }), h('span', { class: 'off', text: '見出しと要旨には出ていない' }), hasNa ? h('span', { class: 'na', text: '照合なし' }) : null)),
+    return h('section', { class: 'cov', 'aria-label': '媒体比較' },
+      h('h3', { class: 'st-h', data: { st: 'cv' } }, '媒体比較',
+        h('span', { class: 'cv-n num', title: '行の「3/7」は、同じ言語で照合した社のうち、その語が見出しか要旨に出ている社の数' },
+          Number.isInteger(total) && total > cov.outlets.length ? `照合 ${cov.outlets.length} 社／全 ${total} 社` : `照合 ${cov.outlets.length} 社`),
+        h('span', { class: 'cv-lg' },h('span', { class: 'on', text: '出ている' }), h('span', { class: 'off', text: '見出しと要旨には出ていない' }), hasNa ? h('span', { class: 'na', text: '照合なし' }) : null)),
       findings(cov), wrap, btn, words(cov));
   }
   return { node, table, words, findings };

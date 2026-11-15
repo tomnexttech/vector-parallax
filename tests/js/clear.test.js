@@ -91,5 +91,5 @@ test('1, 7, 8, 9, 6: the first visit stays on the card; 規則; the orb is a but
   assert.equal(ORDER_JA.all, 'PARALLAX');
   assert.match(app, /pop && hbOf\(e, HX\.reaction\)/, 'the bookmarks beside a row of 人気順');
   assert.doesNotMatch(app, /規則では一致が見つからない|規則の束 /, '5: the sheet speaks no inside words');
-  assert.match(app, /AI が足したつながり/);
+  assert.match(app, /AI 連結/);
 });

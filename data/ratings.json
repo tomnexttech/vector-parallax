@@ -1,0 +1,23 @@
+{
+  "note": "外部の評価（参考）。媒体の特徴の面（js/traits.js）に、出典と確かめた日付を添えて並べるだけ。PARALLAX の数とは混ぜない。各行は一次の頁（Media Bias/Fact Check）を開いて確かめた値だけを、頁に書かれた表記のまま持つ。AllSides は頁が自動の取得を断った（403）ため、確かめられず載せていない。",
+  "checked": "2026-11-15",
+  "sources": {
+    "mbfc": { "name": "Media Bias/Fact Check", "url": "https://mediabiasfactcheck.com/" }
+  },
+  "bias_ja": { "LEAST BIASED": "偏り最小", "LEFT-CENTER": "中道左派", "RIGHT-CENTER": "中道右派", "LEFT": "左派", "RIGHT": "右派" },
+  "fact_ja": { "VERY HIGH": "非常に高い", "HIGH": "高い", "MOSTLY FACTUAL": "おおむね事実", "MIXED": "混在", "LOW": "低い" },
+  "outlets": {
+    "Reuters": [{ "src": "mbfc", "bias": "LEAST BIASED", "factual": "VERY HIGH", "url": "https://mediabiasfactcheck.com/reuters/", "updated": "2026-04-10", "checked": "2026-11-15" }],
+    "BBC": [{ "src": "mbfc", "bias": "LEAST BIASED", "factual": "MOSTLY FACTUAL", "url": "https://mediabiasfactcheck.com/bbc/", "updated": "2026-04-09", "checked": "2026-11-15" }],
+    "Financial Times": [{ "src": "mbfc", "bias": "LEAST BIASED", "factual": "HIGH", "url": "https://mediabiasfactcheck.com/financial-times/", "updated": "2024-12-15", "checked": "2026-11-15" }],
+    "WSJ": [{ "src": "mbfc", "bias": "RIGHT-CENTER", "factual": "MOSTLY FACTUAL", "url": "https://mediabiasfactcheck.com/wall-street-journal/", "updated": "2025-07-14", "checked": "2026-11-15" }],
+    "AP": [{ "src": "mbfc", "bias": "LEFT-CENTER", "factual": "HIGH", "url": "https://mediabiasfactcheck.com/associated-press/", "updated": "2026-04-09", "checked": "2026-11-15" }],
+    "The Guardian": [{ "src": "mbfc", "bias": "LEFT-CENTER", "factual": "HIGH", "url": "https://mediabiasfactcheck.com/the-guardian/", "updated": "2025-09-26", "checked": "2026-11-15" }],
+    "CNBC": [{ "src": "mbfc", "bias": "LEAST BIASED", "factual": "HIGH", "url": "https://mediabiasfactcheck.com/cnbc/", "updated": "2026-10-30", "checked": "2026-11-15" }],
+    "Bloomberg": [{ "src": "mbfc", "bias": "LEFT-CENTER", "factual": "MOSTLY FACTUAL", "url": "https://mediabiasfactcheck.com/bloomberg/", "updated": "2026-04-09", "checked": "2026-11-15" }],
+    "Al Jazeera": [{ "src": "mbfc", "bias": "LEFT-CENTER", "factual": "MIXED", "url": "https://mediabiasfactcheck.com/al-jazeera/", "updated": "2026-04-09", "checked": "2026-11-15" }],
+    "The Economist": [{ "src": "mbfc", "bias": "LEAST BIASED", "factual": "HIGH", "url": "https://mediabiasfactcheck.com/the-economist/", "updated": "2024-12-06", "checked": "2026-11-15" }],
+    "SCMP": [{ "src": "mbfc", "bias": "LEFT-CENTER", "factual": "MIXED", "url": "https://mediabiasfactcheck.com/south-china-morning-post/", "updated": "2024-11-22", "checked": "2026-11-15" }],
+    "CNN": [{ "src": "mbfc", "bias": "LEFT-CENTER", "factual": "MOSTLY FACTUAL", "url": "https://mediabiasfactcheck.com/cnn/", "updated": "2026-07-11", "checked": "2026-11-15", "note_ja": "評価の対象は cnn.com。PARALLAX の CNN は日本版の CNN.co.jp" }]
+  }
+}

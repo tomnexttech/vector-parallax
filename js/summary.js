@@ -38,7 +38,7 @@ export function summaryLabel(sm) {
 }
 
 // 詳しい要約（story.brief）。欄は 4 つ。空の欄と、中身が「伝えられていない」の欄は行ごと出さない。出せる行が一つも無ければ要点の枠ごと出さない（null）
-export const BRIEF_ROWS = [['what_ja', '何が起きたか'], ['background_ja', '経緯'], ['views_ja', '伝え方の違い'], ['next_ja', '今後の焦点']];
+export const BRIEF_ROWS = [['what_ja', '何が起きたか'], ['background_ja', '経緯'], ['views_ja', '伝え方'], ['next_ja', '今後の焦点']];
 export const BRIEF_UNKNOWN = '伝えられていない';
 
 export function briefOf(story) {

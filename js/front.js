@@ -13,7 +13,10 @@
  * The reaction words: data/coverage.json react_tone holds the same two lists (tests/js/front.test.js checks they agree). A word is
  * counted where a headline carries it; the page says "見出しの語の数" under the bar and shows no bar with fewer than TONE_MIN words. */
 
-export const FRONT_TABS = [['gap', '日本と海外の差'], ['one', '片側だけの話'], ['bias', '偏りの大きい話']];
+import { HEAD } from './heads.js';
+
+// the ways in are short nouns from the one table of headings (js/heads.js, docs/copy-canon.md)
+export const FRONT_TABS = [['gap', HEAD['front.gap']], ['jp', HEAD['front.jp']], ['intl', HEAD['front.intl']], ['bias', HEAD['front.bias']]];
 export const TONE_NEG = ['抗議', '反発', '批判', '非難', '反対', '懸念', '憂慮', '反論', '警告', '不満', '怒り', '追及', '否定', '拒否'];
 export const TONE_POS = ['歓迎', '支持'];
 export const TONE_NEG_EN = ['condemn', 'criticis', 'criticiz', 'protest', 'warned', 'concern', 'denied', 'rejected'];
@@ -114,7 +117,8 @@ export function paperOf(m) {
     const list = arr(m[k]).filter((it) => it && typeof it === 'object');
     const titles = list.map((it) => str(it.title)).filter(Boolean);
     const firstTs = list.map((it) => it.ts).filter(isNum).sort((a, b) => a - b)[0];
-    return { side: k, n: list.length, outlets: new Set(list.map(outletOf).filter(Boolean)).size, few: list.length < PAPER_MIN, words: k === 'gov' ? [] : arr(words[k]).slice(0, 5), wordsAll: k === 'gov' ? [] : arr(words[k]), titles, nums: numbersOf(titles), tone: toneOf(titles),
+    const names = [...new Set(list.map(outletOf).filter(Boolean))];
+    return { side: k, n: list.length, outlets: names.length, names, few: list.length < PAPER_MIN, words: k === 'gov' ? [] : arr(words[k]).slice(0, 5), wordsAll: k === 'gov' ? [] : arr(words[k]), titles, nums: numbersOf(titles), tone: toneOf(titles),
       first: isNum(firstTs) ? firstTs : null, heads: list.slice(0, PAPER_HEADS) };
   });
   const firsts = cols.filter((c) => c.first != null).sort((a, b) => a.first - b.first);
@@ -128,7 +132,22 @@ export function paperOf(m) {
 
 // ---------------------------------------------------------------- the DOM
 const SIDE_JA = { jp: '国内', intl: '海外', gov: '官公庁' };
-const SIDE_COL = { jp: '日本の報道', intl: '海外の報道', gov: '官公庁' };
+const SIDE_COL = { jp: HEAD['paper.jp'], intl: HEAD['paper.intl'], gov: HEAD['paper.gov'] };
+
+/** the reaction words of one side as a bar that swings from the middle: the words of 否定 to the left, of 肯定 to the right, each as
+ *  long as its count over the largest count of any side (so the sides compare). Counted words only; nothing is judged */
+export function toneBar(h, t, max) {
+  const m = Math.max(1, max || 0), w = (n) => `--w:${((n / m) * 100).toFixed(1)}%`;
+  return h('div', { class: 'pp-tone2' },
+    h('div', { class: 'pp-tsw', role: 'img', 'aria-label': `否定の語 ${t.nNeg}、肯定の語 ${t.nPos}` },
+      h('b', { class: 'num neg', text: String(t.nNeg) }),
+      h('span', { class: 'pp-th neg', 'aria-hidden': 'true' }, h('i', { style: w(t.nNeg) })),
+      h('span', { class: 'pp-th pos', 'aria-hidden': 'true' }, h('i', { style: w(t.nPos) })),
+      h('b', { class: 'num pos', text: String(t.nPos) })),
+    h('p', { class: 'pp-tk', 'aria-hidden': 'true' }, h('span', { text: '否定' }), h('span', { text: '肯定' })),
+    h('p', { class: 'pp-tw' }, h('span', { text: t.neg.slice(0, 3).map((x) => `${x.w} ${x.n}`).join('・') || '—' }), h('span', { text: t.pos.slice(0, 3).map((x) => `${x.w} ${x.n}`).join('・') || '—' })),
+    h('small', { class: 'pp-tn', text: '見出しの語の数' }));
+}
 
 /** the value's own time, red when old (docs: data-freshness) */
 function stamp(h, gen, now, clock, short) {
@@ -137,7 +156,13 @@ function stamp(h, gen, now, clock, short) {
   return h('time', { class: 'fr-at num' + (old ? ' stale' : ''), text: `${old && short ? short(gen) : clock(gen)} の値` });   // an old value carries its date
 }
 
-/** o = { h, tab, field, fields, counts: { gap: '国内 62%', one: '…', bias: '…' }, onTab(id), onField(f|null) } */
+/** a tab's number: a string, or parts [{ k: '国内', v: '30%', side: 'jp' }] whose figure carries the side's colour */
+function countEl(h, c) {
+  if (!Array.isArray(c)) return h('b', { class: 'fr-v num', text: c });
+  return h('span', { class: 'fr-v' }, c.map((x) => h('span', { class: 'fr-vp', data: x.side ? { side: x.side } : null }, x.k ? h('span', { class: 'k', text: x.k }) : null, h('b', { class: 'num', text: x.v }), x.u ? h('span', { class: 'u', text: x.u }) : null)));
+}
+
+/** o = { h, tab, field, fields, counts: { gap: '国内 62%' | parts, one: …, bias: … }, onTab(id), onField(f|null) } */
 export function renderFront(root, o) {
   if (!root) return;
   const { h } = o;
@@ -152,11 +177,21 @@ export function renderFront(root, o) {
   };
   const tabs = h('div', { class: 'fr-tabs', role: 'tablist', 'aria-label': '何を見るか' }, FRONT_TABS.map(([id, ja]) => h('button', {
     type: 'button', role: 'tab', class: 'fr-tab', id: `fr-t-${id}`, 'aria-selected': String(o.tab === id), 'aria-controls': 'gap', tabindex: o.tab === id ? '0' : '-1', data: { tab: id },
-    on: { click: () => o.onTab(id), keydown: key } }, h('span', { class: 'fr-k', text: ja }), o.counts && o.counts[id] ? h('b', { class: 'fr-v num', text: o.counts[id] }) : null)));
+    on: { click: () => o.onTab(id), keydown: key } }, h('span', { class: 'fr-k', text: ja }), o.counts && o.counts[id] && o.counts[id].length ? countEl(h, o.counts[id]) : null)));
   const chips = h('div', { class: 'fr-chips', role: 'group', 'aria-label': '分野' },
     h('button', { type: 'button', class: 'fr-chip', 'aria-pressed': String(!o.field), on: { click: () => o.onField(null) } }, 'すべて'),
     arr(o.fields).map((f) => h('button', { type: 'button', class: 'fr-chip', 'aria-pressed': String(o.field === f), on: { click: () => o.onField(f) } }, f)));
   root.replaceChildren(tabs, chips);
+}
+
+/** a row of the list of one side: the headline in the page's language first. A translation (the AI's) carries 訳 and the published
+ *  headline under it in the smallest step; a headline left in English carries 英語 (docs/design-1115b.md §5) */
+function headRow(h, o, e) {
+  const hd = o.headOf ? o.headOf(e) : { text: o.titleOf(e) };
+  return h('button', { type: 'button', class: 'fr-row' + (hd.mark ? ' fr-hd' : ''), on: { click: () => o.pick(e.key) } },
+    hd.mark ? h('span', { class: 'fr-mk', text: hd.mark }) : null,
+    h('span', { class: 'fr-rt', lang: hd.lang || null, text: cleanTitle(hd.text) }),
+    hd.orig ? h('small', { class: 'fr-orig', lang: hd.origLang || null, text: cleanTitle(hd.orig) }) : null);
 }
 
 /** the panel under the card. o = { h, tab, field, gap, one: [{ side, ja, events }], bias: [{ key, title, score }], gen, now, clock,
@@ -164,39 +199,44 @@ export function renderFront(root, o) {
 export function renderGap(root, o) {
   if (!root) return;
   const { h } = o;
-  let title = '', body = null, den = '';
-  if (o.tab === 'one') {
-    title = o.field ? `片側だけの話・${o.field}` : '片側だけの話';
-    const gs = arr(o.one).filter((g) => g.side === 'jp' || g.side === 'intl');
-    body = gs.some((g) => g.events.length) ? h('div', { class: 'fr-one' }, gs.map((g) => h('section', { class: 'fr-og', data: { side: g.side } },
-      h('h3', null, h('span', { text: g.ja }), h('b', { class: 'num', text: `${g.events.length} 件` })),
-      g.events.length ? h('ul', null, g.events.slice(0, 5).map((e) => h('li', null, h('button', { type: 'button', class: 'fr-row', on: { click: () => o.pick(e.key) } }, cleanTitle(o.titleOf(e))))))
-        : h('p', { class: 'fr-empty', text: `${g.ja}の話は今ありません。` }))))
-      : h('p', { class: 'fr-empty', text: '片側だけの話は今ありません。分野を替えると出ることがあります。' });
+  let title = '', body = null, den = '', tot = null;
+  if (o.tab === 'jp' || o.tab === 'intl') {
+    // one side's own news: the stories only that side's outlets carried, most outlets first
+    title = HEAD[`front.${o.tab}`];
+    const g = arr(o.one).find((x) => x.side === o.tab) || { events: [] };
+    den = g.events.length ? `${g.events.length} 件` : '';
+    body = g.events.length ? h('div', { class: 'fr-one', data: { side: o.tab } }, h('ul', null, g.events.slice(0, 12).map((e) => h('li', null, headRow(h, o, e)))))
+      : h('p', { class: 'fr-empty', text: o.field ? `${o.field}では 0 件です。分野を「すべて」に戻すと出ることがあります。` : '今は 0 件です。' });
   } else if (o.tab === 'bias') {
-    title = o.field ? `偏りの大きい話・${o.field}` : '偏りの大きい話';
+    title = HEAD['front.bias'];
     const list = arr(o.bias);
     body = list.length ? h('ol', { class: 'fr-bias' },
-      h('li', { class: 'fr-bh', 'aria-hidden': 'true' }, h('span', { text: '話' }), h('span', { text: 'バイアス度（0〜100）' })),
+      h('li', { class: 'fr-bh', 'aria-hidden': 'true' }, h('span', { text: HEAD['panel.topic'] }), h('span', { text: HEAD['panel.score'] })),
       list.map((x) => h('li', null, h('button', { type: 'button', class: 'fr-row fr-br', 'aria-label': `${cleanTitle(x.title)}、バイアス度 ${x.score}`, on: { click: () => o.detail(x.key) } },
         h('span', { class: 'fr-bt', text: cleanTitle(x.title) }),
         h('span', { class: 'fr-bm', 'aria-hidden': 'true' }, h('i', { style: `width:${Math.max(0, Math.min(100, x.score))}%` })),
         h('b', { class: 'num', text: String(x.score) })))))
       : h('p', { class: 'fr-empty', text: '偏りを測れる話はまだありません。' });
   } else {
-    title = o.field ? `日本と海外の差・${o.field}` : '日本と海外の差';
+    title = o.field ? HEAD['panel.events'] : HEAD['panel.fields'];
     const g = o.gap || { rows: [] };
     body = g.rows.length ? h('div', { class: g.rows.some((r) => r.key) ? 'fr-gap ev' : 'fr-gap', role: 'img', 'aria-label': g.rows.map((r) => `${r.field} 国内 ${r.jp} 件、海外 ${r.intl} 件`).join('。') },
-      h('p', { class: 'fr-ax', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'fr-axm' }, h('span', { text: '◀ 国内が多い' }), h('span', { text: '海外が多い ▶' })), h('span')),
+      h('p', { class: 'fr-ax', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'fr-axm' }, h('span', { data: { side: 'jp' }, text: '国内寄り' }), h('span', { data: { side: 'intl' }, text: '海外寄り' })), h('span', { class: 'fr-nh', text: '国内' }), h('span', { class: 'fr-nh', text: '海外' })),
       g.rows.map((r) => h('div', { class: 'fr-gr', data: { lean: r.d < 0 ? 'jp' : r.d > 0 ? 'intl' : 'even' } },
         r.key ? h('button', { type: 'button', class: 'fr-gl ev', title: cleanTitle(r.field), on: { click: () => o.pick(r.key) } }, cleanTitle(r.field)) : h('span', { class: 'fr-gl', text: r.field }),
         h('span', { class: 'fr-gb', 'aria-hidden': 'true' }, h('i', { data: { side: r.d < 0 ? 'jp' : 'intl' }, style: `--w:${(Math.abs(r.d) * 50).toFixed(1)}%` })),
-        h('span', { class: 'fr-gn num', text: `国内 ${r.jp} 件 ・ 海外 ${r.intl} 件` }))))
+        h('span', { class: 'fr-gn num' + (r.jp >= r.intl ? ' hi' : ''), text: String(r.jp) }), h('span', { class: 'fr-gn num' + (r.intl >= r.jp ? ' hi' : ''), text: String(r.intl) }))))
       : h('p', { class: 'fr-empty', text: '日本と海外を比べられる話は今ありません。' });
     den = g.rows.length ? `記事 ${(g.jp + g.intl).toLocaleString('ja-JP')} 件` : '';
+    // the share over all the rows: one bar of the two sides under the table
+    const sh = jpShare(g);
+    if (sh != null) tot = h('div', { class: 'fr-tot', role: 'img', 'aria-label': `国内 ${sh}%、海外 ${100 - sh}%` },
+      h('p', { class: 'fr-tl', 'aria-hidden': 'true' }, h('span', { data: { side: 'jp' } }, h('span', { class: 'k', text: '国内' }), h('b', { class: 'num', text: `${sh}%` })),
+        h('span', { class: 'fr-tm', text: o.field || '全分野' }), h('span', { data: { side: 'intl' } }, h('span', { class: 'k', text: '海外' }), h('b', { class: 'num', text: `${100 - sh}%` }))),
+      h('span', { class: 'fr-tb', 'aria-hidden': 'true' }, h('i', { data: { side: 'jp' }, style: `width:${sh}%` }), h('i', { data: { side: 'intl' }, style: `width:${100 - sh}%` })));
   }
   const foot = h('p', { class: 'fr-foot' }, den ? h('span', { class: 'num', text: den }) : null, stamp(h, o.gen, o.now, o.clock, o.short));
-  root.replaceChildren(h('header', { class: 'fr-h' }, h('h2', { id: 'gap-h', text: title })), body, foot);
+  root.replaceChildren(h('header', { class: 'fr-h' }, h('h2', { id: 'gap-h', text: title })), body, tot, foot);
   root.setAttribute('aria-labelledby', 'gap-h');
 }
 
@@ -205,34 +245,40 @@ export function renderPaper(o) {
   const { h, paper } = o;
   if (!paper || !paper.cols.length) return null;
   const cols = paper.cols;
+  const tmax = Math.max(0, ...cols.map((c) => Math.max(c.tone.nNeg, c.tone.nPos)));
+  const nameEl = (name) => (o.openOutlet && name !== '—' ? h('button', { type: 'button', class: 'pp-om', title: '媒体の特徴', on: { click: () => o.openOutlet(name) } }, name) : h('b', { text: name }));
+  const outletEl = (it) => nameEl(o.outlet(it) || '—');
+  // the reports of the two sides may fall on two days: then every time carries its date (00:59 beside 18:32 alone reads the wrong way round)
+  const when = o.when || o.clock;
+  const tsAll = cols.flatMap((c) => [c.first, ...c.heads.map((it) => it.ts)]).filter(isNum);
+  const day = (ts) => String(when(ts)).split(' ')[0];
+  const clockOf = tsAll.length && new Set(tsAll.map(day)).size > 1 && o.when ? o.when : o.clock;
   const cell = (c, k) => {
     if (c.few && k !== 'first' && k !== 'heads') return h('p', { class: 'pp-few', text: `記事 ${c.n} 件` });
     if (k === 'words') return c.words.length ? h('ul', { class: 'pp-ws' }, c.words.map((x) => h('li', null, x.w, h('small', { class: 'num', text: x.n })))) : h('p', { class: 'pp-none', text: '—' });
     if (k === 'nums') return c.nums.length ? h('ul', { class: 'pp-ns' }, c.nums.map((x) => h('li', { class: x.only ? 'only' : null, title: x.only ? 'ほかの側の見出しに無い数字' : null }, x.text))) : h('p', { class: 'pp-none', text: '見出しに数字はありません' });
     if (k === 'tone') {
       const t = c.tone, n = t.nNeg + t.nPos;
-      if (!n) return h('p', { class: 'pp-none', text: '見出しに反応の語はありません' });
+      if (!n) return h('p', { class: 'pp-none', text: '反応語なし' });
       if (n < TONE_MIN) return h('p', { class: 'pp-none pp-few-w', text: [...t.neg, ...t.pos].map((x) => `${x.w} ${x.n}`).join('・') });
-      return h('div', { class: 'pp-tone' },
-        h('span', { class: 'pp-tb', role: 'img', 'aria-label': `否定の側の語 ${t.nNeg}、肯定の側の語 ${t.nPos}` },
-          h('i', { class: 'neg', style: `--w:${((t.nNeg / n) * 50).toFixed(1)}%` }), h('i', { class: 'pos', style: `--w:${((t.nPos / n) * 50).toFixed(1)}%` })),
-        h('span', { class: 'pp-tl' }, h('span', null, t.neg.slice(0, 3).map((x) => `${x.w} ${x.n}`).join('・') || '—'), h('span', null, t.pos.slice(0, 3).map((x) => `${x.w} ${x.n}`).join('・') || '—')),
-        h('small', { class: 'pp-tn', text: '見出しの語の数' }));
+      return toneBar(h, t, tmax);
     }
-    if (k === 'first') return h('p', { class: 'pp-first' }, h('b', { class: 'num', text: c.first != null ? o.clock(c.first) : '—' }), c.ahead ? h('span', { class: 'pp-ahead', text: `（${o.span(c.ahead)} 先）` }) : null);
-    return h('ol', { class: 'pp-hs' }, c.heads.map((it) => { const link = o.safeUrl ? o.safeUrl(it.link) : null; return h('li', null,
-      h('span', { class: 'pp-ho' }, h('b', { text: o.outlet(it) || '—' }), isNum(it.ts) ? h('span', { class: 'num', text: o.clock(it.ts) }) : null),
-      link ? h('a', { href: link, target: '_blank', rel: 'noopener noreferrer', lang: it.lang === 'en' ? 'en' : null, text: str(it.title) || '—' }) : h('span', { lang: it.lang === 'en' ? 'en' : null, text: str(it.title) || '—' })); }));
+    if (k === 'first') return h('p', { class: 'pp-first' }, h('b', { class: 'num', text: c.first != null ? clockOf(c.first) : '—' }), c.ahead ? h('span', { class: 'pp-ahead', text: `（${o.span(c.ahead)} 先）` }) : null);
+    const seen = new Set(c.heads.map((it) => o.outlet(it)).filter(Boolean)), rest = arr(c.names).filter((x) => !seen.has(x));
+    const restEl = rest.length ? h('p', { class: 'pp-rest' }, h('span', { class: 'k num', text: `ほか ${rest.length} 社` }), ...rest.flatMap((x, i) => [i ? '・' : '', nameEl(x)])) : null;
+    return h('div', { class: 'pp-hw' }, h('ol', { class: 'pp-hs' }, c.heads.map((it) => { const link = o.safeUrl ? o.safeUrl(it.link) : null; return h('li', null,
+      h('span', { class: 'pp-ho' }, outletEl(it), isNum(it.ts) ? h('span', { class: 'num', text: clockOf(it.ts) }) : null),
+      link ? h('a', { href: link, target: '_blank', rel: 'noopener noreferrer', lang: it.lang === 'en' ? 'en' : null, text: str(it.title) || '—' }) : h('span', { lang: it.lang === 'en' ? 'en' : null, text: str(it.title) || '—' })); })), restEl);
   };
-  const ROWS = [['words', '注目した語'], ['nums', '出てきた数字'], ['tone', '反応の語'], ['first', '報じ始め'], ['heads', '見出し']];
+  const ROWS = ['words', 'nums', 'tone', 'first', 'heads'].map((k) => [k, HEAD[`paper.${k}`]]);
   // the words of Japan and abroad in one figure across both columns: a word both sides used sits in the middle with a bar to each side
   // a row empty on every side is one line across the columns, not the same line twice
   const none = (k) => (cols.length < 2 || cols.some((c) => c.few) ? ''
     : k === 'nums' && cols.every((c) => !c.nums.length) ? 'どちらの見出しにも数字はありません'
-      : k === 'tone' && cols.every((c) => !(c.tone.nNeg + c.tone.nPos)) ? 'どちらの見出しにも反応の語はありません' : '');
+      : k === 'tone' && cols.every((c) => !(c.tone.nNeg + c.tone.nPos)) ? 'どちらの見出しにも反応語なし' : '');
   const wb = wordBars(paper);
   const wide = wb.length ? h('div', { class: 'pp-c pp-wide', role: 'cell', 'aria-label': wb.map((r) => `${r.w} 国内 ${r.jp}・海外 ${r.intl}`).join('、') },
-    h('p', { class: 'pp-wax', 'aria-hidden': 'true' }, h('span', { text: '◀ 日本の見出し' }), h('span'), h('span', { text: '海外の見出し ▶' })),
+    h('p', { class: 'pp-wax', 'aria-hidden': 'true' }, h('span', { text: '◀ 国内見出し' }), h('span'), h('span', { text: '海外見出し ▶' })),
     wb.map((r) => h('div', { class: 'pp-wr' + (r.jp && r.intl ? ' both' : ''), 'aria-hidden': 'true' },
       h('span', { class: 'pp-wn num', text: r.jp || '' }), h('span', { class: 'pp-wb jp', data: { side: 'jp' } }, h('i', { style: `--w:${((r.jp / wb.max) * 100).toFixed(1)}%` })),
       h('span', { class: 'pp-ww', text: r.w }),

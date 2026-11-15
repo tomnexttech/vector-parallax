@@ -67,7 +67,7 @@ export function createWall({ h, lk, dossier, lineIcon, headNode, measureOf, phot
   const biasChip = (e) => { const b = biasOf(e); return b && b.ok ? lk(dossier.biasMini(b), () => onOpen(e.key), 'バイアス度の内訳を見る', 'bi-chip') : null; };
   function related(e, max) {
     const rel = relatedOf(e).slice(0, max);
-    return rel.length ? h('div', { class: 'mn-rel' }, h('span', { class: 'k', text: '関連ニュース' }), h('ul', null, rel.map((x) => h('li', null, lk(x.text, () => onPress(x.key), 'この出来事を開く'))))) : null;
+    return rel.length ? h('div', { class: 'mn-rel' }, h('span', { class: 'k', text: '関連' }), h('ul', null, rel.map((x) => h('li', null, lk(x.text, () => onPress(x.key), 'この出来事を開く'))))) : null;
   }
 
   function card(e, level, sel) {

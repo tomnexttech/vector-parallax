@@ -1,5 +1,5 @@
 /* hero — the first card of the home: one event, its headline, the outlets of each side, the first report, one bar of the three sides'
- * shares (shareOf) and two buttons, 比べる and 次のニュース (docs/design-1115.md §3). The findings and the columns of what one side's
+ * shares (shareOf), 比べる and 読み上げ, and a pager (1 / 5) for the next news (docs/design-1115b.md §3). The findings and the columns of what one side's
  * headlines carry are still made here (localFindings, pointsOf, phrasesOf, dotsOf) for the screens that show them.
  *
  * The card comes from data/hero.json (parallax-hero/1, docs/final-plan-20261111.md 3.5), which is small and read before latest.json.
@@ -371,15 +371,18 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
       h('div', { class: 'hr-main' },
         h('p', { class: 'hr-meta' + (old ? ' stale' : '') }, h('span', { class: 'hr-lab', text: '注目ニュース' }),
           isNum(meta.gen) ? h('time', { class: 'num', text: `${short(meta.gen)} 時点` }) : h('span', { class: 'stale', text: '未取得' }),
-          n > 1 ? h('span', { class: 'hr-pos num', 'aria-live': 'polite', text: `${i + 1} / ${n}` }) : null),
+          n > 1 ? h('span', { class: 'hr-pager' },
+            h('button', { type: 'button', class: 'hr-pg hr-prev', 'aria-label': '前のニュース', title: '前のニュース（←）', on: { click: () => step(-1) } }, '‹'),
+            h('span', { class: 'hr-pos num', 'aria-live': 'polite', text: `${i + 1} / ${n}` }),
+            h('button', { type: 'button', class: 'hr-pg hr-next', 'aria-label': '次のニュース', title: '次のニュース（→）', on: { click: () => step(1) } }, '›')) : null),
         h('h2', { class: 'hr-t', id: 'hr-t', lang: lead.lang === 'en' ? 'en' : null, text: lead.text }),
         h('p', { class: 'hr-facts' }, SIDES3.map((k) => h('span', { class: 'hr-fc' + (p.sides[k].outlets ? '' : ' zero'), data: { side: k } }, h('span', { class: 'k', text: SIDE_JA[k] }), h('b', { class: 'num', text: p.sides[k].outlets }), h('span', { class: 'u', text: '社' }))),
-          first ? h('span', { class: 'hr-first' }, h('span', { class: 'k', text: '報じ始め' }), h('b', { class: 'num', text: clock(first) })) : null),
+          first ? h('span', { class: 'hr-first' }, h('span', { class: 'k', text: '初報' }), h('time', { class: 'num', text: short(first) })) : null),
         sh.total ? h('div', { class: 'hr-share', role: 'img', 'aria-label': `このニュースの社の割合 ${lab}` }, h('span', { class: 'hr-sb', 'aria-hidden': 'true' }, SIDES3.map(seg)), h('span', { class: 'hr-sl num' }, h('span', { class: 'k', text: 'このニュース' }), lab)) : null,
+        // one main button (比べる); 読み上げ beside it as the second; the next news is the pager's (1 / 5), the arrow keys or a swipe
         h('div', { class: 'hr-acts' },
           h('button', { type: 'button', class: 'hr-b hr-go', on: { click: () => call('compare', p) } }, '比べる'),
-          n > 1 ? h('button', { type: 'button', class: 'hr-b hr-next', on: { click: () => step(1) } }, '次のニュース') : null)),
-      h('div', { class: 'hr-side' }, call('orbSlot', p) || null));
+          h('div', { class: 'hr-side' }, call('orbSlot', p) || null))));
   }
   let last = null;
   function paint() {
@@ -387,7 +390,9 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
     if (!picks.length) { root.hidden = true; root.replaceChildren(); last = null; call('change', null); return; }
     root.hidden = false;
     const p = picks[i];
-    root.replaceChildren(card(p));
+    const ph = call('photo', p);
+    const amb = ph && ph.url ? h('div', { class: 'hr-amb', 'aria-hidden': 'true', style: `background-image:url("${String(ph.url).replace(/"/g, '%22')}")` }) : null;
+    root.replaceChildren(...[amb, card(p)].filter(Boolean));
     last = { sid: p.sid, jp: p.sides.jp.outlets, intl: p.sides.intl.outlets };
     call('change', p);
   }
