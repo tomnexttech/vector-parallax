@@ -286,6 +286,16 @@ class FakeAI(unittest.TestCase):
         self.assertEqual(data["ai_run"]["dup_ids"], 6)
         self.assertFalse(any(s["ai"] and s["ai"]["headline_ja"] == "試験 二重" for s in data["stories"]))
 
+    def test_a_word_of_praise_drops_the_line_and_the_build_goes_on(self):
+        # 11-15: the first answer with 偉業 stopped the public build with a KeyError, because the count was new to run_ai
+        def edit(ans, doc):
+            for b in ans["blocks"]:
+                b["stories"][0]["headline_ja"] = "試験 偉業を達成"
+        data, _ = self.run_build(edit)
+        check_invariants(self, data)
+        self.assertEqual(data["ai_run"]["status"], "ok")
+        self.assertFalse(any(s["ai"] and "偉業" in s["ai"]["headline_ja"] for s in data["stories"]))
+
     def test_unassigned_ids_stay_with_their_rules(self):
         left = []
 

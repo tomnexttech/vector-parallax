@@ -701,7 +701,7 @@ def run_ai(requests, provider, prompt, items, now):
     """-> (block_results {bid: [...]} 答えのあった塊だけ, ai_run の一部)"""
     run = {"calls": 0, "calls_failed": 0, "errors": [], "blocks_sent": 0, "blocks_ok": 0, "calls_skipped": 0,
            "dropped_ids": 0, "dup_ids": 0, "unassigned_ids": 0, "flags_vetoed": 0, "quoted_fields": 0,
-           "report_words": 0, "silence_words": 0, "name_words": 0, "block_models": {}}
+           "report_words": 0, "silence_words": 0, "judgement_words": 0, "name_words": 0, "block_models": {}}
     results = {}
     for n, req in enumerate(requests):
         user_text = ai_mod.render_user_text(prompt, req["doc"])
@@ -722,7 +722,7 @@ def run_ai(requests, provider, prompt, items, now):
             run["errors"].extend(res["errors"])
             continue
         for k, v in res["counts"].items():
-            run[k] += v
+            run[k] = run.get(k, 0) + v              # a count the validator adds later starts at 0 here, never a KeyError
         for bid, stories in res["blocks"].items():            # 名の関門（§17）。固定語を含む欄を空にし、題が尽きた story は規則へ戻す
             run["name_words"] += gate_names_in_stories(stories)
             res["blocks"][bid] = _demote_headlineless(req, bid, stories)
