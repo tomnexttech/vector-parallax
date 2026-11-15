@@ -55,6 +55,11 @@ export function initDial({ doc = document, win = window } = {}) {
   const svg = el('svg', { viewBox: `0 0 ${SIZE} ${SIZE}`, width: SIZE, height: SIZE });
   box.append(read, svg);
   app.append(box, btn);
+  // the button steps aside while the page scrolls, so it never sits on the text being read, and comes back when the page rests
+  btn.title = 'ダイヤル（話題と出来事を回す）';
+  let rest = 0;
+  const aside = () => { if (open) return; btn.classList.add('away'); win.clearTimeout(rest); rest = win.setTimeout(() => btn.classList.remove('away'), 1400); };
+  if (doc.addEventListener) doc.addEventListener('scroll', aside, { capture: true, passive: true });
 
   let R = [], drag = null, open = false, last = 1, again = 0;
   const topics = () => [...doc.querySelectorAll('#pri-chips .chip')].map((b) => ({ el: b, t: textOf(b), n: ((b.querySelector('.n') || {}).textContent || '').trim(), on: b.getAttribute('aria-pressed') === 'true', off: b.disabled }));

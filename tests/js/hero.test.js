@@ -141,7 +141,7 @@ test('the page: the card has its place in the home, its files are in the shell, 
   }
 });
 
-test('the card on screen (11-15b): the headline, each side\'s outlets, one bar of the shares, 比べる as the one main button, a pager for the next news, the time of the data', () => {
+test('the card on screen (11-15b): the headline, each side\'s outlets, one bar of the shares, 詳細 as the one main button, a pager for the next news, the time of the data', () => {
   const made = [];
   const h = (tag, attrs, ...kids) => { const el = { tag, attrs: attrs || {}, kids: kids.flat(4).filter((k) => k != null && k !== false) }; made.push(el); return el; };
   const root = { hidden: true, replaceChildren() {} };
@@ -150,7 +150,7 @@ test('the card on screen (11-15b): the headline, each side\'s outlets, one bar o
   hero.render(pickHeroes([split, both], opt), { gen: T0, now: T0 + 60 });
   const text = (el) => (el && typeof el === 'object' ? (el.attrs.text != null ? String(el.attrs.text) : '') + el.kids.map(text).join('') : String(el));
   const buttons = made.filter((e) => e.tag === 'button' && /hr-b/.test(e.attrs.class));
-  assert.deepEqual(buttons.map(text), ['比べる'], 'one main button: the next news is the pager\'s, not a second button beside it');
+  assert.deepEqual(buttons.map(text), ['詳細'], 'one main button: the next news is the pager\'s, not a second button beside it');
   buttons[0].attrs.on.click();
   assert.deepEqual(seen, [['compare', 's1']]);
   const pg = made.filter((e) => e.tag === 'button' && /hr-pg/.test(e.attrs.class));

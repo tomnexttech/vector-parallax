@@ -41,6 +41,15 @@ export function summaryLabel(sm) {
 export const BRIEF_ROWS = [['what_ja', '何が起きたか'], ['background_ja', '経緯'], ['views_ja', '伝え方'], ['next_ja', '今後の焦点']];
 export const BRIEF_UNKNOWN = '伝えられていない';
 
+// words that praise or blame (data/prompt.json summary.judgement_ja, the same list). The AI may not add one: a line with such a word that no headline
+// of the event carries is not shown (a line published before the rule is cut here, at the page)
+export const JUDGE_WORDS = ['偉業', '快挙', '歴史的', '完璧', '惨敗', '圧勝', '衝撃', '見事', '残念', '素晴らしい', '画期的', '大失態', '異常な', '驚異'];
+const fold = (s) => String(s == null ? '' : s).normalize('NFKC').toLowerCase();
+export function judged(text, material) {
+  const t = fold(text), src = fold((Array.isArray(material) ? material : [material]).join(' '));
+  return JUDGE_WORDS.some((w) => t.includes(w) && !src.includes(w));
+}
+
 export function briefOf(story) {
   const b = isObj(story) ? story.brief : null;
   if (!isObj(b)) return null;

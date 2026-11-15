@@ -210,11 +210,11 @@ class Site(unittest.TestCase):
             (root / "js").mkdir()
             (root / "assets").mkdir()
             (root / "index.html").write_text("<html></html>", encoding="utf-8")
-            for f in ("latest.json", "recorded.json", "eval.json", "history.json", "withheld.json", "labels.json", "summary_cache.json"):
+            for f in ("latest.json", "recorded.json", "eval.json", "history.json", "withheld.json", "labels.json", "summary_cache.json", "ratings.json"):
                 (root / "data" / f).write_text('{"name_gate":1,"x":2}', encoding="utf-8")
             copied, missing = assemble_site.assemble(root, out)
             names = sorted(p.name for p in (out / "data").iterdir())
-            self.assertEqual(names, ["history.json", "labels.json", "latest.json"])
+            self.assertEqual(names, ["history.json", "labels.json", "latest.json", "ratings.json"])   # ratings.json: the page fetches it for the outside ratings of an outlet
             hist = json.loads((out / "data" / "history.json").read_text(encoding="utf-8"))
             self.assertEqual(sorted(hist), ["days", "n", "schema", "updated_at"])   # three numbers for the page, no keys and no words
             self.assertNotIn("name_gate", (out / "data" / "latest.json").read_text(encoding="utf-8"))

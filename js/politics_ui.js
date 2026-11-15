@@ -79,7 +79,7 @@ export function createPolitics(d) {
 
   // the cabinet approval chart: 0–100 % always (no zoom that makes a move look larger), one thin line per pollster, a dot per poll
   function chart(v, W, H, big) {
-    const L = 20, R = 6, T = 5, B = 13, span = v.t1 - v.t0 || 1;
+    const L = big ? 24 : 30, R = 6, T = 5, B = 13, span = v.t1 - v.t0 || 1;   // the left margin holds the label '100' whole (12px figures on the board)
     const X = (t) => (L + ((t - v.t0) / span) * (W - L - R)).toFixed(1), Y = (val) => (T + (1 - val / 100) * (H - T - B)).toFixed(1);
     const kids = [];
     for (const g of [0, 25, 50, 75, 100]) kids.push(s('line', { class: 'gl', x1: L, x2: W - R, y1: Y(g), y2: Y(g) }), s('text', { class: 'ax', x: L - 3, y: Number(Y(g)) + 3, 'text-anchor': 'end' }, String(g)));

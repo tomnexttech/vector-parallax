@@ -140,18 +140,33 @@ export function notesOf(t) {
   return out.sort((a, b) => b.v - a.v).slice(0, 3).map((x) => x.text);
 }
 
+// ---------------------------------------------------------------- outside ratings, found by the outlet's name or by another name of it
+const nameKey = (s) => String(s == null ? '' : s).normalize('NFKC').trim().toLowerCase();
+/** the rows of data/ratings.json for an outlet: its own name first, then the aliases table ("AP News" is "AP"); [] when none */
+export function ratingsOf(ratings, outlet) {
+  if (!ratings || !ratings.outlets || typeof ratings.outlets !== 'object') return [];
+  const own = ratings.outlets, name = str(outlet);
+  if (Array.isArray(own[name])) return own[name];
+  const k = nameKey(name);
+  for (const key of Object.keys(own)) if (nameKey(key) === k) return arr(own[key]);
+  const al = ratings.aliases && typeof ratings.aliases === 'object' ? ratings.aliases : {};
+  for (const a of Object.keys(al)) if (nameKey(a) === k && Array.isArray(own[al[a]])) return own[al[a]];
+  return [];
+}
+
 // ---------------------------------------------------------------- the DOM
-/** o = { h, clock(ts), ratings (data/ratings.json or null), head(id) -> heading, sec(title, n) } */
+/** o ={ h, clock(ts), ratings (data/ratings.json or null), head(id) -> heading, sec(title, n) } */
 export function traitsBlock(t, o) {
   const { h } = o;
   if (!t) return [];
   const span = t.me.from != null ? `${o.clock(t.me.from)}〜${o.clock(t.me.to)}` : '';
   const basis = h('p', { class: 'tr-basis num', text: `記事 ${t.me.reports} 件・話 ${t.me.n} 件${span ? `・${span}` : ''}・比べた${SIDE_JA[t.me.side]}の媒体 ${t.peers} 社` });
   const out = [], aside = [];
-  out.push(o.sec(o.head('outlet.note')), basis,
+  out.push(o.sec(o.head('outlet.note')), basis, ...[].concat(
     t.few ? h('p', { class: 'tr-few', text: `記事が ${t.me.reports} 件で、傾向を言うには少ないため、数だけを出します。` })
       : t.notes.length ? h('ul', { class: 'tr-notes' }, t.notes.map((x) => h('li', { text: x })))
-        : h('p', { class: 'tr-few', text: 'どの項も、平均との差は小さい。' }));
+        : [h('p', { class: 'tr-few', text: `考察に入れた項（${t.fieldGate ? '' : '分野・'}独占率・同報社数・否定の語・バイアス度）に、基準を超える平均との差はありません。` }),
+          h('p', { class: 'tr-few tr-th num', text: `基準: ${t.fieldGate ? '' : '分野 12 ポイント・'}独占率 10 ポイント・同報社数 1.5 倍かつ 1 社・否定の語 100 本あたり 4 回・バイアス度 10。${t.fieldGate ? '' : `棒の分野のうち、平均 ${FIELD_BASE_MIN}% 未満の分野と 3 件未満の分野は数えません。`}` })]));
   // the field mix: a bar that swings from the side's mean
   const rows = t.fields.filter((r) => r.base != null).slice(0, 9);
   if (rows.length && !t.few) {
@@ -189,7 +204,7 @@ export function traitsBlock(t, o) {
       h('p', { class: 'tr-basis num', text: `中央値 ${r0(t.bias.med)}${isNum(t.bias.base) ? `・${SIDE_JA[t.me.side]}の媒体の話全体 ${r0(t.bias.base)}` : ''}` }));
   }
   // outside ratings: shown as published, with the source and the day checked; never part of the counts above
-  const rs = o.ratings && o.ratings.outlets ? arr(o.ratings.outlets[t.me.outlet]) : [];
+  const rs = ratingsOf(o.ratings, t.me.outlet);
   if (rs.length) {
     const src = o.ratings.sources || {}, bj = o.ratings.bias_ja || {}, fj = o.ratings.fact_ja || {};
     aside.push(o.sec(o.head('outlet.ext')), h('ul', { class: 'tr-ext' }, rs.map((r) => h('li', null,

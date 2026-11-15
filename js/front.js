@@ -25,6 +25,8 @@ export const TONE_MIN = 3;
 export const PAPER_HEADS = 5;
 export const PAPER_MIN = 2;
 export const STALE_S = 6 * 3600;
+/** a collection is due every 3 hours: a value older than this is amber (the next collection is late), older than STALE_S red */
+export const AGING_S = 3 * 3600;
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const str = (v) => (typeof v === 'string' ? v : '');
@@ -152,8 +154,9 @@ export function toneBar(h, t, max) {
 /** the value's own time, red when old (docs: data-freshness) */
 function stamp(h, gen, now, clock, short) {
   if (!isNum(gen)) return h('span', { class: 'fr-at stale', text: '未取得' });
-  const old = isNum(now) && now - gen > STALE_S;
-  return h('time', { class: 'fr-at num' + (old ? ' stale' : ''), text: `${old && short ? short(gen) : clock(gen)} の値` });   // an old value carries its date
+  const old = isNum(now) && now - gen > STALE_S, aging = !old && isNum(now) && now - gen > AGING_S;
+  return h('time', { class: 'fr-at num' + (old ? ' stale' : aging ? ' aging' : ''), text: `${old && short ? short(gen) : clock(gen)} の値`,
+    title: aging || old ? `収集は 3 時間ごと。次の収集が遅れています` : null });   // an old value carries its date
 }
 
 /** a tab's number: a string, or parts [{ k: '国内', v: '30%', side: 'jp' }] whose figure carries the side's colour */
@@ -204,7 +207,8 @@ export function renderGap(root, o) {
     // one side's own news: the stories only that side's outlets carried, most outlets first
     title = HEAD[`front.${o.tab}`];
     const g = arr(o.one).find((x) => x.side === o.tab) || { events: [] };
-    den = g.events.length ? `${g.events.length} 件` : '';
+    const shown = Math.min(12, g.events.length);
+    den = g.events.length ? (g.events.length > shown ? `上位 ${shown} / ${g.events.length} 件` : `${g.events.length} 件`) : '';
     body = g.events.length ? h('div', { class: 'fr-one', data: { side: o.tab } }, h('ul', null, g.events.slice(0, 12).map((e) => h('li', null, headRow(h, o, e)))))
       : h('p', { class: 'fr-empty', text: o.field ? `${o.field}では 0 件です。分野を「すべて」に戻すと出ることがあります。` : '今は 0 件です。' });
   } else if (o.tab === 'bias') {
@@ -227,7 +231,7 @@ export function renderGap(root, o) {
         h('span', { class: 'fr-gb', 'aria-hidden': 'true' }, h('i', { data: { side: r.d < 0 ? 'jp' : 'intl' }, style: `--w:${(Math.abs(r.d) * 50).toFixed(1)}%` })),
         h('span', { class: 'fr-gn num' + (r.jp >= r.intl ? ' hi' : ''), text: String(r.jp) }), h('span', { class: 'fr-gn num' + (r.intl >= r.jp ? ' hi' : ''), text: String(r.intl) }))))
       : h('p', { class: 'fr-empty', text: '日本と海外を比べられる話は今ありません。' });
-    den = g.rows.length ? `記事 ${(g.jp + g.intl).toLocaleString('ja-JP')} 件` : '';
+    den = g.rows.length ? `${o.field ? `上位 ${g.rows.length} 話の記事` : '分野が付いた話の記事'} ${(g.jp + g.intl).toLocaleString('ja-JP')} 件` : '';
     // the share over all the rows: one bar of the two sides under the table
     const sh = jpShare(g);
     if (sh != null) tot = h('div', { class: 'fr-tot', role: 'img', 'aria-label': `国内 ${sh}%、海外 ${100 - sh}%` },
@@ -292,19 +296,41 @@ export function renderPaper(o) {
         : cols.map((c) => h('div', { class: 'pp-c', role: 'cell', data: { side: c.side }, 'aria-label': SIDE_JA[c.side] }, cell(c, k))))));
 }
 
+/** words that name one thing in two languages (data/aliases.json: groups and words) stand in one row of the figure: set once, when the table is read */
+let WORD_GROUPS = [];
+export function setWordGroups(g) { WORD_GROUPS = arr(g).filter((x) => Array.isArray(x) && x.length >= 2).map((x) => x.map((w) => str(w)).filter(Boolean)); }
+const wkey = (w) => str(w).normalize('NFKC').toLowerCase().replace(/['’]s$/, '');   // SpaceX's is SpaceX
+
 /** the rows of the figure of words: a word both sides used first (by its total), then Japan's own, then abroad's own; at most 8.
+ *  A word and the same word in the other language (スターシップ / Starship) are one row, counted over every form.
  *  [] unless both Japan and abroad have a column with words. rows.max = the largest count, the bars' full length */
-export function wordBars(paper) {
+export function wordBars(paper, groups = WORD_GROUPS) {
   const cols = paper && Array.isArray(paper.cols) ? paper.cols : [];
   const jp = cols.find((c) => c.side === 'jp'), intl = cols.find((c) => c.side === 'intl');
   if (!jp || !intl || jp.few || intl.few || (!arr(jp.words).length && !arr(intl.words).length)) return [];
+  // the table's order first, so the row is named as the table names it (スペースX, not the shorter スペース the headlines also use)
+  const formsOf = (w) => { const k = wkey(w), g = groups.find((x) => x.some((y) => wkey(y) === k)); return g ? [...new Set([...g, w])] : [w]; };
   // the words shown: each side's top words; their counts: from each side's whole list (a word low on one side still counts there)
-  const count = (c, w) => { const x = arr(c.wordsAll || c.words).find((y) => y && y.w === w), lw = w.toLowerCase(); return Math.max(x && isNum(x.n) ? x.n : 0, arr(c.titles).filter((t) => str(t).toLowerCase().includes(lw)).length); };
-  const shown = [...new Set([...arr(jp.words), ...arr(intl.words)].map((x) => x && str(x.w)).filter(Boolean))];
-  const rows = shown.map((w) => ({ w, jp: count(jp, w), intl: count(intl, w) })).filter((r) => r.jp + r.intl > 0);
+  const count = (c, forms) => {
+    const lws = forms.map((f) => f.toLowerCase());
+    const byList = Math.max(0, ...forms.map((f) => { const x = arr(c.wordsAll || c.words).find((y) => y && y.w === f); return x && isNum(x.n) ? x.n : 0; }));
+    return Math.max(byList, arr(c.titles).filter((t) => lws.some((lw) => str(t).toLowerCase().includes(lw))).length);
+  };
+  const seen = new Set(), rows = [];
+  for (const w of [...new Set([...arr(jp.words), ...arr(intl.words)].map((x) => x && str(x.w)).filter(Boolean))]) {
+    const forms = formsOf(w), id = forms.map(wkey).sort()[0];
+    if (seen.has(id)) continue;
+    seen.add(id);
+    // the form on the row is the page's language when the group has one (the Japanese page: the Japanese form; the English page: the Latin one)
+    const en = typeof document !== 'undefined' && document.documentElement && document.documentElement.lang === 'en';
+    const ja = (f) => /[぀-ヿ一-鿿]/.test(f);
+    const label = forms.find((f) => (en ? !ja(f) : ja(f))) || w;
+    rows.push({ w: label, jp: count(jp, forms), intl: count(intl, forms) });
+  }
+  const live = rows.filter((r) => r.jp + r.intl > 0);
   const rank = (r) => (r.jp && r.intl ? 0 : r.jp ? 1 : 2);
-  rows.sort((a, b) => rank(a) - rank(b) || (b.jp + b.intl) - (a.jp + a.intl));
-  const out = rows.slice(0, 8);
+  live.sort((a, b) => rank(a) - rank(b) || (b.jp + b.intl) - (a.jp + a.intl));
+  const out = live.slice(0, 8);
   out.max = Math.max(1, ...out.map((r) => Math.max(r.jp, r.intl)));
   return out;
 }

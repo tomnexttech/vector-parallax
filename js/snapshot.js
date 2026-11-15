@@ -8,12 +8,25 @@
  *   isOld(ts, now, max) -> 6 時間（既定）を過ぎたか */
 
 export const SIX_H = 6 * 3600;
+/** the data is collected every 3 hours: a value older than this means the next collection is late */
+export const THREE_H = 3 * 3600;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 
 export function isOld(ts, now, max = SIX_H) {
   return isNum(ts) && isNum(now) && now - ts > max;
+}
+
+/** a value's own time against the collection every 3 hours: 'ok' to 3 hours, 'warn' after 3 (the next collection is late), 'bad' after 6, 'none' when there is no time */
+export function freshness(ts, now) {
+  if (!isNum(ts) || !isNum(now)) return 'none';
+  const a = now - ts;
+  return a > SIX_H ? 'bad' : a > THREE_H ? 'warn' : 'ok';
+}
+/** how many seconds the next collection is late (0 while the value is within 3 hours) */
+export function lateBy(ts, now) {
+  return isNum(ts) && isNum(now) ? Math.max(0, now - ts - THREE_H) : 0;
 }
 
 /** 最初に開いた時の見方。AI の結果がある時は 'ai'（status が ok / partial / recorded、または前回を保った kept_previous で

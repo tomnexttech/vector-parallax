@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { ROOT } from './helpers.js';
-import { keepInList, gapByField, gapByEvent, jpShare, numbersOf, numValue, toneOf, paperOf, renderFront, renderGap, renderPaper, cleanTitle, tabKey, wordBars,
+import { keepInList, gapByField, gapByEvent, jpShare, numbersOf, numValue, toneOf, paperOf, renderFront, renderGap, renderPaper, cleanTitle, tabKey, wordBars, setWordGroups,
   FRONT_TABS,TONE_NEG, TONE_POS, TONE_NEG_EN, TONE_POS_EN, TONE_MIN, PAPER_HEADS } from '../../js/front.js';
 
 const read = (f) => readFileSync(path.join(ROOT, f), 'utf8');
@@ -106,7 +106,7 @@ test('the panel: the denominator and the value\'s own time, red when old, 未取
   const t = made.find((e) => e.tag === 'time');
   assert.equal(t.attrs.text, '9:40 の値');
   assert.match(t.attrs.class, /stale/);
-  assert.ok(made.some((e) => e.attrs.text === '記事 10 件'), 'the denominator in a word anyone reads');
+  assert.ok(made.some((e) => e.attrs.text === '分野が付いた話の記事 10 件'), 'the denominator in a word anyone reads, with what it counts (11-15g: 4,075 headlines, 572 articles and 88 stories read as one number)');
   // the counts stand in two columns (国内・海外) under a head row, the larger side's number dark (docs/design-1115b.md §3)
   assert.deepEqual(made.filter((e) => /fr-gn/.test(e.attrs.class || '')).map((e) => [e.attrs.text, /\bhi\b/.test(e.attrs.class)]), [['1', false], ['9', true]]);
   assert.deepEqual(made.filter((e) => e.attrs.class === 'fr-nh').map((e) => e.attrs.text), ['国内', '海外'], 'the columns are named once, in the head row');
@@ -138,6 +138,21 @@ test('the figure of words: a word of both sides first, each side counted in all 
   assert.deepEqual(rows.map((r) => [r.w, r.jp, r.intl]), [['下院', 2, 1], ['民主党', 2, 0], ['Democrats', 0, 1]], '下院 is in an English headline too: counted there');
   assert.equal(rows.max, 2);
   assert.deepEqual(wordBars(paperOf({ ...m, intl: [] })), [], 'one side only: no figure');
+});
+
+test('the figure of words: the same word in two languages is one row, counted over every form (スターシップ / Starship)', () => {
+  const m = { jp: [{ title: 'スターシップ 回収に成功', ts: 1 }, { title: 'スターシップ 試験', ts: 2 }], intl: [{ title: 'Starship caught by tower', ts: 3 }, { title: 'Starship launch', ts: 4 }, { title: 'Starship flight', ts: 5 }], gov: [],
+    words: { jp: [{ w: 'スターシップ', n: 2 }], intl: [{ w: 'Starship', n: 3 }] } };
+  assert.deepEqual(wordBars(paperOf(m), []).map((r) => [r.w, r.jp, r.intl]), [['スターシップ', 2, 0], ['Starship', 0, 3]], 'without the table: two rows');
+  const one = wordBars(paperOf(m), [['スターシップ', 'Starship']]);
+  assert.deepEqual(one.map((r) => [r.w, r.jp, r.intl]), [['スターシップ', 2, 3]], 'with it: one row, the Japanese form, both sides counted');
+  const poss = { ...m, intl: [{ title: "Starship's flight", ts: 3 }, { title: 'Starship landing', ts: 4 }, { title: 'Starship tower', ts: 5 }], words: { jp: [{ w: 'スターシップ', n: 2 }], intl: [{ w: "Starship's", n: 1 }] } };
+  assert.equal(wordBars(paperOf(poss), [['スターシップ', 'Starship']]).length, 1, "a possessive (Starship's) is the word");
+  setWordGroups([['スターシップ', 'Starship']]);
+  assert.equal(wordBars(paperOf(m)).length, 1, 'the table set once is the default');
+  const sx = { jp: [{ title: 'スペースX 回収', ts: 1 }, { title: 'スペースX 試験', ts: 2 }], intl: [{ title: 'SpaceX catch', ts: 3 }, { title: 'SpaceX flight', ts: 4 }, { title: 'SpaceX tower', ts: 5 }], gov: [], words: { jp: [{ w: 'スペース', n: 1 }], intl: [{ w: 'SpaceX', n: 1 }] } };
+  assert.deepEqual(wordBars(paperOf(sx), [['スペースX', 'スペース', 'SpaceX']]).map((r) => r.w), ['スペースX'], 'the row is named as the table names it, not by the shorter form a headline used');
+  setWordGroups([]);
 });
 
 test('a list shows the headline itself: the wire\'s photo caption before it and 「- 写真・画像(1/1)」 after it are dropped', () => {
@@ -189,4 +204,14 @@ test('the page: one gothic and Inter for figures (no Mincho, no Plex, no Barlow)
   assert.ok(css.indexOf('/* ==== meeting-1115:end ==== */') < css.indexOf('/* ==== stage:begin ==== */'), 'before the stage, which comes last');
   assert.match(block, /:root\[data-theme="light"\] \{[^}]*--win: #ffffff; --pane: #f3f4f6;/);
   assert.doesNotMatch(block, /!important/);
+});
+
+test('the value\'s time: green to 3 hours, amber after 3 (a collection is late) with a title, red after 6 and then with its date', () => {
+  const stampAt = (age) => { const { made, h } = mkH(); renderGap({ replaceChildren() {}, setAttribute() {} }, { h, tab: 'gap', gap: { rows: [{ field: '国際', jp: 1, intl: 9, d: 0.8 }], jp: 1, intl: 9 }, gen: 1000, now: 1000 + age, clock: () => '9:40', short: () => '11/15 9:40' }); return made.find((e) => e.tag === 'time'); };
+  const ok = stampAt(2.9 * 3600), warn = stampAt(3.1 * 3600), bad = stampAt(6.1 * 3600);
+  assert.doesNotMatch(ok.attrs.class, /stale|aging/);
+  assert.match(warn.attrs.class, /aging/); assert.doesNotMatch(warn.attrs.class, /stale/);
+  assert.match(warn.attrs.title, /3 時間ごと/);
+  assert.match(bad.attrs.class, /stale/); assert.doesNotMatch(bad.attrs.class, /aging/);
+  assert.equal(bad.attrs.text, '11/15 9:40 の値');
 });

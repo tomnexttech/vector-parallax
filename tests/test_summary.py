@@ -82,6 +82,20 @@ class Validator(unittest.TestCase):
         out = validate.validate_summaries(self.req(), json.dumps({"summaries": []}), PROMPT)
         self.assertEqual((out["summaries"], out["counts"]["missing"]), ({}, 2))
 
+    def test_judgement_words_not_in_the_material_are_dropped(self):
+        # 11-15g: 「偉業」「完璧には至らなかった」を AI が足した。材料に無い褒め・責めの語は、その欄を落とす。材料にある語は報じられた言葉なので残す
+        doc = {"events": [{"eid": "e1", "items": [{"outlet": "A", "lang": "ja", "title": "宇宙船の試験飛行で機体を回収", "desc": "発射台での回収に成功した"}]}]}
+        req = {"doc": json.dumps(doc, ensure_ascii=False), "eids": {"e1": "sA"}}
+        brief = {"what_ja": "機体を発射台で回収した", "background_ja": "伝えられていない", "views_ja": "", "next_ja": "伝えられていない"}
+        raw = json.dumps({"summaries": [{"eid": "e1", "summary_ja": "宇宙船の回収という偉業を成し遂げた", "brief": dict(brief, views_ja="完璧には至らなかった側面がある")}]}, ensure_ascii=False)
+        out = validate.validate_summaries(req, raw, PROMPT)
+        self.assertEqual(out["summaries"], {})
+        self.assertEqual(out["briefs"]["sA"]["views_ja"], "")
+        doc["events"][0]["items"][0]["desc"] = "完璧な回収に成功した"           # 材料にある語は残る
+        req = {"doc": json.dumps(doc, ensure_ascii=False), "eids": {"e1": "sA"}}
+        raw = json.dumps({"summaries": [{"eid": "e1", "summary_ja": "宇宙船の機体を完璧に回収した", "brief": brief}]}, ensure_ascii=False)
+        self.assertEqual(validate.validate_summaries(req, raw, PROMPT)["summaries"], {"sA": "宇宙船の機体を完璧に回収した"})
+
     def test_broken_answers(self):
         self.assertEqual(validate.validate_summaries(self.req(), "not json", PROMPT)["errors"], ["json"])
         self.assertEqual(validate.validate_summaries(self.req(), '{"blocks": []}', PROMPT)["errors"], ["shape"])

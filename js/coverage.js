@@ -102,7 +102,7 @@ export function createCoverage({ h, onOutlet = null }) {
     const [k1, k2] = r.k === 'num' && r.t.includes('・') ? r.t.split('・') : [null, null];
     const term = TERM_KINDS.includes(r.k);
     const name = term ? r.t : k1 ? k2 : r.t;
-    const sub = [term ? KIND_JA[r.k] : k1, n > 1 ? `${g.have}/${n}` : null].filter(Boolean).join('・');
+    const sub = [term ? KIND_JA[r.k] : k1, n > 1 ? `${g.have}/${n} 社` : null].filter(Boolean).join('・');
     return h('th', { scope: 'row', title: n > 1 ? `${n} 社中 ${g.have} 社の見出しか要旨に出ている` : null }, h('span', { class: 'cv-l', lang: isEn(name) ? 'en' : null, text: name }), sub ? h('small', { class: 'num', text: sub }) : null);
   };
   function table(cov, { rows } = {}) {
@@ -162,7 +162,7 @@ export function createCoverage({ h, onOutlet = null }) {
       h('h3', { class: 'st-h', data: { st: 'cv' } }, '媒体比較',
         h('span', { class: 'cv-n num', title: '行の「3/7」は、同じ言語で照合した社のうち、その語が見出しか要旨に出ている社の数' },
           Number.isInteger(total) && total > cov.outlets.length ? `照合 ${cov.outlets.length} 社／全 ${total} 社` : `照合 ${cov.outlets.length} 社`),
-        h('span', { class: 'cv-lg' },h('span', { class: 'on', text: '出ている' }), h('span', { class: 'off', text: '見出しと要旨には出ていない' }), hasNa ? h('span', { class: 'na', text: '照合なし' }) : null)),
+        h('span', { class: 'cv-lg' },h('span', { class: 'on', text: '出ている' }), h('span', { class: 'off', text: '見出しと要旨には出ていない' }), hasNa ? h('span', { class: 'na', text: '照合なし' }) : null, h('span', { class: 'key', text: '行名の下は 語の種類・載せた社数' }))),
       findings(cov), wrap, btn, words(cov));
   }
   return { node, table, words, findings };

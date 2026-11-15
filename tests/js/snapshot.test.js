@@ -103,3 +103,31 @@ test('defaultView: AI when there are AI results (ok / partial / recorded / a rea
   assert.equal(defaultView(null), 'rules');
   assert.equal(defaultView(readJson('data', 'latest.json')), 'ai');   // 公開しているデータ（記録済み）
 });
+
+import { freshness, lateBy, THREE_H } from '../../js/snapshot.js';
+test('freshness of a value: ok to 3 hours, warn after 3, bad after 6, none without a time; lateBy counts from the 3 hours', () => {
+  const t0 = 1000000;
+  assert.equal(freshness(t0, t0 + THREE_H), 'ok');
+  assert.equal(freshness(t0, t0 + THREE_H + 1), 'warn');
+  assert.equal(freshness(t0, t0 + SIX_H), 'warn');
+  assert.equal(freshness(t0, t0 + SIX_H + 1), 'bad');
+  assert.equal(freshness(null, t0), 'none');
+  assert.equal(lateBy(t0, t0 + 2 * 3600), 0);
+  assert.equal(lateBy(t0, t0 + THREE_H + 1200), 1200);
+});
+
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { ROOT as ROOT_G } from './helpers.js';
+test('the bar\'s data time is toned by freshness (green, amber after 3 hours, red after 6) and kept moving by tick', () => {
+  const app = readFileSync(join(ROOT_G, 'js', 'app.js'), 'utf8');
+  assert.match(app, /function genTone\(\)[\s\S]*freshness\(at, now\)[\s\S]*dataset\.tone = /);
+  assert.match(app, /ageEl\(d\.generated_at, SIX_H, THREE_H\)/);
+  assert.match(app, /if \(el\.id === 'gen-age'\) genTone\(\)/);
+  assert.match(readFileSync(join(ROOT_G, 'css', 'app.css'), 'utf8'), /\.aging, \.aging b, \.aging time \{ color: var\(--amber\)/);
+});
+
+test('the bar says how late the next collection is beside the age, not only in the title', () => {
+  assert.match(readFileSync(join(ROOT_G, 'js', 'app.js'), 'utf8'), /ga\.dataset\.late = late > 0 \? `収集 \$\{fmtSpan\(late\)\}遅れ`/);
+  assert.match(readFileSync(join(ROOT_G, 'css', 'app.css'), 'utf8'), /#gen-age\[data-late\]:not\(\[data-late=""\]\)::after \{ content: "・" attr\(data-late\)/);
+});

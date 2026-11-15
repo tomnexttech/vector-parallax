@@ -3,7 +3,7 @@
 // count and the span; too few reports give the counts only; no label is put on an outlet.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { statsOf, traitsOf, notesOf, termsOf, sideOf, traitsBlock, TRAIT_MIN } from '../../js/traits.js';
+import { statsOf, traitsOf, notesOf, termsOf, sideOf, traitsBlock, ratingsOf, TRAIT_MIN } from '../../js/traits.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -80,4 +80,16 @@ test('the outside ratings on file each name their page and the day they were che
     assert.ok(r.sources[x.src], x.src);
     assert.ok(r.bias_ja[x.bias] && r.fact_ja[x.factual], `${x.bias} / ${x.factual} have Japanese names`);
   }
+});
+
+test('an outlet is found in the ratings by its own name or by another name of it: "AP News" is "AP"', () => {
+  const r = JSON.parse(fs.readFileSync(path.join(ROOT, 'data', 'ratings.json'), 'utf8'));
+  assert.equal(ratingsOf(r, 'AP').length, 1);
+  assert.equal(ratingsOf(r, 'AP News'), r.outlets.AP);
+  assert.equal(ratingsOf(r, 'ap news'), r.outlets.AP);
+  assert.equal(ratingsOf(r, 'The Wall Street Journal'), r.outlets.WSJ);
+  assert.equal(ratingsOf(r, 'CNN.co.jp'), r.outlets.CNN);
+  assert.deepEqual(ratingsOf(r, 'NHK'), []);          // an outlet nobody rated stays without a row
+  assert.deepEqual(ratingsOf(null, 'AP'), []);
+  assert.deepEqual(ratingsOf({ outlets: { A: [1] }, aliases: { B: 'Z' } }, 'B'), []);   // an alias that points nowhere finds nothing
 });

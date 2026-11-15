@@ -352,7 +352,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
   }
   function card(p) {
     const n = picks.length;
-    const old = isNum(meta.gen) && isNum(meta.now) && meta.now - meta.gen > 6 * 3600;
+    const old = isNum(meta.gen) && isNum(meta.now) && meta.now - meta.gen > 6 * 3600, aging = !old && isNum(meta.gen) && isNum(meta.now) && meta.now - meta.gen > 3 * 3600;   // amber after 3 hours (a collection is due), red after 6
     const lead = leadOf(p);
     let sx = null, sy = null;
     const swipe = n > 1 ? {
@@ -369,7 +369,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
       ph ? h('figure', { class: 'hr-ph' }, h('img', { src: ph.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => { const f = ev.target.closest ? ev.target.closest('.hr-ph') : null; if (f) f.remove(); } } }),
         ph.outlet ? h('figcaption', { text: `写真：${ph.outlet}` }) : null) : null,
       h('div', { class: 'hr-main' },
-        h('p', { class: 'hr-meta' + (old ? ' stale' : '') }, h('span', { class: 'hr-lab', text: '注目ニュース' }),
+        h('p', { class: 'hr-meta' + (old ? ' stale' : aging ? ' aging' : '') }, h('span', { class: 'hr-lab', text: '注目ニュース' }),
           isNum(meta.gen) ? h('time', { class: 'num', text: `${short(meta.gen)} 時点` }) : h('span', { class: 'stale', text: '未取得' }),
           n > 1 ? h('span', { class: 'hr-pager' },
             h('button', { type: 'button', class: 'hr-pg hr-prev', 'aria-label': '前のニュース', title: '前のニュース（←）', on: { click: () => step(-1) } }, '‹'),
@@ -381,7 +381,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
         sh.total ? h('div', { class: 'hr-share', role: 'img', 'aria-label': `このニュースの社の割合 ${lab}` }, h('span', { class: 'hr-sb', 'aria-hidden': 'true' }, SIDES3.map(seg)), h('span', { class: 'hr-sl num' }, h('span', { class: 'k', text: 'このニュース' }), lab)) : null,
         // one main button (比べる); 読み上げ beside it as the second; the next news is the pager's (1 / 5), the arrow keys or a swipe
         h('div', { class: 'hr-acts' },
-          h('button', { type: 'button', class: 'hr-b hr-go', on: { click: () => call('compare', p) } }, '比べる'),
+          h('button', { type: 'button', class: 'hr-b hr-go', on: { click: () => call('compare', p) } }, '詳細'),
           h('div', { class: 'hr-side' }, call('orbSlot', p) || null))));
   }
   let last = null;

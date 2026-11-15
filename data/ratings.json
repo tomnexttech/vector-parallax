@@ -6,6 +6,20 @@
   },
   "bias_ja": { "LEAST BIASED": "偏り最小", "LEFT-CENTER": "中道左派", "RIGHT-CENTER": "中道右派", "LEFT": "左派", "RIGHT": "右派" },
   "fact_ja": { "VERY HIGH": "非常に高い", "HIGH": "高い", "MOSTLY FACTUAL": "おおむね事実", "MIXED": "混在", "LOW": "低い" },
+  "aliases_note": "媒体名の別名。データの媒体名（Google ニュースの表記など）を、下の outlets の名へ引く。出所は parallax/gnews.py の別名表で、tests/test_ratings_alias.py が両者の食い違いを止める。",
+  "aliases": {
+    "AP News": "AP", "Associated Press": "AP", "apnews.com": "AP",
+    "The Wall Street Journal": "WSJ", "ウォール・ストリート・ジャーナル": "WSJ", "jp.wsj.com": "WSJ",
+    "FT": "Financial Times", "ft.com": "Financial Times",
+    "Economist": "The Economist",
+    "ロイター": "Reuters", "reuters.com": "Reuters", "jp.reuters.com": "Reuters",
+    "Bloomberg.com": "Bloomberg", "ブルームバーグ": "Bloomberg", "bloomberg.co.jp": "Bloomberg",
+    "BBC News": "BBC", "BBCニュース": "BBC", "BBCニュース日本語": "BBC", "bbc.com": "BBC",
+    "CNN.co.jp": "CNN", "cnn.co.jp": "CNN",
+    "the Guardian": "The Guardian",
+    "South China Morning Post": "SCMP",
+    "Al Jazeera English": "Al Jazeera"
+  },
   "outlets": {
     "Reuters": [{ "src": "mbfc", "bias": "LEAST BIASED", "factual": "VERY HIGH", "url": "https://mediabiasfactcheck.com/reuters/", "updated": "2026-04-10", "checked": "2026-11-15" }],
     "BBC": [{ "src": "mbfc", "bias": "LEAST BIASED", "factual": "MOSTLY FACTUAL", "url": "https://mediabiasfactcheck.com/bbc/", "updated": "2026-04-09", "checked": "2026-11-15" }],

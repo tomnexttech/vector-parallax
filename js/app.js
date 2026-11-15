@@ -10,8 +10,8 @@
  * - Every operation is an id in js/actions.js (keys, pane heads and the voice). A pane head opens its sheet toward the viewer.
  * - The visitor's tasks stay in that browser (js/tasks.js). The voice key, if given, stays in memory for this visit. */
 
-import { SIX_H, keptView, noticeParts, isOld, defaultView } from './snapshot.js';
-import { summaryOf, summaryIndex, memberKey, briefOf, briefIndex } from './summary.js';
+import { SIX_H, THREE_H, keptView, noticeParts, isOld, defaultView, freshness, lateBy } from './snapshot.js';
+import { summaryOf, summaryIndex, memberKey, briefOf, briefIndex, judged } from './summary.js';
 import { PLACES, placeJa, placesOf, placesIn } from './places.js';
 import { loadWatch, saveWatch, addWatch, removeWatch, hitsOf, loadView, saveView, countsFor, countIn, nextOf, COUNTS, LAYOUTS, COUNT_JA, LAYOUT_JA } from './prefs.js';
 import { TOPICS, FIELDS, topicsOf, fieldOf, placeField, topicJa } from './topics.js';
@@ -28,7 +28,7 @@ import { speechSupported, listen, route as voiceRoute } from './voice.js';
 import { absentOutlets, absentBlock, outletProfile } from './absent.js';
 import { traitsOf, traitsBlock } from './traits.js';
 import { HEAD } from './heads.js';
-import { FRONT_TABS, keepInList, gapByField, gapByEvent, jpShare, renderFront as renderFrontEl, renderGap as renderGapEl } from './front.js';
+import { FRONT_TABS, setWordGroups, keepInList, gapByField, gapByEvent, jpShare, renderFront as renderFrontEl, renderGap as renderGapEl } from './front.js';
 import { entryEvents, renderEntry, pickFirst, leadPool, lineIcon, sides as sidesOf, SIDES, original, firstLine } from './entry.js';
 import { STORY, TL_CAP, timeline, sourcesOf } from './story.js';
 import { readLines, createReader } from './speak.js';
@@ -166,11 +166,21 @@ function fmtSpan(sec) {
   return `${Math.floor(hh / 24)}日${hh % 24 ? `${hh % 24}時間` : ''}`;
 }
 const plusH = (sec) => (!isNum(sec) ? '' : sec < 60 ? '+0分' : sec < 3600 ? `+${Math.floor(sec / 60)}分` : `+${(sec / 3600).toFixed(sec < 36000 ? 1 : 0)}時間`);
-/** an age that turns itself (and its [data-host]) red once older than max seconds; tick() keeps it moving */
-function ageEl(ts, max) {
-  const el = h('time', { class: 'age', data: { ts: isNum(ts) ? ts : '', max: max || '' } });
+/** an age that turns itself (and its [data-host]) red once older than max seconds, and amber once older than warn (a collection is due every 3 hours); tick() keeps it moving */
+function ageEl(ts, max, warn) {
+  const el = h('time', { class: 'age', data: { ts: isNum(ts) ? ts : '', max: max || '', warn: warn || '' } });
   if (isNum(ts)) el.setAttribute('datetime', new Date(ts * 1000).toISOString());
   return el;
+}
+/** the data's own time on the bar: green to 3 hours, amber after 3 (the next collection is late), red after 6; the title says how late */
+function genTone() {
+  const m = $('m-gen');
+  if (!m || !state.data) return;
+  const at = state.data.generated_at, now = nowS(), f = freshness(at, now), late = lateBy(at, now);
+  m.title = `データを組んだ時刻 ${fmtFull(at)}` + (late > 0 ? `。収集は 3 時間ごと。次の収集が ${fmtSpan(late)} 遅れています` : '');
+  m.dataset.tone = m.dataset.bad === '1' || f === 'bad' ? 'bad' : f === 'warn' ? 'warn' : 'ok';
+  const ga = $('gen-age');
+  if (ga) ga.dataset.late = late > 0 ? `収集 ${fmtSpan(late)}遅れ` : '';   // the bar says it too (css: #gen-age::after), not only the title
 }
 function tick() {
   for (const el of document.querySelectorAll('time[data-ts]')) {
@@ -181,8 +191,11 @@ function tick() {
     if (max > 0) {
       const old = nowS() - ts > max;
       el.classList.toggle('stale', old);
+      const warn = Number(el.dataset.warn);
+      el.classList.toggle('aging', !old && warn > 0 && nowS() - ts > warn);
       const host = el.closest('[data-host]');
       if (host) host.classList.toggle('stale', old || host.dataset.bad === '1');
+      if (el.id === 'gen-age') genTone();
     }
   }
 }
@@ -297,6 +310,11 @@ function buildEntries() {
       e.summary = e.ai ? null : (summaryOf(st) || (state.live ? state.sumBy.get(e.mk) || null : null));
       e.brief = briefOf(st) || (state.live ? state.briefBy.get(e.mk) || null : null);
       e.basis = isObj(st.basis) ? st.basis : null;
+      // an AI line that praises or blames in a word no headline carries is left out (the page's side of the rule in data/prompt.json)
+      const mat = e.members.flatMap((it) => [it.title, it.desc]).filter((x) => typeof x === 'string');
+      if (e.ai && judged(e.ai.contrast_ja, mat)) e.ai = { ...e.ai, contrast_ja: '' };
+      if (e.summary && judged(e.summary.text_ja, mat)) e.summary = null;
+      if (e.brief) { const rows = e.brief.rows.filter((r) => !judged(r.text, mat)); e.brief = rows.some((r) => r.key === 'what_ja') ? { ...e.brief, rows } : null; }
       return e;
     });
   }
@@ -388,7 +406,7 @@ function shownPriAll() {
   return t === 'all' ? state.pri : t === 'watch' ? state.pri.filter((e) => e.hits.length) : state.pri.filter((e) => e.topics.includes(t));
 }
 const cur = () => state.byKey.get(state.sel) || null;
-const FLAG_PLAIN = { 公金: 'お金・税金', '法・人事': '法律・人事', 安保: '安全保障', AI統治: 'AI のルール', 政治と人事: '政治・人事' };   // everyday words on the screen; the data keeps its own
+const FLAG_PLAIN = { 公金: 'お金・税金', 法: '法律・人事', '法・人事': '法律・人事', 安保: '安全保障', AI統治: 'AI のルール', 政治と人事: '政治・人事' };   // everyday words on the screen; the data keeps its own
 const flagJa = (id) => { const x = (state.board && isObj(state.board.flag_labels) && isObj(state.board.flag_labels[id]) && str(state.board.flag_labels[id].ja)) || topicJa(id) || id; return FLAG_PLAIN[x] || x; };
 const typeLead = (type) => { const t = state.labels && isObj(state.labels.types) ? state.labels.types[type] : null; return isObj(t) && t.lead && str(t.short) ? str(t.short) : ''; };
 const outletOf = (it) => (isObj(it) ? str(it.media) || str(it.outlet) : '');
@@ -429,10 +447,9 @@ function renderBar() {
   roll($('src-live'), live); $('src-total').textContent = String(rows.length);
   // data time
   $('gen-at').textContent = fmtShort(d.generated_at);
-  $('gen-age').replaceWith(Object.assign(ageEl(d.generated_at, SIX_H), { id: 'gen-age' }));
+  $('gen-age').replaceWith(Object.assign(ageEl(d.generated_at, SIX_H, THREE_H), { id: 'gen-age' }));
   $('m-gen').dataset.bad = d.schema === 'parallax/1' && isNum(d.generated_at) ? '0' : '1';
-  $('m-gen').title = `データを組んだ時刻 ${fmtFull(d.generated_at)}`;
-  $('m-gen').dataset.tone = $('m-gen').dataset.bad === '1' ? 'bad' : isOld(d.generated_at, nowS()) ? 'warn' : 'ok';
+  genTone();
   // the AI: who wrote it and when, red after 6 h
   const run = isObj(d.ai_run) ? d.ai_run : {};
   const kept = state.snap ? state.snap.kept : null;
@@ -1077,7 +1094,7 @@ function caseNode(e) {
   // the tools of the card: their own row under the headline (the home hides them)
   const tools = h('div', { class: 'ch-tools' },
       e.topics.length ? h('span', { class: 'tp' }, e.topics.map((id, i) => [i ? '・' : '', lk(flagJa(id), () => setTopic(id), `${flagJa(id)} の出来事だけ見る`)])) : null,
-      e.field ? lk(e.field, () => setGenre(e.field), `${e.field} の出来事だけ見る`, 'fd', { genre: e.field }) : null,
+      e.field && !e.topics.some((id) => flagJa(id) === e.field) ? lk(e.field, () => setGenre(e.field), `${e.field} の出来事だけ見る`, 'fd', { genre: e.field }) : null,   // the same word is told once (a topic named like the field)
       h('button', { type: 'button', class: 'addtask', 'aria-pressed': String(hasTask(state.tasks, saveId(e))), on: { click: () => toggleSave(e) } }, hasTask(state.tasks, saveId(e)) ? '保存済み' : '保存'),
       h('button', { type: 'button', class: 'addtask share', on: { click: () => shareEvent(e) } }, '共有'),
       h('button', { type: 'button', class: 'addtask share img', on: { click: () => shareImage(e) } }, '画像で共有'),
@@ -1541,6 +1558,15 @@ function frontHead(e) {
   if (t.ai && JA_CHARS.test(t.text)) return { text: t.text, mark: '訳', orig: o.text, origLang: 'en' };
   return { text: o.text, lang: 'en', mark: '英語' };
 }
+// a tab pressed on a small screen: the panel can lie a screen below, so it comes up under the tabs (the same step with reduced motion)
+function revealGap() {
+  const g = $('gap');
+  if (!g || !g.getBoundingClientRect) return;
+  const top = g.getBoundingClientRect().top;
+  if (top < innerHeight * 0.6) return;
+  const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  g.scrollIntoView({ block: 'start', behavior: calm ? 'auto' : 'smooth' });
+}
 function renderFront() {
   const fr = $('front'), gp = $('gap');
   if (!fr || !gp || !state.data || !state.es) return;
@@ -1548,7 +1574,7 @@ function renderFront() {
   const tab = FRONT_TABS.some(([id]) => id === state.front) ? state.front : 'gap';
   const d = frontData();
   renderFrontEl(fr, { h, tab, field: state.frontField || null, fields: FIELDS, counts: d.counts,
-    onTab: (id) => { state.front = id; renderFront(); }, onField: (x) => { state.frontField = x; renderFront(); } });
+    onTab: (id) => { state.front = id; renderFront(); revealGap(); }, onField: (x) => { state.frontField = x; renderFront(); } });
   renderGapEl(gp, { h, tab, field: state.frontField || null, gap: d.gap, one: d.one, bias: d.bias, gen: state.data.generated_at, now: nowS(), clock: fmtClock, short: fmtShort,
     titleOf: (e) => entryTitleOf(e).text, headOf: frontHead, pick: frontPick, detail: (k) => entryDetail(k, { bias: true }) });
 }
@@ -1789,25 +1815,26 @@ function renderCount() {
   const es = state.es;
   const cn = counts();
   if (cn && isObj(cn.headlines)) {
-    $('count-h').textContent = '見出し数';
+    $('count-h').textContent = '取得した見出し';
     roll($('count-n'), cn.headlines.fetched);
-    const go = { 期間内の見出し: () => openSheet('hours', $('p-count')), '2 社以上': () => openSheet('pri', $('p-count')), 国内と海外: () => setTopic('cross') };
-    const f = [['期間内の見出し', cn.headlines.in_window], ['2 社以上', cn.multi_outlet], [HEAD['case.sides'], isObj(cn.home) ? cn.home.both : null]];
+    // each line names what it counts: headlines (all fetched, in the window) or stories (two outlets or more, both sides)
+    const go = { 期間内の見出し: () => openSheet('hours', $('p-count')), '複数社報道': () => openSheet('pri', $('p-count')), 国内外報道: () => setTopic('cross') };
+    const f = [['期間内の見出し', cn.headlines.in_window], ['複数社報道', cn.multi_outlet], ['国内外報道', isObj(cn.home) ? cn.home.both : null]];
     $('count-f').replaceChildren(...f.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', null, lk(num(isNum(v) ? v : null), go[k], `${k} を開く`, 'cnt'))]));
     return;
   }
   if (x) {
-    $('count-h').textContent = '見出し数';
+    $('count-h').textContent = '取得した見出し';
     roll($('count-n'), x.fetched_items);
-    const f = [['期間内の見出し', x.in_window], ['2 社以上', x.multi_outlet], ['一次資料', x.primary_items]];
+    const f = [['期間内の見出し', x.in_window], ['複数社報道', x.multi_outlet], ['一次資料', x.primary_items]];
     $('count-f').replaceChildren(...f.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', null, num(isNum(v) ? v : null))]));
     return;
   }
   $('count-h').textContent = 'まとめた見出し';
   roll($('count-n'), items.length);
   $('count-f').replaceChildren(
-    h('dt', { text: '出来事' }), h('dd', null, num(es.length)), h('dt', { text: '2 社以上' }), h('dd', null, num(es.filter((e) => e.n >= 2).length)),
-    h('dt', { text: HEAD['case.sides'] }), h('dd', null, num(es.filter((e) => e.cover === 'both').length)), h('dt', { text: '写真あり' }), h('dd', null, num(items.filter((it) => imageOf(it)).length)));
+    h('dt', { text: '出来事' }), h('dd', null, num(es.length)), h('dt', { text: '複数社報道' }), h('dd', null, num(es.filter((e) => e.n >= 2).length)),
+    h('dt', { text: '国内外報道' }), h('dd', null, num(es.filter((e) => e.cover === 'both').length)), h('dt', { text: '写真あり' }), h('dd', null, num(items.filter((it) => imageOf(it)).length)));
 }
 function renderHaz() {
   const hz = state.haz;
@@ -2489,8 +2516,8 @@ const SHEET_BODY = {
         td(fmtN(r.h1), 'r'), td(fmtN(r.h6), 'r'), td(fmtN(r.h48), 'r'), td(isNum(r.age_h) ? `${r.age_h}時間前` : '—', 'r dim opt'), ...(anyDrop ? [td(fmtN(dropOf(r)), 'r dim opt')] : [])))));
     }
     return { big: fmtN(live), unit: `/ ${rows.length} 届いた媒体`, bad: live < rows.length * 0.8,
-      facts: cn && isObj(cn.headlines) ? [['見出し数', fmtN(cn.headlines.fetched)], ['期間内の見出し', fmtN(cn.headlines.in_window)], ['出来事', fmtN(cn.bundles && cn.bundles.events)], ['2 社以上', fmtN(cn.multi_outlet)],
-        [staleJa, fmtN(stale.size), stale.size ? 'err' : ''], ['事件の層', fmtN(cn.incidents)]] : [['見出し数', fmtN(x.fetched_items)], ['期間内の見出し', fmtN(x.in_window)], ['出来事', fmtN(x.stories)], ['2 社以上', fmtN(x.multi_outlet)], ['一次資料', fmtN(x.primary_items)],
+      facts: cn && isObj(cn.headlines) ? [['取得した見出し', fmtN(cn.headlines.fetched)], ['期間内の見出し', fmtN(cn.headlines.in_window)], ['出来事', fmtN(cn.bundles && cn.bundles.events)], ['複数社報道', fmtN(cn.multi_outlet)],
+        [staleJa, fmtN(stale.size), stale.size ? 'err' : ''], ['事件の層', fmtN(cn.incidents)]] : [['取得した見出し', fmtN(x.fetched_items)], ['期間内の見出し', fmtN(x.in_window)], ['出来事', fmtN(x.stories)], ['複数社報道', fmtN(x.multi_outlet)], ['一次資料', fmtN(x.primary_items)],
         [staleJa, fmtN(stale.size), stale.size ? 'err' : ''], ['事件の層', isNum(x.events) ? `${x.events}・畳んだ束 ${fmtN(x.stories_folded)}` : '—']], body };
   },
   hours() {
@@ -2625,6 +2652,7 @@ function renderSheet() {
   try { r = SHEET_BODY[k](); } catch (err) { r = { big: '—', unit: '', facts: [], body: [h('p', { class: 'empty', text: `表示できませんでした: ${err && err.message ? err.message : String(err)}` })] }; }
   const box = $('sheet').querySelector('.dsheet');
   const keep = box.querySelector('.ds-b') ? box.querySelector('.ds-b').scrollTop : 0;
+  const hadFocus = box.contains(document.activeElement), focusedClose = !!(document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('ds-x'));
   box.replaceChildren(
     h('header', { class: 'ds-h' },
       h('div', { class: 'ds-t' }, h('h2', { id: 'ds-title', text: SHEETS[k] }), h('button', { type: 'button', class: 'ds-x', on: { click: closeSheet } }, '閉じる', h('kbd', { text: 'esc' }))),
@@ -2632,6 +2660,8 @@ function renderSheet() {
     h('div', { class: 'ds-b' }, ...(r.body || [])),
     r.foot ? h('p', { class: 'ds-f', text: r.foot }) : null);
   if (keep) box.querySelector('.ds-b').scrollTop = keep;
+  // a redraw (the outside ratings arriving) must not drop the keyboard: the focus that was in the sheet goes back to its close button
+  if (hadFocus || focusedClose) { const x = box.querySelector('.ds-x'); if (x) x.focus({ preventScroll: true }); }
   // live: a row that changed since the sheet was last drawn lights once; the scroll stays where the viewer left it
   const prev = state.sheetRows && state.sheetRows.k === k ? state.sheetRows.m : null;
   const m = new Map();
@@ -2646,6 +2676,8 @@ function openSheet(kind, from) {
   const k = sheetKind(kind);
   if (!k) return false;
   if (state.about) closeAbout();
+  // the control that opened the sheet gets the focus back when it closes (a sheet opened over another one keeps the first opener)
+  if (!state.sheet) { const a = document.activeElement; state.sheetOpener = a && a !== document.body && !(a.closest && a.closest('#sheet')) ? a : null; }
   state.sheet = k;
   const layer = $('sheet');
   layer.hidden = false;
@@ -2671,8 +2703,11 @@ function closeSheet() {
   state.sheet = null;
   $('sheet').hidden = true;
   document.body.classList.remove('sheet-open');
+  const opener = state.sheetOpener;
+  state.sheetOpener = null;
   const back = $(SHEET_PANE[k]) && $(SHEET_PANE[k]).querySelector('.ph-open');
-  if (back) back.focus({ preventScroll: true });
+  if (opener && opener.isConnected && !opener.hidden) opener.focus({ preventScroll: true });
+  else if (back) back.focus({ preventScroll: true });
   syncAutoLine();
   return true;
 }
@@ -3774,12 +3809,13 @@ function appOffline() {
   const x = offlineLine({ online: navigator.onLine !== false, generatedAt: state.data ? state.data.generated_at : null, now: nowS(), clock: fmtShort });
   el.hidden = !x;
   el.textContent = x ? x.text : '';
-  if (x) $('m-gen').dataset.tone = 'bad'; else if (state.data) $('m-gen').dataset.tone = isOld(state.data.generated_at, nowS()) ? 'warn' : 'ok';
+  if (x) $('m-gen').dataset.tone = 'bad'; else if (state.data) genTone();
 }
 async function appLoad() {
   const d = dataDir();
   const [al, re, im, rl, he] = await Promise.all(['aliases.json', 'reaction.json', 'impact.json', 'relations.json', 'hero.json'].map((f) => getJson(d + f)));
   appS.groups = aliasGroups(al);
+  setWordGroups([...appS.groups, ...aliasGroups({ groups: isObj(al) ? al.words : [] })]);   // the words of one row of the compare figure: the groups and the table's own `words`
   appS.reaction = isObj(re) && re.schema === 'parallax-reaction/1' ? re : null;
   appS.impact = isObj(im) && im.schema === 'parallax-impact/1' ? im : null;
   appS.graph = graphOf(rl);

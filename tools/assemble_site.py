@@ -27,7 +27,8 @@ PAGE_DIRS = ("css", "js", "assets")
 DATA_FILES = ("latest.json", "stats.json", "board.json", "politics.json", "critical.json", "hazards.json", "markets.json",   # generated
               "relations.json", "reaction.json", "impact.json", "hero.json",                                                  # generated (CONTRACT 24-26)
               "aliases.json", "lifewords.json",                                                                               # tracked rules of 24 and 25.2
-              "prompt.json", "labels.json", "watchwords.json", "places.json", "traps.json", "scenes.json")                    # tracked settings
+              "prompt.json", "labels.json", "watchwords.json", "places.json", "traps.json", "scenes.json",
+              "ratings.json")                                                                                                 # tracked: outside ratings with source and day (js/app.js fetches it; coverage.json is not read by the page)
 NEVER = ("recorded.json", "eval.json", "history.json", "summary_cache.json", "og_robots.json", "withheld.json")
 DROP_FROM_LATEST = ("name_gate",)           # internal counts the page does not show
 

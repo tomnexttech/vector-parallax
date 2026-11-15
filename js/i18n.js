@@ -42,7 +42,7 @@ export const EN = {
   'AI のまとめ': 'AI summaries', '国内と海外の両方': 'Both Japan and abroad', '一覧': 'List', '件数': 'Count', '多い': 'Many', '並べ方': 'Layout', '標準': 'Standard', '主役': 'Lead',
   // the panes of the board
   '出来事': 'News', '注目': 'Top news', '注目ニュース': 'Top news', '関連': 'Related', '出典': 'Sources', '片側だけのニュース': 'Only some outlets', 'ニュース一覧': 'All news', '最初の報道': 'First report', '時間': 'Hours', '分野': 'Fields',
-  '時間別': 'Headlines by hour', '見出し数': 'Collected headlines', '期間内の見出し': 'Headlines in the window', '関連': 'Related headlines',
+  '時間別': 'Headlines by hour', '見出し数': 'Collected headlines', '取得した見出し': 'Collected headlines', '複数社報道': 'Reported by 2+ outlets', '国内外報道': 'Reported on both sides', '期間内の見出し': 'Headlines in the window', '関連': 'Related headlines',
   '出典・手法': 'Basis and sources', '種類': 'Type', '直近 1 時間': 'Last hour', '最多': 'Peak', '注目の初報': 'First reports of top news', '各 6 件まで': 'Up to 6 each',
   '届かない・更新なし': 'Unreachable or not updated', '地名なし': 'No place', '地点なし': 'No place', '押すと拡大': 'Press to enlarge', '地図を閉じる': 'Close the map', '地図を閉じる（Esc）': 'Close the map (Esc)', '一本の指で動かし、二度たたくと拡大、二度たたいて上下になぞると拡大・縮小、ボタンでも拡大・縮小できます': 'Move the map with one finger; double-tap to zoom in; double-tap and hold, then drag up or down to zoom; the buttons zoom too', '記事掲載の停止を依頼する': 'Ask to remove an article',
   '掲載の停止': 'Removal', '論点で絞る': 'Narrow by topic', 'AI が書いた題': 'Title written by the AI', '報じ方の種類で絞る': 'Narrow by type of outlet',
@@ -57,7 +57,7 @@ export const EN = {
   '自動のラベル・真偽は判定していない': 'Automatic labels; nothing is judged true or false', '真偽は判定していない': 'Nothing is judged true or false',
   // fields and types of outlets
   'すべて': 'All', '全て': 'All', '国際': 'World', '経済': 'Economy', '安全保障': 'Security', '技術': 'Technology', '国内政治': 'Japanese politics',
-  'お金・税金': 'Money and tax', '法': 'Law', '政治・人事': 'Politics and appointments', 
+  'お金・税金': 'Money and tax', '法': 'Law', '法律・人事': 'Law and appointments', '行名の下は 語の種類・載せた社数': 'Under a row name: kind of word, outlets that carry it', '政治・人事': 'Politics and appointments', 
   '政府一次': 'Government primary', '通信社': 'News agency', '公共放送': 'Public broadcaster', '全国紙': 'National paper', '民放': 'Commercial TV',
   '経済紙': 'Business paper', '地方紙': 'Regional paper', '専門': 'Specialist', '海外公共': 'Public, abroad', '海外主流': 'Mainstream, abroad',
   '国家メディア': 'State media', '政党機関紙': 'Party paper', '週刊誌・タブロイド': 'Weekly or tabloid', 'シンクタンク': 'Think tank', '集約': 'Aggregator',

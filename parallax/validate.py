@@ -64,6 +64,19 @@ def silence_hit(text, prompt):
     return any(re.search(r"(?<![a-z])" + re.escape(w.lower()) + r"(?![a-z])", t) for w in sw.get("en") or [])
 
 
+def judgement_hit(text, material_texts, prompt):
+    """AI の文が、褒める・責める語（prompt["summary"]["judgement_ja"]）を、材料の見出し・説明に無いまま使っているか。
+    成否は見出しの語（成功・失敗・回収）をそのまま言わせ、評価語は足させない。材料に同じ語があるなら、それは報じられた言葉なので許す。"""
+    words = ((prompt or {}).get("summary") or {}).get("judgement_ja") or []
+    t = unicodedata.normalize("NFKC", text).lower()
+    src = unicodedata.normalize("NFKC", " ".join(material_texts)).lower()
+    for w in words:
+        w = unicodedata.normalize("NFKC", w).lower()
+        if w and w in t and w not in src:
+            return True
+    return False
+
+
 def clean(value, limit):
     """文字列でなければ ""。空白を一つに畳み、Cc/Cf/Cs を除き、コードポイントで limit に切る。"""
     if not isinstance(value, str):
@@ -184,6 +197,9 @@ def validate(request, raw_text, prompt, items):
                     return ""
                 if v and silence_hit(v, prompt):                  # 「報じなかった」系の語は mode に関わらず落とす（§4.7）
                     counts["silence_words"] += 1
+                    return ""
+                if v and judgement_hit(v, titles, prompt):        # 材料に無い褒め・責めの語を足した文は出さない（11-15g）
+                    counts["judgement_words"] = counts.get("judgement_words", 0) + 1
                     return ""
                 if v and headline and report_hit(v, prompt):      # 題は事実の叙述に限る（§4.6）。空にして、下の「題が空なら規則へ」に乗せる
                     counts["report_words"] += 1
@@ -345,6 +361,8 @@ def validate_summaries(request, raw_text, prompt):
             counts["empty"] += 1
         elif copies(text, titles):
             counts["quoted_fields"] += 1
+        elif judgement_hit(text, titles + descs, prompt):
+            counts["empty"] += 1                              # 評価語を足した一行は出さない（規則の一行が代わりに出る）
         else:
             out["summaries"][eids[eid]] = text
         br = entry.get("brief")
@@ -362,7 +380,7 @@ def validate_summaries(request, raw_text, prompt):
                     counts["quoted_fields"] += 1
                     counts["brief_fields_dropped"] += 1
                     fields[k] = ""
-                elif silence_hit(v, prompt):
+                elif silence_hit(v, prompt) or judgement_hit(v, titles + descs, prompt):
                     counts["brief_fields_dropped"] += 1
                     fields[k] = ""
                 elif names_outlet(v, outlets):
