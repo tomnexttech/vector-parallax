@@ -12,6 +12,8 @@
 
 import { SIX_H, THREE_H, keptView, noticeParts, isOld, defaultView, freshness, lateBy } from './snapshot.js';
 import { summaryOf, summaryIndex, memberKey, briefOf, briefIndex, judged } from './summary.js';
+import { setTrMode, trOf, trMark } from './trans.js';
+import { installScrollKeys } from './scrollkeys.js';
 import { PLACES, placeJa, placesOf, placesIn } from './places.js';
 import { loadWatch, saveWatch, addWatch, removeWatch, hitsOf, loadView, saveView, countsFor, countIn, nextOf, COUNTS, LAYOUTS, COUNT_JA, LAYOUT_JA } from './prefs.js';
 import { TOPICS, FIELDS, topicsOf, fieldOf, placeField, topicJa } from './topics.js';
@@ -287,6 +289,7 @@ function buildEntries() {
   const cases = state.board && isObj(state.board.cases) ? state.board.cases : null;
   if (!state.sumBy) state.sumBy = summaryIndex(arr(state.base && state.base.stories));
   if (!state.briefBy) state.briefBy = briefIndex(arr(state.base && state.base.stories));
+  setTrMode(state.set.news.lang === 'ja' ? 'ja' : 'orig');   // a headline abroad in Japanese (訳) only when the visitor reads in Japanese (js/trans.js)
   const mk = (kind, obj, ids) => {
     const members = ids.map((id) => items[id]).filter(isObj);
     return {
@@ -353,8 +356,12 @@ function buildEntries() {
     if (lang === 'en' && en) e.heading = { text: en, ai: true, lang: 'en' };
     else if (lang !== 'orig' && ja) e.heading = { text: ja, ai: true, en };
     else if (lang !== 'orig' && en) e.heading = { text: en, ai: true, lang: 'en' };
-    else if (rep) e.heading = { text: rep.title, lang: rep.lang === 'en' ? 'en' : null, outlet: outletOf(rep), type: str(rep.type) };
-    else if (e.titled.length) e.heading = { text: e.titled[0].title, lang: e.titled[0].lang === 'en' ? 'en' : null, outlet: outletOf(e.titled[0]), type: str(e.titled[0].type) };
+    else if (rep || e.titled.length) {
+      // no AI headline: the headline as published, or its Japanese (訳) when it is a headline abroad and the build translated it (CONTRACT 13.2)
+      const it = rep || e.titled[0], t = trOf(it);
+      e.heading = t.tr ? { text: t.text, tr: true, en: t.orig, outlet: outletOf(it), type: str(it.type) }
+        : { text: it.title, lang: it.lang === 'en' ? 'en' : null, outlet: outletOf(it), type: str(it.type) };
+    }
     else e.heading = { text: uniq(e.members.map((it) => it.outlet)).join('・') || '—', none: true };
     const text = [e.heading.text, en, ...e.titled.map((it) => it.title)].join(' \n ');
     e.topics = c ? arr(c.flags).filter((f) => typeof f === 'string') : topicsOf(text);
@@ -367,7 +374,7 @@ function buildEntries() {
   }
   // one story split in two bundles (the Japanese reports in one, the reports abroad in the other) is counted once on every screen (js/samestory.js)
   const grown = new Set();
-  foldSame(out.filter((e) => !e.hid), { titlesOf: (e) => (e.heading && !e.heading.none && JA_CHARS.test(str(e.heading.text)) ? [e.heading.text] : []) });   // Japanese headlines only: English ones share too many plain words
+  foldSame(out.filter((e) => !e.hid), { titlesOf: (e) => (e.heading && !e.heading.none && !e.heading.tr && JA_CHARS.test(str(e.heading.text)) ? [e.heading.text] : []) });   // a translation (訳) is not a Japanese headline: it does not fold   // Japanese headlines only: English ones share too many plain words
   for (const e of out) if (e.sameAs && !grown.has(e)) {
     grown.add(e);
     e.titled = e.members.filter((it) => typeof it.title === 'string' && it.title.trim()); e.imgs = e.members.map(imageOf).filter(Boolean);
@@ -428,6 +435,7 @@ function headNode(e, cls) {
   const hd = e.heading;
   if (hd.ai) return h('span', { class: cls, lang: hd.lang || null }, h('span', { class: 'aimk', title: 'AI が書いた題', text: 'AI' }), hd.text);
   if (hd.none) return h('span', { class: cls, text: hd.text });
+  if (hd.tr) return h('span', { class: cls }, h('span', { class: 'xl-m', title: `原文: ${hd.en}`, text: '訳' }), `「${hd.text}」`, hd.outlet ? h('span', { class: 'hout', text: `（${hd.outlet}）` }) : null);
   const lead = typeLead(hd.type);
   return h('span', { class: cls, lang: hd.lang || null }, lead ? h('span', { class: 'tlead', text: lead }) : null, `「${hd.text}」`, hd.outlet ? h('span', { class: 'hout', text: `（${hd.outlet}）` }) : null);
 }
@@ -704,7 +712,7 @@ function rowMore(e) {
   const stop = (ev) => ev.stopPropagation();
   const others = e.members.length - 1;
   return h('div', { class: 'r-more', on: { click: stop } },
-    e.heading.ai && first && str(first.title) ? h('p', { class: 'r-orig', lang: first.lang === 'en' ? 'en' : null, text: `「${first.title}」（${outletOf(first)}）` }) : null,
+    (e.heading.ai || e.heading.tr) && first && str(first.title) ? h('p', { class: 'r-orig', lang: first.lang === 'en' ? 'en' : null, text: `「${first.title}」（${outletOf(first)}）` }) : null,
     withDesc ? descOf(withDesc, safeUrl(withDesc.link)) : null,
     h('div', { class: 'r-go' },
       link ? extLink(link, { class: 'r-a', on: { click: stop } }, `${outletOf(first) || hostOf(link)} の記事を開く`) : null,
@@ -928,10 +936,10 @@ function renderUnder(e, sorted) {
 }
 /** the feed's own description of a report (CONTRACT 14.1), quoted: never the article's body, never rewritten */
 function descOf(it, link) {
-  const d = typeof it.desc === 'string' ? it.desc.trim() : '';
+  const t = trOf(it), d = t.desc;
   if (!d) return null;
-  return h('blockquote', { class: 'mq', cite: link || null, lang: it.lang === 'en' ? 'en' : null },
-    h('p', { text: `「${d}」` }),
+  return h('blockquote', { class: 'mq', cite: link || null, lang: t.descLang },
+    h('p', null, t.descOrig ? h('span', { class: 'xl-m', title: `原文: ${t.descOrig}`, text: '訳' }) : null, `「${d}」`),
     h('footer', null, outletOf(it), isNum(it.ts) ? ` · ${fmtClock(it.ts)}` : '', link ? [' · ', extLink(link, { class: 'mq-o' }, '原文を開く')] : null));
 }
 function histNote() {
@@ -1117,7 +1125,7 @@ function caseNode(e) {
 
   const sorted = [...ms].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity));
   const last = m.last;
-  const linkTo = (it, text) => { const u = it ? safeUrl(it.link) : null; return u ? extLink(u, { class: 'lk', title: `${outletOf(it)} の記事を開く` }, text) : h('span', { text }); };
+  const linkTo = (it, text) => { const u = it ? safeUrl(it.link) : null; return u ? extLink(u, { class: 'lk', title: `${outletOf(it)} の記事を開く` }, text) : h('span', null, text); };
   // the band under the place card: how long since the first report (the bar is the share of the window it has run), and the first and the latest report
   const gen = state.data.generated_at, windowS = (isNum(state.data.window_h) ? state.data.window_h : 36) * 3600;
   const since = isNum(gen) && isNum(e.first) ? Math.max(0, gen - e.first) : null;
@@ -1161,14 +1169,14 @@ function caseNode(e) {
   const memHead = h('h3'), memList = h('ol', { class: 'mem' });
   const memRow = (it) => {
     const link = safeUrl(it.link);
-    const title = typeof it.title === 'string' && it.title.trim() ? it.title : null;
+    const tt = trOf(it), title = tt.text || null;
     const name = outletOf(it);
     return h('li', { class: it === first && isNum(it.ts) ? 'first' : null, data: { side: it.type === GOV ? 'gov' : it.home === 'intl' ? 'intl' : 'jp' } },
       h('span', { class: 'mt' }, isNum(it.ts) ? fmtClock(it.ts) : '—', h('small', { text: isNum(it.ts) && t0 != null ? plusH(it.ts - t0) : '時刻不明' })),
       h('span', { class: 'mb' },
         h('span', { class: 'mo' }, name ? lk(h('b', { text: name }), () => openOutlet(name), 'このメディアのページ') : null,
           ' ', str(it.type) ? lk(str(it.type), () => paintMem({ type: it.type }), `${it.type} の報道だけ見る`, 'mty') : null, it.home === 'intl' ? h('span', { text: '・海外' }) : null, viaGN(it) ? h('span', { class: 'via', text: ' · Google ニュース経由' }) : null),
-        link ? extLink(link, { class: 'mh', lang: it.lang === 'en' ? 'en' : null }, title ? `「${title}」` : name || hostOf(link)) : h('span', { class: 'mh', text: title ? `「${title}」` : '—' }),
+        link ? extLink(link, { class: 'mh', lang: tt.lang, title: tt.tr ? `原文: ${tt.orig}` : null }, trMark(h, tt), title ? `「${title}」` : name || hostOf(link)) : h('span', { class: 'mh', lang: tt.lang }, trMark(h, tt), title ? `「${title}」` : '—'),
         descOf(it, link),
         angles.get(it.id) ? h('span', { class: 'mf' }, h('span', { class: 'aimk', text: 'AI' }), angles.get(it.id)) : null));
   };
@@ -1245,11 +1253,12 @@ function caseNode(e) {
   // the first report of each side, on the first screen: who said it, when, and the headline as published
   const repSides = SIDES.filter(([k]) => sd[k].length);
   const reps = repSides.length >= 2 ? h('section', { class: 'dcard t-reps', 'aria-label': '各側初報' }, repSides.map(([k, , short]) => {
-    const it = sd[k].find((x) => str(x.title).trim()) || sd[k][0], t = str(it.title).trim();
+    const it = sd[k].find((x) => str(x.title).trim()) || sd[k][0], tt = trOf(it), t = tt.text;
     return h('div', { class: 'rp', data: { side: k } },
       h('span', { class: 'rp-k' }, h('i', { 'aria-hidden': 'true' }), short, h('b', { class: 'num', text: sd[k].length })),
       h('span', { class: 'rp-m' }, outletOf(it) || short, isNum(it.ts) ? h('time', { class: 'num', text: fmtClock(it.ts) }) : null),
-      h('span', { class: 'rp-h', lang: it.lang === 'en' ? 'en' : null }, linkTo(it, t ? `「${t}」` : outletOf(it) || '—')));
+      h('span', { class: 'rp-h', lang: tt.lang }, trMark(h, tt), linkTo(it, t ? `「${t}」` : outletOf(it) || '—')),
+      tt.tr ? h('span', { class: 'rp-o', lang: 'en', text: tt.orig }) : null);
   })) : null;
   // the point: the AI's lines (the detailed summary, or the short ones), else the first line of the reports; the viewer's own AI (connect, or the asks) is the last row of the card
   const point = h('div', { class: 't-ai' }, aiLines.length ? aiLines : fl ? h('p', { class: 'st-fl', text: fl }) : null, ownBox(e));
@@ -1257,13 +1266,13 @@ function caseNode(e) {
   const t1 = tl.length && isNum(tl[0].it.ts) ? tl[0].it.ts : null;
   const days = t1 != null && tl.some((r) => isNum(r.it.ts) && r.it.ts - t1 > 18 * 3600);
   const tlRow = (r) => {
-    const it = r.it, link = safeUrl(it.link), t = str(it.title).trim(), name = outletOf(it);
+    const it = r.it, link = safeUrl(it.link), tt = trOf(it), t = tt.text, name = outletOf(it);
     return h('li', { class: r.gap ? 'gap' : null, data: { side: r.side } },
       h('span', { class: 'tl-t num' }, isNum(it.ts) ? (days ? fmtShort(it.ts) : fmtClock(it.ts)) : '—', r.off ? h('small', { text: plusH(r.off) }) : null),
       h('span', { class: 'tl-ax', 'aria-hidden': 'true' }),
       h('span', { class: 'tl-b' },
         h('span', { class: 'tl-m' }, name ? toOutlet(name) : null, h('span', { text: SHORT[r.side] }), str(it.type) && it.type !== GOV ? h('span', { text: it.type }) : null),
-        link ? extLink(link, { class: 'tl-hl', lang: it.lang === 'en' ? 'en' : null }, t ? `「${t}」` : hostOf(link)) : h('span', { class: 'tl-hl', text: t ? `「${t}」` : '—' })));
+        link ? extLink(link, { class: 'tl-hl', lang: tt.lang, title: tt.tr ? `原文: ${tt.orig}` : null }, trMark(h, tt), t ? `「${t}」` : hostOf(link)) : h('span', { class: 'tl-hl', lang: tt.lang }, trMark(h, tt), t ? `「${t}」` : '—')));
   };
   const tlList = h('ol', { class: 'tl' });
   const paintTl = (all) => {
@@ -1296,7 +1305,7 @@ function caseNode(e) {
       fill = h('section', { class: 't-fill' }, lead, aiText ? h('small', { class: 'lf-n', text: AI_NOTE }) : null,
         rows.length ? h('ol', { class: 'lf-l' }, rows.map((r) => h('li', { data: { side: r.side } },
           h('span', { class: 'lf-m' }, h('i', { 'aria-hidden': 'true' }), outletOf(r.it) || SHORT[r.side], isNum(r.it.ts) ? h('time', { class: 'num', text: fmtClock(r.it.ts) }) : null),
-          h('span', { class: 'lf-h', lang: r.it.lang === 'en' ? 'en' : null, text: `「${str(r.it.title).trim()}」` })))) : null);
+          ((tt) => h('span', { class: 'lf-h', lang: tt.lang }, trMark(h, tt), `「${tt.text}」`))(trOf(r.it))))) : null);
     }
   }
 
@@ -1555,7 +1564,7 @@ const JA_CHARS = /[぀-ヿ一-鿿]/;
 function frontHead(e) {
   const t = entryTitleOf(e), o = original(e), oEn = !!o.text && o.text !== '—' && !JA_CHARS.test(o.text);
   if (document.documentElement.lang === 'en' || !oEn) return { text: t.text };
-  if (t.ai && JA_CHARS.test(t.text)) return { text: t.text, mark: '訳', orig: o.text, origLang: 'en' };
+  if ((t.ai || t.tr) && JA_CHARS.test(t.text)) return { text: t.text, mark: '訳', orig: o.text, origLang: 'en' };
   return { text: o.text, lang: 'en', mark: '英語' };
 }
 // a tab pressed on a small screen: the panel can lie a screen below, so it comes up under the tabs (the same step with reduced motion)
@@ -2950,7 +2959,7 @@ function newsPaper() {
   const body = groups.length ? [h('div', { class: 'ppr' }, groups.map((g) => h('section', { class: 'ppr-c' },
     h('h3', null, g.label, h('span', { class: 'n num', text: g.n })),
     h('ol', null, g.rows.map(({ e, it, outlet }) => { const l = safeUrl(it.link); return h('li', null,
-      h('button', { type: 'button', class: 'lk ppr-t', lang: it.lang === 'en' ? 'en' : null, text: it.title, title: 'このニュースを開く', on: { click: () => openCase(e.key) } }),
+      ((tt) => h('button', { type: 'button', class: 'lk ppr-t', lang: tt.lang, title: tt.tr ? `このニュースを開く（原文: ${tt.orig}）` : 'このニュースを開く', on: { click: () => openCase(e.key) } }, trMark(h, tt), tt.text))(trOf(it)),
       h('span', { class: 'ppr-m' }, l ? extLink(l, {}, outlet || hostOf(l)) : outlet, h('span', { text: fmtAge(it.ts) }), h('span', { text: `${e.n}社` }))); })))))] : [h('p', { class: 'empty big', text: '0 件' })];
   return { big: fmtN(groups.reduce((a, g) => a + g.rows.length, 0)), unit: '見出し', facts: groups.map((g) => [g.label, fmtN(g.n)]), body, foot: '官公庁、全国紙、通信社、経済紙、公共放送の順です。それぞれの中は注目度の順です。' };
 }
@@ -3226,7 +3235,7 @@ function hxLayerClose() {
 }
 function hxOpen(p) {
   const row = (x) => h('li', { data: { side: x.side } }, h('span', { class: 'hr-o' }, h('span', { class: 'hr-dot' }), x.outlet, x.ts ? h('time', { class: 'num', text: ` ${fmtShort(x.ts)}` }) : null),
-    x.link ? h('a', { href: x.link, target: '_blank', rel: 'noopener noreferrer', text: x.title }) : h('span', { text: x.title }));
+    ((tt) => (x.link ? h('a', { href: x.link, target: '_blank', rel: 'noopener noreferrer', lang: tt.lang, title: tt.tr ? `原文: ${tt.orig}` : null }, trMark(h, tt), tt.text) : h('span', { lang: tt.lang }, trMark(h, tt), tt.text)))(trOf({ title: x.title, title_ja: x.title_ja, lang: /[぀-ヿ一-鿿]/.test(x.title) ? 'ja' : 'en' })));
   const groups = ['jp', 'intl', 'gov'].map((k) => [k, p.heads.filter((x) => x.side === k)]).filter(([, l]) => l.length);
   hxLayer('元の記事', groups.map(([k, l]) => h('section', { class: 'hr-sh-g' }, h('h3', { text: { jp: '国内', intl: '海外', gov: '官公庁' }[k] }), h('ul', { class: 'hr-heads-l' }, l.map(row)))));
 }
@@ -4101,3 +4110,5 @@ async function main() {
 }
 
 if (typeof document !== 'undefined') main();
+// the keys move the box the wheel moves: PageDown, Space, Home and End scroll the screen's own scroll, or an open sheet's (js/scrollkeys.js)
+if (typeof document !== 'undefined') installScrollKeys(document, window);

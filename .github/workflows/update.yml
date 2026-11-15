@@ -36,7 +36,7 @@ jobs:
           python-version: "3.11"
 
       # What the next run needs from the last one is passed on here, not through git (CONTRACT 20.1): latest.json (the kept previous AI view),
-      # summary_cache.json (one-line summaries), history.json (lineage), og_robots.json (robots.txt of the hosts asked for og:image) and the last
+      # summary_cache.json (one-line summaries), title_cache.json (the Japanese of the headlines abroad, CONTRACT 13.2), history.json (lineage), og_robots.json (robots.txt of the hosts asked for og:image) and the last
       # hazards / markets / politics / critical / board files ("the previous file stays" when a fetch fails; critical.json also lets a source that failed this run keep its items of the last 3 days, marked as carried). A rolling key: the newest cache is restored, a new one is saved.
       - name: Restore the previous run's data
         uses: actions/cache@v4
@@ -51,6 +51,7 @@ jobs:
             data/hazards.json
             data/markets.json
             data/summary_cache.json
+            data/title_cache.json
             data/og_robots.json
           key: parallax-data-${{ github.run_id }}
           restore-keys: |

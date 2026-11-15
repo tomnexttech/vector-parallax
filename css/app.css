@@ -5617,3 +5617,37 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
   :root:not([data-show]):not(#d1):not(#d2):not(#d3):not(#d4):not(#d5):not(#d6):not(#d7) .fr-tab { flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; padding: 12px 18px; }
   :root:not([data-show]):not(#d1):not(#d2):not(#d3):not(#d4):not(#d5):not(#d6):not(#d7) .fr-tab .fr-v { justify-content: flex-start; }
 }
+
+/* ---- 2026-11-16: one rule for the wheel, the cards of the chosen news in dark, and no page that scrolls by a few pixels for nothing ----
+ * The wheel: the box under the pointer scrolls when it can; a box that cannot scroll (its content fits, or it only scrolls sideways) never holds
+ * the wheel, and a box at its end hands it on to the screen's own scroll. `overscroll-behavior: contain` on a box with nothing to scroll had
+ * kept the wheel from the board's one scroll over the whole middle column (詳しく見る: #case, a .pb grown to its content). Sheets and dialogs
+ * keep their wheel to themselves, so nothing behind an open sheet moves. */
+:root:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) :is(.pb, .col, .c1, .c2, .c3, .c4, .mc-l, .fl-list) { overscroll-behavior-y: auto; }
+:root:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) :is([role="dialog"], .sheet-layer, .sheet-wrap) :is(.pb, .app-body, .mc-l, .fl-list, .col) { overscroll-behavior-y: contain; }
+/* the small lists on the right of 詳しく見る move by themselves (js/autoscroll.js) and by the wheel: a hidden overflow took the wheel nowhere */
+@media (min-width: 1101px) {
+  :root[data-screen="board"]:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) .board:not([data-floor="map"]):not([data-wall="1"]) :is(#p-haz, #p-mkt, #p-pol, #p-src, #p-hours, #p-fields, #p-anom) > .pb { overflow-y: auto; overflow-x: hidden; scrollbar-width: none; }
+  :root[data-screen="board"]:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) .board:not([data-floor="map"]):not([data-wall="1"]) :is(#p-haz, #p-mkt, #p-pol, #p-src, #p-hours, #p-fields, #p-anom) > .pb::-webkit-scrollbar { display: none; }
+}
+/* the home's glow under the card stays inside the screen: it ran 8 % below the card and gave the home 20 to 60 px of scroll with nothing in it */
+:root:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) .hr-amb { bottom: 0; }
+/* 詳しく見る, the middle pane: its cards sit inside it with room on every side (the first card's top was the pane's top) */
+:root[data-screen="board"]:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) #p-case > .pb { padding-top: 20px; padding-bottom: 24px; }
+/* dark: those cards are a thin lighter glass on the pane's glass, one step above it, not a black slab (light is unchanged) */
+:root:not([data-theme="light"]):not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) #p-case :is(.dcard, .t-ai, .sd, .nt, .t-reps, .t-place):not(.cov) {
+  background: rgba(255, 255, 255, .06); -webkit-backdrop-filter: none; backdrop-filter: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08), 0 0 0 1px rgba(255, 255, 255, .10);
+}
+:root:not([data-theme="light"]):not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) #p-case :is(.dcard, .t-ai, .sd, .nt, .t-reps) :is(.dcard, .t-ai, .sd, .nt) { background: transparent; box-shadow: none; }
+/* 訳: the AI's Japanese of a headline abroad (js/trans.js); the headline as published is in its tooltip and one press away */
+.xl-m { display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px; background: var(--well); font: 700 11px/1.55 var(--f-text); color: var(--ink-2); vertical-align: 2px; letter-spacing: 0; }
+.rp-o, .en-orig { display: block; margin-top: 2px; font-size: 12px; line-height: 1.45; color: var(--ink-3); overflow-wrap: anywhere; }
+/* the map moves under nothing blurred: the layer panel over the map was a frosted glass, blurred again on every frame of a drag or a zoom */
+:root:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) .mpanel { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(16, 22, 38, .93); }
+:root[data-theme="light"]:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) .mpanel { background: rgba(255, 255, 255, .95); }
+/* 詳しく見る, three columns and one scroll (v54): the middle pane grows to its content, so it is no scroll box at all. `#app #case { overflow-x: hidden }`
+ * (v47, for the iPad's width) outranked the v54 rule and turned it back into a box that scrolls up and down with nothing to scroll; clip keeps the width */
+@media (min-width: 1101px) {
+  :root[data-screen="board"]:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 #case { overflow-x: clip; overflow-y: visible; }
+}

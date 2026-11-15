@@ -15,6 +15,7 @@
 
 import { HEAD } from './heads.js';
 import { leadLine } from './coverage.js';
+import { trOf, trMark } from './trans.js';
 
 // the ways in are short nouns from the one table of headings (js/heads.js, docs/copy-canon.md)
 export const FRONT_TABS = [['gap', HEAD['front.gap']], ['jp', HEAD['front.jp']], ['intl', HEAD['front.intl']], ['bias', HEAD['front.bias']]];
@@ -273,7 +274,7 @@ export function renderPaper(o) {
     const restEl = rest.length ? h('p', { class: 'pp-rest' }, h('span', { class: 'k num', text: `ほか ${rest.length} 社` }), ...rest.flatMap((x, i) => [i ? '・' : '', nameEl(x)])) : null;
     return h('div', { class: 'pp-hw' }, h('ol', { class: 'pp-hs' }, c.heads.map((it) => { const link = o.safeUrl ? o.safeUrl(it.link) : null; return h('li', null,
       h('span', { class: 'pp-ho' }, outletEl(it), isNum(it.ts) ? h('span', { class: 'num', text: clockOf(it.ts) }) : null),
-      link ? h('a', { href: link, target: '_blank', rel: 'noopener noreferrer', lang: it.lang === 'en' ? 'en' : null, text: str(it.title) || '—' }) : h('span', { lang: it.lang === 'en' ? 'en' : null, text: str(it.title) || '—' })); })), restEl);
+      ((tt) => (link ? h('a', { href: link, target: '_blank', rel: 'noopener noreferrer', lang: tt.lang, title: tt.tr ? `原文: ${tt.orig}` : null }, trMark(h, tt), tt.text || '—') : h('span', { lang: tt.lang }, trMark(h, tt), tt.text || '—')))(trOf(it))); })), restEl);
   };
   const ROWS = ['words', 'nums', 'tone', 'first', 'heads'].map((k) => [k, HEAD[`paper.${k}`]]);
   // the row 初報 counts every outlet of the story (媒体比較 on 詳しく見る counts the outlets it compared: 照合 6 社); each says which

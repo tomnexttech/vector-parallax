@@ -36,6 +36,7 @@ try:
     from parallax import counts as counts_mod
     from parallax import og as og_mod
     from parallax import sources as sources_mod
+    from parallax import translate as translate_mod
     from parallax import validate as validate_mod
     from parallax import withheld as withheld_mod
 except ImportError:                                   # parallax/ の中から直に走らせた時
@@ -44,6 +45,7 @@ except ImportError:                                   # parallax/ の中から�
     import counts as counts_mod  # type: ignore
     import og as og_mod  # type: ignore
     import sources as sources_mod  # type: ignore
+    import translate as translate_mod  # type: ignore
     import validate as validate_mod  # type: ignore
     import withheld as withheld_mod  # type: ignore
 
@@ -695,6 +697,28 @@ def choose_summary_provider(args, env, prompt, merge_provider=None, model=None):
                                  budget=ai_mod.CallBudget(SUMMARY_CALL_LIMIT),
                                  fallback_models=[] if model else fallback_chain(prompt, "summary_fallback_model"),
                                  fallback_budget=ai_mod.CallBudget(SUMMARY_FALLBACK_LIMIT)), ""
+
+
+def choose_translate_provider(args, env, prompt, model=None):
+    """訳の provider（CONTRACT §13.2）。-> (provider | None, status_if_none)。prompt.translate.enabled が true でなければ (None, "disabled")。
+    鍵を読むのは choose_provider・choose_summary_provider とここだけ。--no-ai・--responses・--dump-requests では呼ばない（記録済みの答えに訳は無い）。"""
+    tp = prompt.get("translate") or {}
+    if tp.get("enabled") is not True:
+        return None, "disabled"
+    if args.get("no_ai") or args.get("dump_requests"):
+        return None, "off"
+    if args.get("responses"):
+        return None, "none"
+    key = (env.get("GEMINI_API_KEY") or "").strip()
+    if not key:
+        return None, "nokey"
+    name = model or prompt.get("summary_model")
+    if not name:
+        raise ValueError("data/prompt.json has no summary_model")
+    return ai_mod.GeminiProvider(key, name, timeout=translate_mod.TIMEOUT_S, max_output_tokens=tp.get("max_output_tokens") or ai_mod.DEFAULT_MAX_OUTPUT_TOKENS,
+                                 budget=ai_mod.CallBudget(translate_mod.CALL_LIMIT),
+                                 fallback_models=[] if model else fallback_chain(prompt, "summary_fallback_model"),
+                                 fallback_budget=ai_mod.CallBudget(translate_mod.FALLBACK_LIMIT)), ""
 
 
 def run_ai(requests, provider, prompt, items, now):
@@ -1480,7 +1504,8 @@ def kept_run(own):
 # ---------------------------------------------------------------- 全体
 def build(items, status, now, window_h=DEFAULT_WINDOW_H, provider=None, status_if_none="off",
           prompt=None, public=False, previous=None, summary_provider=None, summary_status_if_none="off",
-          cache=None, extras=None, og=None, withheld=None):
+          cache=None, extras=None, og=None, withheld=None, translate_provider=None, translate_status_if_none="off",
+          title_cache=None):
     """-> (data, requests_full)。requests_full は全塊の要求（--dump-requests 用・全見出しを含む）。
     previous: 前回の latest.json（dict）。この回の AI が nokey / error の時だけ、その AI の見方を ai_snapshot に保つ。
     summary_provider・cache: 要約の段（§13）。cache（empty_cache() の形）はその場で直す。extras が dict なら
@@ -1538,6 +1563,10 @@ def build(items, status, now, window_h=DEFAULT_WINDOW_H, provider=None, status_i
         ai_requests = requests_full
         rows = {i: local_item(it) for i, it in by_id.items()}
 
+    # 海外の見出しの訳（CONTRACT §13.2）。頁に出す行（rows）に付ける: 公開版で見出しを出さない源は title が None なので訳さない
+    title_cache = title_cache if isinstance(title_cache, dict) else translate_mod.empty_cache()
+    ai_run["translate"] = translate_mod.stage(st["stories"], rows, prompt, translate_provider, translate_status_if_none, title_cache, now,
+                                             reject=(lambda t: has_gate_name(t) or names_withheld_outlet(t)) if public else has_gate_name)
     src_rows = source_rows(status, items, now)
     data = {"schema": SCHEMA, "generated_at": int(now), "window_h": window_h, "rights_mode": RIGHTS["mode"],
             "sources": src_rows, "scope": make_scope(src_rows, now, window_h), "items": rows,
@@ -1602,6 +1631,7 @@ def check_output(data, min_stories=0, prompt=None):
         if n_evt:
             bad.append("public edition keeps contrast / flag text on %d event(s) that include a withheld source" % n_evt)
     bad += desc_problems(items, data.get("edition") == "public")
+    bad += translate_mod.problems(items)
     run = data.get("ai_run") if isinstance(data.get("ai_run"), dict) else {}
     kept = run.get("status") == "kept_previous"
     if kept != ("ai_snapshot" in data):
@@ -1674,7 +1704,9 @@ def make_stats(data, raw_items, now, window_h, board_counts=None):
                                "fallback_attempts": sr.get("fallback_attempts", 0), "tier": sr.get("tier"), "fallback_reason": sr.get("fallback_reason"),
                                "answered_models": sr.get("answered_models"),
                                "at": sr.get("at")},
-                   "summarized": sum(1 for s in data["stories"] if "summary" in s)}}
+                   "summarized": sum(1 for s in data["stories"] if "summary" in s),
+                   "translate": {k: (run.get("translate") or {}).get(k) for k in ("status", "model", "at", "targets", "cache_hits", "translated", "calls",
+                                                                                "attempts", "calls_failed", "calls_skipped", "left_out", "dropped", "errors")}}}
 
 
 def write_json(path, obj):
@@ -1815,11 +1847,15 @@ def main(argv=None):
     s_provider, s_status = choose_summary_provider(args, os.environ, prompt, provider, a.summary_model)
     cache_path = Path(a.cache) if a.cache else Path(a.out).with_name("summary_cache.json")
     cache = load_cache(cache_path)
+    t_provider, t_status = choose_translate_provider(args, os.environ, prompt, a.summary_model)
+    title_cache_path = Path(a.out).with_name("title_cache.json")
+    title_cache = translate_mod.load_cache(title_cache_path)
     previous = load_previous(a.out)                   # 読むだけ。AI が使えない回に、前回の AI の見方を保つ（CONTRACT §12）
     previous, n_prev = withheld_mod.scrub(previous, w_rules)      # 止めた物は前の版からも戻さない（CONTRACT 20.9）
     extras = {}
     data, requests_full = build(items, status, now, a.window_h, provider, status_if_none, prompt, a.public, previous,
-                                s_provider, s_status, cache, extras, og_mod.fill if a.og else None, withheld=w_counts)
+                                s_provider, s_status, cache, extras, og_mod.fill if a.og else None, withheld=w_counts,
+                                translate_provider=t_provider, translate_status_if_none=t_status, title_cache=title_cache)
     if not (a.items or a.no_video):                   # the channel feeds are a network read; a replay of a saved fetch (--items) reads none
         attach_videos(data, items, now)
     if a.dump_requests:
@@ -1844,6 +1880,7 @@ def main(argv=None):
     print("withheld sources=%d items=%d photos=%d removed=%d photos_cleared=%d" % (w_counts["sources"], w_counts["items"], w_counts["photos"], w_counts["items_removed"], w_counts["photos_cleared"]))
     if not (a.no_ai or a.dump_requests):              # 要約の控え。点検に通った回だけ書く。--no-ai と --dump-requests は読むだけ
         write_json(cache_path, cache)
+        write_json(title_cache_path, title_cache)
     for code in dict.fromkeys(data["ai_run"]["errors"]):
         print("ai error %s: %s" % (code, ai_mod.error_message(code, "en", prompt)))
     for model, status, detail in ai_mod.HTTP_DETAILS:
@@ -1866,6 +1903,11 @@ def main(argv=None):
     print("summary status=%s provider=%s model=%s targets=%d cache_hits=%d summarized=%d calls=%d attempts=%d/%d failed=%d left_out=%d"
           % (sr["status"], sr["provider"] or "-", sr["model"] or "-", sr["targets"], sr["cache_hits"], sr["summarized"],
              sr["calls"], sr["attempts"], sr["call_limit"], sr["calls_failed"], sr["left_out"]))
+    tr = run.get("translate") or {}
+    print("translate status=%s model=%s targets=%d cache_hits=%d translated=%d calls=%d attempts=%d/%d failed=%d skipped=%d left_out=%d dropped=%d errors=%s"
+          % (tr.get("status"), tr.get("model") or "-", tr.get("targets", 0), tr.get("cache_hits", 0), tr.get("translated", 0), tr.get("calls", 0),
+             tr.get("attempts", 0), tr.get("call_limit", 0), tr.get("calls_failed", 0), tr.get("calls_skipped", 0), tr.get("left_out", 0),
+             tr.get("dropped", 0), ",".join(tr.get("errors") or []) or "-"))
     print("desc carried=%d of %d items name_blanked=%d"
           % (data["name_gate"]["desc_carried"], len(data["items"]), data["name_gate"]["desc_blanked"]))
     if "ai_snapshot" in data:

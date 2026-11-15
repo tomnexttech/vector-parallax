@@ -29,6 +29,7 @@ import { genreIcon, genreShort } from './genres.js';
 import { STATIONS, videosOf, playOfVideo, embedSrc } from './tv.js';
 import { isShow, trimCover } from './stage.js';
 import { renderPaper, paperOf } from './front.js';
+import { trOf, trMark } from './trans.js';
 
 export const GOV = '政府一次';
 export const CARDS = 6;
@@ -93,6 +94,7 @@ export function sides(e) {
 
 /** the headline as published and its outlet: the event's own headline when it is not the AI's, else its first titled report */
 export function original(e) {
+  if (e && e.heading && e.heading.tr && str(e.heading.en)) return { text: e.heading.en, outlet: str(e.heading.outlet) };   // a translated headline: its original (js/trans.js)
   if (e && e.heading && !e.heading.ai && !e.heading.none) return { text: e.heading.text, outlet: str(e.heading.outlet) };
   const t = e && Array.isArray(e.titled) ? [...e.titled].sort(byTime)[0] : null;
   return t ? { text: t.title, outlet: outletOf(t) } : { text: '—', outlet: '' };
@@ -101,6 +103,7 @@ export function original(e) {
 /** the title of a card: the AI's when it wrote one (marked AI on the page), else the headline as published */
 export function titleOf(e) {
   if (e && e.heading && e.heading.ai && !e.heading.none && str(e.heading.text).trim()) return { text: e.heading.text.trim(), outlet: '', ai: true };
+  if (e && e.heading && e.heading.tr && str(e.heading.text).trim()) return { text: e.heading.text.trim(), outlet: str(e.heading.outlet), ai: false, tr: true, orig: str(e.heading.en) };
   return { ...original(e), ai: false };
 }
 
@@ -151,7 +154,7 @@ export function renderEntry(root, o) {
       } } }) : genreIcon(f),
       withBadge ? badge(f) : null, on ? h('span', { class: 'en-on', text: '表示中' }) : null);
   };
-  const titleEl = (t, cls, tag = 'span') => h(tag, { class: cls }, t.ai ? h('span', { class: 'aimk', text: 'AI' }) : null, t.ai ? t.text : quoted(t.text),
+  const titleEl = (t, cls, tag = 'span') => h(tag, { class: cls }, t.ai ? h('span', { class: 'aimk', text: 'AI' }) : t.tr ? h('span', { class: 'xl-m', title: `原文: ${t.orig}`, text: '訳' }) : null, t.ai ? t.text : quoted(t.text),
     !t.ai && t.outlet ? h('span', { class: 'en-o', text: `（${t.outlet}）` }) : null);
   // the outlets of each side, as the first card of the home counts them (国内 8 社・海外 4 社), not the reports
   const outs = (list) => new Set((Array.isArray(list) ? list : []).filter((it) => it && typeof it === 'object').map(outletOf).filter(Boolean)).size;
@@ -216,16 +219,18 @@ export function renderEntry(root, o) {
   // ---- the headlines side by side: a side without a report is one line, not an empty column
   // a press on a headline opens the outlet's own description, quoted, and the link to the article
   const item = (it) => {
-    const link = o.safeUrl(it.link), t2 = str(it.title).trim(), d = str(it.desc).trim(), en = it.lang === 'en' ? 'en' : null;
+    // a headline abroad in the AI's Japanese, marked 訳; the press opens the headline as published (js/trans.js)
+    const tt = trOf(it), link = o.safeUrl(it.link), t2 = tt.text, d = tt.desc, en = tt.lang;
     const head = t2 ? quoted(t2) : outletOf(it) || '—';
     return h('li', null,
       h('span', { class: 'en-m' }, o.outlet && outletOf(it) ? h('button', { type: 'button', class: 'en-mo', title: 'このメディアが扱ったニュース', on: { click: () => o.outlet(outletOf(it)) } }, outletOf(it)) : h('b', { text: outletOf(it) || '—' }), str(it.type) ? h('span', { class: 'en-ty', text: it.type }) : null, h('span', { class: 'mt', text: isNum(it.ts) ? fmt.clock(it.ts) : '—' })),
       link || d ? h('details', { class: 'en-d' },
-        h('summary', { class: 'en-a', lang: en }, h('span', { class: 'en-at', text: head }), lineIcon('more', 'en-dc')),
+        h('summary', { class: 'en-a', lang: en }, trMark(h, tt), h('span', { class: 'en-at', text: head }), lineIcon('more', 'en-dc')),
         h('div', { class: 'en-dp' },
-          d ? h('p', { class: 'en-q', lang: en, text: `「${d}」` }) : null,
+          tt.tr ? h('p', { class: 'en-orig', lang: 'en', text: `原文「${tt.orig}」` }) : null,
+          d ? h('p', { class: 'en-q', lang: tt.descLang, text: `「${d}」` }) : null,
           link ? h('a', { class: 'en-open', href: link, target: '_blank', rel: 'noopener noreferrer' }, '記事を開く', lineIcon('right')) : null))
-        : h('span', { class: 'en-a', lang: en, text: head }));
+        : h('span', { class: 'en-a', lang: en }, trMark(h, tt), head));
   };
   const has = SIDES.filter(([k]) => s[k].length), miss = SIDES.filter(([k]) => !s[k].length);
   const col = ([k, title]) => h('section', { class: 'en-col', data: { side: k } },

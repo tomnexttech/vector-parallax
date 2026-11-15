@@ -118,7 +118,7 @@ export function createSettingsPanel({ root, get, set, info, watch, ai, view, ext
       return [
         group('', [
           row('最初に開く見方', '自動は、AI のまとめがあれば AI を使います。上の帯でいつでも替えられます', seg('view', '最初に開く見方', s.news.view, [['auto', '自動'], ['ai', 'AI'], ['rules', '規則']], (n, v) => { n.news.view = v; })),
-          row('見出しの言語', 'AI の題が無いニュースは、メディアの見出しをそのまま出します', seg('lang', '見出しの言語', s.news.lang, [['ja', '日本語'], ['en', 'English'], ['orig', '元の見出し']], (n, v) => { n.news.lang = v; })),
+          row('見出しの言語', '日本語では、海外の見出しを AI の訳で出します（「訳」の印・元の見出しも見られます）。元の見出しは、そのままです', seg('lang', '見出しの言語', s.news.lang, [['ja', '日本語'], ['en', 'English'], ['orig', '元の見出し']], (n, v) => { n.news.lang = v; })),
           row('国内外', '国内と海外の両方が載せたニュースは必ず出します', seg('scope', '国内外', s.news.scope, [['all', '両方'], ['jp', '国内'], ['intl', '海外']], (n, v) => { n.news.scope = v; })),
           row('地元', 'ホームと「比べる」に、選んだ地名のニュースを出します。選択はこのブラウザにだけ保存します', h('select', { class: 'set-sel', 'aria-label': '地元', data: { f: 'local' }, on: { change: (ev) => { const v = ev.target.value; change((n) => { n.local.place = v; }); } } },
             h('option', { value: '', selected: !s.local.place ? true : null }, '選ばない'),

@@ -64,8 +64,11 @@ def _heads(ms):
                 continue
             seen.add(m.get("outlet"))
             link = m.get("link") if isinstance(m.get("link"), str) and m["link"].startswith(("https://", "http://")) else None
-            out.append({"id": m.get("id"), "side": k, "outlet": m.get("outlet"), "ts": m.get("ts"), "title": m["title"][:140], "link": link,
-                        "lang": m.get("lang") if m.get("lang") in ("ja", "en") else "ja"})
+            row = {"id": m.get("id"), "side": k, "outlet": m.get("outlet"), "ts": m.get("ts"), "title": m["title"][:140], "link": link,
+                   "lang": m.get("lang") if m.get("lang") in ("ja", "en") else "ja"}
+            if isinstance(m.get("title_ja"), str) and m["title_ja"].strip():
+                row["title_ja"] = m["title_ja"][:140]          # the AI's Japanese of a headline abroad (CONTRACT 13.2); the page marks it 訳
+            out.append(row)
             if len(seen) >= HEADS_PER_SIDE:
                 break
     return out
@@ -120,7 +123,10 @@ def _title(s, ms, case):
     if isinstance(ai.get("headline_ja"), str) and ai["headline_ja"].strip():
         return {"text": ai["headline_ja"][:120], "outlet": None, "lang": "ja", "ai": True}
     rep = next((m for m in ms if m.get("id") == case.get("rep_id")), None) or sorted(ms, key=lambda m: (m.get("ts") or 0))[0]
-    return {"text": (rep.get("title") or "")[:140], "outlet": rep.get("outlet"), "lang": rep.get("lang") if rep.get("lang") in ("ja", "en") else "ja", "ai": False}
+    t = {"text": (rep.get("title") or "")[:140], "outlet": rep.get("outlet"), "lang": rep.get("lang") if rep.get("lang") in ("ja", "en") else "ja", "ai": False}
+    if isinstance(rep.get("title_ja"), str) and rep["title_ja"].strip():
+        t["text_ja"] = rep["title_ja"][:140]
+    return t
 
 
 def compute(latest, board=None, relations=None, reaction=None, now=None):

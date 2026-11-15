@@ -16,6 +16,7 @@
  *
  * Neutral by rule: a side is never ranked or called right or wrong; the sides' hues are on the bar only. What a side's headlines do
  * not carry is said as "not in the headlines and summaries", never as "did not report". Numbers are counted values, nothing else. */
+import { trMode } from './trans.js';
 
 export const HERO_SCHEMA = 'parallax-hero/1';
 export const MAX_PICKS = 5;
@@ -55,7 +56,9 @@ function cleanSide(x) {
 }
 function cleanHead(x) {
   if (!isObj(x) || !str(x.title).trim() || !['jp', 'intl', 'gov'].includes(x.side)) return null;
-  return { id: str(x.id), side: x.side, outlet: str(x.outlet), ts: isNum(x.ts) ? x.ts : null, title: x.title.trim(), link: safeUrl(x.link) };
+  const out = { id: str(x.id), side: x.side, outlet: str(x.outlet), ts: isNum(x.ts) ? x.ts : null, title: x.title.trim(), link: safeUrl(x.link) };
+  if (/[぀-ヿ一-鿿]/.test(str(x.title_ja))) out.title_ja = str(x.title_ja).trim();   // the AI's Japanese of a headline abroad (js/trans.js)
+  return out;
 }
 export function cleanSame(x) {
   if (!isObj(x)) return null;
@@ -76,7 +79,7 @@ function cleanPick(p) {
   const s = isObj(p.sides) ? p.sides : {};
   const out = {
     sid: p.sid, tier: p.tier,
-    title: { text: p.title.text.trim(), outlet: str(p.title.outlet), lang: p.title.lang === 'en' ? 'en' : 'ja', ai: p.title.ai === true },
+    title: { text: p.title.text.trim(), outlet: str(p.title.outlet), lang: p.title.lang === 'en' ? 'en' : 'ja', ai: p.title.ai === true, ...(/[぀-ヿ一-鿿]/.test(str(p.title.text_ja)) ? { text_ja: str(p.title.text_ja).trim() } : {}) },
     sides: { jp: cleanSide(s.jp), intl: cleanSide(s.intl), gov: cleanSide(s.gov) },
     points: { jp: words(pts.jp), intl: words(pts.intl), both: words(pts.both) },
     findings: arr(p.findings).map(cleanFinding).filter(Boolean).slice(0, MAX_FINDINGS),
@@ -210,10 +213,13 @@ export function dotsOf(f, cov) {
 /** the headline the card leads with: an outlet's own when the card's title was written by the AI, the AI's one sentence kept for below */
 export function leadOf(p) {
   if (!isObj(p) || !isObj(p.title)) return { text: '', lang: 'ja', outlet: '', ai: '' };
-  if (!p.title.ai) return { text: p.title.text, lang: p.title.lang, outlet: p.title.outlet, ai: '' };
+  const ja = trMode() === 'ja' && !(typeof document !== 'undefined' && document.documentElement && document.documentElement.lang === 'en');
+  // a headline abroad leads in the AI's Japanese, marked 訳, with the headline as published in tr (docs/CONTRACT-public.md 13.2)
+  if (!p.title.ai) return ja && p.title.text_ja ? { text: p.title.text_ja, lang: 'ja', outlet: p.title.outlet, ai: '', tr: p.title.text } : { text: p.title.text, lang: p.title.lang, outlet: p.title.outlet, ai: '' };
   const hs = arr(p.heads);
   const x = hs.find((y) => y.outlet && y.outlet === p.title.outlet) || hs.find((y) => y.side === 'jp') || hs[0];
   if (!x) return { text: p.title.text, lang: p.title.lang, outlet: '', ai: '' };
+  if (ja && x.title_ja && !/[぀-ヿ一-鿿]/.test(x.title)) return { text: x.title_ja, lang: 'ja', outlet: x.outlet, ai: p.title.text, tr: x.title };
   return { text: x.title, lang: /[぀-ヿ一-鿿]/.test(x.title) ? 'ja' : 'en', outlet: x.outlet, ai: p.title.text };
 }
 
@@ -252,11 +258,11 @@ function pickOf(e, tier, o) {
   const sides = { jp: side(s.jp), intl: side(s.intl), gov: side(s.gov) };
   const cov = e.case && isObj(e.case.coverage) ? e.case.coverage : null;
   const t = o.titleOf(e);
-  const head = (it, k) => ({ id: str(it.id), side: k, outlet: outletOf(it), ts: isNum(it.ts) ? it.ts : null, title: str(it.title).trim(), link: safeUrl(it.link) });
+  const head = (it, k) => ({ id: str(it.id), side: k, outlet: outletOf(it), ts: isNum(it.ts) ? it.ts : null, title: str(it.title).trim(), link: safeUrl(it.link), ...(str(it.title_ja) ? { title_ja: str(it.title_ja).trim() } : {}) });
   const sid = e.case ? e.case.sid : e.obj && e.obj.sid ? e.obj.sid : e.key;
   return cleanPick({
     sid, key: e.key, tier,
-    title: { text: t.text, outlet: t.outlet, lang: /[぀-ヿ一-鿿]/.test(t.text) ? 'ja' : 'en', ai: !!t.ai },
+    title: t.tr ? { text: str(e.heading && e.heading.en) || t.text, text_ja: t.text, outlet: t.outlet, lang: 'en', ai: false } : { text: t.text, outlet: t.outlet, lang: /[぀-ヿ一-鿿]/.test(t.text) ? 'ja' : 'en', ai: !!t.ai },
     sides,
     points: tier === 'one_side' ? {} : pointsOf(cov),
     findings: tier === 'one_side' ? [] : (localFindings(cov, { jp: sides.jp.first_ts, intl: sides.intl.first_ts }) || []),
@@ -330,12 +336,12 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
     }
     if (p.tier === 'split' || p.tier === 'both') {
       const side = (k) => h('div', { class: 'hr-col hr-heads', data: { col: k } }, h('h3', { text: SIDE_JA[k] }),
-        h('ul', null, p.heads.filter((x) => x.side === k).slice(0, 2).map((x) => h('li', null, h('span', { class: 'o', text: x.outlet }), h('span', { class: 't', text: x.title })))));
+        h('ul', null, p.heads.filter((x) => x.side === k).slice(0, 2).map((x) => h('li', null, h('span', { class: 'o', text: x.outlet }), h('span', { class: 't', lang: trMode() === 'ja' && x.title_ja ? null : (/[぀-ヿ一-鿿]/.test(x.title) ? null : 'en'), title: trMode() === 'ja' && x.title_ja ? `原文: ${x.title}` : null }, trMode() === 'ja' && x.title_ja ? h('span', { class: 'xl-m', text: '訳' }) : null, trMode() === 'ja' && x.title_ja ? x.title_ja : x.title)))));
       return h('div', { class: 'hr-cols two' }, side('jp'), side('intl'));
     }
     const k = p.sides.jp.outlets ? 'jp' : 'intl';
     return h('div', { class: 'hr-cols one' }, h('div', { class: 'hr-col hr-heads', data: { col: k } }, h('h3', { text: COL_JA[k] }),
-      h('ul', null, p.heads.filter((x) => x.side === k).slice(0, 2).map((x) => h('li', null, h('span', { class: 'o', text: x.outlet }), h('span', { class: 't', text: x.title }))))),
+      h('ul', null, p.heads.filter((x) => x.side === k).slice(0, 2).map((x) => h('li', null, h('span', { class: 'o', text: x.outlet }), h('span', { class: 't', lang: trMode() === 'ja' && x.title_ja ? null : (/[぀-ヿ一-鿿]/.test(x.title) ? null : 'en'), title: trMode() === 'ja' && x.title_ja ? `原文: ${x.title}` : null }, trMode() === 'ja' && x.title_ja ? h('span', { class: 'xl-m', text: '訳' }) : null, trMode() === 'ja' && x.title_ja ? x.title_ja : x.title))))),
       h('p', { class: 'hr-note', text: on.oneSideNote || '' }));
   }
   function dots(d) {
@@ -375,7 +381,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
             h('button', { type: 'button', class: 'hr-pg hr-prev', 'aria-label': '前のニュース', title: '前のニュース（←）', on: { click: () => step(-1) } }, '‹'),
             h('span', { class: 'hr-pos num', 'aria-live': 'polite', text: `${i + 1} / ${n}` }),
             h('button', { type: 'button', class: 'hr-pg hr-next', 'aria-label': '次のニュース', title: '次のニュース（→）', on: { click: () => step(1) } }, '›')) : null),
-        h('h2', { class: 'hr-t', id: 'hr-t', lang: lead.lang === 'en' ? 'en' : null, text: lead.text }),
+        h('h2', { class: 'hr-t', id: 'hr-t', lang: lead.lang === 'en' ? 'en' : null }, lead.tr ? h('span', { class: 'xl-m', title: `原文: ${lead.tr}`, text: '訳' }) : null, lead.text),
         h('p', { class: 'hr-facts' }, SIDES3.map((k) => h('span', { class: 'hr-fc' + (p.sides[k].outlets ? '' : ' zero'), data: { side: k } }, h('span', { class: 'k', text: SIDE_JA[k] }), h('b', { class: 'num', text: p.sides[k].outlets }), h('span', { class: 'u', text: '社' }))),
           first ? h('span', { class: 'hr-first' }, h('span', { class: 'k', text: '初報' }), h('time', { class: 'num', text: short(first) })) : null),
         sh.total ? h('div', { class: 'hr-share', role: 'img', 'aria-label': `このニュースの社の割合 ${lab}` }, h('span', { class: 'hr-sb', 'aria-hidden': 'true' }, SIDES3.map(seg)), h('span', { class: 'hr-sl num' }, h('span', { class: 'k', text: 'このニュース' }), lab)) : null,

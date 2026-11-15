@@ -266,7 +266,13 @@ export function createMapGL(canvas, opts, ml) {
     if (hit.kind === 'cluster') zoomInto(hit.m);
     else if (opts.onPick) opts.onPick(hit);
   });
-  map.on('mousemove', (e) => { map.getCanvas().style.cursor = pickAt(e.point.x, e.point.y) ? 'pointer' : api.cursor; });
+  // the pointer's shape: read once a frame, and not while the map moves (a drag fired a query of the rendered marks on every mouse event)
+  let hoverQ = 0, hoverAt = null;
+  map.on('mousemove', (e) => {
+    hoverAt = e.point;
+    if (hoverQ || map.isMoving()) return;
+    hoverQ = requestAnimationFrame(() => { hoverQ = 0; if (dead || !hoverAt || map.isMoving()) return; map.getCanvas().style.cursor = pickAt(hoverAt.x, hoverAt.y) ? 'pointer' : api.cursor; });
+  });
   map.on('dragstart', () => { held = true; });
   map.on('zoomstart', (e) => { if (e.originalEvent) held = true; });
   map.on('dblclick', () => { held = true; });
@@ -275,7 +281,8 @@ export function createMapGL(canvas, opts, ml) {
   const info = (moving) => ({ view: api.view(), w: size()[0], h: size()[1], marks: [], moving });
   const painted = (moving) => { if (!opts.onPaint || paintQ) return; paintQ = requestAnimationFrame(() => { paintQ = 0; if (!dead) opts.onPaint(info(moving)); }); };
   const again = () => { refreshMarks(); refreshHazards(); };
-  map.on('move', () => { painted(true); if (marksZ != null && Math.abs(map.getZoom() - marksZ) > 0.15) again(); });
+  // while it moves only the light work runs; the marks are grouped again for the new scale once it stops (setData on every step of a zoom re-tiled them each frame)
+  map.on('move', () => { painted(true); });
   map.on('moveend', () => { if (marksZ == null || Math.abs(map.getZoom() - marksZ) > 0.02) again(); painted(false); });
 
   // ---------------------------------------------------------------- the lifecycle

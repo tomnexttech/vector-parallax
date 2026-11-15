@@ -20,6 +20,7 @@
 import { placeJa, placesIn } from './places.js';
 import { sides as sidesOf, SIDES } from './entry.js';
 import { HEAD } from './heads.js';
+import { trOf, trMark } from './trans.js';
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const str = (v) => (typeof v === 'string' ? v : '');
@@ -379,7 +380,7 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
     const name = outletOf(it), link = safeUrl(it.link);
     return h('section', { class: 'tl-paper' },
       h('header', { class: 'pp-m' }, h('i', { text: name.trim().slice(0, 1) }), h('b', { text: name }), h('small', { text: [str(it.type), isNum(it.ts) ? fmtClock(it.ts) : ''].filter(Boolean).join(' ') })),
-      link ? extLink(link, { class: 'pp-t', lang: it.lang === 'en' ? 'en' : null }, str(it.title)) : h('p', { class: 'pp-t', text: str(it.title) }),
+      ((tt) => (link ? extLink(link, { class: 'pp-t', lang: tt.lang, title: tt.tr ? `原文: ${tt.orig}` : null }, trMark(h, tt), tt.text) : h('p', { class: 'pp-t', lang: tt.lang }, trMark(h, tt), tt.text)))(trOf(it)),
       quote, h('footer', { class: 'pp-f' }, h('small', { text: it.type === '政府一次' ? '一次資料' : 'もう一つの見出し' }), link ? go('元の記事を開く', () => window.open(link, '_blank', 'noopener,noreferrer')) : null));
   }
   return { tile, go, ratioBar, homeTile, typeTile, timeTile, sides, paper, biasTile, biasMini, divergeTile, overlapTile, halfGauge, areaSvg };

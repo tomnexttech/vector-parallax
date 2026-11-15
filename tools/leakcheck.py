@@ -159,7 +159,7 @@ def scan_text(text, patterns):
 
 DATA_JSON = "data/latest.json"
 # The fields in which this project writes the text itself (everything else in data/latest.json is quoted from the feeds).
-STRICT_KEYS = ("headline_ja", "headline_en", "focus_ja", "contrast_ja", "flag_note_ja", "note_ja", "text_ja", "summary_ja")
+STRICT_KEYS = ("headline_ja", "headline_en", "focus_ja", "contrast_ja", "flag_note_ja", "note_ja", "text_ja", "summary_ja", "title_ja", "desc_ja")
 
 
 def gate_counts(obj, patterns):

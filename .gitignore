@@ -13,6 +13,7 @@ data/critical.json
 data/hazards.json
 data/markets.json
 data/summary_cache.json
+data/title_cache.json
 data/recorded.json
 data/og_robots.json
 data/relations.json

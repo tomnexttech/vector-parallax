@@ -653,6 +653,17 @@ The page of an event and its sheet say what happened without sending the reader 
 
 **Page.** The sheet of an event (`js/summary.js` `briefOf`, `js/app.js` `briefBox`) and `s/<sid>.html` (21.1) show the four rows (a row with `""` is left out, the unknown phrase is shown in a muted colour), the AI mark with provider, model and time, and the note that the AI can be wrong.
 
+### 13.2 The Japanese of a headline abroad (`items[].title_ja`, decided 2026-11-16)
+
+Neither the bundling (4) nor the summary (13) gives an event of one outlet any Japanese, and they give none to an event the AI did not bundle, so on 2026-11-16 the public data showed 29 of its 347 events abroad in Japanese and the rest in English on the Japanese screen. **A translation is not a summary**: one headline, put into Japanese, nothing added and nothing left out.
+
+- **Build (`parallax/translate.py`).** After the stories are made, every item row on the page whose headline is not Japanese (`lang != "ja"`, a title without kana or kanji; a row whose title is withheld in the public edition has `title: null` and is not sent) gets `title_ja`, and `desc_ja` when its `desc` is carried (14.1). Order: the page order of `stories`. Batches of 40 (`translate.BATCH`), at most 8 calls on the summary model and 8 on its fallback chain per build (`CALL_LIMIT`, `FALLBACK_LIMIT`); the rest waits for the next build (`left_out`). Free tier: 8 builds a day x 16 = 128 more requests a day, inside the counts of 13.
+- **Prompt.** `data/prompt.json` -> `translate` = {enabled, version, max_output_tokens, limits {title_ja 120, desc_ja 220}, system, user_template, schema}. Answer `{"titles":[{tid, title_ja, desc_ja}]}`. The text in `<doc>` is data.
+- **Check.** A field is dropped when it is empty, has no kana or kanji (English handed back), or carries a fixed word (17) or, in the public edition, the name of a withheld outlet. `check_output` refuses a `title_ja` on a row without its own title and a `desc_ja` on a row without its own `desc`; `title_ja` and `desc_ja` are AI fields of the name gate (tools/leakcheck.py `STRICT_KEYS`).
+- **Cache `data/title_cache.json`** (Actions cache, never deployed): `{schema: "parallax-title-cache/1", entries: {sha256(lang, title, desc): {title_ja, desc_ja?, made_at, model, v}}}`. A headline is asked once; rows out of the window are dropped at every write; 4000 at most. A build without a key shows the cached translations (`status: "cached"`).
+- **Run.** `ai_run.translate` = {status, provider, model, at, targets, cache_hits, translated, calls, calls_failed, calls_skipped, attempts, call_limit, fallback_attempts, fallback_limit, left_out, dropped, errors}; the same counts in `stats.json` -> `ai.translate`; the build log prints `translate status=...`.
+- **Page (`js/trans.js`).** On the Japanese screen with 見出しの言語 = 日本語, a headline abroad shows `title_ja` with a small 訳 mark and the headline as published in its tooltip, beside it or one press away (the title of a news without an AI headline, the reports of 詳しく見る, 国内／海外の見出し, the timeline, the home card and its lists). The English screen and 元の見出し keep the headline as published. A translation never folds two news into one (21, `foldSame`).
+
 ## 14. Rights mode (`prompt.rights_mode`, decided 2026-11-04)
 
 `data/prompt.json` has `"rights_mode": "quote"` (default) or `"strict"`; `--rights quote|strict` (or the environment variable `PARALLAX_RIGHTS`) overrides
