@@ -1,6 +1,7 @@
-// The headings are short nouns (docs/copy-canon.md, Sir 11-15: 「国内外比較　日本独占　海外独占　のようにわかりやすくてシンプル、
+// The headings are short nouns (docs/copy-canon.md, Sir 11-15: 「国内外比較　日本独自　海外独自　のようにわかりやすくてシンプル、
 // 文章的な長ったらしさをそいだ見出しにしろ」). One table holds them (js/heads.js); this keeps the table to the rule and the old
 // sentence-like headings out of the code, so the habit cannot come back by a new screen.
+// 11-16 (Sir: 「独占じゃなくて独自に」): 日本独占・海外独占・官公庁独占・独占報道・独占率 became 日本独自・海外独自・官公庁独自・独自報道・独自率; the words of 11-15 above are replaced by today's.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -19,12 +20,12 @@ test('every heading of the table is a short noun: 2 to 8 characters, no particle
   }
   assert.equal(HEAD_MAX, 8);
   for (const bad of ['日本と海外の差', '片側だけの話', '偏りの大きい話', '分野ごとの記事の数', '最初に報じた時刻']) assert.notEqual(headRule(bad), '', `「${bad}」breaks the rule`);
-  for (const ok of ['国内外比較', '日本独占', '海外独占', '偏り度', '初報', '分野別']) assert.equal(headRule(ok), '', `「${ok}」keeps it`);
+  for (const ok of ['国内外比較', '日本独自', '海外独自', '偏り度', '初報', '分野別']) assert.equal(headRule(ok), '', `「${ok}」keeps it`);
 });
 
-test('the ways in of the home come from the table: 国内外比較・日本独占・海外独占・偏り度', () => {
+test('the ways in of the home come from the table: 国内外比較・日本独自・海外独自・偏り度', () => {
   assert.deepEqual(FRONT_TABS.map(([, ja]) => ja), [HEAD['front.gap'], HEAD['front.jp'], HEAD['front.intl'], HEAD['front.bias']]);
-  assert.deepEqual(FRONT_TABS.map(([, ja]) => ja), ['国内外比較', '日本独占', '海外独占', '偏り度']);
+  assert.deepEqual(FRONT_TABS.map(([, ja]) => ja), ['国内外比較', '日本独自', '海外独自', '偏り度']);
 });
 
 test('the English page names each heading from the same table', () => {

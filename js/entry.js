@@ -181,11 +181,12 @@ export function renderEntry(root, o) {
   const go = (q) => () => { const a = root.querySelector(q); if (a) a.scrollIntoView({ block: 'start', behavior: 'smooth' }); };
   const nOut = new Set((Array.isArray(sel.members) ? sel.members : []).filter((it) => it && typeof it === 'object').map(outletOf).filter(Boolean)).size;
   // the AI's lines: each in its own box with who wrote it, when, and that it can be wrong
-  const aiBox = (text, by, at) => h('div', { class: 'en-ai' }, h('p', { class: 'en-ai-t', text }), h('p', { class: 'en-ai-n' }, o.aiTag(by, at), h('span', { text: AI_NOTE })));
+  const aiBox = (text, by, at, note = true) => h('div', { class: 'en-ai' }, h('p', { class: 'en-ai-t', text }), h('p', { class: 'en-ai-n' }, o.aiTag(by, at), note ? h('span', { text: AI_NOTE }) : null));
   const sm = sel.summary && str(sel.summary.text_ja).trim(), ct = sel.ai && str(sel.ai.contrast_ja).trim();
+  // the brief's box says once that the AI's text can be wrong; the box under it does not say it again
   const bf = sel.brief && o.briefBox ? o.briefBox(sel) : null;
   if (bf) bf.classList.add('en-ai');
-  const ais = [bf, sm && !bf ? aiBox(sm, [str(sel.summary.provider), str(sel.summary.model)], sel.summary.made_at) : null, ct ? aiBox(ct, o.aiBy || [], o.aiAt) : null, o.ownBox ? o.ownBox(sel) : null].filter(Boolean);   // the last one is the viewer's own AI: a button to connect, then the asks
+  const ais = [bf, sm && !bf ? aiBox(sm, [str(sel.summary.provider), str(sel.summary.model)], sel.summary.made_at) : null, ct ? aiBox(ct, o.aiBy || [], o.aiAt, !bf) : null, o.ownBox ? o.ownBox(sel) : null].filter(Boolean);   // the last one is the viewer's own AI: a button to connect, then the asks
 
   // ---- the three figures: only what the headlines can count; a figure without its data is left out
   const tile = (cls, title, body) => h('section', { class: `en-fg ${cls}` }, h('h4', { class: 'en-fh', text: title }), body);

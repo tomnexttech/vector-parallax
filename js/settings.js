@@ -32,7 +32,7 @@ const IMPORT_MAX = 200000;        // characters of a settings file
 
 /** the panes a visitor may turn off; the event and the priority list always stay */
 export const PANES = [
-  ['src', '媒体一覧'], ['hours', '時間別'], ['fields', '分野'], ['anom', '独占報道'], ['map', '地図'],
+  ['src', '媒体一覧'], ['hours', '時間別'], ['fields', '分野'], ['anom', '独自報道'], ['map', '地図'],
   ['count', '見出し数'], ['tv', '映像'], ['haz', '災害'], ['mkt', '市場'], ['pol', '政治'],
 ];
 const PANE_IDS = PANES.map(([id]) => id);

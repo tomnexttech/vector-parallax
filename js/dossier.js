@@ -286,11 +286,11 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
   function areaSvg(m) {
     const run = runOf(m);
     if (run.length < 3 || run[run.length - 1].ts <= run[0].ts) return null;   // two reports make a block, not a run: the lanes say it better
-    const W = 300, H = 84, TOP = 8, FOOT = 13, t0 = run[0].ts, t1 = run[run.length - 1].ts, total = run.length;
+    const W = 300, H = 100, TOP = 16, FOOT = 17, t0 = run[0].ts, t1 = run[run.length - 1].ts, total = run.length;
     const X = (t) => 6 + ((t - t0) / (t1 - t0)) * (W - 12), Y = (v) => H - FOOT - (v / total) * (H - FOOT - TOP);
     const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'area', role: 'img', 'aria-label': `報じ始めから ${fmtSpan(t1 - t0)} の間に ${total} 件` });
     for (const v of [0, total]) svg.append(s('line', { x1: 6, x2: W - 6, y1: Y(v), y2: Y(v), class: 'ag' }));
-    svg.append(s('text', { x: 6, y: Y(total) - 2, class: 'ax' }, document.createTextNode(`${total} 件`)));
+    svg.append(s('text', { x: 6, y: Y(total) - 4, class: 'ax' }, document.createTextNode(`${total} 件`)));
     const order = ['jp', 'intl', 'gov'];
     const lower = (r, k) => order.slice(0, order.indexOf(k)).reduce((a, x) => a + r[x], 0);
     for (const k of order) {
@@ -309,7 +309,7 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
       const u = safeUrl(r.it.link);
       svg.append(u ? s('a', { href: u, target: '_blank', rel: 'noopener noreferrer' }, col) : col);
     });
-    svg.append(s('text', { x: 6, y: H - 2, class: 'ax' }, document.createTextNode(fmtClock(t0))), s('text', { x: W - 6, y: H - 2, class: 'ax end' }, document.createTextNode(`+${fmtSpan(t1 - t0)}`)));
+    svg.append(s('text', { x: 6, y: H - 3, class: 'ax' }, document.createTextNode(fmtClock(t0))), s('text', { x: W - 6, y: H - 3, class: 'ax end' }, document.createTextNode(`+${fmtSpan(t1 - t0)}`)));
     return svg;
   }
 

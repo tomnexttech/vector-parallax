@@ -7,7 +7,7 @@ import { ROOT } from './helpers.js';
 import { keepInList, gapByField, gapByEvent, jpShare, numbersOf, numValue, toneOf, paperOf, renderFront, renderGap, renderPaper, cleanTitle, tabKey, wordBars, setWordGroups,
   FRONT_TABS,TONE_NEG, TONE_POS, TONE_NEG_EN, TONE_POS_EN, TONE_MIN, PAPER_HEADS } from '../../js/front.js';
 
-const read = (f) => readFileSync(path.join(ROOT, f), 'utf8');
+const read = (f) => readFileSync(path.join(ROOT, f), 'utf8').split(String.fromCharCode(13, 10)).join(String.fromCharCode(10));
 const sidesOf = (e) => ({ jp: e.members.filter((m) => m.home !== 'intl' && m.type !== '政府一次'), intl: e.members.filter((m) => m.home === 'intl'), gov: e.members.filter((m) => m.type === '政府一次') });
 const ev = (key, field, jp, intl) => ({ key, field, members: [...Array.from({ length: jp }, () => ({ home: 'jp' })), ...Array.from({ length: intl }, () => ({ home: 'intl' }))] });
 const mkH = () => { const made = []; const h = (tag, attrs, ...kids) => { const el = { tag, attrs: attrs || {}, kids: kids.flat(4).filter((k) => k != null && k !== false) }; made.push(el); return el; }; return { made, h }; };
@@ -87,8 +87,8 @@ test('the three ways in are tabs named by what can be seen; each carries one num
   const seen = [];
   renderFront(root, { h, tab: 'jp', field: null, fields: ['国際'], counts: { gap: '国内 62%', jp: '', intl: '12 件', bias: '最大 71' }, onTab: (id) => seen.push(id), onField: (f) => seen.push(f) });
   const tabs = made.filter((e) => e.attrs.role === 'tab');
-  assert.deepEqual(tabs.map((t) => t.kids[0].attrs.text), FRONT_TABS.map(([, ja]) => ja));
-  assert.deepEqual(FRONT_TABS.map(([, ja]) => ja), ['国内外比較', '日本独占', '海外独占', '偏り度'], 'short nouns, Sir\'s words of 11-15');
+  assert.deepEqual(tabs.map((t) => t.kids[0].kids[0].attrs.text), FRONT_TABS.map(([, ja]) => ja));
+  assert.deepEqual(FRONT_TABS.map(([, ja]) => ja), ['国内外比較', '日本独自', '海外独自', '偏り度'], 'short nouns, Sir\'s words of 11-15');
   assert.deepEqual(tabs.map((t) => t.attrs['aria-selected']), ['false', 'true', 'false', 'false']);
   assert.deepEqual(tabs.map((t) => t.attrs.tabindex), ['-1', '0', '-1', '-1'], 'one tab in the order of the Tab key: the arrows move between them');
   assert.deepEqual([tabKey('ArrowRight', 3, 4), tabKey('ArrowLeft', 0, 4), tabKey('Home', 1, 4), tabKey('End', 0, 4), tabKey('a', 0, 4)], [0, 3, 0, 3, null]);
@@ -96,13 +96,17 @@ test('the three ways in are tabs named by what can be seen; each carries one num
   tabs[3].attrs.on.click();
   made.find((e) => e.tag === 'button' && text(e) === '国際').attrs.on.click();
   assert.deepEqual(seen, ['bias', '国際']);
+  // each way in names its unit under its name (11-16: the denominator and the scale are read off the card, not explained beside it)
+  made.length = 0;
+  renderFront(root, { h, tab: 'gap', field: null, fields: [], counts: {}, subs: { gap: '記事 546 件の比率', bias: '0〜100・8 話を測定' }, onTab() {}, onField() {} });
+  assert.deepEqual(made.filter((e) => e.attrs.class === 'fr-sub').map((e) => e.attrs.text), ['記事 546 件の比率', '0〜100・8 話を測定']);
 });
 
 test('the panel: the denominator and the value\'s own time, red when old, 未取得 without one; an empty list says what to do next', () => {
   const { made, h } = mkH();
   const root = { replaceChildren() {}, setAttribute() {} };
   const g = { rows: [{ field: '国際', jp: 1, intl: 9, d: 0.8 }], jp: 1, intl: 9 };
-  renderGap(root, { h, tab: 'gap', gap: g, gen: 1000, now: 1000 + 7 * 3600, clock: () => '9:40' });
+  renderGap(root, { h, tab: 'gap', gap: g, gen: 1000, now: 1000 + 13 * 3600, clock: () => '9:40' });
   const t = made.find((e) => e.tag === 'time');
   assert.equal(t.attrs.text, '9:40 の値');
   assert.match(t.attrs.class, /stale/);
@@ -116,7 +120,7 @@ test('the panel: the denominator and the value\'s own time, red when old, 未取
   assert.equal(bar.attrs.style, '--w:40.0%');
   const b = mkH();
   renderGap(root, { h: b.h, tab: 'intl', field: '技術', one: [{ side: 'jp', ja: '国内だけ', events: [] }, { side: 'intl', ja: '海外だけ', events: [] }], gen: null, now: 0, clock: () => '' });
-  assert.ok(b.made.some((e) => e.tag === 'h2' && e.attrs.text === '海外独占'), 'one side\'s own news under its own name');
+  assert.ok(b.made.some((e) => e.tag === 'h2' && e.attrs.text === '海外独自'), 'one side\'s own news under its own name');
   assert.ok(b.made.some((e) => /「すべて」に戻すと出ることがあります/.test(e.attrs.text || '')), 'an empty list says what to do next');
   assert.ok(b.made.some((e) => e.attrs.text === '未取得'));
 });
@@ -206,12 +210,12 @@ test('the page: one gothic and Inter for figures (no Mincho, no Plex, no Barlow)
   assert.doesNotMatch(block, /!important/);
 });
 
-test('the value\'s time: green to 3 hours, amber after 3 (a collection is late) with a title, red after 6 and then with its date', () => {
+test('the value\'s time: green to 8 hours, amber after 8 (a collection is late: the schedule of GitHub runs 4 to 13 hours apart) with a title, red after 12 and then with its date', () => {
   const stampAt = (age) => { const { made, h } = mkH(); renderGap({ replaceChildren() {}, setAttribute() {} }, { h, tab: 'gap', gap: { rows: [{ field: '国際', jp: 1, intl: 9, d: 0.8 }], jp: 1, intl: 9 }, gen: 1000, now: 1000 + age, clock: () => '9:40', short: () => '11/15 9:40' }); return made.find((e) => e.tag === 'time'); };
-  const ok = stampAt(2.9 * 3600), warn = stampAt(3.1 * 3600), bad = stampAt(6.1 * 3600);
+  const ok = stampAt(7.9 * 3600), warn = stampAt(8.1 * 3600), bad = stampAt(12.1 * 3600);
   assert.doesNotMatch(ok.attrs.class, /stale|aging/);
   assert.match(warn.attrs.class, /aging/); assert.doesNotMatch(warn.attrs.class, /stale/);
-  assert.match(warn.attrs.title, /3 時間ごと/);
+  assert.match(warn.attrs.title, /遅れています.*4〜13 時間おき/);
   assert.match(bad.attrs.class, /stale/); assert.doesNotMatch(bad.attrs.class, /aging/);
   assert.equal(bad.attrs.text, '11/15 9:40 の値');
 });
@@ -228,4 +232,20 @@ test('初報 on 比べる says what it counted (全 N 社, every outlet of the s
   assert.equal(leadLine('海外', '1時間19分'), firstGapLine('海外が国内より 1 時間 19 分 早く報じた'), 'the two screens say it in one form');
   assert.equal(firstGapLine('国内が海外より 22 時間 早く報じた'), '国内が 22時間 先');
   assert.equal(firstGapLine('ほかの文'), null);
+});
+
+test('偏り度: the scale is a key under the list, the stories one side carried alone are named outside the order and lead to their own list', () => {
+  const { made, h } = mkH();
+  const root = { replaceChildren() {}, setAttribute() {} };
+  const seen = [];
+  renderGap(root, { h, tab: 'bias', bias: [{ key: 'a', title: 'ミャンマー', score: 52 }], scored: 8, apart: { jp: 58, intl: 19 }, gen: 1000, now: 1000, clock: () => '9:40', onTab: (id) => seen.push(id), detail() {} });
+  const keys = made.filter((e) => e.attrs.class === 'fr-key');
+  assert.equal(keys.length, 1);
+  assert.deepEqual(made.filter((e) => e.tag === 'button' && /fr-ab/.test(e.attrs.class || '')).map((e) => text(e)), ['日本独自58件', '海外独自19件']);
+  made.find((e) => /fr-ab/.test(e.attrs.class || '')).attrs.on.click();
+  assert.deepEqual(seen, ['jp']);
+  assert.ok(made.some((e) => /8 話を測定/.test(e.attrs.text || '')), 'the denominator of the order');
+  made.length = 0;
+  renderGap(root, { h, tab: 'bias', bias: [], apart: { jp: 0, intl: 0 }, gen: 1000, now: 1000, clock: () => '9:40' });
+  assert.ok(!made.some((e) => /fr-apart/.test(e.attrs.class || '')), 'nothing left out, nothing said');
 });

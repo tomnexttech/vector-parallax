@@ -57,17 +57,20 @@ test('without the AI its term is left out and the rest are averaged; with it, it
   assert.ok(on.terms.filter((t) => t.id !== 'ai').every((t) => !t.ai));
 });
 
-test('a one-sided event: the lag cannot be measured and is left out, never counted as zero', () => {
-  const b = biasOf(measure(ev(it('a', '関税と原油', 'jp', '全国紙', T, 'A'), it('b', '関税と株価', 'jp', '民放', T, 'B'), it('c', '原油高', 'jp', '通信社', T, 'C'))), { base });
-  assert.ok(b.skipped.some((t) => t.id === 'lag'));
-  // nothing abroad out of 3, against a quarter abroad overall: chance alone gives this often, so it counts little
-  assert.equal(b.terms.find((t) => t.id === 'volume').value, 33);
+test('a story only one side carried gets no number and no place in the order (11-16): there is nothing to set against, so it is named, not scored', () => {
+  const jp = biasOf(measure(ev(it('a', '関税と原油', 'jp', '全国紙', T, 'A'), it('b', '関税と株価', 'jp', '民放', T, 'B'), it('c', '原油高', 'jp', '通信社', T, 'C'))), { base });
+  assert.equal(jp.ok, false); assert.equal(jp.oneSided, 'jp'); assert.match(jp.reason, /海外は 0 件/);
+  const intl = biasOf(measure(ev(it('a', 'Oil falls', 'intl', '海外主流', T, 'X', 'en'), it('b', 'Oil rises', 'intl', '海外主流', T, 'Y', 'en'), it('c', 'Oil flat', 'intl', '海外主流', T, 'Z', 'en'))), { base });
+  assert.equal(intl.ok, false); assert.equal(intl.oneSided, 'intl'); assert.match(intl.reason, /国内は 0 件/);
+  // an official body counts with the home side: one abroad is two sides
+  assert.equal(biasOf(measure(ev(it('a', '関税', 'jp', '官公庁', T, 'A'), it('b', '関税と原油', 'jp', '民放', T, 'B'), it('c', 'Oil', 'intl', '海外主流', T, 'X', 'en'))), { base }).ok, true);
 });
 
 test('the same one-sidedness counts for more the more outlets show it: a small story does not come out high for being small', () => {
   const many = Array.from({ length: 30 }, (_, i) => ({ outlet: `O${i}`, home: i % 2 ? 'jp' : 'intl', type: i % 3 ? '全国紙' : '海外主流', n: 10 }));
   const b0 = sourceBase(many);
-  const reports = (k) => Array.from({ length: k }, (_, i) => it(`r${i}`, `別の話題${i}`, 'jp', i % 2 ? '全国紙' : '民放', T + i, `O${i}`));
+  // two sides, the abroad side small: the share held against what chance gives
+  const reports = (k) => Array.from({ length: k }, (_, i) => it(`r${i}`, `別の話題${i}`, i === 0 ? 'intl' : 'jp', i % 2 ? '全国紙' : '民放', T + i, `O${i}`));
   const small = biasOf(measure(ev(...reports(3))), { base: b0 }), big = biasOf(measure(ev(...reports(20))), { base: b0 });
   const of = (b, id) => b.terms.find((t) => t.id === id).value;
   assert.ok(of(small, 'region') < of(big, 'region'));

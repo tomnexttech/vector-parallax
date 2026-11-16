@@ -1,6 +1,6 @@
 name: update-data
 
-# Builds the public edition every 3 hours and DEPLOYS it as a GitHub Pages artifact (page + data in one package).
+# Builds the public edition on a 3-hour schedule (GitHub starts it 4 to 13 hours apart in practice) and DEPLOYS it as a GitHub Pages artifact (page + data in one package).
 # Nothing that holds a headline is committed (CONTRACT 20.1): data/latest.json, board.json, history.json, stats.json, politics.json, critical.json, hazards.json,
 # markets.json, summary_cache.json, recorded.json, eval.json are build products. The repository keeps code, rules, contract, tests and the settings
 # that hold no headline (data/prompt.json, labels.json, watchwords.json, places.json, traps.json, withheld.json, scenes.json).

@@ -12,15 +12,19 @@
  *   pointsOf(cov) -> { jp, intl, both }                                     the rows of the table that one side only, or both, carry
  *   splitOf(pick) -> { jp, intl, gov, max, wJp, wIntl }                     the bar: each half filled by its outlets over the larger side
  *   gapText(sec) -> '1 時間 27 分'
- *   createHero({ h, root, fmt, on }) -> { render(picks, meta), go(i), step(d), index(), current(), clear() }
+ *   createHero({ h, root, fmt, on }) -> { render(picks, meta), go(i), step(d), fit(), index(), current(), clear() }
  *
  * Neutral by rule: a side is never ranked or called right or wrong; the sides' hues are on the bar only. What a side's headlines do
  * not carry is said as "not in the headlines and summaries", never as "did not report". Numbers are counted values, nothing else. */
 import { trMode } from './trans.js';
+import { FIND_JA, unlabel, firstGapLine } from './coverage.js';
+import { HEAD } from './heads.js';
+import { DUE_S, STALE_S } from './snapshot.js';
 
 export const HERO_SCHEMA = 'parallax-hero/1';
 export const MAX_PICKS = 5;
 export const MAX_FINDINGS = 3;
+export const FIT_MAX = 7;                  // the steps by which the home's card says less in a low window (css/app.css: .hr-card[data-fit])
 export const FIRST_GAP_MIN_S = 30 * 60;     // a gap between the two sides' first reports shorter than this is not said (the clocks of feeds drift)
 export const TIERS = ['split', 'both', 'one_side'];
 export const KINDS = ['only_side', 'word_choice', 'num_diff', 'lead_differs', 'first_gap'];
@@ -358,7 +362,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
   }
   function card(p) {
     const n = picks.length;
-    const old = isNum(meta.gen) && isNum(meta.now) && meta.now - meta.gen > 6 * 3600, aging = !old && isNum(meta.gen) && isNum(meta.now) && meta.now - meta.gen > 3 * 3600;   // amber after 3 hours (a collection is due), red after 6
+    const old = isNum(meta.gen) && isNum(meta.now) && meta.now - meta.gen > STALE_S, aging = !old && isNum(meta.gen) && isNum(meta.now) && meta.now - meta.gen > DUE_S;   // amber after 8 hours (a collection is due), red after 12 (js/snapshot.js)
     const lead = leadOf(p);
     let sx = null, sy = null;
     const swipe = n > 1 ? {
@@ -371,9 +375,12 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
     const sh = shareOf(p), first = firstOf(p), ph = call('photo', p);
     const seg = (k) => (sh[k] ? h('i', { data: { side: k }, style: `width:${sh.pct[k]}%` }) : null);
     const lab = SIDES3.filter((k) => sh[k]).map((k) => `${SIDE_JA[k]} ${sh.pct[k]}%`).join(' / ');
+    // v64 (2026-11-16): the photo is a thumbnail beside the headline, and the card carries what the news holds — the AI's brief, each side's
+    // headlines, the findings, the bias index. Every line is a value of the data (data/hero.json, the story's brief); nothing is written here.
+    const fig = ph ? h('figure', { class: 'hr-ph' }, h('img', { src: ph.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => { const f = ev.target.closest ? ev.target.closest('.hr-ph') : null; const c = f && f.closest ? f.closest('.hr-card') : null; if (f) f.remove(); if (c) c.classList.remove('has-ph'); } } }),
+      ph.outlet ? h('figcaption', { text: `写真：${ph.outlet}` }) : null) : null;
+    const score = call('bias', p);
     return h('article', { class: 'hr-card' + (ph ? ' has-ph' : ''), data: { tier: p.tier }, 'aria-labelledby': 'hr-t', on: swipe },
-      ph ? h('figure', { class: 'hr-ph' }, h('img', { src: ph.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => { const f = ev.target.closest ? ev.target.closest('.hr-ph') : null; if (f) f.remove(); } } }),
-        ph.outlet ? h('figcaption', { text: `写真：${ph.outlet}` }) : null) : null,
       h('div', { class: 'hr-main' },
         h('p', { class: 'hr-meta' + (old ? ' stale' : aging ? ' aging' : '') }, h('span', { class: 'hr-lab', text: '注目ニュース' }),
           isNum(meta.gen) ? h('time', { class: 'num', text: `${short(meta.gen)} 時点` }) : h('span', { class: 'stale', text: '未取得' }),
@@ -381,14 +388,61 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
             h('button', { type: 'button', class: 'hr-pg hr-prev', 'aria-label': '前のニュース', title: '前のニュース（←）', on: { click: () => step(-1) } }, '‹'),
             h('span', { class: 'hr-pos num', 'aria-live': 'polite', text: `${i + 1} / ${n}` }),
             h('button', { type: 'button', class: 'hr-pg hr-next', 'aria-label': '次のニュース', title: '次のニュース（→）', on: { click: () => step(1) } }, '›')) : null),
-        h('h2', { class: 'hr-t', id: 'hr-t', lang: lead.lang === 'en' ? 'en' : null }, lead.tr ? h('span', { class: 'xl-m', title: `原文: ${lead.tr}`, text: '訳' }) : null, lead.text),
-        h('p', { class: 'hr-facts' }, SIDES3.map((k) => h('span', { class: 'hr-fc' + (p.sides[k].outlets ? '' : ' zero'), data: { side: k } }, h('span', { class: 'k', text: SIDE_JA[k] }), h('b', { class: 'num', text: p.sides[k].outlets }), h('span', { class: 'u', text: '社' }))),
-          first ? h('span', { class: 'hr-first' }, h('span', { class: 'k', text: '初報' }), h('time', { class: 'num', text: short(first) })) : null),
-        sh.total ? h('div', { class: 'hr-share', role: 'img', 'aria-label': `このニュースの社の割合 ${lab}` }, h('span', { class: 'hr-sb', 'aria-hidden': 'true' }, SIDES3.map(seg)), h('span', { class: 'hr-sl num' }, h('span', { class: 'k', text: 'このニュース' }), lab)) : null,
-        // one main button (比べる); 読み上げ beside it as the second; the next news is the pager's (1 / 5), the arrow keys or a swipe
+        h('div', { class: 'hr-led' }, fig,
+          h('div', { class: 'hr-hd' },
+            h('h2', { class: 'hr-t', id: 'hr-t', lang: lead.lang === 'en' ? 'en' : null }, lead.tr ? h('span', { class: 'xl-m', title: `原文: ${lead.tr}`, text: '訳' }) : null, lead.text),
+            h('p', { class: 'hr-facts' }, SIDES3.map((k) => h('span', { class: 'hr-fc' + (p.sides[k].outlets ? '' : ' zero'), data: { side: k } }, h('span', { class: 'k', text: SIDE_JA[k] }), h('b', { class: 'num', text: p.sides[k].outlets }), h('span', { class: 'u', text: '社' }))),
+              first ? h('span', { class: 'hr-first' }, h('span', { class: 'k', text: '初報' }), h('time', { class: 'num', text: short(first) })) : null,
+              isNum(score) ? h('span', { class: 'hr-bias', title: '偏り度 0〜100' }, h('span', { class: 'k', text: HEAD['front.bias'] }), h('b', { class: 'num', text: score })) : null),
+            sh.total ? h('div', { class: 'hr-share', role: 'img', 'aria-label': `このニュースの社の割合 ${lab}` }, h('span', { class: 'hr-sb', 'aria-hidden': 'true' }, SIDES3.map(seg)), h('span', { class: 'hr-sl num' }, h('span', { class: 'k', text: 'このニュース' }), lab)) : null)),
+        body(p),
+        // one main button (詳細); 読み上げ beside it as the second; the next news is the pager's (1 / 5), the arrow keys or a swipe
         h('div', { class: 'hr-acts' },
           h('button', { type: 'button', class: 'hr-b hr-go', on: { click: () => call('compare', p) } }, '詳細'),
           h('div', { class: 'hr-side' }, call('orbSlot', p) || null))));
+  }
+  /** what the news holds, under the headline: the brief (the page gives it: on.brief), each side's headlines as published, and where they differ */
+  function body(p) {
+    const br = call('brief', p), rows = br && Array.isArray(br.rows) ? br.rows.slice(0, 2) : [];
+    const ja = trMode() === 'ja';
+    const headLi = (x) => h('li', null,
+      h('span', { class: 'o' }, h('b', { text: x.outlet }), isNum(x.ts) ? h('time', { class: 'num', text: short(x.ts) }) : null),
+      h('span', { class: 't', lang: ja && x.title_ja ? null : (/[぀-ヿ一-鿿]/.test(x.title) ? null : 'en'), title: ja && x.title_ja ? `原文: ${x.title}` : null }, ja && x.title_ja ? h('span', { class: 'xl-m', text: '訳' }) : null, ja && x.title_ja ? x.title_ja : x.title));
+    const side = (k) => {
+      const hs = p.heads.filter((x) => x.side === k).slice(0, 2);
+      return hs.length ? h('div', { class: 'hr-sd', data: { side: k } }, h('h3', null, h('i', { 'aria-hidden': 'true' }), SIDE_JA[k], h('span', { class: 'num', text: `${p.sides[k].outlets} 社` })), h('ul', null, hs.map(headLi))) : null;
+    };
+    const sides = SIDES3.map(side).filter(Boolean);
+    const fl = arr(p.findings).slice(0, MAX_FINDINGS);
+    const fLine = (f) => (f.kind === 'first_gap' && firstGapLine(f.text)) || unlabel(f);
+    const parts = [
+      rows.length ? h('div', { class: 'hr-brief' }, h('dl', null, rows.map((r) => [h('dt', { text: r.label }), h('dd', { text: r.text })])),
+        h('p', { class: 'hr-bby' }, h('span', { class: 'aimk', text: 'AI' }), 'の要約', isNum(br.at) ? `・${short(br.at)}` : '')) : null,
+      sides.length ? h('div', { class: 'hr-sds' + (sides.length === 1 ? ' one' : '') }, sides) : null,
+      fl.length ? h('div', { class: 'hr-fnd' }, h('h3', { text: HEAD['find.title'] }), h('ul', null, fl.map((f, k) => h('li', { data: { kind: f.kind } }, h('b', { text: k && fl[k - 1].kind === f.kind ? '' : FIND_JA[f.kind] }), h('span', { text: fLine(f) }))))) : null,
+      p.tier === 'one_side' && on.oneSideNote ? h('p', { class: 'hr-note', text: on.oneSideNote }) : null,
+    ].filter(Boolean);
+    return parts.length ? h('div', { class: 'hr-body' }, parts) : null;
+  }
+  /** the card in a row of fixed height (the home on a wide window) says less until it fits: data-fit 0 (all) … FIT_MAX; the page's CSS
+   *  drops one part a step (the brief, the second line of a headline, the later findings, the second headline of a side). A card of
+   *  free height, or a page without layout, stays at 0 */
+  function fit() {
+    const c = root && root.querySelector ? root.querySelector('.hr-card') : null;
+    if (!c || !c.dataset) return 0;
+    let k = 0;
+    c.dataset.fit = '0';
+    while (k < FIT_MAX && c.clientHeight > 0 && c.scrollHeight > c.clientHeight + 1) { k += 1; c.dataset.fit = String(k); }
+    return k;
+  }
+  /** the card's words can change after it is drawn (the page in English, a photo that fails): it is fitted again when its content changes height */
+  let ro = null;
+  function watchFit() {
+    const m = root && root.querySelector ? root.querySelector('.hr-main') : null;
+    if (!m || typeof ResizeObserver !== 'function') return;
+    if (!ro) ro = new ResizeObserver(() => fit());
+    ro.disconnect();
+    ro.observe(m);
   }
   let last = null;
   function paint() {
@@ -399,6 +453,8 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
     const ph = call('photo', p);
     const amb = ph && ph.url ? h('div', { class: 'hr-amb', 'aria-hidden': 'true', style: `background-image:url("${String(ph.url).replace(/"/g, '%22')}")` }) : null;
     root.replaceChildren(...[amb, card(p)].filter(Boolean));
+    fit();
+    watchFit();
     last = { sid: p.sid, jp: p.sides.jp.outlets, intl: p.sides.intl.outlets };
     call('change', p);
   }
@@ -413,5 +469,5 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
   function render(list, m = {}) { const was = picks[i] && picks[i].sid; picks = arr(list).slice(0, MAX_PICKS); meta = m || {}; const k = picks.findIndex((p) => p.sid === was); i = m.keep && k >= 0 ? k : 0; paint(); }
   function go(k) { if (!picks.length) return false; i = ((k % picks.length) + picks.length) % picks.length; paint(); return true; }
   function step(d) { return go(i + d); }
-  return { render, go, step, cue, index: () => i, current: () => picks[i] || null, picks: () => picks.slice(), clear: () => render([]) };
+  return { render, go, step, cue, fit, index: () => i, current: () => picks[i] || null, picks: () => picks.slice(), clear: () => render([]) };
 }

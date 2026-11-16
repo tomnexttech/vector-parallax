@@ -342,8 +342,8 @@ a.mh:hover { text-decoration: underline; text-decoration-color: var(--ink-3); }
 }
 .sheet-h { position: sticky; top: 0; display: flex; align-items: center; justify-content: space-between; padding: 12px 0 10px; background: var(--sheet); border-bottom: 1px solid var(--line); }
 .sheet-h h2 { font-size: var(--fs-5); font-weight: 600; }
-.floor { margin: 10px 0 4px; }
-.floor li { font-size: var(--fs-3); color: var(--ink-2); padding: 1px 0; }
+.about-notes { margin: 10px 0 4px; padding: 0; list-style: none; }   /* was .floor, the name of the 3D map's layer (position: absolute; inset: 0), which pulled these notes over the top bar (11-16) */
+.about-notes li { font-size: var(--fs-3); color: var(--ink-2); padding: 1px 0; }
 .about details { border-bottom: 1px solid var(--line); }
 .about summary { display: flex; justify-content: space-between; gap: 10px; padding: 9px 0; cursor: pointer; font-size: var(--fs-4); list-style: none; }
 .about summary::-webkit-details-marker { display: none; }
@@ -363,7 +363,15 @@ a.mh:hover { text-decoration: underline; text-decoration-color: var(--ink-3); }
 .btn { display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--raise); font-size: var(--fs-3); text-decoration: none; }
 .btn.pri { background: var(--cyan-fill); border-color: transparent; color: #fff; }
 .btn:disabled { opacity: .45; cursor: default; }
-.fatal { position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%); z-index: 40; max-width: calc(100% - 32px); padding: 8px 14px; border-radius: 7px; background: var(--red-bg); color: var(--red); font-size: var(--fs-3); }
+.fatal { position: fixed; inset: 44px 0 0; z-index: 40; display: grid; place-items: center; padding: 24px 16px; background: var(--win); color: var(--ink); }
+.fatal[hidden] { display: none; }
+.fa-c { width: min(100%, 440px); padding: 28px 28px 24px; border: 1px solid var(--line); border-top: 3px solid var(--red); border-radius: 14px; background: var(--pane); }
+.fa-t { margin: 0; font: 700 clamp(18px, 5vw, 22px)/1.4 var(--f-text); text-wrap: balance; }
+.fa-f { margin: 10px 0 0; text-wrap: balance; font: 500 16px/1.6 var(--f-text); color: var(--red); }
+.fa-p { margin: 4px 0 0; font: 500 13px/1.5 var(--f-num, var(--f-text)); color: var(--ink-3); overflow-wrap: anywhere; }
+.fa-n { margin: 14px 0 0; text-wrap: pretty; font: 400 15px/1.7 var(--f-text); color: var(--ink-2); }
+.fa-b { min-height: 44px; margin-top: 20px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--ink); color: var(--win); font: 600 15px/1 var(--f-text); cursor: pointer; }
+.fa-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
 /* ------------------------------------------------------------ parts that read the board files */
 .ticks rect.quiet { fill: var(--bar-2); }
@@ -1132,7 +1140,7 @@ html[data-calm] *, html[data-calm] *::before, html[data-calm] *::after { animati
 .en-firsts .o { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--ink-2); }
 .en-firsts li.zero, .en-firsts li.zero b { color: var(--ink-3); font-weight: 400; }
 .entry .en-run { margin-top: 14px; }
-.en-run .area { max-height: 104px; }
+.en-run .area { max-height: 120px; }
 .en-run figcaption { font-size: 13px; color: var(--ink-3); }
 .en-words { display: grid; gap: 14px; }
 .en-wr { display: grid; gap: 6px; }
@@ -1426,7 +1434,7 @@ a.en-a:hover { text-decoration: underline; }
 .gtag { display: inline-flex; align-items: center; gap: 4px; color: var(--gc, var(--ink-2)); font-weight: var(--fw-2); }
 .gtag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .stale, .stale b, .stale time { color: var(--red) !important; }   /* an old value is red (11-15, docs/design-1115.md §7) */
-.aging, .aging b, .aging time { color: var(--amber) !important; }   /* 3 hours: a collection is late; red follows at 6 */
+.aging, .aging b, .aging time { color: var(--amber) !important; }   /* 8 hours: a collection is late (the 3-hour cron runs 4 to 13 hours apart); red follows at 12 */
 .meter.stale[data-bad="1"], .meter.stale[data-bad="1"] b, .meter.stale[data-bad="1"] time, .meter.stale[data-bad="1"] span { color: var(--red) !important; }
 .meter[data-tone]::before, .dot { content: ""; flex: none; align-self: center; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-4); }
 .meter[data-tone=""]::before { content: none; }
@@ -2065,7 +2073,7 @@ a.wt-o:hover { color: var(--cyan); }
 .bi-chip small { margin-right: 1px; font-size: var(--fs-1); color: var(--ink-3); }
 /* the run of time */
 .tl-tw { display: flex; flex-direction: column; gap: 4px; }
-.area { display: block; width: 100%; height: auto; max-height: 130px; }
+.area { display: block; width: 100%; height: auto; max-height: 150px; }
 .area .ag { stroke: var(--line-2); stroke-width: .6; }
 .area .af { fill: color-mix(in srgb, var(--sd) 34%, transparent); stroke: none; }
 .area .al { fill: none; stroke: var(--sd); stroke-width: 1.4; }
@@ -4678,7 +4686,7 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
 :root[data-screen="board"]:not(#_f) .hout { font-size: max(12px, .86em); }
 :root[data-screen="board"]:not(#_f) .tlead { font-size: max(12px, .78em); }
 :root[data-screen="board"]:not(#_f) #p-case small.num, :root[data-screen="board"]:not(#_f) #p-case figcaption { font-size: 12px; }
-:root[data-screen="board"]:not(#_f) .board :is(.ax, .lanes .lt) { font-size: 12px; }
+:root[data-screen="board"]:not(#_f) .board :is(.ax, .lanes .lt) { font-size: 10px; }   /* user units of a drawing 260-300 wide shown 1.1-1.5 times: 11-15 px on the screen, and the rows are tall enough that nothing touches (11-16) */
 /* dark: the place's red tag carries dark ink (white on #ff6961 was 2.8:1), the faintest grey is lifted to pass 4.5:1 on the glass */
 :root:not([data-theme="light"]):not(#_f) .banner:not(.soft) { color: #fff; background: #c8102e; }   /* 2026-11-15 white ink, on a deeper red so it holds 5.8:1 */
 :root:not([data-theme="light"])[data-home="home"]:not(#_f) #p-case .ch-place .banner { color: #fff; }
@@ -5465,7 +5473,7 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 /* ==== glass-1115d:end2 ==== */
 /* ==== v56b (11-15): the critique of v56. Seven ids that are never there lift these rules over the blocks before them ==== */
 /* the ways in: each face its own hue laid over the glass, not the ground showing through a white pane (Sir 11-15 「前面のタイルが真っ白」).
- * 日本独占 pink, 海外独占 blue, 国内外比較 pink to blue, 偏り度 violet; the white of the glass is thin so the hue reads */
+ * 日本独自 pink, 海外独自 blue, 国内外比較 pink to blue, 偏り度 violet; the white of the glass is thin so the hue reads */
 :root[data-theme="light"]:not(#e1):not(#e2):not(#e3):not(#e4):not(#e5):not(#e6):not(#e7) {
   --face-w: linear-gradient(140deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, .10) 55%, rgba(255, 255, 255, .18));
   --face-jp: rgba(214, 51, 120, .25); --face-jp2: rgba(214, 51, 120, .12);
@@ -5651,3 +5659,375 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 @media (min-width: 1101px) {
   :root[data-screen="board"]:not(#w1):not(#w2):not(#w3):not(#w4):not(#w5):not(#w6):not(#w7):not(#w8):not(#w9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 #case { overflow-x: clip; overflow-y: visible; }
 }
+
+/* ---- v61: the scale of 偏り度 and what was left out of it, the unit under each way in (11-16) */
+.fr-kk { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fr-sub { font: 500 12px/1.3 var(--f-text); color: var(--ink-3); }
+.fr-tab[aria-selected="true"] .fr-sub { color: var(--ink-2); }
+.fr-bx { margin: 0; }
+.fr-key { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; margin: 10px 0 0; font: 500 12px/1.4 var(--f-text); color: var(--ink-3); }
+.fr-apart { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 14px 0 0; padding-top: 12px; border-top: 1px solid var(--line); }
+.fr-al { margin-right: auto; font: 500 13px/1.4 var(--f-text); color: var(--ink-2); }
+.fr-ab { display: inline-flex; align-items: baseline; gap: 6px; min-height: 44px; padding: 0 16px; align-items: center; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--ink); font: 500 14px/1 var(--f-text); cursor: pointer; }
+.fr-ab:hover { background: var(--pane-2); }
+.fr-ab:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.fr-ab[data-side] b { font: 600 17px/1 var(--f-num); color: var(--sd); }
+.fr-ab .u { font-size: 12px; color: var(--ink-3); }
+@media (min-width: 761px) { :root[data-show] .fr-tab .fr-sub, :root[data-show] .fr-key, :root[data-show] .fr-al { font-size: max(15px, calc(var(--u) * 16)); } }
+
+/* a photo not in yet stands on the field's own tint, not on black (11-16: the compare list and the card showed a black box until the picture came) */
+:root:not(#_p):not(#_q) :is(.rth, .en-ph, .hr-ph, .nt-ph, .pimg, .bd-f):not(.none) { background: color-mix(in srgb, var(--gc, var(--ink)) 14%, transparent); }
+:root:not(#_p):not(#_q) .hr-ph img { background: transparent; }
+
+/* a phone held sideways: the rail is 56 px wide, so the line that says how the joined view was made (国内と海外の両方 AI 17 | 規則 11 …) cannot fit in it and broke letter by letter; its numbers are on the データ・AI sheet (11-16) */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) { :root:not(#_l1):not(#_l2):not(#_l3) .sects .more-tx > .ailine { display: none; } }
+
+/* a phone held sideways: the AI | 規則 switch stacks inside the 56 px rail instead of running out of it (11-16) */
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) {
+  :root:not(#_l1):not(#_l2):not(#_l3) .sects .more-tx > .seg { flex-direction: column; width: 44px; height: auto; }
+  :root:not(#_l1):not(#_l2):not(#_l3) .sects .more-tx > .seg button { width: 100%; min-width: 0; padding: 0; }
+}
+/* a phone: the round dial floats over the lower right corner, so the last line of the 偏り度 panel stands clear of it (11-16) */
+@media screen and (max-width: 760px) { :root:not(#_l1):not(#_l2):not(#_l3) .fr-bx { padding-bottom: 56px; } }
+
+/* ==== v64:begin ==== (2026-11-16, the layout pass)
+ * One scale of sizes, said once: 注 12 (--fs-2) · 本文 14 (--fs-4, 13 where a list is dense) · 小見出し 16 (--fs-5) · 題 22 / 28 / 34 (--fs-7, --fs-7h, --fs-8)
+ * · 数 22 / 28 / 34. Every size on screen is a step of :root's --fs-*; the rules below bring back what had left it (the stage's --u sizes that
+ * leaked into 詳しく見る, the 15 / 17 / 18 / 20 px of later passes). The stage itself (?show) is not touched.
+ * The media table keeps to its width (js/coverage.js data-fit), the home's card carries the news instead of a photo, 詳しく見る keeps the
+ * panes under the news in view, and the tour speaks of the home as it is. */
+:root { --fs-7h: 28px; --v-plate: #25262b; --v-plate-edge: rgba(255, 255, 255, .12); }
+:root[data-theme="light"] { --v-plate: #f4f4f8; --v-plate-edge: rgba(16, 24, 40, .1); }
+
+/* ---- 媒体比較: the columns share the width of the box. full / tight: no sideways scroll; run: it runs on, the row names on an opaque plate */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-w li .cv-cn { display: inline-block; margin-right: 8px; padding: 0 8px; border: 1px solid var(--line-2); border-radius: 999px; font-size: var(--fs-2); line-height: 1.6; color: var(--ink-2); white-space: nowrap; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) > .cv-sc { overflow-x: clip; padding-right: 0; scroll-snap-type: none; -webkit-mask-image: none; mask-image: none; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) > .cv-hint { display: none; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t { table-layout: fixed; width: 100%; border-spacing: 4px; font-size: var(--fs-3); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t :is(thead th, tbody th, td) { min-width: 0; max-width: none; height: auto; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t thead th.cv-c { width: 100px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t thead th.cv-thin { width: 30px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t thead th { padding: 0 1px 6px; vertical-align: bottom; font-size: var(--fs-3); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t thead th :is(b, .cv-om) { font: 700 var(--fs-3)/1.3 var(--f-text); overflow-wrap: anywhere; word-break: normal; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t :is(thead, tbody) small { font-size: var(--fs-2); line-height: 1.35; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t tbody th { position: static; padding: 8px 6px 8px 2px; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t tbody th .cv-l { font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t td.on { padding: 8px 10px; font-size: var(--fs-3); line-height: 1.5; text-align: left; box-shadow: inset 3px 0 0 var(--sd); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t td.on .cv-p { position: static; display: -webkit-box; width: auto; height: auto; clip: auto; clip-path: none; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; overflow-wrap: anywhere; word-break: normal; line-break: strict; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t td.on .cv-dot { display: none; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t td:is(.off, .na) { padding: 8px 2px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="tight"] .cv-t { border-spacing: 3px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="tight"] .cv-t td.on { padding: 6px 5px 6px 8px; font-size: var(--fs-2); line-height: 1.45; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="tight"] .cv-t td.on .cv-p { -webkit-line-clamp: 5; line-clamp: 5; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="tight"] .cv-t thead th :is(b, .cv-om) { font-size: var(--fs-2); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="tight"] .cv-t thead small { font-size: var(--fs-1); }
+@media (hover: hover) and (pointer: fine) { :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t thead th .cv-om { min-height: 0; min-width: 0; } }
+@media screen and (pointer: coarse) { :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t thead th.cv-thin { width: 44px; } }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="slim"] .cv-t { border-spacing: 2px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="slim"] .cv-t thead th.cv-c { width: 80px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="slim"] .cv-t tbody th .cv-l { font-size: var(--fs-3); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="slim"] .cv-t td.on { padding: 5px 3px 5px 6px; font-size: var(--fs-1); line-height: 1.4; box-shadow: inset 2px 0 0 var(--sd); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="slim"] .cv-t td.on .cv-p { -webkit-line-clamp: 6; line-clamp: 6; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="slim"] .cv-t thead th :is(b, .cv-om) { font-size: var(--fs-1); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="slim"] .cv-t thead small { font-size: var(--fs-0); }
+/* a column nothing fills: narrow, its name upright */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t thead th.cv-thin :is(b, .cv-om) { writing-mode: vertical-rl; text-orientation: mixed; white-space: nowrap; padding: 0 0 0 5px; max-height: 8.5em; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); font-weight: 600; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t thead th.cv-thin :is(b, .cv-om)::before { left: 0; top: 0; width: 3px; height: 100%; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap:is([data-fit="full"], [data-fit="tight"], [data-fit="slim"]) .cv-t thead th.cv-thin small { display: none; }
+/* it runs on (too many outlets for the box): the names of the rows and the corner over them are plates nothing shows through, with the tiles' corners */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="run"] > .cv-sc { scroll-padding-left: 112px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="run"] .cv-t tbody th, :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="run"][data-left] .cv-t tbody th { position: sticky; left: 0; z-index: 2; min-width: 96px; max-width: 132px; padding: 8px 10px; border-radius: 8px; background: var(--v-plate); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: inset 0 0 0 1px var(--v-plate-edge); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="run"][data-left] .cv-t tbody th { box-shadow: inset 0 0 0 1px var(--v-plate-edge), 8px 0 12px -8px rgba(0, 0, 0, .4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="run"] .cv-t thead th.cv-c { position: sticky; left: 0; z-index: 3; background: var(--v-plate); border-radius: 8px; box-shadow: 0 0 0 4px var(--v-plate); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="run"] .cv-t thead th { font-size: var(--fs-3); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="run"] .cv-t thead th :is(b, .cv-om) { font: 700 var(--fs-3)/1.3 var(--f-text); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="run"] .cv-t td.on { padding: 8px 10px; font-size: var(--fs-3); line-height: 1.5; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="run"] .cv-t tbody th .cv-l { font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-fit="run"] .cv-t :is(thead, tbody) small { font-size: var(--fs-2); }
+/* a phone: no table. A row is a card: its name, then each outlet that carries it with its words, then the outlets that do not, by name */
+@media screen and (max-width: 760px) {
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap > .cv-sc { overflow: visible; padding-right: 0; scroll-snap-type: none; -webkit-mask-image: none; mask-image: none; }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap > .cv-hint { display: none; }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t, :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t tbody { display: block; width: auto; }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t tbody tr { display: block; margin: 0 0 8px; padding: 12px 12px 10px; border-radius: 12px; background: var(--bt-chip); box-shadow: inset 0 0 0 1px var(--bt-edge); }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t tbody th, :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap[data-left] .cv-t tbody th { position: static; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; width: auto; min-width: 0; max-width: none; padding: 0 0 4px; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t tbody th .cv-l { font-size: var(--fs-5); }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t tbody th small { margin: 0; font-size: var(--fs-2); }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t td { min-width: 0; height: auto; }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t td.on { display: block; margin-top: 6px; padding: 7px 10px 8px 12px; border-radius: 8px; font-size: var(--fs-4); line-height: 1.55; text-align: left; box-shadow: inset 3px 0 0 var(--sd); }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t td::before { content: attr(data-o); }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t td.on::before { display: block; margin-bottom: 1px; font: 600 var(--fs-2)/1.5 var(--f-text); color: var(--ink-2); }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t td.on .cv-p { position: static; display: block; width: auto; height: auto; clip: auto; clip-path: none; overflow: visible; -webkit-line-clamp: none; line-clamp: none; }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t td.on .cv-dot { display: none; }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t td:is(.off, .na) { display: inline-flex; align-items: center; gap: 4px; margin: 8px 6px 0 0; padding: 2px 9px; border-radius: 999px; font-size: var(--fs-2); line-height: 1.6; color: var(--ink-2); }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t td.off { background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--ink-2) 14%, transparent) 4px 5px); box-shadow: inset 0 0 0 1px var(--bt-edge); }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t td.na { background: none; box-shadow: inset 0 0 0 1px var(--bt-edge); color: var(--ink-3); }
+  :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cv-wrap .cv-t td:is(.off, .na) > span[aria-hidden] { order: -1; }
+}
+
+/* ---- 違い・言い回し: the same sizes as the text beside them. The words are chips of the text's size, the outlets after them on the same line */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-w { margin-top: 16px; padding-top: 14px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-w h4 { margin: 0 0 8px; font: 700 var(--fs-5)/1.4 var(--f-text); color: var(--ink); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-w ul { gap: 10px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-w li { gap: 4px; font-size: var(--fs-4); line-height: 1.6; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-w li > b { font-size: var(--fs-2); font-weight: 600; color: var(--ink-2); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-v { gap: 6px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-x { align-items: center; gap: 2px 8px; padding: 4px 11px 5px; border-radius: 10px; font-size: var(--fs-3); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-wd { font: 700 var(--fs-4)/1.4 var(--f-text); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-d i { width: 7px; height: 7px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-x small { flex-basis: auto; font-size: var(--fs-2); line-height: 1.4; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-lg { font-size: var(--fs-2); gap: 2px 12px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-lg > span { gap: 5px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-lg > span::before { width: 12px; height: 10px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov .cv-lg .na::before { width: auto; height: auto; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov > .cv-more { min-height: 36px; padding: 0 16px; font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov > .st-h .cv-n { font-size: var(--fs-3); }
+@media screen and (pointer: coarse) { :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov > .cv-more { min-height: 44px; } }
+
+/* ---- the home's card: the photo is a thumbnail beside the headline; under it the brief, each side's headlines and where they differ.
+ * The sizes step with the width of the window: S (to 1439) 題 22 · M (1440 on) 題 28 · L (1920 on) 題 34, 数 28, 本文 16 · XL (2400 by 1200 on) 題 44, 数 34, 本文 19 */
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board { --h-note: var(--fs-2); --h-body: var(--fs-4); --h-sub: var(--fs-5); --h-title: var(--fs-7); --h-num: var(--fs-7); }
+@media (min-width: 1440px) { :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board { --h-title: var(--fs-7h); } }
+@media (min-width: 1920px) { :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board { --h-note: var(--fs-4); --h-body: var(--fs-5); --h-sub: var(--fs-6); --h-title: var(--fs-8); --h-num: var(--fs-7h); } }
+@media (min-width: 2400px) and (min-height: 1200px) { :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board { --h-note: var(--fs-5); --h-body: var(--fs-6); --h-sub: var(--fs-7); --h-title: var(--fs-9); --h-num: var(--fs-8); } }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card, :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card.has-ph { display: flex; flex-direction: column; height: auto; min-height: 100%; grid-template: none; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-main { display: flex; flex: 1 1 auto; flex-direction: column; gap: 16px; min-width: 0; padding: 22px clamp(20px, 1.8vw, 34px) 24px; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-meta { font-size: var(--h-note); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-meta :is(.hr-lab, time, .stale) { font-size: var(--h-body); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-pos { font-size: var(--h-body); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-pg { font-size: var(--fs-7); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-led { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px clamp(16px, 1.6vw, 28px); align-items: start; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card.has-ph .hr-led { grid-template-columns: clamp(132px, 24%, 300px) minmax(0, 1fr); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-ph { position: relative; grid-area: auto; min-height: 0; margin: 0; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-ph img { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; aspect-ratio: auto; object-fit: cover; object-position: center 30%; border-radius: 0; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-ph figcaption { right: 6px; bottom: 6px; padding: 1px 8px; font-size: var(--fs-1); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-hd { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; margin: 0; font: 700 var(--h-title)/1.32 var(--f-text); letter-spacing: -.01em; text-wrap: pretty; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-facts { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; margin: 0; font-size: var(--h-body); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-facts :is(.hr-fc b, .hr-first time, .hr-bias b) { font: 600 var(--h-num)/1 var(--f-num); letter-spacing: -.02em; color: var(--ink); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-facts .hr-first time { font-size: var(--h-sub); letter-spacing: 0; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-facts :is(.k, .u) { font-size: var(--h-body); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-facts .hr-fc.zero b { color: var(--ink-3); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-bias { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-bias .k { color: var(--ink-3); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-first { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sl { font-size: var(--h-note); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sl .k { font-size: var(--h-note); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-body { display: grid; gap: 14px; min-width: 0; padding-top: 16px; border-top: 1px solid var(--bt-edge); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-brief dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; margin: 0; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-brief dt { padding-top: .22em; font: 600 var(--h-note)/1.5 var(--f-text); color: var(--ink-3); white-space: nowrap; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-brief dd { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; margin: 0; font: 400 var(--h-body)/1.6 var(--f-text); color: var(--ink); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-bby { margin: 6px 0 0; font-size: var(--h-note); color: var(--ink-3); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sds { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 12px 28px; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sd h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 7px; font: 700 var(--h-note)/1.4 var(--f-text); color: var(--ink); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sd h3 i { width: 8px; height: 8px; border-radius: 50%; background: var(--sd); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sd h3 .num { font-weight: 500; color: var(--ink-3); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sd ul { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sd li { display: grid; gap: 1px; min-width: 0; padding-left: 11px; border-left: 2px solid color-mix(in srgb, var(--sd) 60%, transparent); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sd .o { display: flex; align-items: baseline; gap: 8px; font-size: var(--h-note); line-height: 1.5; color: var(--ink-3); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sd .o b { font-weight: 600; color: var(--ink-2); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sd .t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; font: 500 var(--h-body)/1.5 var(--f-text); color: var(--ink); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-fnd { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; align-items: baseline; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-fnd h3 { margin: 0; font: 700 var(--h-note)/1.4 var(--f-text); color: var(--ink); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-fnd ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-fnd li { display: grid; grid-template-columns: 5em minmax(0, 1fr); gap: 12px; font: 400 var(--h-body)/1.55 var(--f-text); color: var(--ink); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-fnd li b { padding-top: .2em; font: 600 var(--h-note)/1.5 var(--f-text); color: var(--ink-3); white-space: nowrap; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-body .hr-note { margin: 0; padding: 0; font-size: var(--h-note); line-height: 1.6; color: var(--ink-3); background: none; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-acts { margin-top: auto; padding-top: 2px; }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-acts :is(.hr-b, .hr-speak) { min-height: 44px; padding: 0 24px; font: 700 var(--h-sub)/1 var(--f-text); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-acts .hr-cap { font-size: var(--h-note); }
+@media (min-width: 1101px) {
+  /* the row of the card and the panel is as tall as the window allows and no shorter than the card: nothing is cut */
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board.board { grid-template-rows: auto minmax(max-content, 1fr); }
+}
+/* a window of little height (a laptop): the card keeps to one screen by saying less, never by cutting a line in two */
+@media (min-width: 1101px) and (max-height: 960px) {
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-main { gap: 12px; padding-top: 18px; padding-bottom: 18px; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-body { gap: 12px; padding-top: 12px; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-brief :is(dt, dd):nth-child(n+3) { display: none; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-brief dd { -webkit-line-clamp: 2; line-clamp: 2; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-fnd li:nth-child(n+3) { display: none; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-hd { gap: 10px; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-sd ul { gap: 7px; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-bby { margin-top: 3px; }
+}
+@media screen and (max-width: 760px) {
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card.has-ph .hr-led { grid-template-columns: minmax(0, 1fr); }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-ph { aspect-ratio: 21 / 9; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-main { gap: 14px; padding: 16px 16px 18px; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-fnd { grid-template-columns: minmax(0, 1fr); }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-fnd li { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-brief dl { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-brief dt { padding-top: 6px; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-fnd li b:empty { display: none; }
+}
+
+/* ---- 詳しく見る on a wide screen: the middle column is as tall as the window. The news scrolls in its own pane; 映像・関連・出典 are a row
+ * under it that is always in view (they were under the whole length of the news) */
+:root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .st-nav { position: static; display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 2px; }
+:root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .st-nav button { height: 32px; min-height: 32px; padding: 0 14px; font-size: var(--fs-3); }
+@media screen and (pointer: coarse) { :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .st-nav button { min-height: 44px; } }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .dsheet .st-nav .st-x { display: none; }
+@media (min-width: 1101px) {
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 { position: sticky; top: 0; align-self: start; height: calc(100dvh - 96px); min-height: 420px; overflow: visible; }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > #p-case { display: flex; flex: 1 1 0; flex-direction: column; min-height: 0; overflow: hidden; }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > #p-case > #case { flex: 1 1 0; min-height: 0; overflow-x: clip; overflow-y: auto; overscroll-behavior: auto; scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > .under { display: grid; flex: none; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: row; gap: 12px; height: clamp(196px, 27dvh, 300px); }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > .under > .pane { display: flex; flex-direction: column; min-height: 0; height: auto; overflow: hidden; }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > .under > .pane[hidden] { display: none; }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > .under > .pane > .pb { flex: 1 1 0; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) .st-nav { position: sticky; top: 0; z-index: 4; align-self: flex-start; width: fit-content; max-width: 100%; margin: 0 -4px; padding: 6px; border-radius: 999px; background: var(--v-plate); box-shadow: inset 0 0 0 1px var(--v-plate-edge), 0 6px 14px -10px rgba(0, 0, 0, .5); }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) .st-nav .st-x { display: none; }
+}
+
+/* ---- the news screen's head: the sides' counts stand apart (they ran together: 国内3社海外6社官公庁0社) */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .sect .ch-rn { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .sect .ch-rn .rn-i { display: inline-flex; align-items: baseline; gap: 4px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .sect .ch-rn .rn-i i { align-self: center; width: 8px; height: 8px; border-radius: 50%; background: var(--sd); }
+
+/* ---- the bar of the news, map, market … screens between 1101 and 1260 px: 設定 was cut at the right edge by 12 px (1180 px, an iPad on its side).
+ * The search box gives way: it is its glass alone there, the word and the key hint come back with the room */
+@media (min-width: 1101px) and (max-width: 1260px) {
+  :root[data-screen="sect"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tb #cmd-btn { flex: none; width: 34px; min-width: 34px; padding: 0; justify-content: center; }
+  :root[data-screen="sect"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tb #cmd-btn :is(#cmd-t, #cmd-kbd) { display: none; }
+}
+@media (min-width: 1101px) and (max-width: 1170px) {
+  :root[data-screen="sect"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tb #lang-btn { font-size: 0; }
+  :root[data-screen="sect"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tb #lang-btn::after { content: "EN"; font-size: var(--fs-3); }
+  :root[data-screen="sect"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tb #lang-btn:not([lang="en"])::after { content: "日本語"; }
+  :root[data-screen="sect"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tb .tb-r { gap: 3px; }
+  :root[data-screen="sect"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tb .sects > a, :root[data-screen="sect"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tb .sects-2 > a { padding-left: 7px; padding-right: 7px; }
+}
+
+/* ---- the tour's card on the scale */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tour-t { font-size: var(--fs-6); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tour-x { font-size: var(--fs-4); line-height: 1.6; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tour-n { font-size: var(--fs-2); }
+
+/* ---- the one scale, everywhere: what had left it, by what it is. 小見出し 16 · 本文 14 · 注 12 · 数 19 / 22 / 34 */
+/* the bar */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .app-name { font-size: var(--fs-5); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #gen-at { font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .sb-tick .hout { font-size: var(--fs-0); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tlead { font-size: var(--fs-2); }
+/* the heads of panes and of sections: 小見出し */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .ph h2 { font-size: var(--fs-5); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) :is(.dos, .en-scene, .cov) > .st-h, :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .cov > h3.st-h, :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .dos > h3.st-h { font-size: var(--fs-5); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry :is(.en-sub, .en-head h2, .en-osg h4, .en-osg h4 span, .en-fh, .cb-absent h3, .cb-absent h3 .n) { font-size: var(--fs-5); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry .en-head h2 .n { font-size: var(--fs-4); }
+/* the home: the tiles' figures, the panel's rows. The panel steps with the card (S / M / L) */
+@media (min-width: 761px) { :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-v b.num { font-size: var(--fs-5); } }
+@media (min-width: 1440px) { :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-v b.num { font-size: var(--fs-6); } }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .gap .fr-h h2 { font-size: var(--h-sub); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-gap :is(.fr-gl, .fr-gn) { font-size: var(--h-sub); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-tl b.num { font-size: var(--fs-6); }
+:root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-bias .fr-br b.num, :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-apart .fr-ab b.num { font-size: var(--fs-5); }
+@media screen and (max-width: 760px) {
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board :is(.fr-bt, .fr-rt, .fr-gl.ev) { font-size: var(--fs-4); }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-k { font-size: var(--fs-5); }
+}
+/* 比べる */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry :is(.pp-wn, .pp-ww, .pp-hd .pp-c > span, .pp-hd .pp-c > b, .pp-ns li, .pp-hs a, .en-rest, .en-ai-t, .en-tot, .en-miss, .en-miss .en-mk, .en-miss .en-to, .speak span) { font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry .ch-brief dd { font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry .pp-first b.num { font-size: var(--fs-6); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry .en-lg li b.num { font-size: var(--fs-7); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry .en-bias .bi-mini small { font-size: var(--fs-2); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry .en-bias .bi-mini b.num { font-size: var(--fs-6); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry .en-card .en-h { font-size: var(--fs-5); }
+/* the figures of 詳しく見る */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tl-ring text.rn { font-size: 22px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tl-big > i { font-size: var(--fs-0); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) svg :is(text.ax, text.ax.end) { font-size: 10px; }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) svg.ds-heat text.lt { font-size: 11px; }
+/* the map's list */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .mn-tiles .nt-top :is(.lk, .gtag, .nt-ag, .nt-pl) { font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .mn-tiles .nt-t { font-size: var(--fs-5); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .mn-tiles .nt-t .hout { font-size: var(--fs-3); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .mn-sel :is(ul > li > .lk) { font-size: var(--fs-5); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .mn-sel .mn-sh :is(.banner, .mn-m b.num) { font-size: var(--fs-7); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .mn-sel .mn-sh small, :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .mn-sel .mn-rel .k { font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .mn-sel h3 .mn-t { font-size: var(--fs-7); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .mn-sel .mn-go { font-size: var(--fs-5); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .m3ctl { font-size: var(--fs-6); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #p-mapnews .ph h2 { font-size: var(--fs-5); }
+/* the failed read, the tour, the ties */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #fatal :is(.fa-n, .fa-b) { font-size: var(--fs-4); }
+@media screen and (max-width: 760px) { :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #fatal .fa-t { font-size: var(--fs-6); } }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .tour-f button { font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .netwin .app-h h2 { font-size: var(--fs-7); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .netwin .app-h :is(.seg button, .pc, .tbb) { font-size: var(--fs-5); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .netwin .net-r .net-t { font-size: var(--fs-5); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .netwin :is(.net-r .net-why, .net-how) { font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry .en-full .w { font-size: var(--fs-4); }
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry .en-top .en-st { font-size: var(--fs-7); }
+@media (min-width: 761px) { :root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .entry .en-top .en-st { font-size: var(--fs-7h); } }
+@media screen and (max-width: 1100px) { :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board :is(.fr-bt, .fr-rt) { font-size: var(--fs-4); } }
+@media screen and (min-width: 761px) and (max-width: 1100px) { :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-k { font-size: var(--fs-6); } }
+/* ---- the home keeps to one window (it ran 118 px over at 1366 by 768, and 詳細・読み上げ were under the edge): the row of the card and the
+ * panel is what the window leaves, the panel's rows give way first (to 30 px), and the card says less a step at a time (js/hero.js fit():
+ * data-fit 0 … 7) until it fits; 詳細・読み上げ stand at its foot. A window under 600 px high scrolls instead */
+@media (min-width: 1101px) {
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board.board { grid-template-rows: auto minmax(360px, 1fr); }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board > .hero:not([hidden]), :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-host { height: 100%; min-height: 0; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card, :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card.has-ph { height: 100%; min-height: 0; overflow: hidden; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-main { min-height: min-content; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-body { flex: none; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-acts { flex: none; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board > .gap { min-height: 0; overflow: hidden; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board > .gap .fr-gap { min-height: 0; grid-auto-rows: minmax(30px, 1fr); }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board > .gap .fr-gr { min-height: 30px; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board > .gap :is(.fr-h, .fr-tot, .fr-foot) { flex: none; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card[data-fit="1"] .hr-brief :is(dt, dd):nth-child(n+3), :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card:is([data-fit="2"], [data-fit="3"], [data-fit="4"], [data-fit="5"], [data-fit="6"], [data-fit="7"]) .hr-brief { display: none; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card[data-fit="1"] .hr-brief dd { -webkit-line-clamp: 2; line-clamp: 2; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card:is([data-fit="3"], [data-fit="4"], [data-fit="5"], [data-fit="6"], [data-fit="7"]) .hr-sd .t { -webkit-line-clamp: 1; line-clamp: 1; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card:is([data-fit="4"], [data-fit="5"], [data-fit="6"], [data-fit="7"]) .hr-fnd li:nth-child(n+2) { display: none; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card:is([data-fit="5"], [data-fit="6"], [data-fit="7"]) .hr-sd li:nth-child(n+2) { display: none; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card:is([data-fit="6"], [data-fit="7"]) .hr-fnd { display: none; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card[data-fit="7"] .hr-share { display: none; }
+}
+@media (min-width: 1101px) and (max-height: 820px) {
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board > .gap .fr-tot { margin-top: 8px; padding-top: 10px; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board > .gap .fr-foot { margin-top: 4px; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board.board { row-gap: 12px; }
+}
+/* the tile's note stays on its line (記事 630 件の比率 broke before its last letter at 1280 px and pushed the page down 16 px) */
+@media (min-width: 1101px) {
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-tab .fr-kk { flex: 0 1 auto; min-width: 0; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-tab .fr-sub { white-space: nowrap; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-tab .fr-v { flex: none; flex-wrap: nowrap; gap: 4px 10px; }
+}
+@media (min-width: 1101px) and (max-width: 1260px) { :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-tab { padding-left: 14px; padding-right: 14px; gap: 10px; } }
+/* ---- 詳しく見る: the sections' names are a band of the pane's whole width on an opaque plate, at the pane's very top (it was a floating
+ * pill: the words of the news passed over it, beside it and under it, and a section's head and the table's legend came to rest behind it).
+ * A section a name leads to stops under the band. On a tablet the bar of the page's parts is an opaque plate too */
+@media (min-width: 1101px) {
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > #p-case > #case { padding-top: 0; }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) > .c3 > #p-case > #case > .case-in { padding-top: 20px; }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board:not([data-floor="map"]):not([data-wall="1"]) .st-nav { top: 0; align-self: stretch; width: auto; max-width: none; margin: 0 -24px; padding: 8px 24px; border-radius: 0; background: var(--v-plate); box-shadow: 0 1px 0 var(--v-plate-edge); }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #case .st-h[data-st] { scroll-margin-top: 64px; }
+}
+@media screen and (max-width: 1100px) {
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .jump { background: var(--v-plate); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #case .st-h[data-st], :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board > .col > .pane, :root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) .board .under > .pane { scroll-margin-top: 56px; }
+}
+/* ---- the outlet's name after a headline in a list was .86em of it (13.76 px in the news, the order and the search; 12.04 px in 詳しく見る): a step */
+:root:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) :is(.rt, .rk-t) > .hout { font-size: var(--fs-3); }
+:root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) :is(.rt, .rk-t) > .hout { font-size: var(--fs-2); }
+/* ---- the fields over a list: a name wider than its mark (安全保障) keeps its own width, so the names no longer read as one word (経済安全保障技術) */
+:root[data-screen="board"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #p-pri button.gn { width: auto; min-width: 34px; padding: 0 2px; }
+/* ---- the home in English: the words are longer. The first tile's figures go under its name when they do not fit beside it, and a
+ * finding's kind has the width of its English name (One side carried it ran into the sentence) */
+@media (min-width: 1101px) { :root[lang="en"][data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .fr-tab .fr-v { flex: 0 1 auto; flex-wrap: wrap; } }
+:root[lang="en"][data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-fnd li { grid-template-columns: 10em minmax(0, 1fr); }
+/* ---- the home's card on a phone: the photo is a thumbnail beside the headline there too (it was a band across the card, 14% of the
+ * screen, and the brief began under the fold); the counts and the bar take the card's whole width under them */
+@media screen and (max-width: 760px) {
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card.has-ph .hr-led { grid-template-columns: 96px minmax(0, 1fr); gap: 12px 12px; align-items: start; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card.has-ph .hr-hd { display: contents; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card.has-ph .hr-ph { grid-column: 1; grid-row: 1; aspect-ratio: 4 / 3; border-radius: 10px; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card.has-ph .hr-ph figcaption { left: 4px; right: 4px; bottom: 4px; padding: 1px 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card.has-ph .hr-t { grid-column: 2; grid-row: 1; align-self: center; }
+  :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board .hr-card.has-ph :is(.hr-facts, .hr-share) { grid-column: 1 / -1; }
+}
+/* ==== v64:end ==== */

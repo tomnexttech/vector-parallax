@@ -90,6 +90,10 @@ export function leadRows(cov, n = LEAD_ROWS) {
 
 const isEn = (s) => /^[\x00-\x7f]+$/.test(s);
 
+/** the widths the table is laid out with (css/app.css keeps the same numbers): the row names, a narrow column, and the least a column of phrases needs */
+export const FIT = { label: 104, thin: 34, full: 90, tight: 58, slim: 46 };
+export const fitOf = (per) => (per >= FIT.full ? 'full' : per >= FIT.tight ? 'tight' : per >= FIT.slim ? 'slim' : 'run');
+
 export function createCoverage({ h, onOutlet = null }) {
   // an outlet's name at the head of its column opens 媒体の特徴 when the page gives a way to (js/traits.js)
   const head = (o) => (onOutlet ? h('button', { type: 'button', class: 'cv-om', title: '媒体の特徴', on: { click: () => onOutlet(o.name) } }, o.name) : h('b', { text: o.name }));
@@ -98,10 +102,11 @@ export function createCoverage({ h, onOutlet = null }) {
     const i = key ? text.indexOf(key) : -1;
     return i < 0 ? [h('span', { class: 'cv-b', text })] : [h('span', { class: 'cv-b', text: text.slice(0, i) }), h('mark', { text: key }), h('span', { class: 'cv-a', text: text.slice(i + key.length) })];
   };
+  // data-o: the outlet's name on each cell, for the phone's list of a row (css: the table is read row by row there, without its head)
   const cell = (c, o, term) => {
-    if (c === null) return h('td', { class: 'na', data: { side: o.side }, title: '言語が違うので照合していません' }, h('span', { class: 'sr', text: '照合なし' }), h('span', { 'aria-hidden': 'true', text: '·' }));
-    if (c === '') return h('td', { class: 'off', data: { side: o.side }, title: `${o.name} の見出しと要旨には出ていない` }, h('span', { class: 'sr', text: '出ていない' }), h('span', { 'aria-hidden': 'true', text: '—' }));
-    return h('td', { class: 'on' + (term ? ' t' : ''), data: { side: o.side }, lang: o.lang === 'en' ? 'en' : null, title: `${o.name}: ${c.p}` },
+    if (c === null) return h('td', { class: 'na', data: { side: o.side, o: o.name }, title: '言語が違うので照合していません' }, h('span', { class: 'sr', text: '照合なし' }), h('span', { 'aria-hidden': 'true', text: '·' }));
+    if (c === '') return h('td', { class: 'off', data: { side: o.side, o: o.name }, title: `${o.name} の見出しと要旨には出ていない` }, h('span', { class: 'sr', text: '出ていない' }), h('span', { 'aria-hidden': 'true', text: '—' }));
+    return h('td', { class: 'on' + (term ? ' t' : ''), data: { side: o.side, o: o.name }, lang: o.lang === 'en' ? 'en' : null, title: `${o.name}: ${c.p}` },
       term ? h('i', { class: 'cv-dot', 'aria-hidden': 'true' }) : null, h('span', { class: 'cv-p' }, ...mark(c.p, c.k)));
   };
   const label = (r) => {
@@ -112,11 +117,13 @@ export function createCoverage({ h, onOutlet = null }) {
     const sub = [term ? KIND_JA[r.k] : k1, n > 1 ? `${g.have}/${n} 社` : null].filter(Boolean).join('・');
     return h('th', { scope: 'row', title: n > 1 ? `${n} 社中 ${g.have} 社の見出しか要旨に出ている` : null }, h('span', { class: 'cv-l', lang: isEn(name) ? 'en' : null, text: name }), sub ? h('small', { class: 'num', text: sub }) : null);
   };
+  /** a column no row fills (an outlet of another language, or one that carries none of the words): it is kept, narrow, its name set upright */
+  const thinAt = (cov, i) => !cov.rows.some((r) => r.c[i]);
   function table(cov, { rows } = {}) {
     const list = rows || cov.rows;
     return h('table', { class: 'cv-t' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', class: 'cv-c' }, h('span', { class: 'sr', text: '項目' })),
-        cov.outlets.map((o) => h('th', { scope: 'col', data: { side: o.side } }, head(o), o.desc ? null : h('small', { text: '見出しのみ' }))))),
+        cov.outlets.map((o, i) => h('th', { scope: 'col', class: thinAt(cov, i) ? 'cv-thin' : null, data: { side: o.side } }, head(o), o.desc ? null : h('small', { text: '見出しのみ' }))))),
       h('tbody', null, list.map((r) => h('tr', { data: { k: r.k } }, label(r), r.c.map((c, i) => cell(c, cov.outlets[i], TERM_KINDS.includes(r.k)))))));
   }
   /** the choice of words: one line per thing, each word the outlets used for it */
@@ -134,7 +141,7 @@ export function createCoverage({ h, onOutlet = null }) {
     if (!list.length) return null;
     const n = arr(cov.outlets).length;
     // the first report among the outlets this table compares, said as 比べる says it and with what it counted
-    const line = (f) => (f.kind === 'first_gap' && firstGapLine(f.text) ? h('span', null, h('span', { class: 'cv-sc num', text: `照合 ${n} 社` }), h('span', { text: firstGapLine(f.text) })) : h('span', { text: unlabel(f) }));
+    const line = (f) => (f.kind === 'first_gap' && firstGapLine(f.text) ? h('span', null, h('span', { class: 'cv-cn num', text: `照合 ${n} 社` }), h('span', { text: firstGapLine(f.text) })) : h('span', { text: unlabel(f) }));
     return h('div', { class: 'cv-w cv-f' }, h('h4', { text: HEAD['find.title'] }), h('ul', null, list.map((f, i) => h('li', { data: { kind: f.kind } }, i && list[i - 1].kind === f.kind ? null : h('b', { text: FIND_JA[f.kind] }), line(f)))));   // a label once for the sentences of one kind
   }
   /** the sign that the table runs on to the right: the outlets that are not wholly in view are counted, the right edge fades (css), the label sits above the table.
@@ -143,6 +150,13 @@ export function createCoverage({ h, onOutlet = null }) {
     if (typeof box.getBoundingClientRect !== 'function' || typeof box.addEventListener !== 'function') return null;
     let shown = null;
     const measure = () => {
+      // how the table keeps to its width (css, data-fit): the columns share the box. 90 px or more a column: the phrase as it is (full; 90 so that nine outlets read alike in the light and the dark theme at 1920 px, where the light well is 48 px narrower);
+      // 58 px or more: the phrase in a smaller size on more lines (tight); 46 px or more: smaller again, the row names narrower (slim: nine
+      // outlets in the middle column of a 1280 px window); under that the table runs on sideways (run) and the row names stay
+      const ths = [...box.querySelectorAll('thead th[data-side]')], thin = ths.filter((th) => th.classList && th.classList.contains('cv-thin')).length;
+      const room = (label) => (box.clientWidth - label - thin * FIT.thin) / Math.max(1, ths.length - thin);
+      const fit = fitOf(room(FIT.label)) === 'run' && room(FIT.label - 20) >= FIT.slim ? 'slim' : fitOf(room(FIT.label));
+      if (wrap.getAttribute('data-fit') !== fit) wrap.setAttribute('data-fit', fit);
       const over = box.scrollWidth - box.clientWidth > 2;
       const edge = box.getBoundingClientRect().right;
       const rest = over ? [...box.querySelectorAll('thead th[data-side]')].filter((th) => th.getBoundingClientRect().right > edge + 1).length : 0;

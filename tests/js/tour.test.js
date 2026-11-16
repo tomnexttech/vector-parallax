@@ -1,6 +1,7 @@
 // node --test tests/js/tour.test.js
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { STEPS, TOUR_KEY, tourSeen, markTour, wantTour, holeOf, place } from '../../js/tour.js';
 
 const mem = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), m }; };
@@ -28,18 +29,40 @@ test('?tour=0 never, ?tour=1 always, else only before it was seen', () => {
   assert.equal(wantTour(bad, undefined), true);
 });
 
-test('five short cards: hello first, the settings last, the words neutral', () => {
-  assert.ok(STEPS.length >= 4 && STEPS.length <= 6);
-  assert.match(STEPS[0].title, /^はじめに/);
-  assert.deepEqual(STEPS[0].at, []);
-  assert.deepEqual(STEPS.map((s) => s.id), ['hello', 'sects', 'simple', 'absent', 'ai', 'settings']);
+// 2026-11-16 改定: Sir「最初のチュートリアルは合わせて作り直した？」。六枚（はじめに・画面の切り替え・比べる・見当たらないメディア・AI のまとめ・検索と設定）を、
+// 今のホームに沿う四枚（4 枚の札・注目ニュース・画面・検索と設定）へ作り直した。指す先は今の部品、名は「独自」の後の物
+test('four short cards over the home as it is: the tiles, the lead card, the screens, search and settings; the words neutral', () => {
+  assert.equal(STEPS.length, 4);
+  assert.deepEqual(STEPS.map((s) => s.id), ['tiles', 'lead', 'screens', 'find']);
+  assert.deepEqual(STEPS.map((s) => s.at[0]), ['#front .fr-tabs', '#hero .hr-card', '#screens', '#cmd-btn']);
   for (const s of STEPS) {
+    assert.ok(s.at.length >= 1, `${s.id} points at a part of the page`);
     assert.ok(s.title.length <= 12, s.title);
     assert.ok(s.text.length <= 80, `${s.id} ${s.text.length}`);
     assert.ok(/です。|ます。|ません。/.test(s.text), s.id);
-    for (const w of ['報じなかった', '報じていない', '報道していない', '無視', '黙殺', '正しい', '誤報', '偏向', '右派', '左派', 'フェイク']) assert.ok(!s.text.includes(w), `${s.id}: ${w}`);
+    for (const w of ['独占', '報じなかった', '報じていない', '報道していない', '無視', '黙殺', '正しい', '誤報', '偏向', '右派', '左派', 'フェイク']) assert.ok(!s.text.includes(w) && !s.title.includes(w), `${s.id}: ${w}`);
   }
-  assert.match(STEPS.find((s) => s.id === 'ai').text, /真偽は判定しません/);
+  assert.match(STEPS[0].text, /0〜100/, 'the tiles carry their unit');
+  assert.match(STEPS[0].text, /片側だけの話は偏り度の順位に入りません/, 'a story of one side is outside the order');
+  assert.match(STEPS.find((s) => s.id === 'screens').text, /真偽は判定しません/);
+});
+
+// the parts the tour points at are in the page (index.html) or drawn by the home (js/front.js, js/hero.js)
+test('the tour points at parts that exist', () => {
+  const html = fs.readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
+  for (const id of ['screens', 'cmd-btn', 'view-btn', 'sects-more', 'front', 'hero', 'tour-btn']) assert.ok(html.includes(`id="${id}"`), id);
+  assert.match(fs.readFileSync(new URL('../../js/front.js', import.meta.url), 'utf8'), /class: 'fr-tabs'/);
+  assert.match(fs.readFileSync(new URL('../../js/hero.js', import.meta.url), 'utf8'), /class: 'hr-card'/);
+});
+
+// 2026-11-16 改定: 初回は案内が自動で出る（v56〜v63 は初回に出さず、ボタンを順に光らせるだけだった）。閉じた時に見た印が付き、二度は出ない
+test('the first visit opens the tour over the home; a closed tour is kept as seen', () => {
+  const app = fs.readFileSync(new URL('../../js/app.js', import.meta.url), 'utf8');
+  assert.match(app, /wantTour\(store, location\.search\) && !HX\.demo && !document\.documentElement\.hasAttribute\('data-show'\)\)\)\) openTour\(\);/);
+  assert.match(app, /function openTour\(\) \{\s+if \(state\.ui === 'simple'\) setUi\('full'\);\s+setHome\('home'\); setSect\('home'\);/);
+  assert.match(app, /\$\('tour-btn'\)\.addEventListener\('click', \(\) => openTour\(\)\);/);
+  const tour = fs.readFileSync(new URL('../../js/tour.js', import.meta.url), 'utf8');
+  assert.match(tour, /function close\(\) \{[\s\S]*?markTour\(storage\);/);
 });
 
 const V = { width: 1440, height: 900 };

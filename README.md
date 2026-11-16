@@ -128,7 +128,7 @@ project with no billing attached (free tier).
 
 | job | model | free-tier RPM | RPD | TPM | what the build uses |
 |---|---|---|---|---|---|
-| bundling (the core: join and split events) | `gemini-3.6-flash` | 5 | 20 | 250K | at most 2 calls per build, one build every 3 hours: 2 x 8 = 16 a day |
+| bundling (the core: join and split events) | `gemini-3.6-flash` | 5 | 20 | 250K | at most 2 calls per build, one build per scheduled run (3-hour cron, 8 a day at most): 2 x 8 = 16 a day |
 | one neutral line per event (summary; **switched off by default**) | `gemini-3.5-flash-lite` | 15 | 500 | 250K | when switched on: at most 15 calls per build (45 events each), cached: 120 a day at the very most, far fewer once the cache is warm |
 | fallback of both jobs (only when the model before is busy) | bundling: `gemini-3.5-flash-lite`, then `gemini-3.1-flash-lite`; summary: `gemini-3.1-flash-lite` | 3.5: 15; 3.1: not read | 3.5: 500; 3.1: not read (signed-in page; 500 assumed) | 3.5: 250K; 3.1: not read | bundling at most 4 attempts per build and summary at most 20, each shared by the chain and counted apart from the 2 and 15 above; `gemini-3.1-flash-lite` 8 x (4 + 20) = 192, `gemini-3.5-flash-lite` 120 + 8 x 4 = 152 at the very most. Both names are Stable in the official list (https://aistudio.google.com/docs/models, 2026-11-05) |
 
@@ -192,7 +192,7 @@ data/       board.json history.json politics.json hazards.json markets.json   th
 tests/      Python and Node tests (synthetic headlines only)
 tools/      leakcheck.py
 docs/       CONTRACT-public.md   the data contract (code comments cite it by this path or as "CONTRACT §n")
-.github/workflows/update.yml     every 3 hours: build, check, deploy the Pages artifact (no data is committed)
+.github/workflows/update.yml     scheduled every 3 hours (runs 4 to 13 hours apart in practice): build, check, deploy the Pages artifact (no data is committed)
 ```
 
 ## PROVENANCE: what was built when / 何がいつ作られたか
@@ -275,7 +275,7 @@ or the contents of a fetch is committed**: `data/latest.json`, `board.json`, `hi
 `summary_cache.json`, `recorded.json` and `og_robots.json` are build products (listed in `.gitignore`, not in the index). The repository keeps code, rules, the contract, tests and the
 settings that hold no headline (`prompt.json`, `labels.json`, `watchwords.json`, `places.json`, `traps.json`, `withheld.json`).
 
-The workflow `.github/workflows/update.yml` builds every 3 hours, assembles the page and the data into one folder (`tools/assemble_site.py`), uploads it with
+The workflow `.github/workflows/update.yml` is scheduled every 3 hours (GitHub starts it 4 to 13 hours apart) and builds, assembles the page and the data into one folder (`tools/assemble_site.py`), uploads it with
 `actions/upload-pages-artifact` and publishes it with `actions/deploy-pages`. What the next run needs (the kept previous AI view, the summary cache, the lineage history, the
 robots.txt cache) is passed on through `actions/cache`. **Settings -> Pages -> Source must be "GitHub Actions".** A manual run ("Run workflow") rebuilds and redeploys at once.
 

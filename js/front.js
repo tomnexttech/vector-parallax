@@ -26,9 +26,9 @@ export const TONE_POS_EN = ['welcomed'];
 export const TONE_MIN = 3;
 export const PAPER_HEADS = 5;
 export const PAPER_MIN = 2;
-export const STALE_S = 6 * 3600;
-/** a collection is due every 3 hours: a value older than this is amber (the next collection is late), older than STALE_S red */
-export const AGING_S = 3 * 3600;
+export const STALE_S = 12 * 3600;
+/** a collection is due every 8 hours (the actual run of GitHub's schedule, js/snapshot.js DUE_S): a value older than this is amber, older than STALE_S red */
+export const AGING_S = 8 * 3600;
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const str = (v) => (typeof v === 'string' ? v : '');
@@ -158,7 +158,7 @@ function stamp(h, gen, now, clock, short) {
   if (!isNum(gen)) return h('span', { class: 'fr-at stale', text: '未取得' });
   const old = isNum(now) && now - gen > STALE_S, aging = !old && isNum(now) && now - gen > AGING_S;
   return h('time', { class: 'fr-at num' + (old ? ' stale' : aging ? ' aging' : ''), text: `${old && short ? short(gen) : clock(gen)} の値`,
-    title: aging || old ? `収集は 3 時間ごと。次の収集が遅れています` : null });   // an old value carries its date
+    title: aging || old ? `次の収集が遅れています。定時実行は GitHub の都合で遅れる事があり、直近の実績は 4〜13 時間おきです` : null });   // an old value carries its date
 }
 
 /** a tab's number: a string, or parts [{ k: '国内', v: '30%', side: 'jp' }] whose figure carries the side's colour */
@@ -182,7 +182,8 @@ export function renderFront(root, o) {
   };
   const tabs = h('div', { class: 'fr-tabs', role: 'tablist', 'aria-label': '何を見るか' }, FRONT_TABS.map(([id, ja]) => h('button', {
     type: 'button', role: 'tab', class: 'fr-tab', id: `fr-t-${id}`, 'aria-selected': String(o.tab === id), 'aria-controls': 'gap', tabindex: o.tab === id ? '0' : '-1', data: { tab: id },
-    on: { click: () => o.onTab(id), keydown: key } }, h('span', { class: 'fr-k', text: ja }), o.counts && o.counts[id] && o.counts[id].length ? countEl(h, o.counts[id]) : null)));
+    on: { click: () => o.onTab(id), keydown: key } }, h('span', { class: 'fr-kk' }, h('span', { class: 'fr-k', text: ja }), o.subs && o.subs[id] ? h('small', { class: 'fr-sub', text: o.subs[id] }) : null),
+    o.counts && o.counts[id] && o.counts[id].length ? countEl(h, o.counts[id]) : null)));
   const chips = h('div', { class: 'fr-chips', role: 'group', 'aria-label': '分野' },
     h('button', { type: 'button', class: 'fr-chip', 'aria-pressed': String(!o.field), on: { click: () => o.onField(null) } }, 'すべて'),
     arr(o.fields).map((f) => h('button', { type: 'button', class: 'fr-chip', 'aria-pressed': String(o.field === f), on: { click: () => o.onField(f) } }, f)));
@@ -215,14 +216,21 @@ export function renderGap(root, o) {
       : h('p', { class: 'fr-empty', text: o.field ? `${o.field}では 0 件です。分野を「すべて」に戻すと出ることがあります。` : '今は 0 件です。' });
   } else if (o.tab === 'bias') {
     title = HEAD['front.bias'];
-    const list = arr(o.bias);
+    const list = arr(o.bias), ap = o.apart || { jp: 0, intl: 0 };
     body = list.length ? h('ol', { class: 'fr-bias' },
       h('li', { class: 'fr-bh', 'aria-hidden': 'true' }, h('span', { text: HEAD['panel.topic'] }), h('span', { text: HEAD['panel.score'] })),
-      list.map((x) => h('li', null, h('button', { type: 'button', class: 'fr-row fr-br', 'aria-label': `${cleanTitle(x.title)}、バイアス度 ${x.score}`, on: { click: () => o.detail(x.key) } },
+      list.map((x) => h('li', null, h('button', { type: 'button', class: 'fr-row fr-br', 'aria-label': `${cleanTitle(x.title)}、偏り度 ${x.score}`, on: { click: () => o.detail(x.key) } },
         h('span', { class: 'fr-bt', text: cleanTitle(x.title) }),
         h('span', { class: 'fr-bm', 'aria-hidden': 'true' }, h('i', { style: `width:${Math.max(0, Math.min(100, x.score))}%` })),
         h('b', { class: 'num', text: String(x.score) })))))
       : h('p', { class: 'fr-empty', text: '偏りを測れる話はまだありません。' });
+    // the scale as a key under the list: where 0 and 100 stand, and what was left out of the order (a story one side carried alone has nothing to set against)
+    const scale = list.length ? h('p', { class: 'fr-key', 'aria-hidden': 'true' }, h('span', { text: '0 ＝ 集めた媒体の構成どおり' }), h('span', { text: '100 ＝ 構成から大きく外れる' })) : null;
+    const apart = ap.jp + ap.intl ? h('div', { class: 'fr-apart' }, h('span', { class: 'fr-al', text: '順位の外・片側だけの話' }),
+      ap.jp ? h('button', { type: 'button', class: 'fr-ab', data: { side: 'jp' }, on: { click: () => o.onTab && o.onTab('jp') } }, h('span', { text: '日本独自' }), h('b', { class: 'num', text: String(ap.jp) }), h('span', { class: 'u', text: '件' })) : null,
+      ap.intl ? h('button', { type: 'button', class: 'fr-ab', data: { side: 'intl' }, on: { click: () => o.onTab && o.onTab('intl') } }, h('span', { text: '海外独自' }), h('b', { class: 'num', text: String(ap.intl) }), h('span', { class: 'u', text: '件' })) : null) : null;
+    den = list.length ? ((o.scored || list.length) > list.length ? `上位 ${list.length} / ${o.scored} 話を測定` : `${list.length} 話を測定`) : '';
+    tot = h('div', { class: 'fr-bx' }, scale, apart);
   } else {
     title = o.field ? HEAD['panel.events'] : HEAD['panel.fields'];
     const g = o.gap || { rows: [] };

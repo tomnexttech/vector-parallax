@@ -20,7 +20,7 @@ export const SECTIONS = [
   { id: 'home', ja: 'ホーム' }, { id: 'news', ja: 'ニュース' }, { id: 'map', ja: '地図' }, { id: 'market', ja: '市場' },
   { id: 'politics', ja: '政治' }, { id: 'disaster', ja: '災害' }, { id: 'video', ja: '映像' }, { id: 'saved', ja: '保存' },
 ];
-export const NEWS_TABS = [['now', 'ニュース一覧'], ['rank', '注目度ランキング'], ['paper', '紙面'], ['diff', '前回以降'], ['anom', '独占報道'], ['hours', '時間別'], ['src', '媒体一覧']];
+export const NEWS_TABS = [['now', 'ニュース一覧'], ['rank', '注目度ランキング'], ['paper', '紙面'], ['diff', '前回以降'], ['anom', '独自報道'], ['hours', '時間別'], ['src', '媒体一覧']];
 const SECT_IDS = new Set(SECTIONS.map((x) => x.id));
 const TAB_IDS = new Set(NEWS_TABS.map(([id]) => id));
 
@@ -82,11 +82,11 @@ export function shareUrl(loc, { sid = '', title = '' } = {}) {
 /* the news of one side only: the reports of an event come from one of Japan, abroad and the ministries, and from two outlets or more
  * (one outlet alone says nothing about a side). Counted on the collected headlines only; the other sides may carry it in other words. */
 export const ONE_SIDE = [
-  { side: 'jp', ja: '日本独占', short: '日本独占', rule: '国内のメディアだけが載せているニュース（2 社以上）' },
-  { side: 'intl', ja: '海外独占', short: '海外独占', rule: '海外のメディアだけが載せているニュース（2 社以上）' },
-  { side: 'gov', ja: '官公庁独占', short: '官公庁独占', rule: '官公庁の発表だけにあるニュース（2 か所以上）' },
+  { side: 'jp', ja: '日本独自', short: '日本独自', rule: '国内のメディアだけが載せているニュース（2 社以上）' },
+  { side: 'intl', ja: '海外独自', short: '海外独自', rule: '海外のメディアだけが載せているニュース（2 社以上）' },
+  { side: 'gov', ja: '官公庁独自', short: '官公庁独自', rule: '官公庁の発表だけにあるニュース（2 か所以上）' },
 ];
-export const ONE_SIDE_TITLE = '独占報道';
+export const ONE_SIDE_TITLE = '独自報道';
 export const ONE_SIDE_NOTE = 'ほかの側に見出しが無くても、扱っていないとは限りません。言い回しの違う見出しは拾えないことがあります。';
 
 /** oneSideOf(events, { sidesOf, outletOf, min }) -> [{ side, ja, short, rule, events }] the sides that have such news, most outlets first */

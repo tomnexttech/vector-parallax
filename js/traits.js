@@ -165,8 +165,8 @@ export function traitsBlock(t, o) {
   out.push(o.sec(o.head('outlet.note')), basis, ...[].concat(
     t.few ? h('p', { class: 'tr-few', text: `記事が ${t.me.reports} 件で、傾向を言うには少ないため、数だけを出します。` })
       : t.notes.length ? h('ul', { class: 'tr-notes' }, t.notes.map((x) => h('li', { text: x })))
-        : [h('p', { class: 'tr-few', text: `考察に入れた項（${t.fieldGate ? '' : '分野・'}独占率・同報社数・否定の語・バイアス度）に、基準を超える平均との差はありません。` }),
-          h('p', { class: 'tr-few tr-th num', text: `基準: ${t.fieldGate ? '' : '分野 12 ポイント・'}独占率 10 ポイント・同報社数 1.5 倍かつ 1 社・否定の語 100 本あたり 4 回・バイアス度 10。${t.fieldGate ? '' : `棒の分野のうち、平均 ${FIELD_BASE_MIN}% 未満の分野と 3 件未満の分野は数えません。`}` })]));
+        : [h('p', { class: 'tr-few', text: `考察に入れた項（${t.fieldGate ? '' : '分野・'}独自率・同報社数・否定の語・バイアス度）に、基準を超える平均との差はありません。` }),
+          h('p', { class: 'tr-few tr-th num', text: `基準: ${t.fieldGate ? '' : '分野 12 ポイント・'}独自率 10 ポイント・同報社数 1.5 倍かつ 1 社・否定の語 100 本あたり 4 回・バイアス度 10。${t.fieldGate ? '' : `棒の分野のうち、平均 ${FIELD_BASE_MIN}% 未満の分野と 3 件未満の分野は数えません。`}` })]));
   // the field mix: a bar that swings from the side's mean
   const rows = t.fields.filter((r) => r.base != null).slice(0, 9);
   if (rows.length && !t.few) {

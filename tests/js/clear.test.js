@@ -83,7 +83,8 @@ test('4: the bar has no grey track; the white line stays the centre', () => {
 test('1, 7, 8, 9, 6: the first visit stays on the card; 規則; the orb is a button; the next side peeks; the order of PARALLAX', () => {
   const app = read('js/app.js');
   assert.doesNotMatch(app, /wantTour\(store, location\.search\)\) \{ setUi\('simple'\); state\.tour\.open\(\); \}/, 'the first visit does not open the tour over 比べる');
-  assert.match(app, /wantTour\(store, location\.search\)\) \{ markTour\(store\); HX\.cueWanted = true;/);
+  // 2026-11-16 改定（Sir「最初のチュートリアルは合わせて作り直した？」）: 初回はホームの上で案内が自動で出る。v56 の「初回は出さずボタンを光らせる」は外した（tests/js/tour.test.js）
+  assert.match(app, /openTour\(\);/);
   assert.match(app, /onEnd: \(\) => \{ if \(state\.ui === 'simple'\) setUi\('full'\); setHome\('home'\);/, 'the tour ends on the home');
   assert.match(read('index.html'), /id="v-rules" aria-pressed="false">規則</);
   assert.match(app, /const stage = h\('button', \{ type: 'button', class: 'hr-stage'/);

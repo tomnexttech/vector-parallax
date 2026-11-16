@@ -15,6 +15,8 @@ import { wordsOfTitle } from './dossier.js';
 export const MIN_REPORTS = 3;
 export const MIN_OUTLETS = 2;
 export const TOO_FEW = '記事が少なく測れません';
+// a story only one side's outlets carried is not a story told two ways: there is nothing to set against, so it gets no number and no place in a ranking (11-16)
+export const ONE_SIDED = { jp: '集めた媒体では国内だけが載せた話です。海外は 0 件で、比べられません', intl: '集めた媒体では海外だけが載せた話です。国内は 0 件で、比べられません' };
 export const LAG_FULL_H = 24;     // a gap of a day or more between the two sides' first reports counts in full
 export const Z_FULL = 3;          // three times what chance would give counts in full
 export const WORD_FULL = 0.45;    // same-language headlines sharing this much of their words count as overlapping in full (about the top tenth of the events measured on 2026-11-08)
@@ -106,6 +108,8 @@ function aiFocus(m, angles) {
 export function biasOf(m, { base = null, angles = null } = {}) {
   const outlets = new Set([...m.jp, ...m.gov, ...m.intl].map(outletOf).filter(Boolean));
   if (m.n < MIN_REPORTS || outlets.size < MIN_OUTLETS) return { ok: false, reason: TOO_FEW };
+  const home = m.jp.length + m.gov.length, abroad = m.intl.length;
+  if (!home || !abroad) { const side = home ? 'jp' : 'intl'; return { ok: false, oneSided: side, reason: ONE_SIDED[side] }; }
   const parts = [['region', '媒体の国や地域の偏り', region(m, base)], ['kinds', '媒体の種類の偏り', kinds(m, base)], ['volume', '国内と海外の量の差', volume(m, base)],
     ['lag', '報じ始めの時刻の差', lag(m)], ['words', '見出しの語の重なりの低さ', words(m, [...outlets])], ['ai', '着目の違い', aiFocus(m, angles)]];
   const terms = parts.filter(([, , r]) => isNum(r.value)).map(([id, ja, r]) => ({ id, ja, value: Math.round(r.value), formula: r.formula, ai: !!r.ai }));

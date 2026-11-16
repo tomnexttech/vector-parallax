@@ -2,7 +2,7 @@
  * - Everything is visible without a click: inputs on the left, the judgement lists next, one event taken apart in the middle with
  *   the map under it, the world's numbers on the right; state on top, the source and the next event at the bottom.
  * - Text from feeds and from the AI goes in with textContent only.
- * - Old values never look current: the data time and the AI's own time turn red after 6 hours; failed or old feeds are red.
+ * - Old values never look current: the data time turns red after 12 hours (a collection is due every 8), the AI's own time after 6; failed or old feeds are red.
  * - Motion only when the data changes, once, in proportion to the change. Idle: the next priority event every 12 s; moving the pointer, a press,
  *   a key or the wheel stops it for 25 s.
  * - The six flags and the asymmetry labels come from the published rules only; the AI mark is put only on text the AI wrote.
@@ -10,7 +10,7 @@
  * - Every operation is an id in js/actions.js (keys, pane heads and the voice). A pane head opens its sheet toward the viewer.
  * - The visitor's tasks stay in that browser (js/tasks.js). The voice key, if given, stays in memory for this visit. */
 
-import { SIX_H, THREE_H, keptView, noticeParts, isOld, defaultView, freshness, lateBy } from './snapshot.js';
+import { SIX_H, DUE_S, STALE_S, keptView, noticeParts, isOld, defaultView, freshness, lateBy } from './snapshot.js';
 import { summaryOf, summaryIndex, memberKey, briefOf, briefIndex, judged } from './summary.js';
 import { setTrMode, trOf, trMark } from './trans.js';
 import { installScrollKeys } from './scrollkeys.js';
@@ -48,7 +48,7 @@ import { createConnect } from './connect.js';
 import { createSettingsPanel } from './settings_panel.js';
 import { initLandscape } from './landscape.js';
 import { initDial } from './dial.js';
-import { createTour, wantTour, markTour } from './tour.js';
+import { createTour, wantTour } from './tour.js';
 import { createDossier, measure, paperPick, drawShareCard, CARD_W, CARD_H } from './dossier.js';
 import { createCoverage, coverageOf } from './coverage.js';
 import { biasOf as biasIndex, sourceBase } from './bias.js';
@@ -168,18 +168,18 @@ function fmtSpan(sec) {
   return `${Math.floor(hh / 24)}日${hh % 24 ? `${hh % 24}時間` : ''}`;
 }
 const plusH = (sec) => (!isNum(sec) ? '' : sec < 60 ? '+0分' : sec < 3600 ? `+${Math.floor(sec / 60)}分` : `+${(sec / 3600).toFixed(sec < 36000 ? 1 : 0)}時間`);
-/** an age that turns itself (and its [data-host]) red once older than max seconds, and amber once older than warn (a collection is due every 3 hours); tick() keeps it moving */
+/** an age that turns itself (and its [data-host]) red once older than max seconds, and amber once older than warn (a collection is due every DUE_S); tick() keeps it moving */
 function ageEl(ts, max, warn) {
   const el = h('time', { class: 'age', data: { ts: isNum(ts) ? ts : '', max: max || '', warn: warn || '' } });
   if (isNum(ts)) el.setAttribute('datetime', new Date(ts * 1000).toISOString());
   return el;
 }
-/** the data's own time on the bar: green to 3 hours, amber after 3 (the next collection is late), red after 6; the title says how late */
+/** the data's own time on the bar: green to DUE_S (8 hours), amber after it (the next collection is late), red after STALE_S (12); the title says how late */
 function genTone() {
   const m = $('m-gen');
   if (!m || !state.data) return;
   const at = state.data.generated_at, now = nowS(), f = freshness(at, now), late = lateBy(at, now);
-  m.title = `データを組んだ時刻 ${fmtFull(at)}` + (late > 0 ? `。収集は 3 時間ごと。次の収集が ${fmtSpan(late)} 遅れています` : '');
+  m.title = `データを組んだ時刻 ${fmtFull(at)}` + (late > 0 ? `。次の収集が ${fmtSpan(late)} 遅れています。定時実行は GitHub の都合で遅れる事があり、直近の実績は 4〜13 時間おきです` : '');
   m.dataset.tone = m.dataset.bad === '1' || f === 'bad' ? 'bad' : f === 'warn' ? 'warn' : 'ok';
   const ga = $('gen-age');
   if (ga) ga.dataset.late = late > 0 ? `収集 ${fmtSpan(late)}遅れ` : '';   // the bar says it too (css: #gen-age::after), not only the title
@@ -455,7 +455,7 @@ function renderBar() {
   roll($('src-live'), live); $('src-total').textContent = String(rows.length);
   // data time
   $('gen-at').textContent = fmtShort(d.generated_at);
-  $('gen-age').replaceWith(Object.assign(ageEl(d.generated_at, SIX_H, THREE_H), { id: 'gen-age' }));
+  $('gen-age').replaceWith(Object.assign(ageEl(d.generated_at, STALE_S, DUE_S), { id: 'gen-age' }));
   $('m-gen').dataset.bad = d.schema === 'parallax/1' && isNum(d.generated_at) ? '0' : '1';
   genTone();
   // the AI: who wrote it and when, red after 6 h
@@ -820,7 +820,9 @@ function anomRows() {
   return rows;
 }
 /** the news of one side only (js/sections.js), on what the visitor's settings and search show */
-function sideGroups(byGenre) { return oneSideOf(state.es.filter((e) => !e.foldedInto && vis(e) && matchesQ(e) && (!byGenre || inGenre(e))), { sidesOf, outletOf }); }
+// a ministry's page counts on the home side here as in バイアス度 (js/bias.js), so a story of a ministry and outlets abroad is told from both sides, not one
+const homeSides = (e) => { const s = sidesOf(e); return { ...s, jp: [...s.jp, ...s.gov] }; };
+function sideGroups(byGenre) { return oneSideOf(state.es.filter((e) => !e.foldedInto && vis(e) && matchesQ(e) && (!byGenre || inGenre(e))), { sidesOf: homeSides, outletOf }); }
 function renderAnom() {
   const rows = anomRows().filter((r) => !r || !r.e || inGenre(r.e));
   const by = new Map();
@@ -853,11 +855,11 @@ function lanes(e) {
   if (!ms.length) return h('p', { class: 'tl-none', text: '時刻の無い報道だけ' });
   const t0 = Math.min(...ms.map((it) => it.ts)), t1 = Math.max(...ms.map((it) => it.ts));
   const span = Math.max(3600, t1 - t0);
-  const W = 260, LH = 13, L = 62, H = types.length * LH + 13, STEP = 6;
+  const W = 260, LH = 18, L = 62, H = types.length * LH + 16, STEP = 6;
   const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'lanes', role: 'img', 'aria-label': '種類ごとの報道の時刻' });
   types.forEach((t, i) => {
     const y = i * LH + LH / 2;
-    svg.append(s('text', { x: 0, y: y + 3, class: 'lt' }, document.createTextNode(t)));
+    svg.append(s('text', { x: 0, y: y + 3.5, class: 'lt' }, document.createTextNode(t)));
     for (let x = L; x <= W - 4; x += STEP) svg.append(s('circle', { cx: x, cy: y, r: .7, class: 'hd' }));
   });
   // the fingerprint: for each type, the span from its first to its last report (who followed, and how late)
@@ -879,7 +881,7 @@ function lanes(e) {
     const link = safeUrl(it.link);
     svg.append(link ? s('a', { href: link, target: '_blank', rel: 'noopener noreferrer' }, dot) : dot);
   });
-  svg.append(s('text', { x: L, y: H - 2, class: 'ax' }, document.createTextNode(fmtClock(t0))), s('text', { x: W, y: H - 2, class: 'ax end' }, document.createTextNode(t1 > t0 ? `+${fmtSpan(t1 - t0)}` : '')));
+  svg.append(s('text', { x: L, y: H - 3, class: 'ax' }, document.createTextNode(fmtClock(t0))), s('text', { x: W, y: H - 3, class: 'ax end' }, document.createTextNode(t1 > t0 ? `+${fmtSpan(t1 - t0)}` : '')));
   const noTs = e.members.length - ms.length;
   return h('div', { class: 'lanes-w' }, svg, noTs ? h('p', { class: 'pfoot', text: `時刻不明 ${noTs}（初報に置かない）` }) : null);
 }
@@ -1248,7 +1250,12 @@ function caseNode(e) {
   const stH = (id, ja, n) => h('h3', { class: 'st-h', data: { st: id } }, ja, n != null ? h('span', { class: 'n', text: n }) : null);
   const jump = (id) => { const t = node.querySelector(`.st-h[data-st="${id}"]`); if (t) t.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' }); };
   const covNode = coverageCard(e);
-  const nav = h('nav', { class: 'st-nav', 'aria-label': 'このニュースの詳しい節' }, STORY.filter(([id]) => id !== 'pt' && (id !== 'cv' || covNode)).map(([id, ja]) => h('button', { type: 'button', on: { click: () => jump(id) } }, ja)));
+  // v64 (2026-11-16): the sections' names stand under the headline, in the first view, and name the panes under the news too (映像・関連・出典),
+  // so nothing waits at the foot of a long scroll. On a wide screen those panes are a row always in view and their three names are left out (css)
+  const toPane = (id) => { const t = $(id); if (t && t.offsetParent) t.scrollIntoView({ block: 'start', behavior: reduced() ? 'auto' : 'smooth' }); };
+  const nav = h('nav', { class: 'st-nav', 'aria-label': 'このニュースの詳しい節' },
+    STORY.filter(([id]) => id !== 'cv' || covNode).map(([id, ja]) => h('button', { type: 'button', on: { click: () => jump(id) } }, ja)),
+    UNDER_PANES.map(([id, ja]) => h('button', { type: 'button', class: 'st-x', on: { click: () => toPane(id) } }, ja)));
   const fl = firstLine(sd, fmtClock);
   // the first report of each side, on the first screen: who said it, when, and the headline as published
   const repSides = SIDES.filter(([k]) => sd[k].length);
@@ -1311,8 +1318,8 @@ function caseNode(e) {
 
   const node = h('div', { class: 'case-in' },
     h('div', { class: 'dos' + (photo ? ' has-photo' : '') },
-      h('header', { class: 'ch dcard t-place' }, place, head, tools), photo,
-      stH('pt', '要点'), point, reps, covNode, status, nav, fill, figs,
+      h('header', { class: 'ch dcard t-place' }, place, head, tools), photo, nav,
+      stH('pt', '要点'), point, reps, covNode, status, fill, figs,
       stH('tl', '経過', tl.length), tlCard,
       stH('sd', '各側見出し'), dossier.sides(m, angles, act),
       stH('src', '出典一覧', src.length), srcCard),
@@ -1481,7 +1488,7 @@ function paintSpeak(b) {
   b.hidden = !reader.can();
   b.setAttribute('aria-pressed', String(on));
   const ic = document.createElementNS(SVGNS, 'svg'); ic.setAttribute('viewBox', '0 0 20 20'); ic.setAttribute('aria-hidden', 'true'); ic.innerHTML = on ? SPEAK_I.off : SPEAK_I.on;
-  b.replaceChildren(ic, h('span', { text: on ? '止める' : '読み上げる' }));
+  b.replaceChildren(ic, h('span', { text: on ? '止める' : '読み上げ' }));
 }
 function speakBtn(e, cls) {
   const b = h('button', { type: 'button', class: 'speak' + (cls ? ' ' + cls : ''), data: { k: e.key }, on: { click: () => reader.toggle(e.key, readLines(e, { sides: sidesOf, point: pointOf, outletOf })) } });
@@ -1548,13 +1555,16 @@ function frontData() {
   const inF = (e) => !f || e.field === f;
   const gap = f ? gapByEvent(live.filter(inF), { sidesOf, titleOf: (e) => entryTitleOf(e).text, max: 8 }) : gapByField(live, { sidesOf, fields: FIELDS });
   const all = gapByField(live, { sidesOf, fields: FIELDS });
-  const one = oneSideOf(live.filter(inF), { sidesOf, outletOf }).filter((g) => g.side === 'jp' || g.side === 'intl');
-  const bias = state.pri.filter((e) => !e.foldedInto && vis(e) && inF(e)).map((e) => ({ e, b: biasOf(e) })).filter((x) => x.b && x.b.ok)
-    .sort((a, b) => b.b.score - a.b.score).slice(0, 8).map((x) => ({ key: x.e.key, title: entryTitleOf(x.e).text, score: Math.round(x.b.score) }));
+  const one = oneSideOf(live.filter(inF), { sidesOf: homeSides, outletOf }).filter((g) => g.side === 'jp' || g.side === 'intl');
+  // the order is over every story told from both sides (a story one side carried alone has nothing to set against: no number, no place in it, 11-16)
+  const scored = live.filter((e) => inF(e) && homeSides(e).intl.length && homeSides(e).jp.length).map((e) => ({ e, b: biasOf(e) })).filter((x) => x.b && x.b.ok).sort((a, b) => b.b.score - a.b.score);
+  const bias = scored.slice(0, 8).map((x) => ({ key: x.e.key, title: entryTitleOf(x.e).text, score: Math.round(x.b.score) }));
   const n = (s) => (one.find((g) => g.side === s) || { events: [] }).events.length;
   const share = jpShare(all);
   // each tab says what its number is: the share over every field (not the card's one news), the count of each side's own news, the highest バイアス度 of 100
-  return { gap, one, bias, counts: { gap: share == null ? '' : [{ k: '国内', v: `${share}%`, side: 'jp' }, { k: '海外', v: `${100 - share}%`, side: 'intl' }],
+  const articles = all.jp + all.intl;
+  const apart = { jp: n('jp'), intl: n('intl') };
+  return { gap, one, bias, apart, scored: scored.length, articles, counts: { gap: share == null ? '' : [{ k: '国内', v: `${share}%`, side: 'jp' }, { k: '海外', v: `${100 - share}%`, side: 'intl' }],
     jp: [{ v: String(n('jp')), u: '件', side: 'jp' }], intl: [{ v: String(n('intl')), u: '件', side: 'intl' }],
     bias: bias.length ? [{ k: '最高', v: String(bias[0].score) }] : '' } };
 }
@@ -1582,9 +1592,9 @@ function renderFront() {
   if (homeMode() !== 'home') return;   // drawn for the home only; the board keeps its own panes
   const tab = FRONT_TABS.some(([id]) => id === state.front) ? state.front : 'gap';
   const d = frontData();
-  renderFrontEl(fr, { h, tab, field: state.frontField || null, fields: FIELDS, counts: d.counts,
+  renderFrontEl(fr, { h, tab, field: state.frontField || null, fields: FIELDS, counts: d.counts, subs: { gap: d.articles ? `記事 ${d.articles.toLocaleString('ja-JP')} 件の比率` : '', jp: '国内の媒体だけの話', intl: '海外の媒体だけの話', bias: d.scored ? `0〜100・${d.scored} 話を測定` : '' },
     onTab: (id) => { state.front = id; renderFront(); revealGap(); }, onField: (x) => { state.frontField = x; renderFront(); } });
-  renderGapEl(gp, { h, tab, field: state.frontField || null, gap: d.gap, one: d.one, bias: d.bias, gen: state.data.generated_at, now: nowS(), clock: fmtClock, short: fmtShort,
+  renderGapEl(gp, { h, tab, field: state.frontField || null, gap: d.gap, one: d.one, bias: d.bias, apart: d.apart, scored: d.scored, onTab: (id) => { state.front = id; renderFront(); revealGap(); }, gen: state.data.generated_at, now: nowS(), clock: fmtClock, short: fmtShort,
     titleOf: (e) => entryTitleOf(e).text, headOf: frontHead, pick: frontPick, detail: (k) => entryDetail(k, { bias: true }) });
 }
 // The three screens, one rule: ホーム (the front page), 詳しく見る (the board), 比べる (the simple compare view). The top bar shows which one is open;
@@ -1921,7 +1931,7 @@ function renderMkt() {
         h('span', { class: 'mta', text: [ta && ta.trend, ta && isNum(ta.rsi) ? `RSI ${Math.round(ta.rsi)}` : '', `${str(x.as_of).slice(5).replace('-', '/')} の値`].filter(Boolean).join(' · ') }));
     })));
   }
-  b.replaceChildren(...parts, h('p', { class: 'pfoot', 'data-host': '' }, `${fmtShort(m.generated_at)} `, ageEl(m.generated_at, SIX_H), ` · 日々の値 · ${str(m.note_ja) || '売買の推奨ではありません'}`));
+  b.replaceChildren(...parts, h('p', { class: 'pfoot', 'data-host': '' }, `${fmtShort(m.generated_at)} `, ageEl(m.generated_at, STALE_S), ` · 日々の値 · ${str(m.note_ja) || '売買の推奨ではありません'}`));
 }
 // the politics pane and its sheet live in js/politics_ui.js; here only the wiring
 let polUi = null;
@@ -1931,7 +1941,7 @@ function renderPol() {
   const p = state.pol, b = $('pol-b');
   if (p === undefined) { b.replaceChildren(h('p', { class: 'empty', text: '読込中' })); return; }
   if (!p) { $('pol-c').textContent = '—'; b.replaceChildren(h('p', { class: 'empty', text: '政治のデータを読めない' })); return; }
-  $('pol-c').replaceChildren(ageEl(p.generated_at, SIX_H));
+  $('pol-c').replaceChildren(ageEl(p.generated_at, STALE_S));
   $('pol-c').dataset.host = '';
   b.replaceChildren(...politics().pane(p, state.crit, sceneNow()));
 }
@@ -2048,7 +2058,7 @@ function aboutEl() {
   const det = (id, title, open) => h('details', { id, open: open || null }, h('summary', null, h('span', { text: title }), h('span', { class: 's2', id: id + '-s' })), h('div', { class: 'inner', id: id + '-i' }));
   aboutNode = h('div', { class: 'about' },
     h('div', { class: 'sheet-h' }, h('h2', { text: HEAD['about.title'] }), h('button', { type: 'button', class: 'tbb', text: '閉じる', on: { click: closeAbout } })),
-    h('ul', { class: 'floor' }, h('li', { text: '見出しとリンクは各メディアのものです。画像は元の記事の場所から表示しています' }), h('li', { text: 'メディアに左右のラベルは付けません' }),
+    h('ul', { class: 'about-notes' }, h('li', { text: '見出しとリンクは各メディアのものです。画像は元の記事の場所から表示しています' }), h('li', { text: 'メディアに左右のラベルは付けません' }),
       h('li', { text: '見出しの真偽は判定しません' }), h('li', { text: '「見当たらない」は、集めたニュースの中での話です' }), h('li', { text: AI_NOTE }), h('li', null, extLink(ISSUES, null, '掲載の停止の依頼'), `・${STOP_NOTE}`)),
     det('ab-scope', '集めた範囲', true), det('ab-ai', 'AI の実行'), det('ab-eval', '検査'), det('ab-src', '媒体の一覧'), det('ab-byok', 'マイ AI で実行（任意）'));
   aboutNode.querySelector('#ab-byok-i').append(
@@ -2073,7 +2083,7 @@ function renderAbout() {
   const rows = arr(d.sources).filter(isObj);
   const fails = rows.filter((r) => r.ok !== true).length;
   q1('#ab-scope-s').textContent = `${rows.length}社`;
-  q1('#ab-scope-i').replaceChildren(kv([['組んだ時刻', h('span', { 'data-host': '' }, fmtFull(d.generated_at), ' ', ageEl(d.generated_at, SIX_H))],
+  q1('#ab-scope-i').replaceChildren(kv([['組んだ時刻', h('span', { 'data-host': '' }, fmtFull(d.generated_at), ' ', ageEl(d.generated_at, STALE_S))],
     ['時間の幅', `${isNum(d.window_h) ? d.window_h : 36} 時間`], ['メディア', `${rows.length}（取れた ${rows.length - fails}・届かなかった ${fails}）`, fails ? 'err' : null],
     ['引用の扱い', str(d.rights_mode) === 'strict' ? '利用条件を確かめた媒体だけ見出しを表示' : '全ての媒体の見出しを引用（媒体名・時刻・リンク付き）']]));
   const run = isObj(d.ai_run) ? d.ai_run : {};
@@ -2351,7 +2361,7 @@ function renderAll() {
     renderSect();
     tick();
   } catch (err) {
-    showFatal(`表示できませんでした: ${err && err.message ? err.message : String(err)}`);
+    showFatal('画面を表示できませんでした', { fact: err && err.message ? String(err.message) : String(err), next: '読み込み直すと直ることがあります。直らない時は、時間をおいてから開いてください。' });
   }
 }
 /** the loading face (a skeleton in the home, js/theme_boot.js sets the flag before the first paint) ends when the data is in or cannot come */
@@ -2361,7 +2371,28 @@ function endLoad() {
   if (isShow() && document.fonts && document.fonts.load) { Promise.race([document.fonts.load('700 44px "Noto Sans JP"'), new Promise((r) => setTimeout(r, 1500))]).catch(() => {}).then(up); return; }
   up();
 }
-function showFatal(text) { const el = $('fatal'); el.textContent = text; el.hidden = false; endLoad(); }
+// the data could not be read: one card over the empty board that says what happened, what it was reading and what to do next (11-16: a frame of empty panes and one red line left a visitor with nothing)
+function whyUnread(err) {
+  const m = err && err.message ? String(err.message) : '', code = /^HTTP (\d+)/.exec(m);
+  if (code) return Number(code[1]) >= 500 ? `サーバーが応答しません（HTTP ${code[1]}）` : `データのファイルが見つかりません（HTTP ${code[1]}）`;
+  if (err && err.name === 'SyntaxError') return 'データの中身が壊れています';
+  return navigator.onLine === false ? 'ネットワークに接続していません' : 'サーバーに接続できません';
+}
+// what to do next, by what went wrong; the worker answers with the copy kept on this device when it has one (sw.js), so reaching here means there is none
+function nextOfUnread(err) {
+  const m = err && err.message ? String(err.message) : '', code = /^HTTP (\d+)/.exec(m);
+  if (navigator.onLine === false) return '接続が戻ってから、もう一度読み込んでください。この端末に前回の値は残っていません。';
+  if (code && Number(code[1]) < 500) return '読み込むファイルの場所を確かめてください。直らない時は、アドレスを開き直してください。';
+  return '少し待ってから、もう一度読み込んでください。この端末に前回の値は残っていません。';
+}
+function showFatal(title, o = {}) {
+  const el = $('fatal');
+  const again = h('button', { type: 'button', class: 'fa-b', on: { click: () => { if (o.home) location.href = location.pathname; else location.reload(); } } }, o.home ? 'パラメータなしで開く' : 'もう一度読み込む');
+  el.replaceChildren(h('div', { class: 'fa-c' }, h('h2', { class: 'fa-t', text: title }), o.fact ? h('p', { class: 'fa-f', text: o.fact }) : null,
+    o.path ? h('p', { class: 'fa-p', text: o.path }) : null, o.next ? h('p', { class: 'fa-n', text: o.next }) : null, again));
+  el.hidden = false; endLoad();
+  try { again.focus({ preventScroll: true }); } catch { /* no focus */ }
+}
 
 // ---------------------------------------------------------------- idle: send the priority events
 function pause() {
@@ -2450,7 +2481,9 @@ async function loadSide() {
 }
 
 // ---------------------------------------------------------------- sheets: a pane opened toward the viewer — one big number, the facts, then everything
-const SHEETS = { keys: 'キーの一覧', outlet: HEAD['outlet.sheet'], case: 'ニュース詳細', src: HEAD['src.title'], hours: '時間別', pri: 'ニュース一覧', anom: '独占報道', mkt: '市場', pol: '政治', haz: '災害' };
+const SHEETS = { keys: 'キーの一覧', outlet: HEAD['outlet.sheet'], case: 'ニュース詳細', src: HEAD['src.title'], hours: '時間別', pri: 'ニュース一覧', anom: '独自報道', mkt: '市場', pol: '政治', haz: '災害' };
+/** the panes under the news on 詳しく見る (index.html .under), by the names on their heads */
+const UNDER_PANES = [['p-tv', '映像'], ['p-rel', '関連'], ['p-basis', '出典・手法']];
 const SHEET_PANE = { src: 'p-src', hours: 'p-hours', pri: 'p-pri', anom: 'p-anom', mkt: 'p-mkt', pol: 'p-pol', haz: 'p-haz' };
 const SHEET_ALIAS = { 源: 'src', ソース: 'src', 情報源: 'src', 媒体: 'src', 時間ごと: 'hours', 時間: 'hours', 注目: 'pri', 非対称: 'anom', 一部の媒体だけ: 'anom', 市場: 'mkt', 政治: 'pol', 災害: 'haz' };
 const sheetKind = (k) => { const x = String(k || '').trim(); return SHEETS[x] ? x : SHEET_ALIAS[x] || null; };
@@ -2596,7 +2629,7 @@ const SHEET_BODY = {
       body.push(sec(k, rs.length), rs[0].tip ? h('p', { class: 'anom-rule', text: `${rs[0].tip}。` }) : null, tbl([['見出し'], ['メディア', 'r'], ['種類', 'opt'], ['最新', 'r']], rs.map((r) => h('tr', { class: 'go', on: { click: () => { closeSheet(); select(r.e.key, true); } } },
         td(r.e.heading.text, 'tt'), td(`${r.e.n}`, 'r'), td(uniq(r.e.members.map((it) => it.type)).join('・'), 'dim opt'), td(fmtAge(r.e.last), 'r dim')))));
     }
-    return { big: fmtN(new Set([...rows.map((r) => r.e), ...groups.flatMap((g) => g.events)]).size), unit: '独占報道',
+    return { big: fmtN(new Set([...rows.map((r) => r.e), ...groups.flatMap((g) => g.events)]).size), unit: '独自報道',
       facts: [...groups.map((g) => [g.short, fmtN(g.events.length)]), ...kinds.map((k) => [k, fmtN(rows.filter((r) => r.ja === k).length)])], body: body.length ? body : [h('p', { class: 'empty', text: '0 件' })], foot: `自動のラベル・${noteJa()}` };
   },
   mkt() {
@@ -3196,9 +3229,20 @@ const HX = { hero: null, orb: null, guide: null, file: null, gen: null, rel: und
   swipe: null, demo: false, idle: null, frozen: null, back: null, orbBox: null, cap: null, speakBtn: null, loaded: false };
 const hxDir = () => { const dp = dataPath(); return (dp.path || DEFAULT_DATA).replace(/[^/]*$/, ''); };
 const hxSid = (e) => (e && e.case && e.case.sid) || (e && e.obj && e.obj.sid) || null;
+/** the tour runs over the home: whatever screen is up, the home comes first */
+function openTour() {
+  if (state.ui === 'simple') setUi('full');
+  setHome('home'); setSect('home'); window.scrollTo(0, 0);
+  state.tour.open();
+}
 function heroEntry(p) {
   if (!p) return null;
   return state.es.find((e) => !e.foldedInto && hxSid(e) === p.sid) || (p.key && state.byKey.get(p.key)) || state.es.find((e) => e.obj && e.obj.sid === p.sid) || null;
+}
+/** the story whole: a pick whose bundle was folded into another's is that other bundle (its counts, its bias index, the news that 詳細 opens) */
+function heroWhole(p) {
+  const e = heroEntry(p);
+  return e && e.foldedInto ? state.byKey.get(e.foldedInto) || e : e;
 }
 const hxPoint = (e) => (e && e.summary && str(e.summary.text_ja).trim() ? { text: str(e.summary.text_ja).trim(), ai: true } : null);
 function hxSame(e) {
@@ -3304,7 +3348,7 @@ function hxPairLines() {
   }
 }
 function hxCompare(p) {
-  const e = heroEntry(p);
+  const e = heroWhole(p);
   if (!e) { toast('読込中です'); return; }
   hxLayerClose();
   setSect('home'); setUi('simple'); pickEntry(e.key);
@@ -3523,11 +3567,14 @@ function heroWire() {
   HX.hero = createHero({ h, root: cardBox, fmt: { clock: fmtClock, short: fmtShort }, on: {
     open: hxOpen, why: hxWhy, compare: hxCompare, orbSlot: hxOrbBox, oneSideNote: ONE_SIDE_NOTE,
     photo: (p) => { const e = state.es ? heroEntry(p) : null; const ph = e ? entryPhoto(e) : null; return ph && ph.kind !== 'video' ? ph : null; },
+    // v64: the card says what the news holds. The brief is the story's own (AI, marked); the bias index only where both sides carry it (a story of one side is outside the order)
+    brief: (p) => { const e = state.es ? heroEntry(p) : null; const b = e && e.brief ? e.brief : null; return b ? { rows: b.rows.filter((r) => r.key === 'what_ja' || r.key === 'views_ja' || r.key === 'background_ja'), at: b.madeAt } : null; },
+    bias: (p) => { const e = state.es ? heroWhole(p) : null; if (!e || !(p.sides.jp.outlets && p.sides.intl.outlets)) return null; const b = biasOf(e); return b && b.ok ? b.score : null; },
     change: (p) => { root.hidden = !p; if (HX.guide && HX.guide.key() != null && (!p || HX.guide.key() !== p.sid)) HX.guide.stop(); hxPaintSpeak(); } } });
   HX.swipe = createSwipe({ h, root: $('hr-flow'), fmt: { clock: fmtShort }, on: { title: '流す', get orderJa() { return ORDER_JA[HX.order]; }, open: (k) => { HX.swipe.close(); setSect('home'); setUi('simple'); pickEntry(k); } } });
   // AI | 規則: the card is drawn again, and a count of outlets that changed lights once (js/hero.js)
   for (const id of ['v-ai', 'v-rules']) $(id).addEventListener('click', () => setTimeout(hxRender, 0));
-  window.addEventListener('resize', () => requestAnimationFrame(hxPairLines), { passive: true });
+  window.addEventListener('resize', () => requestAnimationFrame(() => { hxPairLines(); if (HX.hero) HX.hero.fit(); }), { passive: true });
   $('hr-layer').addEventListener('click', (ev) => { if (ev.target === $('hr-layer')) hxLayerClose(); });
   $('hr-layer').addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); hxLayerClose(); return; }
@@ -3969,9 +4016,9 @@ async function main() {
   if (new URLSearchParams(location.search).get('m') === 'simple') setUi('simple');
   try { history.replaceState({ ...(isObj(history.state) ? history.state : {}), ps: screenNow() }, '', location.href); } catch { /* */ }
   screenReady = true; paintScreen();
-  // the first visit: a short tour over the simple view, which stays open after it (js/tour.js); 使い方 in the bar shows it again
+  // the first visit: a short tour over the home (js/tour.js); 使い方 in the bar shows it again
   state.tour = createTour({ doc: document, win: window, storage: store, onEnd: () => { if (state.ui === 'simple') setUi('full'); setHome('home'); setSect('home'); window.scrollTo(0, 0); } });
-  $('tour-btn').addEventListener('click', () => { setSect('home'); setUi('simple'); state.tour.open(); });
+  $('tour-btn').addEventListener('click', () => openTour());
   state.sceneMode = 'auto';
   getJson(dataDir() + 'scenes.json').then((c) => { state.scenes = isObj(c) && c.schema === 'parallax-scenes/1' ? c : null; sceneTick(); });
   if (speechSupported()) { $('voice-btn').hidden = false; $('voice-btn').addEventListener('click', startVoice); }
@@ -4064,7 +4111,7 @@ async function main() {
   initDial();        // phones: two rings under the thumb to step through the topics and the events
 
   const dp = dataPath();
-  if (dp.bad != null) { showFatal('data= は同じ場所の相対パス（.json）だけ指定できます。'); return; }
+  if (dp.bad != null) { showFatal('データを指定できません', { fact: 'data= には、同じ場所の相対パス（.json）だけ指定できます。', home: true }); return; }
   state.dataPath = dp.path;
   setState('読込中', true);
   let data;
@@ -4072,8 +4119,8 @@ async function main() {
     const res = await fetch(dp.path, { cache: 'no-store', credentials: 'same-origin' });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     data = await res.json();
-  } catch (err) { showFatal(`${dp.path} を読めませんでした（${err && err.message ? err.message : String(err)}）。`); setState('データなし'); return; }
-  if (!isObj(data)) { showFatal(`${dp.path} の中身が JSON の物ではありません。`); return; }
+  } catch (err) { showFatal('データを読み込めませんでした', { fact: whyUnread(err), path: dp.path, next: nextOfUnread(err) }); setState('データなし'); return; }
+  if (!isObj(data)) { showFatal('データを読み込めませんでした', { fact: 'データの中身が壊れています', path: dp.path }); return; }
   tidyGovTitles(data);   // the gaps a ministry page's line breaks leave in a title (js/tidy.js)
   state.base = data; state.data = data;
   const [labels, board] = await Promise.all([getJson(dataDir() + 'labels.json'), getJson(dataDir() + 'board.json')]);
@@ -4096,9 +4143,11 @@ async function main() {
     let hit = (askSid && find(askSid)) || (askT && find(askT));
     if (!hit && askSid && state.view === 'ai') { setView('rules'); hit = find(askSid); }
     if (hit) openSheet('case');
-  } else if (state.sect === 'home' && qs.get('tour') === '1') { setUi('simple'); state.tour.open(); }
-  else if (state.sect === 'home' && wantTour(store, location.search)) { markTour(store); HX.cueWanted = true; }
+  }
   hxData();   // the card with the board's media tables, now that both are in (nothing sets data-load, so the observer does not see this moment)   // the first visit stays on the home's first card: its three buttons light once in turn (the tour is under ?)
+  // v64 (2026-11-16): the first visit opens the tour over the home, after the card is drawn; it is kept as seen when it closes (js/tour.js).
+  // Not over a link to one event, not on the booth's screen (?demo=1) and not on the stage (?show); ?tour=1 always, ?tour=0 never
+  if (!(askSid || askT) && state.sect === 'home' && (qs.get('tour') === '1' || (wantTour(store, location.search) && !HX.demo && !document.documentElement.hasAttribute('data-show')))) openTour();
   state.autoNext = Date.now() + AUTO_MS;
   loadHaz(); loadSide(); loadEval(); loadDefaultModel();
   setInterval(tick, 30000);

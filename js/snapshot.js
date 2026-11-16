@@ -8,8 +8,11 @@
  *   isOld(ts, now, max) -> 6 時間（既定）を過ぎたか */
 
 export const SIX_H = 6 * 3600;
-/** the data is collected every 3 hours: a value older than this means the next collection is late */
-export const THREE_H = 3 * 3600;
+/** a collection is DUE every 8 hours: the cron says every 3 hours, but GitHub starts a scheduled run late or not at all (and the bundling model's 20 requests a day, README, leave room for 8 builds, not more); the 25 runs from 11-09 to 11-16
+ *  came 4.1 to 13.4 hours apart (median 7.6), so a value older than 8 hours is late and older than STALE_S (12 hours, a missed run on top) is red (11-16;
+ *  before: 3 and 6 hours, which showed red on most hours of every day while nothing was wrong with the page) */
+export const DUE_S = 8 * 3600;
+export const STALE_S = 12 * 3600;
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -18,15 +21,15 @@ export function isOld(ts, now, max = SIX_H) {
   return isNum(ts) && isNum(now) && now - ts > max;
 }
 
-/** a value's own time against the collection every 3 hours: 'ok' to 3 hours, 'warn' after 3 (the next collection is late), 'bad' after 6, 'none' when there is no time */
+/** a value's own time against the collection: 'ok' to DUE_S, 'warn' after it (the next collection is late), 'bad' after STALE_S, 'none' when there is no time */
 export function freshness(ts, now) {
   if (!isNum(ts) || !isNum(now)) return 'none';
   const a = now - ts;
-  return a > SIX_H ? 'bad' : a > THREE_H ? 'warn' : 'ok';
+  return a > STALE_S ? 'bad' : a > DUE_S ? 'warn' : 'ok';
 }
-/** how many seconds the next collection is late (0 while the value is within 3 hours) */
+/** how many seconds the next collection is late (0 while the value is within DUE_S) */
 export function lateBy(ts, now) {
-  return isNum(ts) && isNum(now) ? Math.max(0, now - ts - THREE_H) : 0;
+  return isNum(ts) && isNum(now) ? Math.max(0, now - ts - DUE_S) : 0;
 }
 
 /** 最初に開いた時の見方。AI の結果がある時は 'ai'（status が ok / partial / recorded、または前回を保った kept_previous で

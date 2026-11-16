@@ -1,7 +1,8 @@
-/* tour — the first visit's short tour. Six cards, one at a time: a heading of one line, a line or two of text, and the part of the
- * page it speaks of outlined while the rest is dimmed. 次へ / 戻る / とばす, the last card ends with はじめる; Esc or a press outside the
- * card closes it. Once finished or skipped it does not come again (localStorage, this browser only; a storage that cannot be read only
- * means it may come again). 使い方 in the bar opens it at any time.
+/* tour — the first visit's short tour. Four cards, one at a time, over the home as it is now (v64, 2026-11-16): a heading of one line,
+ * a line or two of text, and the part of the page it speaks of outlined while the rest is dimmed. 次へ / 戻る / とばす, the last card ends
+ * with はじめる; Esc or a press outside the card closes it. It opens by itself on the first visit; once finished or skipped it does not
+ * come again (localStorage, this browser only; a storage that cannot be read only means it may come again). 使い方 in the bar opens it
+ * at any time.
  *
  *   STEPS                                          [{ id, at: [selector], title, text }]; at: the first one shown on the page is outlined
  *   tourSeen(storage) -> boolean
@@ -20,18 +21,14 @@ export const NARROW = 600;
 const GAP = 12, EDGE = 16, PAD = 6;
 
 export const STEPS = [
-  { id: 'hello', at: [], title: 'はじめに',
-    text: 'ニュースごとに、国内、海外、官公庁の見出しを並べて見られます。' },
-  { id: 'sects', at: ['#sects'], title: '画面の切り替え',
-    text: 'ニュース、地図、市場、政治、災害、映像、保存はこの列で切り替えます。' },
-  { id: 'simple', at: ['#entry .en-cards', '#entry .en-card', '#sc-simple'], title: '比べる',
-    text: 'ニュースを一つ選ぶと、国内と海外の件数、最初の報道の時刻、見出しの違いが並びます。' },
-  { id: 'absent', at: ['#entry .cb-absent', '#entry .en-cols'], title: '見当たらないメディア',
-    text: '集めた記事の中に、このニュースが見当たらなかったメディアです。' },
-  { id: 'ai', at: ['#entry .en-sel .en-ai', '#v-ai'], title: 'AI のまとめ',
-    text: 'AI が、言語の違う見出しを同じニュースにまとめています。AI の文には「AI」の印が付きます。真偽は判定しません。' },
-  { id: 'settings', at: ['#cmd-btn', '#sects-more'], title: '検索と設定',
-    text: 'Ctrl+K でニュースも操作も探せます。字の大きさとダーク・ライトは設定で変えられます。' },
+  { id: 'tiles', at: ['#front .fr-tabs', '#front'], title: '4 枚のタイル',
+    text: '記事の件数の比、片側の媒体だけが載せた話の数、偏り度（0〜100）です。片側だけの話は偏り度の順位に入りません。' },
+  { id: 'lead', at: ['#hero .hr-card', '#hero'], title: '注目ニュース',
+    text: '国内と海外の社数、初報、双方の見出し、違いが一枚に並びます。' },
+  { id: 'screens', at: ['#screens'], title: '画面',
+    text: '「詳しく見る」は一つのニュースを全社で比べる画面、「比べる」は国内と海外を並べる画面です。AI の文には「AI」の印が付き、真偽は判定しません。' },
+  { id: 'find', at: ['#cmd-btn', '#view-btn', '#sects-more'], title: '検索と設定',
+    text: '検索はニュースも操作も探せます。外観と字の大きさは設定で変えられます。' },
 ];
 
 export function tourSeen(storage) {
