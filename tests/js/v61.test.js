@@ -34,13 +34,13 @@ test('a photo that is not in yet is tinted by its field, not black', () => {
   assert.match(read('css/app.css'), /:is\(\.rth, \.en-ph, \.hr-ph, \.nt-ph, \.pimg, \.bd-f\):not\(\.none\) \{ background: color-mix\(in srgb, var\(--gc, var\(--ink\)\) 14%, transparent\); \}/);
 });
 
-test('the service worker is v64 (the 11-16 layout pass)', () => {
-  assert.match(read('sw.js'), /const CACHE = 'parallax-v64';/);
+test('the service worker is v65 (the 11-16 layout pass)', () => {
+  assert.match(read('sw.js'), /const CACHE = 'parallax-v65';/);
 });
 
-test('the service worker is v64: a server error (5xx) is answered with the copy kept on the device when there is one', () => {
+test('the service worker is v65: a server error (5xx) is answered with the copy kept on the device when there is one', () => {
   const sw = read('sw.js');
-  assert.match(sw, /const CACHE = 'parallax-v64';/);
+  assert.match(sw, /const CACHE = 'parallax-v65';/);
   assert.match(sw, /res\.status >= 500\) return caches\.match\(req/);
 });
 

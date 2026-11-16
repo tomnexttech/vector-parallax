@@ -90,13 +90,32 @@ export function leadRows(cov, n = LEAD_ROWS) {
 
 const isEn = (s) => /^[\x00-\x7f]+$/.test(s);
 
+/** the name an outlet's column is headed with where the columns are narrow (the full name stays in the title, the label and the sentence under the table):
+ *  the name as the outlet is called in speech, never cut inside a word */
+const SHORT_NAME = { 'The Japan Times': 'Japan Times', 'The Guardian': 'Guardian', 'Financial Times': 'FT', '日本経済新聞': '日経', 'CRI/人民網': '人民網', '厚生労働省': '厚労省', '文部科学省': '文科省', 'テレビ朝日': 'テレ朝' };
+export const shortName = (name) => {
+  const n = String(name || '');
+  if (SHORT_NAME[n]) return SHORT_NAME[n];
+  const m = /^(.{2,})新聞$/.exec(n) || /^(.{2,})通信$/.exec(n);
+  return m ? m[1] : n;
+};
+/** the word a cell is told by where the columns are narrow: the word the sentence was matched on, else the start of the sentence */
+export const keyOf = (c) => {
+  const p = String((c && c.p) || ''), k = String((c && c.k) || '');
+  if (k && p.includes(k)) return k;
+  const t = p.replace(/^…/, '');
+  return t.length > 12 ? t.slice(0, 12) + '…' : t;
+};
+
 /** the widths the table is laid out with (css/app.css keeps the same numbers): the row names, a narrow column, and the least a column of phrases needs */
 export const FIT = { label: 104, thin: 34, full: 90, tight: 58, slim: 46 };
 export const fitOf = (per) => (per >= FIT.full ? 'full' : per >= FIT.tight ? 'tight' : per >= FIT.slim ? 'slim' : 'run');
 
 export function createCoverage({ h, onOutlet = null }) {
   // an outlet's name at the head of its column opens 媒体の特徴 when the page gives a way to (js/traits.js)
-  const head = (o) => (onOutlet ? h('button', { type: 'button', class: 'cv-om', title: '媒体の特徴', on: { click: () => onOutlet(o.name) } }, o.name) : h('b', { text: o.name }));
+  // the name is the whole name (cv-fn); where the columns are narrow css shows the short form instead (data-sn, drawn by ::after), a screen reader keeps the whole name
+  const sn = (o) => { const x = shortName(o.name); return x !== o.name ? x : null; };
+  const head = (o) => (onOutlet ? h('button', { type: 'button', class: 'cv-om', title: '媒体の特徴', 'aria-label': o.name, data: sn(o) ? { sn: sn(o) } : null, on: { click: () => onOutlet(o.name) } }, h('span', { class: 'cv-fn', text: o.name })) : h('b', { data: sn(o) ? { sn: sn(o) } : null }, h('span', { class: 'cv-fn', text: o.name })));
   /** the sentence the outlet published, cut at the word: before, the word (marked), after */
   const mark = (text, key) => {
     const i = key ? text.indexOf(key) : -1;
@@ -107,7 +126,7 @@ export function createCoverage({ h, onOutlet = null }) {
     if (c === null) return h('td', { class: 'na', data: { side: o.side, o: o.name }, title: '言語が違うので照合していません' }, h('span', { class: 'sr', text: '照合なし' }), h('span', { 'aria-hidden': 'true', text: '·' }));
     if (c === '') return h('td', { class: 'off', data: { side: o.side, o: o.name }, title: `${o.name} の見出しと要旨には出ていない` }, h('span', { class: 'sr', text: '出ていない' }), h('span', { 'aria-hidden': 'true', text: '—' }));
     return h('td', { class: 'on' + (term ? ' t' : ''), data: { side: o.side, o: o.name }, lang: o.lang === 'en' ? 'en' : null, title: `${o.name}: ${c.p}` },
-      term ? h('i', { class: 'cv-dot', 'aria-hidden': 'true' }) : null, h('span', { class: 'cv-p' }, ...mark(c.p, c.k)));
+      term ? h('i', { class: 'cv-dot', 'aria-hidden': 'true' }) : null, h('span', { class: 'cv-p' }, ...mark(c.p, c.k)), h('span', { class: 'cv-k', 'aria-hidden': 'true', text: keyOf(c) }));
   };
   const label = (r) => {
     const g = gapsOf(r), n = g.have + g.none;
@@ -117,13 +136,13 @@ export function createCoverage({ h, onOutlet = null }) {
     const sub = [term ? KIND_JA[r.k] : k1, n > 1 ? `${g.have}/${n} 社` : null].filter(Boolean).join('・');
     return h('th', { scope: 'row', title: n > 1 ? `${n} 社中 ${g.have} 社の見出しか要旨に出ている` : null }, h('span', { class: 'cv-l', lang: isEn(name) ? 'en' : null, text: name }), sub ? h('small', { class: 'num', text: sub }) : null);
   };
-  /** a column no row fills (an outlet of another language, or one that carries none of the words): it is kept, narrow, its name set upright */
-  const thinAt = (cov, i) => !cov.rows.some((r) => r.c[i]);
+  /** a column no row in view fills (an outlet of another language, or one that carries none of the words shown): it is kept, narrow, its name set upright, and the room goes to the columns that have words */
+  const thinAt = (rows, i) => !rows.some((r) => r.c[i]);
   function table(cov, { rows } = {}) {
     const list = rows || cov.rows;
     return h('table', { class: 'cv-t' },
       h('thead', null, h('tr', null, h('th', { scope: 'col', class: 'cv-c' }, h('span', { class: 'sr', text: '項目' })),
-        cov.outlets.map((o, i) => h('th', { scope: 'col', class: thinAt(cov, i) ? 'cv-thin' : null, data: { side: o.side } }, head(o), o.desc ? null : h('small', { text: '見出しのみ' }))))),
+        cov.outlets.map((o, i) => h('th', { scope: 'col', class: thinAt(list, i) ? 'cv-thin' : null, data: { side: o.side }, title: o.desc ? null : `${o.name}: 見出しのみ（要旨がない）` }, head(o), o.desc ? null : h('small', { text: '見出しのみ' }))))),
       h('tbody', null, list.map((r) => h('tr', { data: { k: r.k } }, label(r), r.c.map((c, i) => cell(c, cov.outlets[i], TERM_KINDS.includes(r.k)))))));
   }
   /** the choice of words: one line per thing, each word the outlets used for it */
@@ -149,6 +168,7 @@ export function createCoverage({ h, onOutlet = null }) {
   const watchScroll = (wrap, box, hint) => {
     if (typeof box.getBoundingClientRect !== 'function' || typeof box.addEventListener !== 'function') return null;
     let shown = null;
+    const seen = { fit: null, w: -1 };
     const measure = () => {
       // how the table keeps to its width (css, data-fit): the columns share the box. 90 px or more a column: the phrase as it is (full; 90 so that nine outlets read alike in the light and the dark theme at 1920 px, where the light well is 48 px narrower);
       // 58 px or more: the phrase in a smaller size on more lines (tight); 46 px or more: smaller again, the row names narrower (slim: nine
@@ -157,6 +177,15 @@ export function createCoverage({ h, onOutlet = null }) {
       const room = (label) => (box.clientWidth - label - thin * FIT.thin) / Math.max(1, ths.length - thin);
       const fit = fitOf(room(FIT.label)) === 'run' && room(FIT.label - 20) >= FIT.slim ? 'slim' : fitOf(room(FIT.label));
       if (wrap.getAttribute('data-fit') !== fit) wrap.setAttribute('data-fit', fit);
+      // narrow columns: a name that does not fit its column whole is set upright, and a word that does not fit its cell steps down a size of the scale (css data-sz), never cut inside a word.
+      // Looked at on every paint, but only ever one way (upright, smaller); it starts again when the column's width or its step changed
+      if (fit !== seen.fit || box.clientWidth !== seen.w) {
+        seen.fit = fit; seen.w = box.clientWidth;
+        wrap.removeAttribute('data-names');
+        box.querySelectorAll('.cv-k[data-sz]').forEach((e) => e.removeAttribute('data-sz'));
+      }
+      if (fit === 'tight' && !wrap.hasAttribute('data-names') && ths.some((th) => !th.classList.contains('cv-thin') && [...th.querySelectorAll('b, .cv-om')].some((e) => Math.max(e.scrollWidth, e.getBoundingClientRect().width) > th.clientWidth - 2))) wrap.setAttribute('data-names', 'v');
+      if (fit === 'tight' || fit === 'slim') box.querySelectorAll('.cv-k').forEach((e) => { let z = Number(e.getAttribute('data-sz')) || 0; while (z < 3 && e.scrollWidth > e.clientWidth + 1) e.setAttribute('data-sz', String(++z)); });
       const over = box.scrollWidth - box.clientWidth > 2;
       const edge = box.getBoundingClientRect().right;
       const rest = over ? [...box.querySelectorAll('thead th[data-side]')].filter((th) => th.getBoundingClientRect().right > edge + 1).length : 0;
@@ -175,10 +204,34 @@ export function createCoverage({ h, onOutlet = null }) {
     const lead = leadRows(cov, n), more = cov.rows.length - lead.length;
     const box = h('div', { class: 'cv-sc', role: 'region', tabindex: '0', 'aria-label': '媒体の比べの表（横に流せます）' });
     const hint = h('p', { class: 'cv-hint', 'aria-hidden': 'true' });
-    const wrap = h('div', { class: 'cv-wrap' }, hint, box);
+    const det = h('p', { class: 'cv-det', 'aria-live': 'polite' });
+    const wrap = h('div', { class: 'cv-wrap' }, hint, box, det);
     const watched = watchScroll(wrap, box, hint);
     let all = false;
-    const paint = () => { box.replaceChildren(table(cov, { rows: all ? cov.rows : lead })); if (watched) watched(); };
+    // a cell is pressed to read the sentence whole under the table (where the columns are narrow a cell shows only its word)
+    const flag = (v) => { if (typeof det.setAttribute === 'function') det.setAttribute('data-on', v); };
+    const reset = () => { det.replaceChildren(h('span', { class: 'cv-dh', text: '語を押すと、その社の文が出ます' })); flag('0'); };
+    const say = (td, o, c) => {
+      const was = td.classList.contains('sel');
+      box.querySelectorAll('td.sel').forEach((x) => x.classList.remove('sel'));
+      if (was) { reset(); return; }
+      td.classList.add('sel');
+      det.replaceChildren(h('b', { text: o.name }), ...mark(c.p, c.k));
+      flag('1');
+    };
+    const paint = () => {
+      const list = all ? cov.rows : lead;
+      box.replaceChildren(table(cov, { rows: list }));
+      reset();
+      if (typeof box.querySelectorAll === 'function') box.querySelectorAll('tbody tr').forEach((tr, ri) => tr.querySelectorAll('td.on').forEach((td) => {
+        const ci = [...tr.children].indexOf(td) - 1, c = list[ri] && list[ri].c[ci];
+        if (!c || !cov.outlets[ci]) return;
+        td.setAttribute('tabindex', '0');
+        td.addEventListener('click', () => say(td, cov.outlets[ci], c));
+        td.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); say(td, cov.outlets[ci], c); } });
+      }));
+      if (watched) watched();
+    };
     paint();
     const hasNa = cov.rows.some((r) => r.c.some((x) => x === null));
     const btn = more > 0 ? h('button', { type: 'button', class: 'cv-more', 'aria-expanded': 'false', on: { click: () => { all = !all; btn.setAttribute('aria-expanded', String(all)); btn.textContent = all ? '行を減らす' : `残り ${more} 行を見る`; paint(); } } }, `残り ${more} 行を見る`) : null;
