@@ -31,26 +31,27 @@ test('?tour=0 never, ?tour=1 always, else only before it was seen', () => {
 
 // 2026-11-16 改定: Sir「最初のチュートリアルは合わせて作り直した？」。六枚（はじめに・画面の切り替え・比べる・見当たらないメディア・AI のまとめ・検索と設定）を、
 // 今のホームに沿う四枚（4 枚の札・注目ニュース・画面・検索と設定）へ作り直した。指す先は今の部品、名は「独自」の後の物
-test('four short cards over the home as it is: the tiles, the lead card, the screens, search and settings; the words neutral', () => {
-  assert.equal(STEPS.length, 4);
-  assert.deepEqual(STEPS.map((s) => s.id), ['tiles', 'lead', 'screens', 'find']);
-  assert.deepEqual(STEPS.map((s) => s.at[0]), ['#front .fr-tabs', '#hero .hr-card', '#screens', '#cmd-btn']);
+// 2026-11-17 改定（v80）: 五枚（四つの入口・ニュースの一覧・注目ニュース・画面・検索と設定）。ホームが三列になり、左に一覧が出来たため。語は使う人の言葉（タイル・カード・面を出さない。Sir 2026-11-17）
+test('five short cards over the home as it is: the ways in, the list, the lead news, the screens, search and settings; the words neutral and the visitor words', () => {
+  assert.equal(STEPS.length, 5);
+  assert.deepEqual(STEPS.map((s) => s.id), ['ways', 'list', 'lead', 'screens', 'find']);
+  assert.deepEqual(STEPS.map((s) => s.at[0]), ['#front .fr-tabs', '#hlist', '#hero .hr-card', '#screens', '#cmd-btn']);
   for (const s of STEPS) {
     assert.ok(s.at.length >= 1, `${s.id} points at a part of the page`);
     assert.ok(s.title.length <= 12, s.title);
-    assert.ok(s.text.length <= 80, `${s.id} ${s.text.length}`);
+    assert.ok(s.text.length <= 90, `${s.id} ${s.text.length}`);
     assert.ok(/です。|ます。|ません。/.test(s.text), s.id);
-    for (const w of ['独占', '報じなかった', '報じていない', '報道していない', '無視', '黙殺', '正しい', '誤報', '偏向', '右派', '左派', 'フェイク']) assert.ok(!s.text.includes(w) && !s.title.includes(w), `${s.id}: ${w}`);
+    for (const w of ['タイル', 'カード', 'ペイン', '独占', '報じなかった', '報じていない', '報道していない', '無視', '黙殺', '正しい', '誤報', '偏向', '右派', '左派', 'フェイク']) assert.ok(!s.text.includes(w) && !s.title.includes(w), `${s.id}: ${w}`);
   }
-  assert.match(STEPS[0].text, /0〜100/, 'the tiles carry their unit');
-  assert.match(STEPS[0].text, /片側だけの話は偏り度の順位に入りません/, 'a story of one side is outside the order');
+  assert.match(STEPS[0].text, /0〜100/, 'the ways in carry their unit');
+  assert.match(STEPS[0].text, /片側だけの話は順位に入りません/, 'a story of one side is outside the order');
   assert.match(STEPS.find((s) => s.id === 'screens').text, /真偽は判定しません/);
 });
 
 // the parts the tour points at are in the page (index.html) or drawn by the home (js/front.js, js/hero.js)
 test('the tour points at parts that exist', () => {
   const html = fs.readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
-  for (const id of ['screens', 'cmd-btn', 'view-btn', 'sects-more', 'front', 'hero', 'tour-btn']) assert.ok(html.includes(`id="${id}"`), id);
+  for (const id of ['screens', 'cmd-btn', 'view-btn', 'sects-more', 'front', 'hlist', 'hero', 'tour-btn']) assert.ok(html.includes(`id="${id}"`), id);
   assert.match(fs.readFileSync(new URL('../../js/front.js', import.meta.url), 'utf8'), /class: 'fr-tabs'/);
   assert.match(fs.readFileSync(new URL('../../js/hero.js', import.meta.url), 'utf8'), /class: 'hr-card'/);
 });
