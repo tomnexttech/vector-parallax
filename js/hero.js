@@ -402,6 +402,23 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
           h('button', { type: 'button', class: 'hr-b hr-go', on: { click: () => call('compare', p) } }, '詳細'),
           h('div', { class: 'hr-side' }, call('orbSlot', p) || null))));
   }
+  /** what each outlet writes: outlet, then its centre, its words, what it leaves out; the headline sits in the row. Rows without a read body say so */
+  function readBlock(p) {
+    const r = call('read', p);
+    if (!r || !Array.isArray(r.rows) || !r.rows.length) return null;
+    const row = (x) => h('li', { class: 'hr-rd', data: { side: x.side || 'n' } },
+      h('span', { class: 'hr-ro' }, h('i', { 'aria-hidden': 'true' }), h('b', { text: x.outlet }), x.body ? null : h('small', { class: 'hr-nb', text: x.why ? `本文は読めていません（${x.why}）` : '本文は読めていません' })),
+      h('div', { class: 'hr-rx' },
+        x.focus ? h('p', { class: 'hr-rc' }, h('span', { class: 'k', text: x.body ? '中心' : '見出し' }), x.focus) : null,
+        x.facts && x.facts.length ? h('p', { class: 'hr-rf' }, h('span', { class: 'k', text: '書いている' }), x.facts.slice(0, 3).join(' ')) : null,
+        x.head ? h('p', { class: 'hr-rh' }, h('span', { class: 'k', text: '見出し' }), `「${x.head}」`) : null,
+        x.words && x.words.length ? h('p', { class: 'hr-rw' }, h('span', { class: 'k', text: '言葉' }), x.words.slice(0, 2).map((q) => (typeof q === 'string' ? h('q', { text: q }) : h('span', { class: 'hr-wq' }, h('q', { text: q.quote }), q.note ? ` ${q.note}` : null)))) : null,
+        x.absent && x.absent.length ? h('p', { class: 'hr-ra' }, h('span', { class: 'k', text: '書いていない' }), x.absent.slice(0, 2).join(' ')) : null));
+    return h('div', { class: 'hr-read' },
+      r.clash ? h('p', { class: 'hr-clash' }, h('span', { class: 'k', text: '一番食い違う所' }), r.clash) : null,
+      r.dva ? h('p', { class: 'hr-clash hr-dva' }, h('span', { class: 'k', text: '国内外の違い' }), r.dva) : null,
+      h('ul', null, r.rows.map(row)));
+  }
   /** what the news holds, under the headline: the brief (the page gives it: on.brief), each side's headlines as published, and where they differ */
   function body(p) {
     const br = call('brief', p), all = br && Array.isArray(br.rows) ? br.rows : [], rows = all.filter((r) => r.key !== 'diff').slice(0, 3).concat(all.filter((r) => r.key === 'diff').slice(0, 1));
@@ -414,12 +431,13 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
       return hs.length ? h('div', { class: 'hr-sd', data: { side: k } }, h('h3', null, h('i', { 'aria-hidden': 'true' }), SIDE_JA[k], h('span', { class: 'num', text: `${p.sides[k].outlets} 社` })), h('ul', null, hs.map(headLi))) : null;
     };
     const sides = SIDES3.map(side).filter(Boolean);
+    const rd = readBlock(p);
     const fl = arr(p.findings).slice(0, MAX_FINDINGS);
     const fLine = (f) => (f.kind === 'first_gap' && firstGapLine(f.text)) || unlabel(f);
     const parts = [
       rows.length ? h('div', { class: 'hr-brief' }, h('dl', null, rows.map((r) => [h('dt', { text: r.label }), h('dd', { class: r.key === 'diff' ? 'hr-df' : null }, r.text, Array.isArray(r.by) && r.by.length ? h('span', { class: 'hr-dfo', text: r.by.join('・') }) : null)])),
         h('p', { class: 'hr-bby' }, h('span', { class: 'aimk', text: 'AI' }), 'の要約', isNum(br.at) ? `・${short(br.at)}` : '')) : null,
-      sides.length ? h('div', { class: 'hr-sds' + (sides.length === 1 ? ' one' : '') }, sides) : null,
+      rd || (sides.length ? h('div', { class: 'hr-sds' + (sides.length === 1 ? ' one' : '') }, sides) : null),
       fl.length ? h('div', { class: 'hr-fnd' }, h('h3', { text: HEAD['find.title'] }), h('ul', null, fl.map((f, k) => h('li', { data: { kind: f.kind } }, h('b', { text: k && fl[k - 1].kind === f.kind ? '' : FIND_JA[f.kind] }), h('span', { text: fLine(f) }))))) : null,
       p.tier === 'one_side' && on.oneSideNote ? h('p', { class: 'hr-note', text: on.oneSideNote }) : null,
     ].filter(Boolean);
@@ -478,7 +496,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
     for (let k = 0; k < n; k++) w.setTimeout(() => { const b = at(k); if (!b) return; b.classList.remove('hr-cue'); void b.offsetWidth; b.classList.add('hr-cue'); w.setTimeout(() => { const c = at(k); if (c) c.classList.remove('hr-cue'); }, 1400); }, 350 + k * 700);
     return n;
   }
-  function render(list, m = {}) { const was = picks[i] && picks[i].sid; picks = arr(list).slice(0, MAX_PICKS); meta = m || {}; const k = picks.findIndex((p) => p.sid === was); i = m.keep && k >= 0 ? k : 0; paint(); }
+  function render(list, m = {}) { const was = picks[i] && picks[i].sid; picks = arr(list).slice(0, isNum(m.max) ? m.max : MAX_PICKS); meta = m || {}; const k = picks.findIndex((p) => p.sid === was); i = m.keep && k >= 0 ? k : 0; paint(); }
   function go(k, dir) { if (!picks.length) return false; const was = i; i = ((k % picks.length) + picks.length) % picks.length; paint(dir || (i >= was ? 1 : -1)); return true; }
   function step(d) { return go(i + d, d); }
   return { render, go, step, cue, fit, index: () => i, current: () => picks[i] || null, picks: () => picks.slice(), clear: () => render([]) };

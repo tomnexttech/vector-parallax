@@ -63,6 +63,27 @@ export function briefOf(story) {
   return { rows, diffs, provider: b.provider, model: b.model, madeAt: b.made_at };
 }
 
+/** what each outlet's own article says (story.read, made by reading the article body; the shape is tolerant of the names the build may use):
+ *  { outlets: [{ outlet, side, body (true when the body was read), focus_ja, words: [short quotes], absent_ja: [what the others carry and this one does not] }], clash_ja }
+ *  null when the story has none or the shape is not one. Nothing is made up here: a field that is missing is left out. */
+export function readOf(story) {
+  // the shape of docs/read-shape.md: read.outlets are the outlets whose body was read; read.unread are the ones that were not, with the reason
+  const r = isObj(story) ? story.read : null;
+  if (!isObj(r) || r.status !== 'ok') return null;
+  const clean = (v) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : '');
+  const SIDE = { '国内': 'jp', '海外': 'intl', '官公庁': 'gov', jp: 'jp', intl: 'intl', gov: 'gov' };
+  const outlets = (Array.isArray(r.outlets) ? r.outlets : []).filter(isObj).map((o) => ({
+    outlet: clean(o.outlet), side: SIDE[o.side] || '', body: true, focus: clean(o.focus),
+    facts: (Array.isArray(o.facts) ? o.facts : []).map(clean).filter(Boolean),
+    words: (Array.isArray(o.wording) ? o.wording : []).filter(isObj).map((w) => ({ quote: clean(w.quote), note: clean(w.note) })).filter((w) => w.quote),
+    absent: (Array.isArray(o.omits) ? o.omits : []).map((x) => (isObj(x) ? clean(x.text) : clean(x))).filter(Boolean), head: '',
+  })).filter((o) => o.outlet && (o.focus || o.facts.length));
+  const unread = (Array.isArray(r.unread) ? r.unread : []).filter(isObj).map((u) => ({ outlet: clean(u.outlet), side: SIDE[u.side] || '', why: clean(u.why_ja) })).filter((u) => u.outlet);
+  const clash = clean(r.contrast), dva = clean(r.domestic_vs_abroad);
+  if (outlets.length < 2) return null;
+  return { outlets, unread, clash, dva, at: typeof r.at === 'number' ? r.at : null };
+}
+
 export function briefIndex(stories) {
   const out = new Map();
   for (const st of Array.isArray(stories) ? stories : []) {

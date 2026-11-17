@@ -18,7 +18,7 @@ test('a phone: the sheet (媒体の特徴) sits over the top bar, so 閉じる i
 
 test('a finger: the chips, the outlets of 媒体比較, the links of a list row and the sheet buttons are 44 px', () => {
   const m = media('(pointer: coarse)');
-  for (const s of ['.fr-chip', '.entry .gn', '.cv-om', '.cv-more', '#sheet .tbb', '#full-btn']) assert.ok(m.includes(s), s);
+  for (const s of ['.fr-chips .gn', '.entry .gn', '.cv-om', '.cv-more', '#sheet .tbb', '#full-btn']) assert.ok(m.includes(s), s);
   assert.match(m, /\.rm \.lk \{[^}]*min-height: 44px/);
   assert.match(m, /:is\(\.cv-om, \.rm \.lk\) \{[^}]*min-width: 44px/);
   assert.match(m, /#sheet \.ds-x \{[^}]*min-height: 44px/);

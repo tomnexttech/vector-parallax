@@ -37,7 +37,7 @@ export const EN = {
   '6 時間より前のニュースなので、急上昇は出せません。': 'These headlines were collected more than 6 hours ago, so there is no rising order.',
   // the band, the screens and the tabs
   'ニュース': 'News', '地図': 'Map', '市場': 'Markets', '政治': 'Politics', '災害': 'Disasters', '映像': 'Video', '保存': 'Saved',
-  'その他': 'More', '検索': 'Search', '設定': 'Settings', '表示': 'View', '自動': 'Auto', 'アルゴリズム': 'Algorithm', 'メディア': 'Outlets', '更新': 'Updated', '前回から': 'Since last visit',
+  'その他': 'More', '中心': 'Focus', '言葉': 'Wording', '書いていない': 'Leaves out', '一番食い違う所': 'Where they differ most', '本文は読めていません': 'Body not read', 'この分野のニュースはありません': 'No news in this field', '検索': 'Search', '設定': 'Settings', '表示': 'View', '自動': 'Auto', 'アルゴリズム': 'Algorithm', 'メディア': 'Outlets', '更新': 'Updated', '前回から': 'Since last visit',
   '使い方': 'How to use', '区画': 'Screens', '検索と操作（Ctrl+K）': 'Search and actions (Ctrl+K)',
   '声で操作（v）': 'Voice control (v)', '声で操作': 'Voice control', 'データと AI（i）': 'Data and AI (i)', '外観 ダーク': 'Appearance: dark', '外観 ライト': 'Appearance: light',
   '外観': 'Appearance', '設定（,）': 'Settings (,)', '欄へ移る': 'Go to a pane', '言語': 'Language', '閉じる': 'Close', '検索と操作': 'Search and actions', '結果': 'Results',

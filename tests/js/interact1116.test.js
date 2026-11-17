@@ -40,7 +40,7 @@ test('a headline abroad shows its Japanese (訳) and keeps the headline as publi
 });
 
 test('every screen that shows an outlet\'s headline goes through the translation', () => {
-  assert.match(app, /import \{ setTrMode, trOf, trMark \} from '\.\/trans\.js';/);
+  assert.match(app, /import \{ setTrMode, trOf, trMark, trMode \} from '\.\/trans\.js';/);
   assert.match(app, /const it = rep \|\| e\.titled\[0\], t = trOf\(it\);/, 'the title of a news without an AI headline');
   assert.match(app, /if \(hd\.tr\) return h\('span', \{ class: cls \}, h\('span', \{ class: 'xl-m'/, 'the title carries 訳');
   for (const k of ["class: 'mh'", "class: 'tl-hl'", "class: 'rp-h'", "class: 'lf-h'", "class: 'lk ppr-t'"]) assert.ok(app.includes(k) && new RegExp(`trMark\\(h, tt\\)[^\\n]*|${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^\\n]*trMark`).test(app), k);

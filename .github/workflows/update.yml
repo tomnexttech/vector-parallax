@@ -53,6 +53,7 @@ jobs:
             data/summary_cache.json
             data/title_cache.json
             data/og_robots.json
+            data/read_cache.json
           key: parallax-data-${{ github.run_id }}
           restore-keys: |
             parallax-data-
@@ -85,6 +86,18 @@ jobs:
         continue-on-error: true
         timeout-minutes: 14
         run: python -m parallax.extras --only relations,impact,reaction,hero
+
+      # CONTRACT 27: reads the article bodies of the top events and writes story.read into data/latest.json (how each outlet wrote it, checked against the body).
+      # One line: a source that has said no to machine reading (robots.txt, its own terms, noai, the withheld list) is not read, the evidence is kept in read.unread; every other source is read.
+      # At most 10 AI calls (own limit, own counts, the summary model chain), 100 page fetches, 1.5 s between two requests to one host, 13 minutes. A body lives in memory for the run and is never written.
+      # A failure keeps latest.json as the build made it and never stops the deploy.
+      - name: Read the bodies of the top events
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 20
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python -m parallax.read
 
       # Also CONTRACT 21: s/<sid>.html for each event, feed.xml / feed-oneside.xml / feed-<field>.xml, and data/archive/ (seven days). The archive of the
       # last deploy is read back from the public address (not from git, not from the cache); when it cannot be read the site carries today only. Counts only in the log.

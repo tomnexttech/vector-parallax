@@ -184,7 +184,8 @@ export function renderFront(root, o) {
     type: 'button', role: 'tab', class: 'fr-tab', id: `fr-t-${id}`, 'aria-selected': String(o.tab === id), 'aria-controls': 'gap', tabindex: o.tab === id ? '0' : '-1', data: { tab: id },
     on: { click: () => o.onTab(id), keydown: key } }, h('span', { class: 'fr-kk' }, h('span', { class: 'fr-k', text: ja }), o.subs && o.subs[id] ? h('small', { class: 'fr-sub', text: o.subs[id] }) : null),
     o.counts && o.counts[id] && o.counts[id].length ? countEl(h, o.counts[id]) : null)));
-  const chips = h('div', { class: 'fr-chips', role: 'group', 'aria-label': '分野' },
+  // the fields: the same round icons and short names as the list of 詳しく見る (js/genres.js genreBar, built by the page and passed in as chipsEl); the plain chips only without a page
+  const chips = o.chipsEl ? h('div', { class: 'fr-chips' }, o.chipsEl) : h('div', { class: 'fr-chips', role: 'group', 'aria-label': '分野' },
     h('button', { type: 'button', class: 'fr-chip', 'aria-pressed': String(!o.field), on: { click: () => o.onField(null) } }, 'すべて'),
     arr(o.fields).map((f) => h('button', { type: 'button', class: 'fr-chip', 'aria-pressed': String(o.field === f), on: { click: () => o.onField(f) } }, f)));
   root.replaceChildren(tabs, chips);

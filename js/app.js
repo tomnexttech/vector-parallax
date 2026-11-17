@@ -11,8 +11,8 @@
  * - The visitor's tasks stay in that browser (js/tasks.js). The voice key, if given, stays in memory for this visit. */
 
 import { SIX_H, DUE_S, STALE_S, keptView, noticeParts, isOld, defaultView, freshness, lateBy } from './snapshot.js';
-import { summaryOf, summaryIndex, memberKey, briefOf, briefIndex, judged } from './summary.js';
-import { setTrMode, trOf, trMark } from './trans.js';
+import { summaryOf, summaryIndex, memberKey, briefOf, briefIndex, judged, readOf } from './summary.js';
+import { setTrMode, trOf, trMark, trMode } from './trans.js';
 import { installScrollKeys } from './scrollkeys.js';
 import { PLACES, placeJa, placesOf, placesIn } from './places.js';
 import { loadWatch, saveWatch, addWatch, removeWatch, hitsOf, loadView, saveView, countsFor, countIn, nextOf, COUNTS, LAYOUTS, COUNT_JA, LAYOUT_JA } from './prefs.js';
@@ -303,7 +303,10 @@ function buildEntries() {
   };
   let out;
   if (state.view === 'rules') {
-    out = ix.rcs.map((c) => { const ids = arr(c.member_ids); const e = mk('rule', c, ids); const tb = ids.length >= 2 ? ix.twinBasis.get(e.mk) : null; e.basis = tb ? { ...tb, by: 'rule' } : null; return e; });
+    // the algorithm view has no story of its own; the read of the story that holds a cluster is the cluster's read (its articles are the same ones)
+    const readOfCid = new Map();
+    for (const st of ix.stories) { const rd = readOf(st); if (rd) for (const cid of arr(st.rule_cids)) if (!readOfCid.has(cid)) readOfCid.set(cid, rd); }
+    out = ix.rcs.map((c) => { const ids = arr(c.member_ids); const e = mk('rule', c, ids); e.read = readOfCid.get(c.cid) || null; const tb = ids.length >= 2 ? ix.twinBasis.get(e.mk) : null; e.basis = tb ? { ...tb, by: 'rule' } : null; return e; });
   } else {
     out = ix.stories.map((st) => {
       const ids = arr(st.member_ids);
@@ -314,6 +317,7 @@ function buildEntries() {
       e.flags = e.ai ? arr(e.ai.flags).filter((f) => isObj(flagDefs()[f])) : [];
       e.summary = e.ai ? null : (summaryOf(st) || (state.live ? state.sumBy.get(e.mk) || null : null));
       e.brief = briefOf(st) || (state.live ? state.briefBy.get(e.mk) || null : null);
+      e.read = readOf(st);
       e.basis = isObj(st.basis) ? st.basis : null;
       // an AI line that praises or blames in a word no headline carries is left out (the page's side of the rule in data/prompt.json)
       const mat = e.members.flatMap((it) => [it.title, it.desc]).filter((x) => typeof x === 'string');
@@ -1639,7 +1643,7 @@ function frontMove(fr, gp, prev, press) {
   if (!prev.n) {
     const tabs = [...fr.querySelectorAll('.fr-tab')];
     rise(tabs, { step: 60, delay: 120, dy: 6 });
-    rise([...fr.querySelectorAll('.fr-chips .fr-chip')], { step: 30, delay: 300, dy: 4, cap: 700 });
+    rise([...fr.querySelectorAll('.fr-chips .gn')], { step: 30, delay: 300, dy: 4, cap: 700 });
     rise(rows, { step: 45, delay: 240, dy: 6, cap: 760 });
     rise([...gp.querySelectorAll('.fr-one li, .fr-bias li')], { step: 45, delay: 240, dy: 6, cap: 760 });
     grow(bars, { origin: sideOrigin, delay: 300, step: 45, cap: 760 });
@@ -1652,8 +1656,8 @@ function frontMove(fr, gp, prev, press) {
     grow(bars, { origin: sideOrigin, delay: 160, step: 45, cap: 760 });
     grow(bm, { delay: 160, step: 45, cap: 760 });
     if (totBar) grow([totBar], { delay: 300, res: 400 });
-    const on = fr.querySelector('.fr-tab[aria-selected="true"]'), chip = fr.querySelector('.fr-chip[aria-pressed="true"]');
-    if (press.chip) { pop(chip); dip([...fr.querySelectorAll('.fr-chip')], chip); } else { pop(on); dip([...fr.querySelectorAll('.fr-tab')], on); }
+    const on = fr.querySelector('.fr-tab[aria-selected="true"]'), chip = fr.querySelector('.fr-chips .gn[aria-pressed="true"]');
+    if (press.chip) { pop(chip); dip([...fr.querySelectorAll('.fr-chips .gn')], chip); } else { pop(on); dip([...fr.querySelectorAll('.fr-tab')], on); }
     return;
   }
   rows.forEach((r, i) => {
@@ -1675,9 +1679,10 @@ function renderFront(press) {
   const d = frontData(), prev = frontRead(fr, gp);
   // a press on a tab or a field: the panel under the card changes with what came before it (the tabs and the fields keep their order, which sets the direction)
   const onTab = (id) => { if (id === state.front) return; const dir = Math.sign(FRONT_IDS.indexOf(id) - FRONT_IDS.indexOf(tab)) || 1; state.front = id; renderFront({ dir }); revealGap(); };
-  const onField = (x) => { if (x === (state.frontField || null)) return; const at = (f) => (f ? FIELDS.indexOf(f) + 1 : 0), dir = Math.sign(at(x) - at(state.frontField || null)) || 1; state.frontField = x; renderFront({ dir, chip: true }); };
-  renderFrontEl(fr, { h, tab, field: state.frontField || null, fields: FIELDS, counts: d.counts, subs: { gap: d.articles ? `記事 ${d.articles.toLocaleString('ja-JP')} 件の比率` : '', jp: '国内の媒体だけの話', intl: '海外の媒体だけの話', bias: d.scored ? `0〜100・${d.scored} 話を測定` : '' },
+  const onField = (x) => { if (x === (state.frontField || null)) return; const ALL_F = [...FIELDS, OTHER_FIELD], at = (f) => (f ? ALL_F.indexOf(f) + 1 : 0), dir = Math.sign(at(x) - at(state.frontField || null)) || 1; state.frontField = x; renderFront({ dir, chip: true }); };
+  renderFrontEl(fr, { h, tab, field: state.frontField || null, fields: [...FIELDS, OTHER_FIELD], chipsEl: (() => { const live = state.es.filter((e) => !e.foldedInto && vis(e)); return genreBar({ fields: [...FIELDS, OTHER_FIELD], counts: genreCounts(live), total: live.length, active: state.frontField || GENRE_ALL, onPick: (f) => onField(f === GENRE_ALL ? null : f) }); })(), counts: d.counts, subs: { gap: d.articles ? `記事 ${d.articles.toLocaleString('ja-JP')} 件の比率` : '', jp: '国内の媒体だけの話', intl: '海外の媒体だけの話', bias: d.scored ? `0〜100・${d.scored} 話を測定` : '' },
     onTab, onField });
+  paintHomeList();
   const draw = () => renderGapEl(gp, { h, tab, field: state.frontField || null, gap: d.gap, one: d.one, bias: d.bias, apart: d.apart, scored: d.scored, onTab, gen: state.data.generated_at, now: nowS(), clock: fmtClock, short: fmtShort,
     titleOf: (e) => entryTitleOf(e).text, headOf: frontHead, pick: frontPick, onField, detail: (k) => entryDetail(k, { bias: true }) });
   if (press && prev.n) swapMo(gp, (r) => [...r.children], draw, press.dir); else draw();
@@ -3301,7 +3306,7 @@ export const actions = createActions(api);
 // ==== hero:begin ====
 // The first card of the home (js/hero.js), the orb and the voice (js/orb.js, js/guide.js), the booth (js/demo.js), the orders of the news
 // (js/bubble.js) and the news one to a screen (js/swipe.js). heroWire() is called once from main(), before the data is fetched.
-import { readHero, pickHeroes, createHero, sameFromBasis, cleanSame, gapText } from './hero.js';
+import { readHero, pickHeroes, createHero, sameFromBasis, cleanSame, gapText, leadOf, shareOf } from './hero.js';
 import { mountOrb } from './orb.js';
 import { scriptOf, createGuide } from './guide.js';
 import { isDemo, runReset, createIdle, readFrozen, freeze, unfreeze, frozenFetch, demoKey } from './demo.js';
@@ -3532,6 +3537,46 @@ function hxFlow(at = 0) {
   return true;
 }
 
+const HOME_LIST_MAX = 14;
+/** what each outlet writes, for the card: the story's own read (story.read, from the articles' bodies) when it has one; else the headlines of the outlets
+ *  with their time, each marked as not read in full, and the brief's first difference as the one that differs most. Nothing here is written by the page. */
+function hxRead2(p) {
+  const e = state.es ? heroEntry(p) : null;
+  if (!e) return null;
+  const rd = e.read;
+  const cleanH = (t) => String(t || '').replace(/\s+/g, ' ').trim();
+  const headOf = (name) => { const x = arr(p.heads).find((y) => y.outlet === name); return x ? cleanH(trMode() === 'ja' && x.title_ja ? x.title_ja : x.title) : ''; };
+  if (rd && rd.outlets.length) {
+    const sideOfName = (n) => (arr(p.heads).find((y) => y.outlet === n) || {}).side || '';
+    const rows = rd.outlets.map((o) => ({ ...o, side: o.side || sideOfName(o.outlet), head: headOf(o.outlet) }));
+    const un = arr(rd.unread).map((u) => ({ outlet: u.outlet, side: u.side || sideOfName(u.outlet), body: false, why: u.why, focus: headOf(u.outlet), facts: [], words: [], absent: [], head: '' }));
+    return { rows: [...rows, ...un], clash: rd.clash, dva: rd.dva };
+  }
+  const rows = arr(p.heads).filter((x) => x.outlet).slice(0, 4).map((x) => ({ outlet: x.outlet, side: x.side, body: false, focus: cleanH(trMode() === 'ja' && x.title_ja ? x.title_ja : x.title), words: [], absent: [], head: '' }));
+  if (!rows.length) return null;
+  const d = e.brief && arr(e.brief.diffs)[0];
+  return { rows, clash: d ? d.text : '' };
+}
+/** the list at the left of the home: the card's news, a press changes the card; the fields filter it as they filter the panel */
+function paintHomeList() {
+  const box = $('hlist');
+  if (!box || !HX.hero) return;
+  const picks = HX.picks || [];
+  const cur = HX.hero.current();
+  const f = state.frontField || null;
+  const items = picks.map((p, i) => ({ p, i, e: heroEntry(p) })).filter((x) => x.e && (!f || x.e.field === f));
+  const ul = h('ul', { class: 'rows hl-rows' }, items.map(({ p, i }) => {
+    const t = leadOf(p), sh = shareOf(p), sel = cur && cur.sid === p.sid;
+    return h('li', { class: 'r hl-r', 'aria-current': sel ? 'true' : null },
+      h('button', { type: 'button', class: 'hl-b', on: { click: () => HX.hero.go(i) } },
+        h('span', { class: 'rt', lang: t.lang === 'en' ? 'en' : null, text: t.text }),
+        h('span', { class: 'rm' }, h('span', { class: 'hl-bar', 'aria-hidden': 'true' }, SIDES3H.map((k) => (sh[k] ? h('i', { data: { side: k }, style: `width:${sh.pct[k]}%` }) : null))),
+          h('span', { class: 'num', text: `${p.sides.jp.outlets + p.sides.intl.outlets + (p.sides.gov ? p.sides.gov.outlets : 0)} 社` }))));
+  }));
+  box.replaceChildren(items.length ? ul : h('p', { class: 'empty', text: 'この分野のニュースはありません' }));
+}
+const SIDES3H = ['jp', 'intl', 'gov'];
+
 // ---- the card itself
 function hxRender() {
   if (!HX.hero) return;
@@ -3555,8 +3600,16 @@ function hxRender() {
     const s = sidesOf(e);
     return { ...p, sides: { jp: sideOf(arr(s.jp)), intl: sideOf(arr(s.intl)), gov: sideOf(arr(s.gov)) } };
   });
+  // the list on the left of the home: the card's picks first, then more of the news (the list is longer than the card's five)
+  if (state.data) {
+    const seenS = new Set(picks.map((p) => p.sid));
+    const more = pickHeroes(state.es, { sidesOf, outletOf, oneSideOf, leadPool, titleOf: entryTitleOf, sameOf: hxSame, reactionOf: hxReaction, max: HOME_LIST_MAX })
+      .filter((p) => !seenS.has(p.sid) && !(heroEntry(p) && heroEntry(p).foldedInto)).map((p) => { const cov = hxCov(p); return cov ? { ...p, cov } : p; });
+    picks = [...picks, ...more].slice(0, HOME_LIST_MAX);
+  }
   HX.picks = picks;
-  HX.hero.render(picks, { gen, now: nowS(), keep: true });
+  HX.hero.render(picks, { gen, now: nowS(), keep: true, max: HOME_LIST_MAX });
+  paintHomeList();
   if (state.ui === 'simple') renderEntryView();
   if (HX.cueWanted && HX.hero.current()) { HX.cueWanted = false; setTimeout(() => HX.hero.cue(window), 500); }
 }
@@ -3656,7 +3709,8 @@ function heroWire() {
     // v64: the card says what the news holds. The brief is the story's own (AI, marked); the bias index only where both sides carry it (a story of one side is outside the order)
     brief: (p) => { const e = state.es ? heroEntry(p) : null; const b = e && e.brief ? e.brief : null; if (!b) return null; const d = arr(b.diffs)[0]; const rows = b.rows.filter((r) => r.key === 'what_ja' || r.key === 'views_ja' || r.key === 'background_ja'); if (d) rows.push({ key: 'diff', label: '各社の中身', text: d.text, by: d.by.map(outletOf) }); return { rows, at: b.madeAt }; },
     bias: (p) => { const e = state.es ? heroWhole(p) : null; if (!e || !(p.sides.jp.outlets && p.sides.intl.outlets)) return null; const b = biasOf(e); return b && b.ok ? b.score : null; },
-    change: (p) => { root.hidden = !p; if (HX.guide && HX.guide.key() != null && (!p || HX.guide.key() !== p.sid)) HX.guide.stop(); hxPaintSpeak(); } } });
+    read: hxRead2,
+    change: (p) => { paintHomeList(); root.hidden = !p; if (HX.guide && HX.guide.key() != null && (!p || HX.guide.key() !== p.sid)) HX.guide.stop(); hxPaintSpeak(); } } });
   HX.swipe = createSwipe({ h, root: $('hr-flow'), fmt: { clock: fmtShort }, on: { title: '流す', get orderJa() { return ORDER_JA[HX.order]; }, open: (k) => { HX.swipe.close(); setSect('home'); setUi('simple'); pickEntry(k); } } });
   // AI | 規則: the card is drawn again, and a count of outlets that changed lights once (js/hero.js)
   for (const id of ['v-ai', 'v-rules']) $(id).addEventListener('click', () => setTimeout(hxRender, 0));

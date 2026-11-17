@@ -101,7 +101,7 @@ export async function launch(chromePath) {
   const prof = path.join(os.tmpdir(), 'overflow_check_' + process.pid);
   fs.rmSync(prof, { recursive: true, force: true });
   const chrome = spawn(chromePath, ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${prof}`, '--no-first-run', '--no-default-browser-check', '--disable-extensions',
-    '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', 'about:blank'], { stdio: 'ignore' });
+    'about:blank'], { stdio: 'ignore' });
   let port = 0;
   for (let i = 0; i < 100 && !port; i++) { await new Promise((r) => setTimeout(r, 150)); try { port = Number(fs.readFileSync(path.join(prof, 'DevToolsActivePort'), 'utf8').split('\n')[0]); } catch { /* not yet */ } }
   if (!port) throw new Error('chrome did not start');
@@ -125,7 +125,16 @@ export async function launch(chromePath) {
     async ev(expr) { const r = await S('Runtime.evaluate', { expression: expr, awaitPromise: true, returnByValue: true }); if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || r.exceptionDetails.text); return r.result.value; },
     sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
     touch: (type, pts) => S('Input.dispatchTouchEvent', { type, touchPoints: pts.map(([x, y], i) => ({ x, y, id: i + 1, radiusX: 4, radiusY: 4, force: 1 })) }),
-    async close() { try { await cdp.send('Browser.close'); } catch { /* gone */ } try { ws.close(); chrome.kill(); } catch { /* */ } await new Promise((r) => setTimeout(r, 400)); try { fs.rmSync(prof, { recursive: true, force: true }); } catch { /* */ } },
+    async close() {
+      try { await cdp.send('Browser.close'); } catch { /* gone */ }
+      try { ws.close(); } catch { /* */ }
+      // 2026-11-11 ディスク整理: Chrome が終わる前に消すと Windows は掴まれていて消せず、毎回 100〜200MB の profile が Temp に残った
+      const gone = chrome.exitCode !== null ? Promise.resolve() : new Promise((r) => chrome.once('exit', r));
+      try { chrome.kill(); } catch { /* */ }
+      await Promise.race([gone, new Promise((r) => setTimeout(r, 5000))]);
+      await new Promise((r) => setTimeout(r, 300));
+      try { fs.rmSync(prof, { recursive: true, force: true, maxRetries: 15, retryDelay: 300 }); } catch { /* */ }
+    },
   };
 }
 

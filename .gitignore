@@ -16,6 +16,7 @@ data/summary_cache.json
 data/title_cache.json
 data/recorded.json
 data/og_robots.json
+data/read_cache.json
 data/relations.json
 data/reaction.json
 data/impact.json

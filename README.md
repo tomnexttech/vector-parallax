@@ -11,7 +11,7 @@ Entry to the Tokyo AI Hackathon 2026. Author: **VECTOR**. Licence: MIT.
 
 ## What it does / 何をするもの
 
-Every 3 hours a GitHub Actions job reads the public RSS/Atom feeds of 52 feeds from 39 outlets (Japanese
+Every 3 hours (the schedule; in practice every 6 to 8 hours) a GitHub Actions job reads the public RSS/Atom feeds of 121 sources, 76 Japanese and 45 overseas (Japanese
 public broadcasters, wire services, national and regional papers, government and central-bank bodies, and
 overseas public and mainstream outlets), groups the headlines that are about the same event, and writes
 `data/latest.json` (a build product: it is shipped in the Pages artifact together with the page and **never committed**, see "How it is delivered" below). The page (static HTML + ES modules, no build step, no external scripts) shows that file in
@@ -24,7 +24,7 @@ two ways, and **the difference between them is the point**:
   AI carries an `AI` mark. In the public edition the AI still reads every headline to decide what belongs together,
   but its per-outlet focus line is not published for an outlet whose terms forbid redistribution (`no`) or allow only non-commercial use (`nc`;
   the page shows that outlet's name, time and link only), while the neutral one-line summary of the whole event is kept and is
-  checked never to quote a headline. A second, cheaper model can add a neutral one-line summary to events without an AI headline (marked `AI`, with the model and the time); that stage is **switched off by default** (`summary.enabled` in `data/prompt.json`).
+  checked never to quote a headline. A second, cheaper model can add a neutral one-line summary to events without an AI headline (marked `AI`, with the model and the time); that stage is **switched on** in the public build (`summary.enabled` in `data/prompt.json`).
 
 A story of two outlets or more also carries a short AI brief (what happened, the course, how the sides differ, what is next), written in the same call as the summary from the headlines, their times and the feed descriptions only; a field with a number or a name that is not in that material is dropped, and the page and the event page say who wrote it (CONTRACT 13.1).
 
@@ -95,10 +95,10 @@ field); nothing is copied into this repository. Article bodies are never include
   never mixed into the current rule groups. With nothing to keep (no earlier file, or a damaged one) the status is
   plain `nokey` / `error` and the AI view is off, as before. `data/stats.json` carries the same `ai.status`, `ai.reason`
   and `ai.kept`; `docs/CONTRACT-public.md` section 12 has the table.
-* **BYOK (optional)**: a visitor may paste their own Gemini API key into the `BYOK` panel to re-run the AI in
-  their own browser. The key stays in the memory of that tab only, is never stored or put in a URL, and the only
-  place it is sent to is Google's Gemini API (the page's Content-Security-Policy allows no other external destination).
-  閲覧者ご自身の鍵・このタブのメモリだけ・送り先は Google だけ。
+* **BYOK (optional)**: a visitor may connect an AI of their own (Gemini, Claude, ChatGPT or OpenRouter) to re-run the AI in
+  their own browser. The key is kept in that browser only (local storage), is never put in a URL, and is sent only to the provider the visitor picked
+  (the page's Content-Security-Policy allows no other external destination for it).
+  閲覧者ご自身の鍵・この端末のブラウザの中だけ・送り先は選んだ提供元だけ。
   Use a key from a project with no billing attached (free tier). In the public edition only groups whose
   headlines are all publishable can be re-sent, so that a hidden headline never leaves the build.
 * **The recorded AI output is not Gemini's.** `data/recorded.json` holds the answers that **Claude** (Anthropic,
@@ -110,11 +110,7 @@ field); nothing is copied into this repository. Article bodies are never include
   `GEMINI_API_KEY` secret the AI view shows Gemini's answers; without it there is no AI view and the page shows the algorithm view only (a previous Gemini view, if the
   Actions cache holds one, is kept as a snapshot with its own time in red). `data/eval.json` is computed from the recorded run by
   `python -m parallax.eval`.
-* **Not yet run against the live API (as of 2026-11-04):** the Gemini call code (`parallax/ai.py` for the build,
-  `js/provider.js` for BYOK) is tested with fake transports only. Whether the two model names in `data/prompt.json`
-  (`merge_model`, `summary_model`) and the response schemas are accepted by the live API, and whether the output limits (`maxOutputTokens` 16384 for the bundling,
-  8192 for the summary) are enough for a full run, are unconfirmed until the first real run. After the first manual run, `data/stats.json` -> `ai.merge` and `ai.summary`
-  (`calls_failed` 0, `provider` `gemini`, `model` the name in the prompt file) show that both were accepted.
+* **Run against the live API on every build:** the Gemini call code (`parallax/ai.py` for the build, `js/provider.js` for BYOK) is exercised by each scheduled build, and `data/stats.json` -> `ai.merge`, `ai.summary` and `ai.translate` carry `calls_failed`, `provider` and `model`. A build that cannot reach the model keeps the previous AI view with its own time.
 * If the free quota or rate limit is hit (HTTP 429), the page says so in plain words. Both the build
   (`parallax/ai.py`) and the BYOK re-run in the browser (`js/provider.js`) retry a failed call at most twice
   (waiting 2 s, then 4 s), and only for 429, 5xx, timeouts and network errors; then the groups that did not
@@ -129,7 +125,7 @@ project with no billing attached (free tier).
 | job | model | free-tier RPM | RPD | TPM | what the build uses |
 |---|---|---|---|---|---|
 | bundling (the core: join and split events) | `gemini-3.6-flash` | 5 | 20 | 250K | at most 2 calls per build, one build per scheduled run (3-hour cron, 8 a day at most): 2 x 8 = 16 a day |
-| one neutral line per event (summary; **switched off by default**) | `gemini-3.5-flash-lite` | 15 | 500 | 250K | when switched on: at most 15 calls per build (45 events each), cached: 120 a day at the very most, far fewer once the cache is warm |
+| one neutral line per event (summary) | `gemini-3.5-flash-lite` | 15 | 500 | 250K | at most 15 calls per build (45 events each), cached: 120 a day at the very most, far fewer once the cache is warm |
 | fallback of both jobs (only when the model before is busy) | bundling: `gemini-3.5-flash-lite`, then `gemini-3.1-flash-lite`; summary: `gemini-3.1-flash-lite` | 3.5: 15; 3.1: not read | 3.5: 500; 3.1: not read (signed-in page; 500 assumed) | 3.5: 250K; 3.1: not read | bundling at most 4 attempts per build and summary at most 20, each shared by the chain and counted apart from the 2 and 15 above; `gemini-3.1-flash-lite` 8 x (4 + 20) = 192, `gemini-3.5-flash-lite` 120 + 8 x 4 = 152 at the very most. Both names are Stable in the official list (https://aistudio.google.com/docs/models, 2026-11-05) |
 
 * **Source and date.** The numbers are what Google AI Studio's rate-limit page (https://aistudio.google.com/rate-limit, the page that

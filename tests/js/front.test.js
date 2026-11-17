@@ -199,7 +199,7 @@ test('the page: one gothic and Inter for figures (no Mincho, no Plex, no Barlow)
   assert.match(html, /family=Noto\+Sans\+JP:wght@400;500;700&amp;family=Inter:wght@500;600;700&amp;display=swap/);
   assert.doesNotMatch(html, /Shippori|IBM\+Plex|Barlow/);
   assert.doesNotMatch(html, /Zen\+Kaku/);
-  assert.match(html, /<section class="front" id="front"[^>]*><\/section>\s*<!-- hero:begin -->/);
+  assert.match(html, /<section class="front" id="front"[^>]*><\/section>\s*<section class="hlist" id="hlist"[^>]*><\/section>\s*<!-- hero:begin -->/);
   assert.match(html, /<!-- hero:end -->\s*<section class="gap" id="gap"/);
   assert.match(read('sw.js'), /'js\/front\.js'/);
   const css = read('css/app.css');

@@ -154,6 +154,26 @@ class Robots:
         delay = p.crawl_delay(ROBOTS_TOKEN)
         return True, "", (min(float(delay), ROBOTS_MAX_DELAY_S) if delay else 0.0)
 
+    def allows_agent(self, url, agent):
+        """その host の robots.txt が、名指しの利用者（例: AI の学習・利用を断る Google-Extended）に url を許すか。
+        既に check() で読んだ控えを使う（読めていなければ許さない）。名指しの群が無ければ許す（ * の群は check() が見ている）。"""
+        u = urllib.parse.urlsplit(url)
+        origin = "%s://%s" % (u.scheme, u.netloc.lower())
+        e = self._entry(origin)
+        if e.get("volatile") or e["status"] == 0:
+            return False
+        if e["status"] >= 400:
+            return e["status"] not in (401, 403) and e["status"] < 500
+        body = e.get("body") or ""
+        if not re.search(r"(?im)^\s*user-agent\s*:\s*" + re.escape(agent) + r"\s*$", body):
+            return True
+        p = urllib.robotparser.RobotFileParser()
+        p.parse(body.splitlines())
+        path = u.path or "/"
+        if u.query:
+            path += "?" + u.query
+        return p.can_fetch(agent, origin + path)
+
     def _deny(self, origin):
         host = urllib.parse.urlsplit(origin).netloc
         if host not in self.stats["denied_hosts"]:
