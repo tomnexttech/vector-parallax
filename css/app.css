@@ -153,7 +153,7 @@ ul, ol { list-style: none; }
 .rows .r.watched::before { content: ""; position: absolute; left: 4px; top: 10px; width: 3px; height: 3px; border-radius: 50%; background: var(--cyan); }
 .newdot { width: 5px; height: 5px; border-radius: 50%; background: var(--cyan); }
 .flag { display: inline-block; margin: 0 0 3px; padding: 0 5px; border: 1px solid var(--red-l); border-radius: 3px; font-size: var(--fs-2); line-height: 1.6; color: var(--red); }
-.rows .r.fresh { animation: fresh 1.6s ease-out 1; }
+.rows .r.fresh { animation: fresh .9s ease-out 1; }
 @keyframes fresh { from { background: var(--cyan-a); } to { background: transparent; } }
 .num.bump { animation: beat .6s var(--ease) 1; }
 
@@ -640,7 +640,7 @@ body.sheet-open .board { filter: var(--dim); }
 .ailine .al-k.off { color: var(--ink-2); }
 .ailine b.num { font-size: var(--fs-5); font-weight: 500; color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .ailine b.num.on { color: var(--cyan); }
-.ailine b.flash { animation: alflash 1.1s ease-out 1; }
+.ailine b.flash { animation: alflash .9s ease-out 1; }
 @keyframes alflash { 0% { text-shadow: 0 0 0 rgba(90, 200, 240, 0); } 25% { text-shadow: 0 0 12px rgba(90, 200, 240, .75); } 100% { text-shadow: 0 0 0 rgba(90, 200, 240, 0); } }
 .ailine .al-u { color: var(--ink-3); font-size: var(--fs-2); }
 .ailine .al-sep { width: 1px; height: 11px; margin: 0 6px; background: var(--line-2); align-self: center; }
@@ -677,7 +677,7 @@ a.tv-tl:hover { text-decoration: underline; }
 .tv-v .chip { font-size: var(--fs-2); padding: 1px 6px; }
 .more { display: block; width: 100%; margin: 0; padding: 9px 12px; border: 0; border-top: 1px solid var(--line); background: none; text-align: left; font-size: var(--fs-3); color: var(--cyan); }
 .pfoot.legend { color: var(--ink-3); }
-.dt tr.flash, .ds-b li.flash { animation: rowflash 1.8s ease-out 1; }
+.dt tr.flash, .ds-b li.flash { animation: rowflash .9s ease-out 1; }
 @keyframes rowflash { 0% { background: var(--cyan-a); } 100% { background: transparent; } }
 @media (max-width: 1100px) {
   #p-tv { order: 4; }
@@ -3749,11 +3749,9 @@ body { overflow-x: hidden; overscroll-behavior-x: none; }
 .hr-src { color: var(--ink-2); }
 .hr-ai { display: flex; align-items: baseline; gap: 8px; font-size: var(--fs-3); line-height: 1.55; color: var(--ink-2); }
 .hr-ai .aimk { flex: none; margin: 0; font-size: 13px; }
-@keyframes hr-cue { 0% { box-shadow: var(--hc-hi), 0 0 0 0 rgba(214, 236, 246, 0); } 35% { box-shadow: var(--hc-hi), 0 0 0 4px rgba(214, 236, 246, .55); transform: translateY(-2px); } 100% { box-shadow: var(--hc-hi), 0 0 0 0 rgba(214, 236, 246, 0); } }
-.hr-b.hr-cue { animation: hr-cue 1.2s ease-out 1; }
-@keyframes hr-flash { 0%, 100% { filter: none; } 30% { filter: brightness(1.6) drop-shadow(0 0 6px rgba(214, 236, 246, .7)); } }
-.hr-split.hr-flash .hr-n b, .hr-split.hr-flash .hr-bar { animation: hr-flash 1.1s ease-out 1; }
-@media (prefers-reduced-motion: reduce) { .hr-b.hr-cue { animation: none; outline: 2px solid var(--ink-hi); outline-offset: 2px; } .hr-split.hr-flash .hr-n b, .hr-split.hr-flash .hr-bar { animation: none; } }
+@keyframes hr-cue { 0% { box-shadow: var(--hc-hi), 0 0 0 0 var(--cyan-a); } 35% { box-shadow: var(--hc-hi), 0 0 0 4px var(--cyan-a); } 100% { box-shadow: var(--hc-hi), 0 0 0 0 var(--cyan-a); } }
+.hr-b.hr-cue { animation: hr-cue .9s ease-out 1; }
+@media (prefers-reduced-motion: reduce) { .hr-b.hr-cue { animation: none; outline: 2px solid var(--ink-hi); outline-offset: 2px; } }
 .hr-acts { display: flex; flex-wrap: wrap; gap: 10px; }
 .hr-b { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 20px; border-radius: var(--r-pill); border: 1px solid var(--hs-edge);
   background: var(--hc-fill); box-shadow: var(--hc-hi); color: var(--ink); font: 600 var(--fs-4)/1 var(--f-text); white-space: nowrap; transition: background var(--t-1); }
@@ -5689,6 +5687,35 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 }
 /* a phone: the round dial floats over the lower right corner, so the last line of the 偏り度 panel stands clear of it (11-16) */
 @media screen and (max-width: 760px) { :root:not(#_l1):not(#_l2):not(#_l3) .fr-bx { padding-bottom: 56px; } }
+
+/* ==== motion 1117 ====
+   How the board moves (js/motion.js): one move is short (220 to 500 ms); what leaves and what comes in move together, slow at both ends, 16 px at most;
+   the leader comes first and the rest follow 45 to 90 ms apart; a changed value lights its own cell once (900 ms). Only transform and opacity move.
+   Nothing runs by itself and nothing loops. With prefers-reduced-motion or 動きを抑える (data-calm) nothing moves: js/motion.js does not start it,
+   and the view transition below is turned off. */
+:root { --mo-out: cubic-bezier(.16, 1, .3, 1); --mo-io: cubic-bezier(.45, 0, .2, 1); }
+@keyframes mo-glow { from { background-color: var(--cyan-a); box-shadow: 0 0 0 3px var(--cyan-a); } to { background-color: transparent; box-shadow: 0 0 0 3px transparent; } }
+.mo-glow { border-radius: 4px; animation: mo-glow .9s ease-out 1; }
+@keyframes mo-out-l { to { opacity: 0; transform: translateX(-16px); } }
+@keyframes mo-out-r { to { opacity: 0; transform: translateX(16px); } }
+@keyframes mo-in-r { from { opacity: 0; transform: translateX(16px); } }
+@keyframes mo-in-l { from { opacity: 0; transform: translateX(-16px); } }
+@media (prefers-reduced-motion: no-preference) {
+  /* a change of screen (js/motion.js viewSwap): the page's frame stays, the screen under it leaves toward one side and the next comes from the other */
+  :root:not([data-calm])[data-vt] :is(#board, #entry, #sect) { view-transition-name: mo-scr; }
+  :root[data-vt]::view-transition-old(root), :root[data-vt]::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+  :root[data-vt]::view-transition-group(mo-scr) { animation-duration: .42s; animation-timing-function: var(--mo-io); }
+  :root[data-vt="fore"]::view-transition-old(mo-scr) { animation: mo-out-l .42s var(--mo-io) both; mix-blend-mode: normal; }
+  :root[data-vt="fore"]::view-transition-new(mo-scr) { animation: mo-in-r .42s var(--mo-io) both; mix-blend-mode: normal; }
+  :root[data-vt="back"]::view-transition-old(mo-scr) { animation: mo-out-r .42s var(--mo-io) both; mix-blend-mode: normal; }
+  :root[data-vt="back"]::view-transition-new(mo-scr) { animation: mo-in-l .42s var(--mo-io) both; mix-blend-mode: normal; }
+}
+@media (prefers-reduced-motion: reduce) { .mo-glow { animation: none; } }
+:root[data-calm] .mo-glow { animation: none; }
+/* the line under an AI text (who wrote it, and the note that it can be wrong) wraps as two pieces: the note goes to its own line instead of breaking under the first */
+.ch-ai:has(> .by) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.ch-ai:has(> .by) > .by + span { margin-left: 0 !important; text-wrap: pretty; }
+/* ==== motion 1117:end ==== */
 
 /* ==== v64:begin ==== (2026-11-16, the layout pass)
  * One scale of sizes, said once: 注 12 (--fs-2) · 本文 14 (--fs-4, 13 where a list is dense) · 小見出し 16 (--fs-5) · 題 22 / 28 / 34 (--fs-7, --fs-7h, --fs-8)

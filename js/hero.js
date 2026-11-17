@@ -17,6 +17,7 @@
  * Neutral by rule: a side is never ranked or called right or wrong; the sides' hues are on the bar only. What a side's headlines do
  * not carry is said as "not in the headlines and summaries", never as "did not report". Numbers are counted values, nothing else. */
 import { trMode } from './trans.js';
+import { rise, grow, swap, count, glow } from './motion.js';
 import { FIND_JA, unlabel, firstGapLine } from './coverage.js';
 import { HEAD } from './heads.js';
 import { DUE_S, STALE_S } from './snapshot.js';
@@ -445,16 +446,27 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
     ro.observe(m);
   }
   let last = null;
-  function paint() {
+  const nums = () => (root && root.querySelectorAll ? [...root.querySelectorAll('.hr-n b')] : []);
+  function paint(dir = 1) {
     if (!root) return;
     if (!picks.length) { root.hidden = true; root.replaceChildren(); last = null; call('change', null); return; }
     root.hidden = false;
     const p = picks[i];
     const ph = call('photo', p);
     const amb = ph && ph.url ? h('div', { class: 'hr-amb', 'aria-hidden': 'true', style: `background-image:url("${String(ph.url).replace(/"/g, '%22')}")` }) : null;
-    root.replaceChildren(...[amb, card(p)].filter(Boolean));
-    fit();
-    watchFit();
+    const first = !last, same = !!last && last.sid === p.sid, was = nums().map((b) => b.textContent);
+    const draw = () => { root.replaceChildren(...[amb, card(p)].filter(Boolean)); fit(); watchFit(); };
+    // 11-17 (js/motion.js): another card leaves while the new one comes in; the same card drawn again with new data only lights the number that changed;
+    // the first look: the frame stands, then its parts follow in order
+    if (first || same) draw(); else swap(root, (r) => [...r.children], draw, dir);
+    if (first && root.querySelector) {
+      const c = root.querySelector('.hr-card');
+      if (c) {
+        rise([...c.querySelectorAll('.hr-main > .hr-meta, .hr-main > .hr-led, .hr-main > .hr-body, .hr-main > .hr-acts')], { step: 90, dy: 8, cap: 800 });
+        grow([...c.querySelectorAll('.hr-bar')], { delay: 300, res: 500 });
+        for (const b of nums()) count(b, Number(b.textContent), { delay: 300, ms: 700 });
+      }
+    } else if (same) nums().forEach((b, k) => { if (was[k] !== undefined && was[k] !== b.textContent) glow(b); });
     last = { sid: p.sid, jp: p.sides.jp.outlets, intl: p.sides.intl.outlets };
     call('change', p);
   }
@@ -467,7 +479,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
     return n;
   }
   function render(list, m = {}) { const was = picks[i] && picks[i].sid; picks = arr(list).slice(0, MAX_PICKS); meta = m || {}; const k = picks.findIndex((p) => p.sid === was); i = m.keep && k >= 0 ? k : 0; paint(); }
-  function go(k) { if (!picks.length) return false; i = ((k % picks.length) + picks.length) % picks.length; paint(); return true; }
-  function step(d) { return go(i + d); }
+  function go(k, dir) { if (!picks.length) return false; const was = i; i = ((k % picks.length) + picks.length) % picks.length; paint(dir || (i >= was ? 1 : -1)); return true; }
+  function step(d) { return go(i + d, d); }
   return { render, go, step, cue, fit, index: () => i, current: () => picks[i] || null, picks: () => picks.slice(), clear: () => render([]) };
 }

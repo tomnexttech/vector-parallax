@@ -22,6 +22,7 @@ import { createFloor } from './floor.js';
 import { createMapUi } from './mapui.js';
 import { GENRE_ALL, genreBar, genreCounts, genreShort, genreIcon } from './genres.js';
 import { createFeel } from './feel.js';
+import { rise, grow, swap as swapMo, count as countMo, glow, pop, dip, viewSwap, calm as moCalm } from './motion.js';
 import { startAutoScroll } from './autoscroll.js';
 import { loadHazards, nearby, dir8, shindoJa, disasterJa } from './hazards.js';
 import { createActions } from './actions.js';
@@ -208,9 +209,10 @@ function roll(el, to) {
   const from = Number(el.dataset.v);
   el.dataset.v = isNum(to) ? String(to) : '';
   if (!isNum(to) || !Number.isFinite(from) || el.dataset.v === '' || from === to || reduced()) { el.textContent = txt(to); return; }
-  const ms = Math.min(1200, 250 + 80 * Math.abs(to - from)), t0 = performance.now();
-  const step = (now) => { const k = Math.min(1, (now - t0) / ms); el.textContent = txt(Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)))); if (k < 1 && el.dataset.v === String(to)) requestAnimationFrame(step); };
-  requestAnimationFrame(step);
+  // 11-17: a number steps in tenths of a second at a constant speed (not a smooth roll), 0.4 to 1.1 s by the size of the change; the cell lights once
+  const ms = Math.min(1100, 400 + 40 * Math.abs(to - from)), n = Math.max(2, Math.round(ms / 100));
+  let k = 0;
+  const t = setInterval(() => { k += 1; if (k >= n || el.dataset.v !== String(to) || !el.isConnected) { clearInterval(t); if (el.dataset.v === String(to)) el.textContent = txt(to); return; } el.textContent = txt(Math.round(from + (to - from) * k / n)); }, 100);
   el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
 }
 const kids = (...xs) => xs.flat(3).filter((x) => x != null && x !== false && x !== '');
@@ -1085,10 +1087,12 @@ function renderCase() {
   const e = cur();
   if (!e) { box.replaceChildren(h('p', { class: 'empty big', text: state.es.length ? '出来事を選ぶ' : '出来事 0 件' })); renderStatus(); return; }
   const node = caseNode(e);
-  box.replaceChildren(node);
+  // another event chosen from the list: the old case leaves and the new comes in together (the same event drawn again with new data is only redrawn)
+  const same = state.caseKey === e.key, at = (k) => state.pri.findIndex((x) => x.key === k), dir = Math.sign(at(e.key) - at(state.caseKey)) || 1;
+  state.caseKey = e.key;
+  if (same) box.replaceChildren(node); else swapMo(box, (r) => [...r.children], () => box.replaceChildren(node), dir);
   box.scrollTop = 0;
   renderUnder(e, [...e.members].sort((a, b) => (isNum(a.ts) ? a.ts : Infinity) - (isNum(b.ts) ? b.ts : Infinity)));
-  if (!reduced()) { node.classList.add('enter'); }
   renderStatus();
   renderTasks();
 }
@@ -1518,6 +1522,7 @@ function renderEntryView() {
   let evs = hp.length ? hp : entryEvents(state.pri.filter(inGenre));
   const want = state.entrySel != null ? state.byKey.get(state.entrySel) : null;
   if (want && !want.foldedInto && !evs.includes(want)) evs = [want, ...evs].slice(0, Math.max(1, evs.length));
+  state.entryOrder = evs.map((e) => e.key);
   renderEntry($('entry'), { h, events: evs, sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
     fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => { setHome('board'); setUi('full'); },
     detail: entryDetail, ownBox, coverage: coverageCard, briefBox: (e) => briefBox(e, tagAI), measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
@@ -1529,8 +1534,16 @@ function renderEntryView() {
 // the rest of the news of one side: the list on the detailed screen
 function entryMore(side) { state.anomKind = 'side-' + side; setHome('board'); setSect('news', 'anom'); }
 // a press on a card: the news under the strip changes, and the page brings its title up unless it is already near the top
-function pickEntry(k) {
-  state.entrySel = k; renderEntryView(); recordRead(state.byKey.get(k));
+function pickEntry(k, fresh) {
+  // a card pressed while the screen is open: the news under the strip leaves and the new one comes in together, toward the card's side of the old one; the card settles, the others step back
+  const order = state.entryOrder || [], dir = Math.sign(order.indexOf(k) - order.indexOf(state.entrySel)) || 1, was = state.entrySel;
+  state.entrySel = k;
+  if (fresh || was === k) renderEntryView(); else {
+    swapMo($('entry'), (r) => [r.querySelector('.en-sel')], () => renderEntryView(), dir);
+    const on = $('entry').querySelector('.en-card[aria-pressed="true"]');
+    if (on) { pop(on); dip([...$('entry').querySelectorAll('.en-card')], on); }
+  }
+  recordRead(state.byKey.get(k));
   const s = $('entry').querySelector('.en-sel'), c = $('entry').querySelector('.en-card[aria-pressed="true"]'), how = reduced() ? 'auto' : 'smooth';
   if (c) { const st = c.parentElement, r = c.getBoundingClientRect(), b = st.getBoundingClientRect(); if (r.left < b.left || r.right > b.right) st.scrollBy({ left: r.left - b.left - 16, behavior: how }); }
   const top = s ? s.getBoundingClientRect().top : 0;
@@ -1560,7 +1573,14 @@ function paintHomeSub(n) {
   if (el) el.textContent = isNum(g) ? `${fmtShort(g)} 時点・${n} 件` : `${n} 件`;
 }
 // The home's three ways in (日本と海外・片側だけ・偏り), the fields under them, and the one panel under the card (js/front.js, docs/design-1115.md §3)
-function frontPick(k) { if (!state.byKey.has(k)) return; setSect('home'); setUi('simple'); pickEntry(k); $('entry').scrollTop = 0; }
+function frontPick(k) { if (!state.byKey.has(k)) return; viewSwap(() => { setSect('home'); setUi('simple'); pickEntry(k, true); $('entry').scrollTop = 0; afterScreen('simple'); }, 1); }
+// the compare screen has come in: its cards stand one after another, the chosen one first (the rest of the screen moves as one with the view transition)
+function afterScreen(name) {
+  if (name !== 'simple' || moCalm()) return;
+  const cs = [...$('entry').querySelectorAll('.en-card')], on = cs.findIndex((c) => c.getAttribute('aria-pressed') === 'true');
+  if (on > 0) cs.unshift(...cs.splice(on, 1));
+  rise(cs, { step: 60, delay: 160, dy: 8, cap: 760 });
+}
 function frontData() {
   const f = state.frontField || null;
   const live = state.es.filter((e) => !e.foldedInto && vis(e));
@@ -1598,16 +1618,67 @@ function revealGap() {
   const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
   g.scrollIntoView({ block: 'start', behavior: calm ? 'auto' : 'smooth' });
 }
-function renderFront() {
+// what the home's tabs and the panel under the card showed, read from the page itself: the next draw is told from it whether a value changed (11-17, js/motion.js)
+function frontRead(fr, gp) {
+  const rows = new Map(), vals = new Map();
+  for (const r of gp.querySelectorAll('.fr-gr')) { const l = r.querySelector('.fr-gl'); if (l) rows.set(l.textContent, [...r.querySelectorAll('.fr-gn')].map((x) => x.textContent).join(',')); }
+  for (const t of fr.querySelectorAll('.fr-tab')) vals.set(t.dataset.tab, [...t.querySelectorAll('.fr-v .num')].map((x) => x.textContent).join(','));
+  return { rows, vals, n: gp.childElementCount };
+}
+const sideOrigin = (i) => (i.dataset.side === 'jp' ? 'right' : 'left');
+const numOf = (el) => { const m = /\d+/.exec(el.textContent || ''); return m ? Number(m[0]) : NaN; };
+// the first look: the frames stand first, the words and the bars follow (the card leads, then the tabs, then the panel); a press: the new panel's bars
+// stretch after it has come in; new data: only the cell that changed lights, and its bar stretches again
+function frontMove(fr, gp, prev, press) {
+  if (moCalm()) return;
+  const rows = [...gp.querySelectorAll('.fr-gr')], bars = rows.map((r) => r.querySelector('.fr-gb i')).filter(Boolean);
+  const totBar = gp.querySelector('.fr-tb'), bm = [...gp.querySelectorAll('.fr-bm i')];
+  if (!prev.n) {
+    const tabs = [...fr.querySelectorAll('.fr-tab')];
+    rise(tabs, { step: 60, delay: 120, dy: 6 });
+    rise([...fr.querySelectorAll('.fr-chips .fr-chip')], { step: 30, delay: 300, dy: 4, cap: 700 });
+    rise(rows, { step: 45, delay: 240, dy: 6, cap: 760 });
+    rise([...gp.querySelectorAll('.fr-one li, .fr-bias li')], { step: 45, delay: 240, dy: 6, cap: 760 });
+    grow(bars, { origin: sideOrigin, delay: 300, step: 45, cap: 760 });
+    grow(bm, { delay: 300, step: 45, cap: 760 });
+    if (totBar) grow([totBar], { delay: 560, res: 400 });
+    for (const el of [...fr.querySelectorAll('.fr-v .num'), ...gp.querySelectorAll('.fr-gn, .fr-tl b.num')]) countMo(el, numOf(el), { delay: 300, ms: 800 });
+    return;
+  }
+  if (press) {
+    grow(bars, { origin: sideOrigin, delay: 160, step: 45, cap: 760 });
+    grow(bm, { delay: 160, step: 45, cap: 760 });
+    if (totBar) grow([totBar], { delay: 300, res: 400 });
+    const on = fr.querySelector('.fr-tab[aria-selected="true"]'), chip = fr.querySelector('.fr-chip[aria-pressed="true"]');
+    if (press.chip) { pop(chip); dip([...fr.querySelectorAll('.fr-chip')], chip); } else { pop(on); dip([...fr.querySelectorAll('.fr-tab')], on); }
+    return;
+  }
+  rows.forEach((r, i) => {
+    const l = r.querySelector('.fr-gl'), was = l ? prev.rows.get(l.textContent) : undefined, now = [...r.querySelectorAll('.fr-gn')].map((x) => x.textContent).join(',');
+    if (was === undefined) { rise([r], { dy: 6 }); return; }
+    if (was !== now) { for (const c of r.querySelectorAll('.fr-gn')) glow(c); if (bars[i]) grow([bars[i]], { origin: sideOrigin }); }
+  });
+  for (const t of fr.querySelectorAll('.fr-tab')) {
+    const was = prev.vals.get(t.dataset.tab), now = [...t.querySelectorAll('.fr-v .num')].map((x) => x.textContent).join(',');
+    if (was !== undefined && was !== now) for (const c of t.querySelectorAll('.fr-v .num')) glow(c);
+  }
+}
+const FRONT_IDS = FRONT_TABS.map(([id]) => id);
+function renderFront(press) {
   const fr = $('front'), gp = $('gap');
   if (!fr || !gp || !state.data || !state.es) return;
   if (homeMode() !== 'home') return;   // drawn for the home only; the board keeps its own panes
   const tab = FRONT_TABS.some(([id]) => id === state.front) ? state.front : 'gap';
-  const d = frontData();
+  const d = frontData(), prev = frontRead(fr, gp);
+  // a press on a tab or a field: the panel under the card changes with what came before it (the tabs and the fields keep their order, which sets the direction)
+  const onTab = (id) => { if (id === state.front) return; const dir = Math.sign(FRONT_IDS.indexOf(id) - FRONT_IDS.indexOf(tab)) || 1; state.front = id; renderFront({ dir }); revealGap(); };
+  const onField = (x) => { if (x === (state.frontField || null)) return; const at = (f) => (f ? FIELDS.indexOf(f) + 1 : 0), dir = Math.sign(at(x) - at(state.frontField || null)) || 1; state.frontField = x; renderFront({ dir, chip: true }); };
   renderFrontEl(fr, { h, tab, field: state.frontField || null, fields: FIELDS, counts: d.counts, subs: { gap: d.articles ? `記事 ${d.articles.toLocaleString('ja-JP')} 件の比率` : '', jp: '国内の媒体だけの話', intl: '海外の媒体だけの話', bias: d.scored ? `0〜100・${d.scored} 話を測定` : '' },
-    onTab: (id) => { state.front = id; renderFront(); revealGap(); }, onField: (x) => { state.frontField = x; renderFront(); } });
-  renderGapEl(gp, { h, tab, field: state.frontField || null, gap: d.gap, one: d.one, bias: d.bias, apart: d.apart, scored: d.scored, onTab: (id) => { state.front = id; renderFront(); revealGap(); }, gen: state.data.generated_at, now: nowS(), clock: fmtClock, short: fmtShort,
-    titleOf: (e) => entryTitleOf(e).text, headOf: frontHead, pick: frontPick, onField: (x) => { state.frontField = x; renderFront(); }, detail: (k) => entryDetail(k, { bias: true }) });
+    onTab, onField });
+  const draw = () => renderGapEl(gp, { h, tab, field: state.frontField || null, gap: d.gap, one: d.one, bias: d.bias, apart: d.apart, scored: d.scored, onTab, gen: state.data.generated_at, now: nowS(), clock: fmtClock, short: fmtShort,
+    titleOf: (e) => entryTitleOf(e).text, headOf: frontHead, pick: frontPick, onField, detail: (k) => entryDetail(k, { bias: true }) });
+  if (press && prev.n) swapMo(gp, (r) => [...r.children], draw, press.dir); else draw();
+  frontMove(fr, gp, prev, press && prev.n ? press : null);
 }
 // The three screens, one rule: ホーム (the front page), 詳しく見る (the board), 比べる (the simple compare view). The top bar shows which one is open;
 // every move between them is one history entry, so the browser's back button goes back to the screen before. The name and the ホーム tab always go home.
@@ -4013,12 +4084,14 @@ async function main() {
   $('theme-btn').addEventListener('click', () => { applySettings({ ...state.set, look: { ...state.set.look, theme: state.set.look.theme === 'light' ? 'dark' : 'light' } }); themeLabel(); });
   themeLabel();
   paintHomeBtn();
-  for (const id of SCREENS) $('sc-' + id).addEventListener('click', () => goScreen(id));
-  $('home-detail').addEventListener('click', () => goScreen('board'));
+  // a press that changes the screen: the old screen and the new one move together, toward the side the bar's order sets (11-17, js/motion.js)
+  const toScreen = (id, then) => { const at = (n) => SCREENS.indexOf(n), here = state.sect === 'home' ? screenNow() : null; if (here === id && !then) return; viewSwap(() => { goScreen(id); if (then) then(); afterScreen(id); }, here ? Math.sign(at(id) - at(here)) || 1 : 1); };
+  for (const id of SCREENS) $('sc-' + id).addEventListener('click', () => toScreen(id));
+  $('home-detail').addEventListener('click', () => toScreen('board'));
   const nameHome = $('app-home');
-  nameHome.addEventListener('click', () => { goScreen('home'); setSect('home'); window.scrollTo(0, 0); });
+  nameHome.addEventListener('click', () => toScreen('home', () => { setSect('home'); window.scrollTo(0, 0); }));
   nameHome.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); nameHome.click(); } });
-  for (const a of document.querySelectorAll('#sects a[data-s="home"]')) a.addEventListener('click', () => { if (screenNow() !== 'home') goScreen('home'); });
+  for (const a of document.querySelectorAll('#sects a[data-s="home"]')) a.addEventListener('click', () => { if (screenNow() !== 'home') toScreen('home'); });
   window.addEventListener('popstate', (ev) => {
     const ps = isObj(ev.state) ? ev.state.ps : null;
     if (!SCREENS.includes(ps) || ps === screenNow()) return;

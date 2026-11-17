@@ -189,7 +189,7 @@ test('the return to the home: the board keeps its place, the home opens at its t
   assert.match(app, /if \(homeMode\(\) !== 'board' \|\| isShow\(\)\) return;/, 'the home\'s card changes by hand only');
   assert.match(app, /window\.addEventListener\('hashchange', \(\) => \{\n    netClose\(\);/);
   // the four ways home go through setHome: the name, the tab, the browser's back, the end of the tour
-  assert.match(app, /nameHome\.addEventListener\('click', \(\) => \{ goScreen\('home'\);/);
+  assert.match(app, /nameHome\.addEventListener\('click', \(\) => toScreen\('home', \(\) => \{ setSect\('home'\);/);   // 11-17: the screens move together (js/motion.js viewSwap); toScreen calls goScreen
   assert.match(app, /onEnd: \(\) => \{ if \(state\.ui === 'simple'\) setUi\('full'\); setHome\('home'\);/);
   assert.match(app, /else setHome\(name\);/);
 });
