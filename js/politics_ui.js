@@ -187,7 +187,7 @@ export function createPolitics(d) {
       rs.map((r) => h('tr', null, td(str(r.date), 'dim'), td(link(r.url, r.name), 'tt'), td(KIND_JA[r.kind] || str(r.kind), 'dim opt'),
         ...extra.map(([k]) => (k === 'votes' ? td(isNum(r.votes) ? fmtN(r.votes) : '—', 'r') : td(str(r.winner_ja) || str(r.winner) || '—'))))));
     const out = [sec('選挙', v.recent.length + v.upcoming.length), note(v.covers || '都道府県知事選挙と指定都市市長選挙のみ。国政選挙は含まない')];
-    out.push(h('p', { class: 'pk', text: '今後の投票日' }), v.upcoming.length ? table(v.upcoming) : note(`${v.name}の頁に今後の投票日の予定表は無い。一覧に今日以降の日付がある時だけここに出る`));
+    out.push(h('p', { class: 'pk', text: '今後の投票日' }), v.upcoming.length ? table(v.upcoming) : note(`${v.name}のページに今後の投票日の予定表は無い。一覧に今日以降の日付がある時だけここに出る`));
     out.push(h('p', { class: 'pk', text: `直近の結果（${v.days || 60}日）` }), v.recent.length ? table(v.recent) : empty(nothingJa(v) + (scene === 'election' ? '。場面は見出しの語で判定（海外の選挙を含む）' : '')));
     if (!v.ok) out.push(empty('一覧の一部を読めず'));
     return [...out, elecSrc(v)];
@@ -199,7 +199,7 @@ export function createPolitics(d) {
     return [sec('内閣支持', `${v.series.length}社`), chart(v, 560, 210, true), legend(),
       tbl([['会社'], ['調査日', 'opt'], ['支持', 'r'], ['不支持', 'r'], ['回答', 'r opt']], v.latest.map((x) => h('tr', null, td(link(x.url, x.name), 'tt'),
         td(x.start && x.start !== x.end ? `${md(x.start)}–${md(x.end)}` : md(x.end), 'dim opt'), td(pct(x.approve), 'r'), td(pct(x.disapprove), 'r'), td(isNum(x.sample) ? fmtN(x.sample) : '—', 'r dim opt')))),
-      pollSrc(v), v.src.title ? note('頁 ', link(v.src.url, v.src.title)) : null, note('英語版 Wikipedia の表から各社の支持・不支持の数を抜き出した（版を固定した頁）。各社の原典は社名のリンク。見出しの数との照合はしていない')];
+      pollSrc(v), v.src.title ? note('ページ ', link(v.src.url, v.src.title)) : null, note('英語版 Wikipedia の表から各社の支持・不支持の数を抜き出した（版を固定したページ）。各社の原典は社名のリンク。見出しの数との照合はしていない')];
   }
   function sheetScrutiny(c) {
     const v = scrutinyView(c);

@@ -107,7 +107,7 @@ export function sameSummary(same) {
   const spans = same.links.map((l) => l.dt_min).filter((x) => x !== null);
   const joined = same.by === 'ai' ? same.aiJoined : [];
   return {
-    by: same.by, byJa: same.by === 'ai' ? 'AI' : '規則', model: same.ai ? same.ai.model : null, at: same.ai ? same.ai.at : null,
+    by: same.by, byJa: same.by === 'ai' ? 'AI' : 'アルゴリズム', model: same.ai ? same.ai.model : null, at: same.ai ? same.ai.at : null,
     links, places, spanMin: spans.length ? Math.max(...spans) : null,
     joined: joined.map((j) => ({ cids: j.cids, best: j.best, match: j.best.words.length + j.best.aliases.length + j.best.places.length > 0 })),
     noRuleMatch: same.by === 'ai' && joined.length > 0 && joined.every((j) => j.best.words.length + j.best.aliases.length + j.best.places.length === 0),

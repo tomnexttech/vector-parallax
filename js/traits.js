@@ -212,7 +212,7 @@ export function traitsBlock(t, o) {
       h('span', null, '偏り ', h('b', { text: bj[r.bias] || r.bias }), h('small', { lang: 'en', text: ` ${r.bias}` })),
       h('span', null, '事実性 ', h('b', { text: fj[r.factual] || r.factual }), h('small', { lang: 'en', text: ` ${r.factual}` })),
       h('small', { class: 'num', text: `先方の更新 ${str(r.updated)}・確かめた日 ${str(r.checked)}` }), str(r.note_ja) ? h('small', { class: 'tr-en', text: str(r.note_ja) }) : null))),
-    h('p', { class: 'tr-few', text: '外部の評価は参考です。PARALLAX の数とは別に、先方の頁の表記のまま載せています。' }));
+    h('p', { class: 'tr-few', text: '外部の評価は参考です。PARALLAX の数とは別に、先方のページの表記のまま載せています。' }));
   }
   out.aside = aside;   // the outside ratings: the page puts them beside the figures, never among them
   return out;

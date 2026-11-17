@@ -69,6 +69,14 @@
    "want": "view_rules"
   },
   {
+   "say": "アルゴリズムで見せて",
+   "want": "view_rules"
+  },
+  {
+   "say": "アルゴリズムの表示にして",
+   "want": "view_rules"
+  },
+  {
    "say": "ルールの表示にして",
    "want": "view_rules"
   },

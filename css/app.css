@@ -2771,7 +2771,15 @@ div.rk { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1f
     radial-gradient(circle closest-side, #b04ab0 0%, #5a1f6e 78%, #4b1a5f 97%, transparent 100%) 58% 90% / 26vmax 26vmax no-repeat;
   --hs-fill: linear-gradient(148deg, rgba(255, 255, 255, .14) 0%, rgba(255, 255, 255, .035) 42%, rgba(255, 255, 255, .075) 100%), rgba(14, 18, 30, .62); --hs-edge: rgba(255, 255, 255, .16); --hs-hi: inset 0 1px 0 rgba(255, 255, 255, .2); --hs-shadow: 0 28px 64px rgba(0, 0, 0, .4);
   --hs-blur: blur(26px) saturate(165%); --hp-blur: blur(20px) saturate(160%);
-  --hc-fill: rgba(255, 255, 255, .07); --hc-edge: rgba(255, 255, 255, .13); --hc-hi: inset 0 1px 0 rgba(255, 255, 255, .14); --hc-hover: rgba(255, 255, 255, .12); --hc-on: rgba(255, 255, 255, .17);
+  /* v70 (11-17): the tiles' ground, said once. Three roles; every tile, button, chip and bar takes one of them and nothing writes its own rgba.
+   *   face   (a tile: a card, a figure)                         --ui-face / --ui-face-edge / --ui-face-hi,  corners --ui-r-face
+   *   press  (a button, a chip, a pill, the track of a switch)   --ui-press, hovered --ui-press-hover,        corners --ui-r-press
+   *   on     (the chosen one: a screen, a chip, a row)           --ui-on, lit edge --lit-e
+   *   chrome (the glass of the top and bottom bars)              --ui-chrome;  --ui-hair is the thin line between two parts of one tile */
+  --ui-face: rgba(255, 255, 255, .07); --ui-face-edge: rgba(255, 255, 255, .13); --ui-face-hi: inset 0 1px 0 rgba(255, 255, 255, .14); --ui-r-face: 20px;
+  --ui-press: rgba(255, 255, 255, .09); --ui-press-hover: rgba(255, 255, 255, .12); --ui-r-press: 999px;
+  --ui-on: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, .12)), rgba(8, 10, 24, .6); --ui-chrome: var(--glass-nav); --ui-hair: rgba(255, 255, 255, .1);
+  --hc-fill: var(--ui-face); --hc-edge: var(--ui-face-edge); --hc-hi: var(--ui-face-hi); --hc-hover: var(--ui-press-hover); --hc-on: var(--ui-on);
   --h-ink3: #cfcfd6; --hk: rgba(255, 255, 255, .1);
 }
 :root[data-theme="light"] {
@@ -2782,7 +2790,9 @@ div.rk { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1f
     radial-gradient(circle closest-side, #ffd7bb 0%, #ffb98f 78%, #fdb185 97%, transparent 100%) 90% 36% / 20vmax 20vmax no-repeat,
     radial-gradient(circle closest-side, #dccbff 0%, #b79cf5 78%, #af93f1 97%, transparent 100%) 58% 90% / 26vmax 26vmax no-repeat;
   --hs-fill: linear-gradient(148deg, rgba(255, 255, 255, .84) 0%, rgba(255, 255, 255, .6) 50%, rgba(255, 255, 255, .72) 100%); --hs-edge: rgba(255, 255, 255, .85); --hs-hi: inset 0 1px 0 rgba(255, 255, 255, .95); --hs-shadow: 0 22px 56px rgba(40, 60, 120, .16), 0 0 0 .5px rgba(40, 56, 110, .1);
-  --hc-fill: rgba(255, 255, 255, .6); --hc-edge: rgba(255, 255, 255, .9); --hc-hi: inset 0 1px 0 rgba(255, 255, 255, 1); --hc-hover: rgba(255, 255, 255, .85); --hc-on: rgba(255, 255, 255, .96);
+  --ui-face: rgba(255, 255, 255, .72); --ui-face-edge: rgba(36, 48, 100, .12); --ui-face-hi: inset 0 1px 0 rgba(255, 255, 255, 1);
+  --ui-press: rgba(36, 48, 100, .07); --ui-press-hover: rgba(255, 255, 255, .85); --ui-on: rgba(255, 255, 255, .96); --ui-hair: rgba(36, 48, 100, .12);
+  --hc-fill: var(--ui-face); --hc-edge: var(--ui-face-edge); --hc-hi: var(--ui-face-hi); --hc-hover: var(--ui-press-hover); --hc-on: var(--ui-on);
   --h-ink3: #3e3e45; --hk: rgba(36, 48, 100, .1);
 }
 
@@ -3128,8 +3138,8 @@ div.rk { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1f
  * glass surface (on a wide screen each of the four columns is one sheet; stacked, each pane is), and tiles on it (a pane, a card of the news, a row). The blur sits on
  * the sheets only (four at most on a wide screen, two on a tablet, none on a phone); the panes and cards on them are a flat translucent fill.
  * <html data-screen="home|board|compare|sect"> (js/app.js paintScreen) is what these rules hang on; the screen's own words and numbers are not touched here. ---- */
-:root { --bt-fill: rgba(255, 255, 255, .07); --bt-edge: rgba(255, 255, 255, .13); --bt-hi: inset 0 1px 0 rgba(255, 255, 255, .14); --bt-chip: rgba(255, 255, 255, .09); --tp-on: rgba(255, 255, 255, .17); --hs-lite: 0 10px 28px rgba(0, 0, 0, .28); }
-:root[data-theme="light"] { --bt-fill: rgba(255, 255, 255, .78); --bt-edge: rgba(36, 48, 100, .12); --bt-hi: inset 0 1px 0 rgba(255, 255, 255, 1); --bt-chip: rgba(36, 48, 100, .07); --tp-on: rgba(255, 255, 255, .96); --hs-lite: 0 10px 28px rgba(40, 60, 120, .14); }
+:root { --bt-fill: var(--ui-face); --bt-edge: var(--ui-face-edge); --bt-hi: var(--ui-face-hi); --bt-chip: var(--ui-press); --tp-on: var(--ui-on); --hs-lite: 0 10px 28px rgba(0, 0, 0, .28); }
+:root[data-theme="light"] { --bt-fill: var(--ui-face); --bt-edge: var(--ui-face-edge); --bt-hi: var(--ui-face-hi); --bt-chip: var(--ui-press); --tp-on: var(--ui-on); --hs-lite: 0 10px 28px rgba(40, 60, 120, .14); }
 
 /* the ground: the board and the compare screen stand on the same field of light as the home */
 @media not all and (orientation: landscape) and (max-height: 500px) and (max-width: 1100px) {
@@ -5717,6 +5727,9 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 .ch-ai:has(> .by) > .by + span { margin-left: 0 !important; text-wrap: pretty; }
 /* ==== motion 1117:end ==== */
 
+/* 11-17: the switch reads アルゴリズム (longer than 規則), so between 1321 and 1500 px its buttons and the search give a little room and the top bar keeps to the window */
+@media (min-width: 1321px) and (max-width: 1500px) { :root:not(#_a1):not(#_a2) .tb > .seg button { padding-left: 7px; padding-right: 7px; } :root:not(#_a1):not(#_a2) .tb .meter .k { display: none; } }
+
 /* ==== v64:begin ==== (2026-11-16, the layout pass)
  * One scale of sizes, said once: 注 12 (--fs-2) · 本文 14 (--fs-4, 13 where a list is dense) · 小見出し 16 (--fs-5) · 題 22 / 28 / 34 (--fs-7, --fs-7h, --fs-8)
  * · 数 22 / 28 / 34. Every size on screen is a step of :root's --fs-*; the rules below bring back what had left it (the stage's --u sizes that
@@ -6147,3 +6160,61 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 .ch-diff a.df-o:hover, .ch-diff a.df-o:focus-visible { color: var(--ink-hi); border-bottom-color: currentColor; }
 
 /* ==== v64:end ==== */
+
+/* ==== v70:begin ==== (2026-11-17, the tiles pass: one level, one ground, three roles; the tokens are --ui-* at the top of the home block)
+ * 11-17, the phone's 詳しく見る: the headline is not a tile of its own inside the tile that holds the whole news; the tiles are all the same dark and the same clear;
+ * 掲載の停止 stands at the very foot. A tile holds nothing but flat parts divided by a thin line; the figures (.figs) are the only tiles inside a tile. */
+
+/* face: one ground for every tile of the news, dark and light, the board and the home */
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] :is(.dcard, .sd, .nt, .t-ai, .t-reps, .t-status):not(.t-place):not(.cov) { background: var(--ui-face); box-shadow: inset 0 0 0 1px var(--ui-face-edge), var(--ui-face-hi); border-radius: var(--ui-r-face); -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] .cov { background: var(--ui-face); box-shadow: inset 0 0 0 1px var(--ui-face-edge), var(--ui-face-hi); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] :is(.dcard, .t-ai, .sd, .nt, .t-reps) :is(.dcard, .t-ai, .sd, .nt) { background: transparent; box-shadow: none; }
+/* the headline, the place, the number of outlets, the bar, the fields and the buttons stand on the tile that holds the news, not on a tile of their own */
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case .dcard.t-place { background: none; box-shadow: none; border-radius: 0; padding: 4px 2px 6px; -webkit-backdrop-filter: none; backdrop-filter: none; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case .dos.has-photo > .t-place { min-height: 0; }
+/* stacked (a phone, a tablet): the pane is the one tile; its parts are flat, divided by the thin line under each part's name, and only the figures keep a tile */
+@media (max-width: 1100px) {
+  :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case :is(.dcard, .sd, .nt, .t-ai, .t-reps, .t-status):not(.cov) { background: none; box-shadow: none; border-radius: 0; padding-left: 4px; padding-right: 4px; }
+  :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case .figs > .dcard, :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case .figs > * { background: var(--ui-face); box-shadow: inset 0 0 0 1px var(--ui-face-edge), var(--ui-face-hi); border-radius: var(--ui-r-face); padding-left: 16px; padding-right: 16px; }
+  :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case .st-h { margin: 20px 4px 4px; padding-top: 16px; border-top: 1px solid var(--ui-hair); }
+  :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case .t-photo { padding: 0; }
+  :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case .dos > .t-status { border-top: 1px solid var(--ui-hair); border-radius: 0; padding-top: 14px; }
+}
+
+/* press: the buttons of the news are pills of the one ground of a press, the chosen one is the lit one */
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case :is(.addtask, .speak) { position: relative; height: 36px; min-height: 0; padding: 0 16px; border: 0; border-radius: var(--ui-r-press); background: var(--ui-press); box-shadow: inset 0 0 0 1px var(--ui-face-edge); color: var(--ink-2); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case :is(.addtask, .speak)::after { content: ""; position: absolute; inset: -4px -2px; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case :is(.addtask, .speak):hover { background: var(--ui-press-hover); color: var(--ink-hi); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case .addtask[aria-pressed="true"] { background: var(--ui-on); box-shadow: inset 0 0 0 1px var(--lit-e); color: var(--ink-hi); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) :is(.chip, .tab, .ak)[aria-pressed="true"] { background: var(--ui-on); box-shadow: inset 0 0 0 1px var(--lit-e); color: var(--ink-hi); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) #screens { background: var(--ui-press); box-shadow: none; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) #screens button[aria-pressed="true"] { background: var(--ui-on); box-shadow: inset 0 0 0 1px var(--lit-e); color: var(--ink-hi); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) .seg { background: var(--ui-press); border-color: var(--ui-face-edge); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) .seg button[aria-pressed="true"] { background: var(--ui-on); box-shadow: inset 0 0 0 1px var(--lit-e); color: var(--ink-hi); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) .tb > .seg { background: none; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) .tb > .seg button { flex: none; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) .tb > .seg::before { background: var(--ui-press); border-color: var(--ui-face-edge); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) .tb > .seg button[aria-pressed="true"] { background: none; box-shadow: none; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) .tb > .seg button[aria-pressed="true"]::before { background: var(--ui-on); box-shadow: inset 0 0 0 1px var(--lit-e); }
+/* chrome: the bar at the foot of a phone is the one glass of the bars */
+@media screen and (max-width: 760px) { :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) .sects { background: var(--ui-chrome); } }
+
+/* the roles win over every earlier pass (the flat, the glass and the home ones each wrote their own rgba into the same names) */
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9) { --hc-fill: var(--ui-face); --hc-edge: var(--ui-face-edge); --hc-hi: var(--ui-face-hi); --hc-hover: var(--ui-press-hover); --hc-on: var(--ui-on); --bt-chip: var(--ui-press); --tp-on: var(--ui-on); --ui-chrome: var(--glass-bar); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9)[data-theme="light"] { --ui-face: rgba(255, 255, 255, .72); --ui-face-edge: rgba(36, 48, 100, .12); --ui-face-hi: inset 0 1px 0 rgba(255, 255, 255, 1); --ui-press: rgba(36, 48, 100, .07); --ui-press-hover: rgba(255, 255, 255, .85); --ui-on: rgba(255, 255, 255, .96); --ui-hair: rgba(36, 48, 100, .12); }
+/* press: the chips, the fields' icons, the layer pills, the buttons of the top bar */
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen] :is(.chip, .tab, .ak, .st-nav button):not([aria-pressed="true"]) { background: var(--ui-press); box-shadow: inset 0 0 0 1px var(--ui-face-edge); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) :is(.tbb, #view-btn, .lyr) { background: var(--ui-press); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) .fr-chip:not([aria-pressed="true"]) { background: var(--ui-press); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) .gn:not([aria-pressed="true"]) .gi { background: var(--ui-press); box-shadow: inset 0 0 0 1px var(--ui-face-edge); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) :is(.tbb, #view-btn):is([aria-pressed="true"], [aria-expanded="true"]) { background: var(--ui-on); box-shadow: inset 0 0 0 1px var(--lit-e); }
+/* chrome: the bars at the foot of the page are the one glass of the bars */
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) :is(#sects, #sb, .sects) { background: var(--ui-chrome); }
+/* face: the news on the map's list */
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) #p-mapnews { background: var(--ui-face); }
+
+/* 掲載の停止: the last line of the news, quiet, where nothing else is */
+.ch-stop { margin: 8px 16px 28px; padding-top: 14px; border-top: 1px solid var(--ui-hair); font-size: var(--fs-2); line-height: 1.5; color: var(--ink-3); }
+.ch-stop .stopreq { margin: 0; font-size: inherit; color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.ch-stop .stopreq:hover, .ch-stop .stopreq:focus-visible { color: var(--ink-2); }
+/* ==== v70:end ==== */

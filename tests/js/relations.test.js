@@ -52,7 +52,7 @@ test('sameSummary says rule or AI with the model, and keeps an empty match empty
   const none = { a: 'x1', b: 'x2', sim: 0.1, words: [], places: [], aliases: [], nums: [] };
   const empty = relationsOf({ ...raw, same: { s5600000000e5: { ...raw.same.s5600000000e5, ai_joined: [{ cids: ['ca', 'cb'], best: none }] } } });
   assert.equal(sameSummary(sameOf(empty, 's5600000000e5')).noRuleMatch, true);
-  assert.equal(sameSummary(sameOf(r, 's1000000000a1')).byJa, '規則');
+  assert.equal(sameSummary(sameOf(r, 's1000000000a1')).byJa, 'アルゴリズム');
   assert.equal(sameSummary(null), null);
 });
 

@@ -17,10 +17,10 @@ overseas public and mainstream outlets), groups the headlines that are about the
 `data/latest.json` (a build product: it is shipped in the Pages artifact together with the page and **never committed**, see "How it is delivered" below). The page (static HTML + ES modules, no build step, no external scripts) shows that file in
 two ways, and **the difference between them is the point**:
 
-* **RULES** — headlines grouped by word overlap only (deterministic Python, standard library only).
+* **ALGORITHM** — headlines grouped by word overlap only (deterministic Python, standard library only).
 * **AI** — the same headlines regrouped by a language model: it can join a Japanese and an English headline
-  about one event that the rules left apart, and split a group that only shares a topic. Where the AI call
-  fails, the page falls back to the rules for those groups and says so (red `FALLBACK` mark). Text written by the
+  about one event that the algorithm left apart, and split a group that only shares a topic. Where the AI call
+  fails, the page falls back to the algorithm for those groups and says so (red `FALLBACK` mark). Text written by the
   AI carries an `AI` mark. In the public edition the AI still reads every headline to decide what belongs together,
   but its per-outlet focus line is not published for an outlet whose terms forbid redistribution (`no`) or allow only non-commercial use (`nc`;
   the page shows that outlet's name, time and link only), while the neutral one-line summary of the whole event is kept and is
@@ -35,16 +35,16 @@ reported it / no Japanese mainstream outlet reported it / only government primar
 rules have the last word on those flags: a flag the data contradicts is removed and counted.
 
 毎 3 時間、GitHub Actions が 52 の配信（39 媒体）の RSS を読み、同じ出来事の見出しを束ねて `data/latest.json` を
-書きます。頁は同じデータを **RULES（語の重なりだけの規則）** と **AI（言語モデルが組み直した結果）** の二通りで
-見せ、その違いが見せ所です。AI が通らなかった所は規則のまま赤で明示し、AI が書いた文には「AI」の札を付けます。
+書きます。頁は同じデータを **ALGORITHM（語の重なりだけで束ねるアルゴリズム）** と **AI（言語モデルが組み直した結果）** の二通りで
+見せ、その違いが見せ所です。AI が通らなかった所はアルゴリズムのまま赤で明示し、AI が書いた文には「AI」の札を付けます。
 
 ## Try it (for reviewers) / 触り方
 
 1. Open the live page. The `GENERATED` stamp at the top is when the data was built; it turns **red** once it is
    older than 6 hours, so an old snapshot is never shown as current.
-2. Switch `RULES` / `AI` and watch the story count and the groups change.
+2. Switch `ALGORITHM` / `AI` and watch the story count and the groups change.
 3. Use the chips (`BOTH`, `JP ONLY`, `INTL ONLY`, the flags) to see where Japanese and overseas coverage
-   diverge, and `CHANGED` to see only the groups where RULES and AI disagree (`MERGED` / `SPLIT`). Open a story for
+   diverge, and `CHANGED` to see only the groups where ALGORITHM and AI disagree (`MERGED` / `SPLIT`). Open a story for
    the per-outlet view, the reason for the grouping, and the links.
 4. `EVAL` shows how often the recorded AI run made a machine-countable mistake (invented ids, dropped items,
    duplicates, broken JSON, rejected flags, suspicious merges, place labels that match a known misreading such as
@@ -107,7 +107,7 @@ field); nothing is copied into this repository. Article bodies are never include
   the same validator. The provider label is `claude-recorded`, and the page's AI RUN panel shows
   `RECORDED claude-sonnet-5-5` with the time it was written, which turns red after 6 hours. This run exists on the author's machine only
   (`data/recorded.json` quotes headline strings, so it is not in the repository; the author's own screens and the A4 sheet use it). **The public build never uses it:** with the
-  `GEMINI_API_KEY` secret the AI view shows Gemini's answers; without it there is no AI view and the page shows the rules view only (a previous Gemini view, if the
+  `GEMINI_API_KEY` secret the AI view shows Gemini's answers; without it there is no AI view and the page shows the algorithm view only (a previous Gemini view, if the
   Actions cache holds one, is kept as a snapshot with its own time in red). `data/eval.json` is computed from the recorded run by
   `python -m parallax.eval`.
 * **Not yet run against the live API (as of 2026-11-04):** the Gemini call code (`parallax/ai.py` for the build,
@@ -118,7 +118,7 @@ field); nothing is copied into this repository. Article bodies are never include
 * If the free quota or rate limit is hit (HTTP 429), the page says so in plain words. Both the build
   (`parallax/ai.py`) and the BYOK re-run in the browser (`js/provider.js`) retry a failed call at most twice
   (waiting 2 s, then 4 s), and only for 429, 5xx, timeouts and network errors; then the groups that did not
-  get an answer fall back to the rules and are marked.
+  get an answer fall back to the algorithm and are marked.
 
 ## AI cost / AI の費用
 

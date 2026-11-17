@@ -556,7 +556,7 @@ function renderAiLine() {
   const parts = [h('span', { class: 'al-h', text: '国内と海外の両方' })];
   if (state.hasAI && ai != null) { parts.push(h('span', { class: 'al-k', text: 'AI' }), n(ai, state.view === 'ai')); if (ch.of === 'snapshot') parts.push(h('span', { class: 'al-u', text: '前回のまとめ' })); }
   else if (!state.stSnap) parts.push(h('span', { class: 'al-k off', text: 'AI 停止中' }));   // with a dot at the end of the line, the word is said once
-  if (both != null) parts.push(h('i', { class: 'al-sep', 'aria-hidden': 'true' }), h('span', { class: 'al-k', text: '規則' }), n(both, state.view === 'rules'));
+  if (both != null) parts.push(h('i', { class: 'al-sep', 'aria-hidden': 'true' }), h('span', { class: 'al-k', text: 'アルゴリズム' }), n(both, state.view === 'rules'));
   parts.push(h('button', { type: 'button', class: 'al-go', on: { click: () => { if (state.hasAI && ai != null && state.view !== 'ai') setView('ai'); setTopic('cross'); if (narrow()) $('p-pri').scrollIntoView({ block: 'start' }); } } }, '一覧'));
   el.replaceChildren(...parts, viewEl());
   (phoneBar.matches ? $('tb').querySelector('.meters') : el).append(statEl());
@@ -993,7 +993,7 @@ function paintOwn(box, e) {
     st && st.err ? h('span', { class: 'ch-own-m', role: 'status', text: errJa(st.err) }) : null)];
   if (st && st.lines && st.lines.length) {
     out.push(h('ol', { class: 'ch-own-l' }, st.lines.map((l) => h('li', { text: l }))),
-      h('p', { class: 'ainote' }, h('span', { class: 'aimk', text: 'AI' }), `${MODE_JA[st.mode] || ''}・${st.by}${isNum(st.at) ? `・${fmtShort(st.at)}` : ''}${st.cached ? '・控えの答え' : ''}・${ASK_NOTE}`));
+      h('p', { class: 'ainote' }, h('span', { class: 'aimk', text: 'AI' }), `${MODE_JA[st.mode] || ''}・${st.by}${isNum(st.at) ? `・${fmtShort(st.at)}` : ''}${st.cached ? '・予備の答え' : ''}・${ASK_NOTE}`));
   }
   box.replaceChildren(...out);
 }
@@ -1124,8 +1124,7 @@ function caseNode(e) {
       h('button', { type: 'button', class: 'addtask', 'aria-pressed': String(hasTask(state.tasks, saveId(e))), on: { click: () => toggleSave(e) } }, hasTask(state.tasks, saveId(e)) ? '保存済み' : '保存'),
       h('button', { type: 'button', class: 'addtask share', on: { click: () => shareEvent(e) } }, '共有'),
       h('button', { type: 'button', class: 'addtask share img', on: { click: () => shareImage(e) } }, '画像で共有'),
-      speakBtn(e, 'tool'),
-      extLink(`${ISSUES}/new?title=${encodeURIComponent('掲載の停止の依頼')}`, { class: 'stopreq', title: STOP_NOTE }, '掲載の停止'));
+      speakBtn(e, 'tool'));
   const head = h('div', { class: 'ch-main' },
     h('div', { class: 'ch-title' },
       h('h1', { lang: e.heading.lang || null, class: e.heading.none ? 'none' : null }, headNode(e, 'h1t')),
@@ -1220,13 +1219,13 @@ function caseNode(e) {
   const flags = e.ruleFlags.map((f) => { const t = flagText(f); return t ? h('li', { class: 'flag-row', title: t.tip }, h('span', { class: 'flag', text: t.ja }), h('span', { class: 'rl', text: '自動' })) : null; });
   const ae = e.case && state.board ? arr(state.board.asymmetry).find((a) => isObj(a) && a.sid === e.case.sid) : null;
   const al = ae && str(ae.label_ja) ? { ja: plainWord(ae.label_ja), rule: str(((state.board.asym_labels || {})[ae.kind] || {}).rule) } : null;
-  if (isObj(al)) flags.unshift(h('li', { class: 'flag-row', title: str(al.rule) }, h('span', { class: 'flag', text: str(al.ja) }), h('span', { class: 'rl', text: '規則' })));
-  if (e.topics.length) flags.unshift(h('li', { class: 'flag-row' }, h('span', { class: 'tpf', text: e.topics.map(flagJa).join('・') }), h('span', { class: 'rl', text: '規則' })));
+  if (isObj(al)) flags.unshift(h('li', { class: 'flag-row', title: str(al.rule) }, h('span', { class: 'flag', text: str(al.ja) }), h('span', { class: 'rl', text: 'アルゴリズム' })));
+  if (e.topics.length) flags.unshift(h('li', { class: 'flag-row' }, h('span', { class: 'tpf', text: e.topics.map(flagJa).join('・') }), h('span', { class: 'rl', text: 'アルゴリズム' })));
   const vetoed = [];   // the AI does not label (A4): what the rules removed from an AI's labels is not shown
   const b = e.basis;
   const wordLinks = (words) => words.map((w, i) => [i ? '、' : '', lk(w, () => searchFor(w), `「${w}」で探す`)]);
   const basis = b ? h('dl', { class: 'kv' },
-    h('dt', { text: 'まとめた手' }), h('dd', { text: b.by === 'ai' ? 'AI' : '規則（語の重なり）' }),
+    h('dt', { text: 'まとめた手' }), h('dd', { text: b.by === 'ai' ? 'AI' : 'アルゴリズム（語の重なり）' }),
     h('dt', { text: HEAD['fig.shared'] }), h('dd', null, arr(b.words).length ? wordLinks(arr(b.words)) : '—'),
     h('dt', { text: '地名' }), h('dd', null, arr(b.places).length ? wordLinks(arr(b.places).map(pj)) : '—'),
     h('dt', { text: HEAD['case.span'] }), h('dd', { text: fmtSpan(b.time_span) })) : h('p', { class: 'empty', text: ms.length < 2 ? '一つの報道' : '—' });
@@ -1339,7 +1338,9 @@ function caseNode(e) {
       stH('tl', '経過', tl.length), tlCard,
       stH('sd', '各側見出し'), dossier.sides(m, angles, act),
       stH('src', '出典一覧', src.length), srcCard),
-    h('div', { class: 'cbody nophoto' }, members, side));
+    h('div', { class: 'cbody nophoto' }, members, side),
+    // 掲載の停止 (an outlet's way to ask): the last line of the news, not among the buttons
+    h('p', { class: 'ch-stop' }, extLink(`${ISSUES}/new?title=${encodeURIComponent('掲載の停止の依頼')}`, { class: 'stopreq', title: STOP_NOTE }, '掲載の停止')));
   return node;
 }
 
@@ -2205,7 +2206,7 @@ function renderAbout() {
 }
 const EVAL_JA = {
   fabricated_ids: '答えに出た、塊に無い id', dup_ids: '二度使った id', unassigned_ids: '取りこぼした id', json_broken: 'JSON として読めない答え', shape_broken: '形の崩れた答え',
-  answers_missing: '答えの無い呼び', flags_proposed: 'AI が付けたラベル', flags_vetoed: '規則が外したラベル', quoted_fields: '見出しを写した文', suspect_merges_veto: '疑わしい併合（規則の拒否）',
+  answers_missing: '答えの無い呼び', flags_proposed: 'AI が付けたラベル', flags_vetoed: 'アルゴリズムが外したラベル', quoted_fields: '見出しを写した文', suspect_merges_veto: '疑わしい併合（アルゴリズムの拒否）',
   suspect_merges_no_shared: '疑わしい併合（共通点なし）', place_misread_known: '地名の読み違い（既知の種類）', calls: '呼び', calls_failed: '失敗した呼び', blocks_sent: '送った塊',
   blocks_answered: '答えのあった塊', ai_stories: 'AI の出来事', merged_stories: '併合した出来事',
 };
@@ -3164,7 +3165,7 @@ async function voiceRun(alts) {
   if (r.heard) cands.push(h('button', { type: 'button', class: 'chip', text: `「${r.heard.slice(0, 16)}」で探す`, on: { click: () => { actions.run('case_find', r.heard); $('voice-pop').hidden = true; } } }));
   const keyIn = h('input', { type: 'password', class: 'vk', placeholder: 'Gemini の鍵（任意・このタブを閉じるまで）', autocomplete: 'off', spellcheck: 'false', 'aria-label': 'Gemini の鍵' });
   keyIn.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); voiceKey = keyIn.value.trim(); keyIn.value = ''; voiceRun(alts); } });
-  voiceSay([h('p', { class: 'vh', text: r.heard ? `「${r.heard}」` : '聞き取れず' }), h('p', { class: 'vr', text: r.by === 'ai' ? '一覧に当たらない' : '規則に当たらない' }), h('div', { class: 'vc' }, cands), voiceKey || own ? null : keyIn]);
+  voiceSay([h('p', { class: 'vh', text: r.heard ? `「${r.heard}」` : '聞き取れず' }), h('p', { class: 'vr', text: r.by === 'ai' ? '一覧に当たらない' : 'アルゴリズムに当たらない' }), h('div', { class: 'vc' }, cands), voiceKey || own ? null : keyIn]);
 }
 function startVoice() {
   if (voiceStop) { voiceStop(); voiceStop = null; return true; }
@@ -3380,7 +3381,7 @@ function hxWhy(p) {
   const ttl = (id) => str(items[id] && items[id].title);
   const out = [];
   if (!same) { hxLayer('束ねた理由', h('p', { class: 'empty', text: '根拠のデータがありません' })); return; }
-  out.push(h('p', { class: 'hr-by' }, h('b', { text: same.by === 'ai' ? 'AI' : '規則' }),
+  out.push(h('p', { class: 'hr-by' }, h('b', { text: same.by === 'ai' ? 'AI' : 'アルゴリズム' }),
     same.by === 'ai' && run ? h('span', { class: 'num', text: ` ${[...new Set([str(run.provider), str(run.model)].filter(Boolean))].join(' ').replace(/^(\w+) (\1-)/i, '$2')}${isNum(run.at) ? '・' + fmtShort(run.at) : ''}` }) : null));
   const dl = [];
   if (same.words.length) dl.push(['一致した語', h('span', { class: 'hr-chips' }, same.words.map((w) => h('span', { class: 'hr-chip', text: w })))]);
@@ -3859,7 +3860,7 @@ function netRender(relayout) {
       n.sel ? h('span', { class: 'net-i num', text: String(i + 1) }) : null,
       n.sel ? null : h('span', { class: 'net-t', text: netTitle(r.a) || '—' }), h('span', { class: 'net-t', text: netTitle(r.b) || '—' }),
       h('span', { class: 'net-why', text: whyText(r.why) || '一致した語なし' }))))) : h('p', { class: 'empty', text: '0 件' }));
-  $('net-how').textContent = g.method.from === 'relations' ? `計り方：${g.method.sim || '—'}・AI なし` : '計り方：この頁が集めた見出しの共通の語と場所・AI なし';
+  $('net-how').textContent = g.method.from === 'relations' ? `計り方：${g.method.sim || '—'}・AI なし` : '計り方：このページが集めた見出しの共通の語と場所・AI なし';
 }
 /** a window over the page keeps Tab inside it, from the last control back to the first */
 function appTrap(L) {

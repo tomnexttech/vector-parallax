@@ -29,7 +29,7 @@ test('the body stops at 1800 characters, at a whole item, with one link to the r
   const b = bodyOf({ when: '11/11', built: '11/11 15:13', items, more: 'https://site.test/' });
   assert.ok(b.length <= MAX, `length ${b.length}`);
   assert.equal(MAX, 1800);
-  assert.match(b, /続きは頁で：https:\/\/site\.test\/$/);
+  assert.match(b, /続きはページで：https:\/\/site\.test\/$/);
   assert.match(b, /^11\/11 のニュース（11\/11 15:13 の構築）/);
   const n = (b.match(/^\d+\. /gm) || []).length;
   assert.ok(n >= 1 && n < 40);

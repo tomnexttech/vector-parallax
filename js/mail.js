@@ -47,7 +47,7 @@ function itemText(it, i) {
 
 export function bodyOf({ when = '', built = '', items = [], more = '', max = MAX } = {}) {
   const head = [`${str(when)} のニュース（${str(built)} の構築）`, ''].join('\n');
-  const tail = more ? `\n続きは頁で：${more}` : '';
+  const tail = more ? `\n続きはページで：${more}` : '';
   let body = head;
   for (const [i, it] of arr(items).entries()) {
     const add = itemText(it, i) + '\n\n';

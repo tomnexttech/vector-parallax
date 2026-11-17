@@ -80,17 +80,17 @@ test('4: the bar has no grey track; the white line stays the centre', () => {
   assert.match(css, /\.hr-bar \{ display: grid; grid-template-columns: 1fr 2px 1fr;/);
 });
 
-test('1, 7, 8, 9, 6: the first visit stays on the card; 規則; the orb is a button; the next side peeks; the order of PARALLAX', () => {
+test('1, 7, 8, 9, 6: the first visit stays on the card; アルゴリズム; the orb is a button; the next side peeks; the order of PARALLAX', () => {
   const app = read('js/app.js');
   assert.doesNotMatch(app, /wantTour\(store, location\.search\)\) \{ setUi\('simple'\); state\.tour\.open\(\); \}/, 'the first visit does not open the tour over 比べる');
   // 2026-11-16 改定（Sir「最初のチュートリアルは合わせて作り直した？」）: 初回はホームの上で案内が自動で出る。v56 の「初回は出さずボタンを光らせる」は外した（tests/js/tour.test.js）
   assert.match(app, /openTour\(\);/);
   assert.match(app, /onEnd: \(\) => \{ if \(state\.ui === 'simple'\) setUi\('full'\); setHome\('home'\);/, 'the tour ends on the home');
-  assert.match(read('index.html'), /id="v-rules" aria-pressed="false">規則</);
+  assert.match(read('index.html'), /id="v-rules" aria-pressed="false">アルゴリズム</);
   assert.match(app, /const stage = h\('button', \{ type: 'button', class: 'hr-stage'/);
   assert.match(read('css/app.css'), /\.fl-side \{ flex: 0 0 min\(calc\(100% - 28px\), 560px\);/);
   assert.equal(ORDER_JA.all, 'PARALLAX');
   assert.match(app, /pop && hbOf\(e, HX\.reaction\)/, 'the bookmarks beside a row of 人気順');
-  assert.doesNotMatch(app, /規則では一致が見つからない|規則の束 /, '5: the sheet speaks no inside words');
+  assert.doesNotMatch(app, /規則では一致が見つからない|規則の束 |アルゴリズムでは一致が見つからない/, '5: the sheet speaks no inside words');
   assert.match(app, /AI 連結/);
 });

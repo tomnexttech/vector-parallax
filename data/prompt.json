@@ -87,40 +87,40 @@
       "en": "The Gemini free quota or rate limit was reached (HTTP 429). Wait a while, then try again."
     },
     "blocked": {
-      "ja": "AI の安全フィルターが応答を止めました。規則の表示に戻しました。",
-      "en": "The model's safety filter stopped the reply. Showing the rule-based grouping."
+      "ja": "AI の安全フィルターが応答を止めました。アルゴリズムの表示に戻しました。",
+      "en": "The model's safety filter stopped the reply. Showing the algorithm-based grouping."
     },
     "truncated": {
-      "ja": "AI の返答が長さの上限で途切れました。規則の表示に戻しました。",
-      "en": "The reply was cut at the output limit. Showing the rule-based grouping."
+      "ja": "AI の返答が長さの上限で途切れました。アルゴリズムの表示に戻しました。",
+      "en": "The reply was cut at the output limit. Showing the algorithm-based grouping."
     },
     "http": {
-      "ja": "Gemini が一時的に応答できませんでした（HTTP エラー）。規則の表示に戻しました。",
-      "en": "Gemini could not answer for now (HTTP error). Showing the rule-based grouping."
+      "ja": "Gemini が一時的に応答できませんでした（HTTP エラー）。アルゴリズムの表示に戻しました。",
+      "en": "Gemini could not answer for now (HTTP error). Showing the algorithm-based grouping."
     },
     "timeout": {
-      "ja": "Gemini の応答が時間切れでした。規則の表示に戻しました。",
-      "en": "Gemini timed out. Showing the rule-based grouping."
+      "ja": "Gemini の応答が時間切れでした。アルゴリズムの表示に戻しました。",
+      "en": "Gemini timed out. Showing the algorithm-based grouping."
     },
     "network": {
-      "ja": "Gemini に接続できませんでした。規則の表示に戻しました。",
-      "en": "Could not reach Gemini. Showing the rule-based grouping."
+      "ja": "Gemini に接続できませんでした。アルゴリズムの表示に戻しました。",
+      "en": "Could not reach Gemini. Showing the algorithm-based grouping."
     },
     "json": {
-      "ja": "AI の返答が JSON として読めませんでした。規則の表示に戻しました。",
-      "en": "The reply was not valid JSON. Showing the rule-based grouping."
+      "ja": "AI の返答が JSON として読めませんでした。アルゴリズムの表示に戻しました。",
+      "en": "The reply was not valid JSON. Showing the algorithm-based grouping."
     },
     "shape": {
-      "ja": "AI の返答の形が想定と違いました。規則の表示に戻しました。",
-      "en": "The reply had an unexpected shape. Showing the rule-based grouping."
+      "ja": "AI の返答の形が想定と違いました。アルゴリズムの表示に戻しました。",
+      "en": "The reply had an unexpected shape. Showing the algorithm-based grouping."
     },
     "missing": {
-      "ja": "この要求の記録済みの答えがありません。規則の表示に戻しました。",
-      "en": "No recorded answer exists for this request. Showing the rule-based grouping."
+      "ja": "この要求の記録済みの答えがありません。アルゴリズムの表示に戻しました。",
+      "en": "No recorded answer exists for this request. Showing the algorithm-based grouping."
     },
     "budget": {
-      "ja": "1 回の取得での AI の呼び数の上限に達したため、残りは呼びませんでした。規則の表示に戻しました。",
-      "en": "The per-build limit on AI calls was reached, so the rest were not sent. Showing the rule-based grouping."
+      "ja": "1 回の取得での AI の呼び数の上限に達したため、残りは呼びませんでした。アルゴリズムの表示に戻しました。",
+      "en": "The per-build limit on AI calls was reached, so the rest were not sent. Showing the algorithm-based grouping."
     }
   },
   "flags": [
