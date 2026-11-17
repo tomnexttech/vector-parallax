@@ -403,7 +403,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
   }
   /** what the news holds, under the headline: the brief (the page gives it: on.brief), each side's headlines as published, and where they differ */
   function body(p) {
-    const br = call('brief', p), rows = br && Array.isArray(br.rows) ? br.rows.slice(0, 3) : [];
+    const br = call('brief', p), all = br && Array.isArray(br.rows) ? br.rows : [], rows = all.filter((r) => r.key !== 'diff').slice(0, 3).concat(all.filter((r) => r.key === 'diff').slice(0, 1));
     const ja = trMode() === 'ja';
     const headLi = (x) => h('li', null,
       h('span', { class: 'o' }, h('b', { text: x.outlet }), isNum(x.ts) ? h('time', { class: 'num', text: short(x.ts) }) : null),
@@ -416,7 +416,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
     const fl = arr(p.findings).slice(0, MAX_FINDINGS);
     const fLine = (f) => (f.kind === 'first_gap' && firstGapLine(f.text)) || unlabel(f);
     const parts = [
-      rows.length ? h('div', { class: 'hr-brief' }, h('dl', null, rows.map((r) => [h('dt', { text: r.label }), h('dd', { text: r.text })])),
+      rows.length ? h('div', { class: 'hr-brief' }, h('dl', null, rows.map((r) => [h('dt', { text: r.label }), h('dd', { class: r.key === 'diff' ? 'hr-df' : null }, r.text, Array.isArray(r.by) && r.by.length ? h('span', { class: 'hr-dfo', text: r.by.join('・') }) : null)])),
         h('p', { class: 'hr-bby' }, h('span', { class: 'aimk', text: 'AI' }), 'の要約', isNum(br.at) ? `・${short(br.at)}` : '')) : null,
       sides.length ? h('div', { class: 'hr-sds' + (sides.length === 1 ? ' one' : '') }, sides) : null,
       fl.length ? h('div', { class: 'hr-fnd' }, h('h3', { text: HEAD['find.title'] }), h('ul', null, fl.map((f, k) => h('li', { data: { kind: f.kind } }, h('b', { text: k && fl[k - 1].kind === f.kind ? '' : FIND_JA[f.kind] }), h('span', { text: fLine(f) }))))) : null,

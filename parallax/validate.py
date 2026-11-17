@@ -264,6 +264,7 @@ def validate(request, raw_text, prompt, items):
 
 # ---------------------------------------------------------------- 要約（CONTRACT §13）
 BRIEF_FIELDS = ("what_ja", "background_ja", "views_ja", "next_ja")
+DIFF_MAX = 3                                  # 一つの出来事に載せる「中身の違い」の数（CONTRACT §13.2）
 _NUM_RE = re.compile(r"\d[\d,]*(?:\.\d+)?")
 _LATIN_RE = re.compile(r"[a-z][a-z0-9.\-]+")
 _KANA_RE = re.compile(r"[\u30a1-\u30fa\u30fc]{3,}")
@@ -313,6 +314,56 @@ def names_outlet(text, outlets):
     """文が、その出来事の材料にある媒体の名を挙げているか。"""
     f = fold(text)
     return any(len(fold(o)) >= 2 and fold(o) in f for o in set(outlets))
+
+
+def validate_diffs(raw, ev, refs, prompt, counts):
+    """「中身の違い」（CONTRACT §13.2）。raw = 答えの diffs（[{"text_ja","refs":["i1",..]}]）、ev = doc の event、refs = {ref: item id}。
+    配信の説明（desc）を持つ item が 2 媒体以上ある時だけ。一つの違いは、引いた item（どれも desc を持つ）の材料だけに根拠があり、
+    その出来事の説明を持つ全媒体は引かない（全員が書いている事は違いではない）。丸写し・評価語・媒体名・材料に無い数や語は落とす。
+    -> [{"text_ja", "refs": [item id]}]（<= DIFF_MAX）"""
+    if not isinstance(raw, list) or not isinstance(refs, dict):
+        return []
+    rows = {it["ref"]: it for it in ev.get("items", []) if isinstance(it, dict) and isinstance(it.get("ref"), str)
+            and isinstance(it.get("desc"), str) and it["desc"].strip() and it["ref"] in refs}
+    outlets_all = {it.get("outlet") for it in rows.values()}
+    if len(outlets_all) < 2:
+        return []
+    limit = prompt["summary"]["limits"].get("diff_ja", 70)
+    generic = prompt["summary"].get("generic_katakana") or []
+    titles = [fold(it["title"]) for it in ev.get("items", []) if isinstance(it, dict) and isinstance(it.get("title"), str)]
+    descs = [fold(it["desc"]) for it in ev.get("items", []) if isinstance(it, dict) and isinstance(it.get("desc"), str)]
+    every = [it.get("outlet") for it in ev.get("items", []) if isinstance(it, dict)]
+    out, seen = [], set()
+    for d in raw:
+        if len(out) >= DIFF_MAX:
+            break
+        if not isinstance(d, dict):
+            continue
+        text = clean(d.get("text_ja"), limit)
+        cited = []
+        for r in (d.get("refs") if isinstance(d.get("refs"), list) else []):
+            if isinstance(r, str) and r in rows and r not in cited:
+                cited.append(r)
+        if not text or not cited or text in seen:
+            continue
+        if {rows[r].get("outlet") for r in cited} >= outlets_all:
+            continue                                     # 説明を持つ全媒体が書いている事は、違いではない
+        if copies(text, titles + descs) or silence_hit(text, prompt) or judgement_hit(text, titles + descs, prompt):
+            counts["quoted_fields"] += 1 if copies(text, titles + descs) else 0
+            counts["brief_fields_dropped"] += 1
+            continue
+        if names_outlet(text, every):
+            counts["named_outlets"] += 1
+            counts["brief_fields_dropped"] += 1
+            continue
+        material, _o, allowed = _material({"items": [rows[r] for r in cited]})
+        if ungrounded(text, material, allowed, generic):
+            counts["ungrounded"] += 1
+            counts["brief_fields_dropped"] += 1
+            continue
+        seen.add(text)
+        out.append({"text_ja": text, "refs": [refs[r] for r in cited]})
+    return out
 
 
 def validate_summaries(request, raw_text, prompt):
@@ -394,6 +445,9 @@ def validate_summaries(request, raw_text, prompt):
                 else:
                     fields[k] = v
             if fields["what_ja"]:
+                diffs = validate_diffs(entry.get("diffs"), ev, (request.get("refs") or {}).get(eid), prompt, counts)
+                if diffs:
+                    fields["diffs"] = diffs
                 out["briefs"][eids[eid]] = fields
     counts["missing"] = len(eids) - len(seen)
     return out

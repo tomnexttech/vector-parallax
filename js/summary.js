@@ -58,7 +58,9 @@ export function briefOf(story) {
   if (typeof b.provider !== 'string' || !b.provider || typeof b.model !== 'string' || !b.model) return null;
   const rows = BRIEF_ROWS.map(([key, label]) => ({ key, label, text: clean(b[key]) })).filter((r) => r.text && r.text !== BRIEF_UNKNOWN);
   if (!rows.length) return null;
-  return { rows, provider: b.provider, model: b.model, madeAt: b.made_at };
+  // 中身の違い（CONTRACT §13.2）: 文と、その材料にした item の id。どの社の説明から読めたかは、頁が id から引く
+  const diffs = (Array.isArray(b.diffs) ? b.diffs : []).filter(isObj).map((d) => ({ text: clean(d.text_ja), ids: (Array.isArray(d.refs) ? d.refs : []).filter((x) => typeof x === 'string') })).filter((d) => d.text && d.ids.length).slice(0, 3);
+  return { rows, diffs, provider: b.provider, model: b.model, madeAt: b.made_at };
 }
 
 export function briefIndex(stories) {

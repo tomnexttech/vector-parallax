@@ -317,7 +317,12 @@ function buildEntries() {
       const mat = e.members.flatMap((it) => [it.title, it.desc]).filter((x) => typeof x === 'string');
       if (e.ai && judged(e.ai.contrast_ja, mat)) e.ai = { ...e.ai, contrast_ja: '' };
       if (e.summary && judged(e.summary.text_ja, mat)) e.summary = null;
-      if (e.brief) { const rows = e.brief.rows.filter((r) => !judged(r.text, mat)); e.brief = rows.some((r) => r.key === 'what_ja') ? { ...e.brief, rows } : null; }
+      if (e.brief) {
+        const rows = e.brief.rows.filter((r) => !judged(r.text, mat));
+        // each difference of content keeps the items whose description it was read from; one whose items are not in this build is left out
+        const diffs = arr(e.brief.diffs).map((d) => ({ text: d.text, by: d.ids.map((id) => e.members.find((m) => m.id === id)).filter((m) => m && str(m.desc).trim()) })).filter((d) => d.by.length && !judged(d.text, mat));
+        e.brief = rows.some((r) => r.key === 'what_ja') ? { ...e.brief, rows, diffs } : null;
+      }
       return e;
     });
   }
@@ -421,10 +426,17 @@ const viaGN = (it) => isObj(it) && it.via === 'gnews';
 const counts = () => (state.board && isObj(state.board.counts) ? state.board.counts : null);
 const AI_NOTE = 'AI の文は間違うことがあります。元の記事で確かめてください';
 // the AI's brief of one event (CONTRACT 13.1): what happened, the course, how the sides differ, what is next; empty rows are left out
+// what the descriptions of the outlets give that the others' do not (CONTRACT 13.2): each line has the outlets it was read from; the outlet opens its item, and the quoted description is its title
+function diffList(b) {
+  const ds = arr(b.diffs); if (!ds.length) return null;
+  return h('div', { class: 'ch-dfw' }, h('p', { class: 'df-h', text: '各社の中身' }), h('ul', { class: 'ch-diff' }, ds.map((d) => h('li', null, h('span', { class: 'df-t', text: d.text }),
+    h('span', { class: 'df-by' }, d.by.map((m) => { const u = safeUrl(m.link); return h(u ? 'a' : 'span', { class: 'df-o', href: u || null, target: u ? '_blank' : null, rel: u ? 'noopener noreferrer' : null, title: `${outletOf(m)}: ${str(m.desc)}`, text: outletOf(m) }); }))))));
+}
 function briefBox(e, tag) {
   const b = e.brief; if (!b) return null;
   return h('div', { class: 'ch-brief' },
     h('dl', null, b.rows.map((r) => [h('dt', { text: r.label }), h('dd', { text: r.text })])),
+    diffList(b),
     h('p', { class: 'ch-ai' }, tag([b.provider, b.model], b.madeAt), h('span', { text: AI_NOTE })));
 }
 const ISSUES = 'https://github.com/tomnexttech/vector-parallax/issues';
@@ -3568,7 +3580,7 @@ function heroWire() {
     open: hxOpen, why: hxWhy, compare: hxCompare, orbSlot: hxOrbBox, oneSideNote: ONE_SIDE_NOTE,
     photo: (p) => { const e = state.es ? heroEntry(p) : null; const ph = e ? entryPhoto(e) : null; return ph && ph.kind !== 'video' ? ph : null; },
     // v64: the card says what the news holds. The brief is the story's own (AI, marked); the bias index only where both sides carry it (a story of one side is outside the order)
-    brief: (p) => { const e = state.es ? heroEntry(p) : null; const b = e && e.brief ? e.brief : null; return b ? { rows: b.rows.filter((r) => r.key === 'what_ja' || r.key === 'views_ja' || r.key === 'background_ja'), at: b.madeAt } : null; },
+    brief: (p) => { const e = state.es ? heroEntry(p) : null; const b = e && e.brief ? e.brief : null; if (!b) return null; const d = arr(b.diffs)[0]; const rows = b.rows.filter((r) => r.key === 'what_ja' || r.key === 'views_ja' || r.key === 'background_ja'); if (d) rows.push({ key: 'diff', label: '各社の中身', text: d.text, by: d.by.map(outletOf) }); return { rows, at: b.madeAt }; },
     bias: (p) => { const e = state.es ? heroWhole(p) : null; if (!e || !(p.sides.jp.outlets && p.sides.intl.outlets)) return null; const b = biasOf(e); return b && b.ok ? b.score : null; },
     change: (p) => { root.hidden = !p; if (HX.guide && HX.guide.key() != null && (!p || HX.guide.key() !== p.sid)) HX.guide.stop(); hxPaintSpeak(); } } });
   HX.swipe = createSwipe({ h, root: $('hr-flow'), fmt: { clock: fmtShort }, on: { title: '流す', get orderJa() { return ORDER_JA[HX.order]; }, open: (k) => { HX.swipe.close(); setSect('home'); setUi('simple'); pickEntry(k); } } });

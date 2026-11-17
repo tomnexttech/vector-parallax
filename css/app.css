@@ -6107,4 +6107,16 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
   :root[data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board > .gap .fr-gl.fld:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
   :root[lang="en"][data-screen="home"]:not([data-show]):not(#v0):not(#v1):not(#v2):not(#v3):not(#v4):not(#v5):not(#v6):not(#v7):not(#v8):not(#v9) #board > .gap .fr-gap:not(.ev) { grid-template-columns: minmax(8em, 11em) minmax(0, 1fr) 4em 4em; }
 }
+/* ---- v67 (2026-11-17): what the descriptions of the outlets give that the others' do not (CONTRACT 13.2). On the home's card it is one more row of the brief,
+ * its outlets after the sentence; in 詳しく見る it is a short list under the brief, each line with the outlets it was read from (each opens its item). */
+#board .hr-brief .hr-dfo { margin-left: .7em; font: 600 var(--fs-1)/1.4 var(--f-text); color: var(--ink-3); white-space: nowrap; }
+.ch-dfw { margin-top: 12px; }
+.ch-dfw .df-h { margin: 0 0 4px; font: 600 var(--fs-3)/1.4 var(--f-text); color: var(--ink-2); }
+.ch-diff { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--bt-edge); }
+.ch-diff li { padding: 8px 0 7px; border-bottom: 1px solid var(--bt-edge); }
+.ch-diff .df-t { display: block; font-size: var(--fs-4); line-height: 1.6; color: var(--ink); }
+.ch-diff .df-by { display: flex; flex-wrap: wrap; gap: 2px 12px; margin-top: 2px; }
+.ch-diff .df-o { font: 600 var(--fs-2)/1.5 var(--f-text); color: var(--ink-2); text-decoration: none; border-bottom: 1px solid var(--bt-edge); }
+.ch-diff a.df-o:hover, .ch-diff a.df-o:focus-visible { color: var(--ink-hi); border-bottom-color: currentColor; }
+
 /* ==== v64:end ==== */

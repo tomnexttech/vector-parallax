@@ -112,7 +112,7 @@ class Stage(unittest.TestCase):
         events = [e for c in sp.calls for e in doc_of(c["user_text"])["events"]]
         items = [i for e in events for i in e["items"]]
         self.assertTrue(all(i.get("side") in ("国内", "海外", "官公庁") and "at" in i for i in items))
-        self.assertTrue(all(set(i) <= {"outlet", "lang", "title", "side", "at", "desc"} for i in items))
+        self.assertTrue(all(set(i) <= {"outlet", "lang", "title", "side", "at", "desc", "ref"} for i in items))
         was = build.RIGHTS["mode"]
         build.set_rights("quote")
         self.addCleanup(build.set_rights, was)

@@ -206,7 +206,7 @@ def _named_fields(stories):
         if isinstance(sm, dict) and names_withheld_outlet(sm.get("text_ja")):
             yield s, "summary"
         bf = s.get("brief") if isinstance(s, dict) else None
-        if isinstance(bf, dict) and any(names_withheld_outlet(bf.get(k)) for k in BRIEF_FIELDS):
+        if isinstance(bf, dict) and any(names_withheld_outlet(x) for x in _brief_texts(bf)):
             yield s, "brief"
 
 
@@ -349,7 +349,7 @@ def gate_names_in_stories(stories):
             s.pop("summary", None)
             n += 1
         bf = s.get("brief")
-        if isinstance(bf, dict) and any(has_gate_name(bf.get(k)) for k in BRIEF_FIELDS):
+        if isinstance(bf, dict) and any(has_gate_name(x) for x in _brief_texts(bf)):
             s.pop("brief", None)
             n += 1
     return n
@@ -919,7 +919,7 @@ def prune_cache(cache, live_digests):
     return dropped
 
 
-def _summary_item(it):
+def _summary_item(it, ref=None):
     """要約の doc の一件。見出しに、側・時刻・配信が自ら付けた説明（desc_of が載せてよいと言う物だけ）を添える（CONTRACT §13.1）。
     記事の本文は渡さない。側と時刻は、詳しい要約が「国内・海外・官公庁の違い」と「いつ」を材料の中から書くため。"""
     row = {"outlet": it["outlet"], "lang": it["lang"], "title": it["title"]}
@@ -931,6 +931,8 @@ def _summary_item(it):
     d = desc_of(it)
     if d:
         row["desc"] = d
+        if ref:
+            row["ref"] = ref                       # 「中身の違い」（§13.2）が、どの説明から読めたかを指す名。説明を持つ item だけに付く
     return row
 
 
@@ -940,13 +942,20 @@ def build_summary_requests(pending, items):
     reqs = []
     for k in range(0, len(pending), SUMMARY_BATCH):
         chunk = pending[k:k + SUMMARY_BATCH]
-        events, eids = [], {}
+        events, eids, refs = [], {}, {}
         for n, st in enumerate(chunk, 1):
             eid = "e%d" % n
             eids[eid] = st["sid"]
-            events.append({"eid": eid, "items": [_summary_item(items[i]) for i in st["member_ids"][:SUMMARY_MAX_ITEMS]]})
+            rows, rmap = [], {}
+            for k, i in enumerate(st["member_ids"][:SUMMARY_MAX_ITEMS], 1):
+                row = _summary_item(items[i], "i%d" % k)
+                if "ref" in row:
+                    rmap[row["ref"]] = i
+                rows.append(row)
+            refs[eid] = rmap
+            events.append({"eid": eid, "items": rows})
         doc = json.dumps({"events": events}, ensure_ascii=False, separators=(",", ":"))
-        reqs.append({"rid": "s%d" % (len(reqs) + 1), "eids": eids, "sids": [st["sid"] for st in chunk], "doc": doc})
+        reqs.append({"rid": "s%d" % (len(reqs) + 1), "eids": eids, "refs": refs, "sids": [st["sid"] for st in chunk], "doc": doc})
     return reqs
 
 
@@ -986,7 +995,10 @@ def _put_summary(story, e, part):
 
 
 def _brief_texts(b):
-    return [b.get(k) for k in BRIEF_FIELDS] if isinstance(b, dict) else []
+    """詳しい要約の欄の文と、中身の違い（§13.2）の文。媒体名・固定語の検査はこの全部に掛ける。"""
+    if not isinstance(b, dict):
+        return []
+    return [b.get(k) for k in BRIEF_FIELDS] + [d.get("text_ja") for d in (b.get("diffs") if isinstance(b.get("diffs"), list) else []) if isinstance(d, dict)]
 
 
 def _put_brief(story, e, part):
@@ -994,6 +1006,9 @@ def _put_brief(story, e, part):
     b = e.get("brief")
     if isinstance(b, dict) and isinstance(b.get("what_ja"), str) and b["what_ja"].strip():
         story["brief"] = {k: (b.get(k) if isinstance(b.get(k), str) else "") for k in BRIEF_FIELDS}
+        if isinstance(b.get("diffs"), list) and b["diffs"]:
+            story["brief"]["diffs"] = [{"text_ja": d["text_ja"], "refs": list(d["refs"])} for d in b["diffs"]
+                                       if isinstance(d, dict) and isinstance(d.get("text_ja"), str) and isinstance(d.get("refs"), list)]
         story["brief"].update({"made_at": int(e["made_at"]), "provider": part, "model": e["model"]})
 
 
@@ -1357,6 +1372,12 @@ def summary_problems(stories):
                 return ["a story brief has the wrong shape"]
             if isinstance(s.get("n_outlets"), int) and s["n_outlets"] < 2:
                 bad.append("a brief sits on an event with a single outlet")
+            dfs = bf.get("diffs")
+            if dfs is not None and not (isinstance(dfs, list) and len(dfs) <= validate_mod.DIFF_MAX
+                                        and all(isinstance(d, dict) and isinstance(d.get("text_ja"), str) and d["text_ja"].strip()
+                                                and isinstance(d.get("refs"), list) and d["refs"]
+                                                and all(isinstance(r, str) and r in (s.get("member_ids") or []) for r in d["refs"]) for d in dfs)):
+                return ["a story brief has the wrong shape"]
             providers.add(bf["provider"])
         sm = s.get("summary") if isinstance(s, dict) else None
         if sm is None:
