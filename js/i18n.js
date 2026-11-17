@@ -114,9 +114,9 @@ export const EN = {
   '今の順': 'Current order', '紙面': 'Front page', '時間ごと': 'By hour', '今日の注目': 'Today\'s top news', '注目のニュース': 'Top news', 'この地点': 'This place', '詳しく見る': 'See details',
   'ニュースの並べ方': 'Ways to read the news', '下の段に出すニュース': 'News in the lower row', 'この出来事を開く': 'Open this news',
   // the tour
-  '4 枚のタイル': 'Four tiles', 'とばす': 'Skip', '詳細': 'Details', '何が起きたか': 'What happened', '経緯': 'Background', '各社の中身': 'What each outlet gives', '今後の焦点': 'What comes next', '検索と設定': 'Search and settings', '次へ': 'Next', '戻る': 'Back', 'はじめる': 'Start', '終わる': 'Done', 'スキップ': 'Skip',
+  '4 種類の情報': 'Four kinds of figures', 'とばす': 'Skip', '詳細': 'Details', '何が起きたか': 'What happened', '経緯': 'Background', '各社の中身': 'What each outlet gives', '今後の焦点': 'What comes next', '検索と設定': 'Search and settings', '次へ': 'Next', '戻る': 'Back', 'はじめる': 'Start', '終わる': 'Done', 'スキップ': 'Skip',
   '記事の件数の比、片側の媒体だけが載せた話の数、偏り度（0〜100）です。片側だけの話は偏り度の順位に入りません。': 'The share of articles, the stories only one side\'s outlets carried, and the bias index (0–100). A story of one side is outside the bias order.',
-  '国内と海外の社数、初報、双方の見出し、違いが一枚に並びます。': 'One card: the outlets in Japan and abroad, the first report, each side\'s headlines and where they differ.',
+  '国内と海外の社数、初報、双方の見出し、違いがまとめて見られます。': 'The outlets in Japan and abroad, the first report, each side\'s headlines and where they differ.',
   '「詳しく見る」は一つのニュースを全社で比べる画面、「比べる」は国内と海外を並べる画面です。AI の文には「AI」の印が付き、真偽は判定しません。': 'See details compares every outlet on one story; Compare lays Japan and abroad side by side. Text the AI wrote carries the AI mark. Nothing is judged true or false.',
   '検索はニュースも操作も探せます。外観と字の大きさは設定で変えられます。': 'Search finds news and actions. Appearance and text size are in Settings.',
   // hero:begin

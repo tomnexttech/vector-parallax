@@ -21,10 +21,10 @@ export const NARROW = 600;
 const GAP = 12, EDGE = 16, PAD = 6;
 
 export const STEPS = [
-  { id: 'tiles', at: ['#front .fr-tabs', '#front'], title: '4 枚のタイル',
+  { id: 'tiles', at: ['#front .fr-tabs', '#front'], title: '4 種類の情報',
     text: '記事の件数の比、片側の媒体だけが載せた話の数、偏り度（0〜100）です。片側だけの話は偏り度の順位に入りません。' },
   { id: 'lead', at: ['#hero .hr-card', '#hero'], title: '注目ニュース',
-    text: '国内と海外の社数、初報、双方の見出し、違いが一枚に並びます。' },
+    text: '国内と海外の社数、初報、双方の見出し、違いがまとめて見られます。' },
   { id: 'screens', at: ['#screens'], title: '画面',
     text: '「詳しく見る」は一つのニュースを全社で比べる画面、「比べる」は国内と海外を並べる画面です。AI の文には「AI」の印が付き、真偽は判定しません。' },
   { id: 'find', at: ['#cmd-btn', '#view-btn', '#sects-more'], title: '検索と設定',
