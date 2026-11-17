@@ -1124,7 +1124,9 @@ function caseNode(e) {
       h('button', { type: 'button', class: 'addtask', 'aria-pressed': String(hasTask(state.tasks, saveId(e))), on: { click: () => toggleSave(e) } }, hasTask(state.tasks, saveId(e)) ? '保存済み' : '保存'),
       h('button', { type: 'button', class: 'addtask share', on: { click: () => shareEvent(e) } }, '共有'),
       h('button', { type: 'button', class: 'addtask share img', on: { click: () => shareImage(e) } }, '画像で共有'),
-      speakBtn(e, 'tool'));
+      speakBtn(e, 'tool'),
+      // on a phone the least used buttons wait behind this one (css .ch-tools:not(.open))
+      h('button', { type: 'button', class: 'tools-more', 'aria-expanded': 'false', on: { click: (ev) => { const b = ev.currentTarget, o = b.closest('.ch-tools').classList.toggle('open'); b.setAttribute('aria-expanded', String(o)); } } }, 'その他'));
   const head = h('div', { class: 'ch-main' },
     h('div', { class: 'ch-title' },
       h('h1', { lang: e.heading.lang || null, class: e.heading.none ? 'none' : null }, headNode(e, 'h1t')),
@@ -1148,7 +1150,7 @@ function caseNode(e) {
   const since = isNum(gen) && isNum(e.first) ? Math.max(0, gen - e.first) : null;
   const status = h('div', { class: 't-status' },
     h('b', { class: 'st-k', text: '初報から' }), h('i', { class: 'st-l' }, since != null ? h('i', { style: `width:${Math.min(100, (since / windowS) * 100).toFixed(1)}%` }) : null),
-    h('small', { class: 'st-v', text: `${since != null ? fmtSpan(since) : '—'}・${e.n}社` }),
+    h('small', { class: 'st-v', text: since != null ? fmtSpan(since) : '—' }),
     h('dl', { class: 'facts' },
       h('dt', { text: HEAD['paper.first'] }), h('dd', null, `${fmtClock(first && first.ts)} `, linkTo(first, str(first && outletOf(first)))),
       h('dt', { text: '最新' }), h('dd', null, last ? linkTo(last, fmtClock(last.ts)) : '—'),
