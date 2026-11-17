@@ -1595,7 +1595,7 @@ function renderFront() {
   renderFrontEl(fr, { h, tab, field: state.frontField || null, fields: FIELDS, counts: d.counts, subs: { gap: d.articles ? `記事 ${d.articles.toLocaleString('ja-JP')} 件の比率` : '', jp: '国内の媒体だけの話', intl: '海外の媒体だけの話', bias: d.scored ? `0〜100・${d.scored} 話を測定` : '' },
     onTab: (id) => { state.front = id; renderFront(); revealGap(); }, onField: (x) => { state.frontField = x; renderFront(); } });
   renderGapEl(gp, { h, tab, field: state.frontField || null, gap: d.gap, one: d.one, bias: d.bias, apart: d.apart, scored: d.scored, onTab: (id) => { state.front = id; renderFront(); revealGap(); }, gen: state.data.generated_at, now: nowS(), clock: fmtClock, short: fmtShort,
-    titleOf: (e) => entryTitleOf(e).text, headOf: frontHead, pick: frontPick, detail: (k) => entryDetail(k, { bias: true }) });
+    titleOf: (e) => entryTitleOf(e).text, headOf: frontHead, pick: frontPick, onField: (x) => { state.frontField = x; renderFront(); }, detail: (k) => entryDetail(k, { bias: true }) });
 }
 // The three screens, one rule: ホーム (the front page), 詳しく見る (the board), 比べる (the simple compare view). The top bar shows which one is open;
 // every move between them is one history entry, so the browser's back button goes back to the screen before. The name and the ホーム tab always go home.

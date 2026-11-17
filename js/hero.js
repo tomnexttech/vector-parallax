@@ -403,7 +403,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
   }
   /** what the news holds, under the headline: the brief (the page gives it: on.brief), each side's headlines as published, and where they differ */
   function body(p) {
-    const br = call('brief', p), rows = br && Array.isArray(br.rows) ? br.rows.slice(0, 2) : [];
+    const br = call('brief', p), rows = br && Array.isArray(br.rows) ? br.rows.slice(0, 3) : [];
     const ja = trMode() === 'ja';
     const headLi = (x) => h('li', null,
       h('span', { class: 'o' }, h('b', { text: x.outlet }), isNum(x.ts) ? h('time', { class: 'num', text: short(x.ts) }) : null),

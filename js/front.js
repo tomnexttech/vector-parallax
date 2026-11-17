@@ -197,7 +197,10 @@ function headRow(h, o, e) {
   return h('button', { type: 'button', class: 'fr-row' + (hd.mark ? ' fr-hd' : ''), on: { click: () => o.pick(e.key) } },
     hd.mark ? h('span', { class: 'fr-mk', text: hd.mark }) : null,
     h('span', { class: 'fr-rt', lang: hd.lang || null, text: cleanTitle(hd.text) }),
-    hd.orig ? h('small', { class: 'fr-orig', lang: hd.origLang || null, text: cleanTitle(hd.orig) }) : null);
+    hd.orig ? h('small', { class: 'fr-orig', lang: hd.origLang || null, text: cleanTitle(hd.orig) }) : null,
+    // under the headline: how many outlets carried it and when the first one did (counted values of the event, nothing written)
+    isNum(e.n) && e.n > 0 ? h('span', { class: 'fr-rm' }, h('span', { class: 'num' }, h('b', { text: e.n }), ' 社'),
+      isNum(e.first) && typeof o.short === 'function' ? h('time', { class: 'num', text: o.short(e.first) }) : null) : null);
 }
 
 /** the panel under the card. o = { h, tab, field, gap, one: [{ side, ja, events }], bias: [{ key, title, score }], gen, now, clock,
@@ -237,7 +240,7 @@ export function renderGap(root, o) {
     body = g.rows.length ? h('div', { class: g.rows.some((r) => r.key) ? 'fr-gap ev' : 'fr-gap', role: 'img', 'aria-label': g.rows.map((r) => `${r.field} 国内 ${r.jp} 件、海外 ${r.intl} 件`).join('。') },
       h('p', { class: 'fr-ax', 'aria-hidden': 'true' }, h('span'), h('span', { class: 'fr-axm' }, h('span', { data: { side: 'jp' }, text: '国内寄り' }), h('span', { data: { side: 'intl' }, text: '海外寄り' })), h('span', { class: 'fr-nh', text: '国内' }), h('span', { class: 'fr-nh', text: '海外' })),
       g.rows.map((r) => h('div', { class: 'fr-gr', data: { lean: r.d < 0 ? 'jp' : r.d > 0 ? 'intl' : 'even' } },
-        r.key ? h('button', { type: 'button', class: 'fr-gl ev', title: cleanTitle(r.field), on: { click: () => o.pick(r.key) } }, cleanTitle(r.field)) : h('span', { class: 'fr-gl', text: r.field }),
+        r.key ? h('button', { type: 'button', class: 'fr-gl ev', title: cleanTitle(r.field), on: { click: () => o.pick(r.key) } }, cleanTitle(r.field)) : typeof o.onField === 'function' && !o.field ? h('button', { type: 'button', class: 'fr-gl fld', title: `${r.field}の話を見る`, on: { click: () => o.onField(r.field) } }, r.field) : h('span', { class: 'fr-gl', text: r.field }),
         h('span', { class: 'fr-gb', 'aria-hidden': 'true' }, h('i', { data: { side: r.d < 0 ? 'jp' : 'intl' }, style: `--w:${(Math.abs(r.d) * 50).toFixed(1)}%` })),
         h('span', { class: 'fr-gn num' + (r.jp >= r.intl ? ' hi' : ''), text: String(r.jp) }), h('span', { class: 'fr-gn num' + (r.intl >= r.jp ? ' hi' : ''), text: String(r.intl) }))))
       : h('p', { class: 'fr-empty', text: '日本と海外を比べられる話は今ありません。' });
