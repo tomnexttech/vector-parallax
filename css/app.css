@@ -2776,8 +2776,8 @@ div.rk { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1f
    *   press  (a button, a chip, a pill, the track of a switch)   --ui-press, hovered --ui-press-hover,        corners --ui-r-press
    *   on     (the chosen one: a screen, a chip, a row)           --ui-on, lit edge --lit-e
    *   chrome (the glass of the top and bottom bars)              --ui-chrome;  --ui-hair is the thin line between two parts of one tile */
-  --ui-face: rgba(255, 255, 255, .06); --ui-face-edge: rgba(255, 255, 255, .10); --ui-face-hi: inset 0 0 0 0 transparent; --ui-sheet: rgba(22, 24, 32, .66); --ui-r-face: 20px;
-  --ui-press: rgba(255, 255, 255, .06); --ui-press-hover: rgba(255, 255, 255, .10); --ui-r-press: 999px;
+  --ui-face: rgba(255, 255, 255, .07); --ui-face-edge: rgba(255, 255, 255, .13); --ui-face-hi: inset 0 1px 0 rgba(255, 255, 255, .14); --ui-r-face: 20px;
+  --ui-press: rgba(255, 255, 255, .09); --ui-press-hover: rgba(255, 255, 255, .12); --ui-r-press: 999px;
   --ui-on: linear-gradient(rgba(255, 255, 255, .12), rgba(255, 255, 255, .12)), rgba(8, 10, 24, .6); --ui-chrome: var(--glass-nav); --ui-hair: rgba(255, 255, 255, .1);
   --hc-fill: var(--ui-face); --hc-edge: var(--ui-face-edge); --hc-hi: var(--ui-face-hi); --hc-hover: var(--ui-press-hover); --hc-on: var(--ui-on);
   --h-ink3: #cfcfd6; --hk: rgba(255, 255, 255, .1);
@@ -2790,7 +2790,7 @@ div.rk { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1f
     radial-gradient(circle closest-side, #ffd7bb 0%, #ffb98f 78%, #fdb185 97%, transparent 100%) 90% 36% / 20vmax 20vmax no-repeat,
     radial-gradient(circle closest-side, #dccbff 0%, #b79cf5 78%, #af93f1 97%, transparent 100%) 58% 90% / 26vmax 26vmax no-repeat;
   --hs-fill: linear-gradient(148deg, rgba(255, 255, 255, .84) 0%, rgba(255, 255, 255, .6) 50%, rgba(255, 255, 255, .72) 100%); --hs-edge: rgba(255, 255, 255, .85); --hs-hi: inset 0 1px 0 rgba(255, 255, 255, .95); --hs-shadow: 0 22px 56px rgba(40, 60, 120, .16), 0 0 0 .5px rgba(40, 56, 110, .1);
-  --ui-face: rgba(255, 255, 255, .72); --ui-face-edge: rgba(36, 48, 100, .12); --ui-face-hi: inset 0 0 0 0 transparent; --ui-sheet: rgba(255, 255, 255, .66);
+  --ui-face: rgba(255, 255, 255, .72); --ui-face-edge: rgba(36, 48, 100, .12); --ui-face-hi: inset 0 1px 0 rgba(255, 255, 255, 1);
   --ui-press: rgba(36, 48, 100, .07); --ui-press-hover: rgba(255, 255, 255, .85); --ui-on: rgba(255, 255, 255, .96); --ui-hair: rgba(36, 48, 100, .12);
   --hc-fill: var(--ui-face); --hc-edge: var(--ui-face-edge); --hc-hi: var(--ui-face-hi); --hc-hover: var(--ui-press-hover); --hc-on: var(--ui-on);
   --h-ink3: #3e3e45; --hk: rgba(36, 48, 100, .1);
@@ -6201,7 +6201,7 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 
 /* the roles win over every earlier pass (the flat, the glass and the home ones each wrote their own rgba into the same names) */
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9) { --hc-fill: var(--ui-face); --hc-edge: var(--ui-face-edge); --hc-hi: var(--ui-face-hi); --hc-hover: var(--ui-press-hover); --hc-on: var(--ui-on); --bt-chip: var(--ui-press); --tp-on: var(--ui-on); --ui-chrome: var(--glass-bar); }
-:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9)[data-theme="light"] { --ui-face: rgba(255, 255, 255, .72); --ui-face-edge: rgba(36, 48, 100, .12); --ui-face-hi: inset 0 0 0 0 transparent; --ui-sheet: rgba(255, 255, 255, .66); --ui-press: rgba(36, 48, 100, .06); --ui-press-hover: rgba(255, 255, 255, .85); --ui-on: rgba(255, 255, 255, .96); --ui-hair: rgba(36, 48, 100, .12); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9)[data-theme="light"] { --ui-face: rgba(255, 255, 255, .72); --ui-face-edge: rgba(36, 48, 100, .12); --ui-face-hi: inset 0 1px 0 rgba(255, 255, 255, 1); --ui-press: rgba(36, 48, 100, .07); --ui-press-hover: rgba(255, 255, 255, .85); --ui-on: rgba(255, 255, 255, .96); --ui-hair: rgba(36, 48, 100, .12); }
 /* press: the chips, the fields' icons, the layer pills, the buttons of the top bar */
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen] :is(.chip, .tab, .ak, .st-nav button):not([aria-pressed="true"]) { background: var(--ui-press); box-shadow: inset 0 0 0 1px var(--ui-face-edge); }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) :is(.tbb, #view-btn, .lyr) { background: var(--ui-press); }
@@ -6213,9 +6213,7 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 /* face: the news on the map's list */
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) #p-mapnews { background: var(--ui-face); }
 
-/* v71: flatter. One calm ground for a pane, one thin line, no light on the edge, no shadow; inside a pane no frame at all, only room and a thin line; the glow behind is half as strong */
-:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc) body::before { opacity: .5; }
-:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] .board .pane { background: var(--ui-sheet); border: 0; border-radius: var(--ui-r-face); box-shadow: inset 0 0 0 1px var(--ui-face-edge); }
+/* v71: inside a pane no frame at all, only room and a thin line (the glass of the pane, its blur, the glow behind it and its lit edge are the ones of v70) */
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] .board .pane :is(.dcard, .sd, .nt, .t-ai, .t-reps, .t-status, .cov) { background: none; box-shadow: none; border-radius: 0; padding-left: 4px; padding-right: 4px; }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] .board .pane .figs > * { background: none; box-shadow: none; border-radius: 0; padding: 12px 8px 4px; border-top: 1px solid var(--ui-hair); }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] .board .pane :is(.t-status, .cov, .t-reps) { border-top: 1px solid var(--ui-hair); border-radius: 0; }
@@ -6236,7 +6234,6 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 }
 
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case .st-nav + .st-h { margin-top: 8px; padding-top: 8px; border-top: 0; }
-:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-screen="board"] #p-case .st-nav { background: var(--ui-sheet); box-shadow: none; border-bottom: 1px solid var(--ui-hair); }
 /* 掲載の停止: the last line of the news, quiet, where nothing else is */
 .ch-stop { margin: 8px 16px 28px; padding-top: 14px; border-top: 1px solid var(--ui-hair); font-size: var(--fs-2); line-height: 1.5; color: var(--ink-3); }
 .ch-stop .stopreq { margin: 0; font-size: inherit; color: inherit; text-decoration: underline; text-underline-offset: 3px; }
