@@ -6347,7 +6347,10 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hl-bar i[data-side="jp"] { background: var(--sd-jp); }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hl-bar i[data-side="intl"] { background: var(--sd-intl); }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hl-bar i[data-side="gov"] { background: var(--sd-gov); }
-:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card .hr-read { grid-area: sds; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--ui-hair); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card .hr-read { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--ui-hair); }
+@media (min-width: 1101px) {
+  :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card .hr-read { grid-area: sds; }
+}
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card .hr-t { margin-bottom: 4px; }
 /* what each outlet writes: outlet, then its centre, its words, what it leaves out; the one that differs most last */
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-read ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
@@ -6409,4 +6412,39 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud) .hr-ol:focus-visible { outline: 2px solid var(--ink-2); outline-offset: 2px; border-radius: 4px; }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud) .hr-ot { font-size: var(--fs-1); font-weight: 400; color: var(--ink-3); }
 /* ==== v81:end ==== */
+/* ==== v82 (2026-11-18): the phone's layout fixes ==== */
+/* the card's body is one column of the card's width: the read (what each outlet writes) had grid-area: sds, a name no grid of the body defines, and
+ * a browser that makes a column for an unknown area name put the outlets in a second column, the half of the card (a phone). The area is the wide window's only. */
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-body { grid-template-columns: minmax(0, 1fr); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-read, :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-read ul { min-width: 0; }
+@media (max-width: 1100px) {
+  :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-card .hr-read { grid-area: auto; grid-column: 1 / -1; margin-top: 4px; }
+  :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-ro { flex-wrap: wrap; row-gap: 2px; }
+  :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-ro .hr-ol { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; min-height: 0; }
+  :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc)[data-home="home"]:is([data-sect="home"], :not([data-sect])):has(#app:not([data-ui="simple"])) #board .hr-nb { flex: 1 1 100%; }
+}
+/* the map on a phone: the news of the place lies under the map in the page, its height is its content's (it was the window's height less the bar, so the
+ * list ran out of its glass and over what is under it), and a tile without a photo has no empty black picture */
+@media (max-width: 1100px) {
+  :root[data-sect="map"] #p-mapnews { height: auto; min-height: 0; overflow: visible; }
+  :root[data-sect="map"] #p-map .mapbox { height: min(46dvh, 400px); }
+  /* one scroll on a phone: the page. The list of tiles was a second scroller of its own (70vh) inside it, and a finger that began on it stayed in it */
+  :root[data-sect="map"] .mn-tiles { max-height: none; overflow: visible; }
+}
+.nt-ph img { background: none; }
+.nt-ph:not(.ok) { height: 0; overflow: hidden; }
+/* the sheets that open from a card (the news in focus opened whole, the table of what each outlet writes): the same round glass as the other screens, no grey fill, no
+ * square plate, no hatching. The head of the news is one pane of glass (round, its edge is the glass's own); the line of the AI's brief is a round line with its colour at the side;
+ * the label of a row of the table is a face, not a grey box; an outlet that does not carry it is an outline, not a hatched fill */
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) .en-top { border: 0; border-radius: 24px; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) .en-ai { border: 0; border-radius: 14px; box-shadow: inset 3px 0 0 var(--ai); background: color-mix(in srgb, var(--ai) 8%, transparent); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) .cov { background: none; box-shadow: none; border-radius: 18px; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) .cv-t :is(thead th.cv-c, tbody th) { background: var(--gx-fill-2); box-shadow: inset 0 0 0 1px var(--gx-edge); border-radius: 12px; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) .cv-wrap .cv-t td.off { background: none; box-shadow: inset 0 0 0 1px var(--ui-hair); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) .cv-lg .on::before { background: var(--ui-on); box-shadow: inset 0 0 0 1px var(--gx-edge); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) .cv-lg .off::before { background: none; box-shadow: inset 0 0 0 1px var(--ink-3); }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) :is(.tl-b.col, .en-os, .en-osg, .en-fg, .cb-absent, .en-card) { border-radius: 18px; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) .tl > li.gap { background: none; box-shadow: none; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) #sects-more { border-radius: 14px; }
+/* ==== v82:end ==== */
 /* ==== v70:end ==== */

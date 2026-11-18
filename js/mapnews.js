@@ -55,7 +55,7 @@ export function createMapNews({ h, lk, headNode, ratioOf, photoOf, fmtAge, fmtCl
       on: { click: () => onSelect(e.key), keydown: (ev) => { if (ev.key === 'Enter') onSelect(e.key); } } },
       h('span', { class: 'nt-top' }, e.field ? lk(genreShort(e.field), () => onGenre(e.field), `${e.field} の出来事だけ見る`, 'gtag', { genre: e.field }) : null,
         e.geo ? h('span', { class: 'nt-pl', text: e.geo.name }) : null, h('span', { class: 'nt-ag', text: fmtAge(e.last) })),
-      p ? h('span', { class: 'nt-ph' }, h('img', { src: p.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => ev.target.parentElement.remove() } })) : null,
+      p ? h('span', { class: 'nt-ph' }, h('img', { src: p.url, alt: '', loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', on: { error: (ev) => ev.target.parentElement.remove(), load: (ev) => { const f = ev.target.parentElement; if (!f) return; if (ev.target.naturalWidth < 24 || ev.target.naturalHeight < 24) f.remove(); else f.classList.add('ok'); } } })) : null,
       headNode(e, 'nt-t'),
       h('span', { class: 'nt-f' }, ratioOf(e), h('b', { class: 'num', text: e.n }), h('small', { text: '社' })));
   }
