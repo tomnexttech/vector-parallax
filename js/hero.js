@@ -407,7 +407,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
     const r = call('read', p);
     if (!r || !Array.isArray(r.rows) || !r.rows.length) return null;
     const row = (x) => h('li', { class: 'hr-rd', data: { side: x.side || 'n' } },
-      h('span', { class: 'hr-ro' }, h('i', { 'aria-hidden': 'true' }), h('b', { text: x.outlet }), x.body ? null : h('small', { class: 'hr-nb', text: x.why ? `本文は読めていません（${x.why}）` : '本文は読めていません' })),
+      h('span', { class: 'hr-ro' }, h('i', { 'aria-hidden': 'true' }), x.link ? h('a', { class: 'hr-ol', href: x.link, target: '_blank', rel: 'noopener noreferrer', title: `${x.outlet} の記事を開く` }, h('b', { text: x.outlet }), h('span', { class: 'hr-ot', text: '記事を開く' })) : h('b', { text: x.outlet }), x.body ? null : h('small', { class: 'hr-nb', text: x.why ? `本文は読めていません（${x.why}）` : '本文は読めていません' })),
       h('div', { class: 'hr-rx' },
         x.focus ? h('p', { class: 'hr-rc' }, h('span', { class: 'k', text: x.body ? '中心' : '見出し' }), x.focus) : null,
         x.facts && x.facts.length ? h('p', { class: 'hr-rf' }, h('span', { class: 'k', text: '書いている' }), x.facts.slice(0, 3).join(' ')) : null,

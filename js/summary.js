@@ -73,12 +73,12 @@ export function readOf(story) {
   const clean = (v) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim() : '');
   const SIDE = { '国内': 'jp', '海外': 'intl', '官公庁': 'gov', jp: 'jp', intl: 'intl', gov: 'gov' };
   const outlets = (Array.isArray(r.outlets) ? r.outlets : []).filter(isObj).map((o) => ({
-    outlet: clean(o.outlet), side: SIDE[o.side] || '', body: true, focus: clean(o.focus),
+    outlet: clean(o.outlet), side: SIDE[o.side] || '', item: clean(o.item), body: true, focus: clean(o.focus),
     facts: (Array.isArray(o.facts) ? o.facts : []).map(clean).filter(Boolean),
     words: (Array.isArray(o.wording) ? o.wording : []).filter(isObj).map((w) => ({ quote: clean(w.quote), note: clean(w.note) })).filter((w) => w.quote),
     absent: (Array.isArray(o.omits) ? o.omits : []).map((x) => (isObj(x) ? clean(x.text) : clean(x))).filter(Boolean), head: '',
   })).filter((o) => o.outlet && (o.focus || o.facts.length));
-  const unread = (Array.isArray(r.unread) ? r.unread : []).filter(isObj).map((u) => ({ outlet: clean(u.outlet), side: SIDE[u.side] || '', why: clean(u.why_ja) })).filter((u) => u.outlet);
+  const unread = (Array.isArray(r.unread) ? r.unread : []).filter(isObj).map((u) => ({ outlet: clean(u.outlet), side: SIDE[u.side] || '', item: clean(u.item), why: clean(u.why_ja) })).filter((u) => u.outlet);
   const clash = clean(r.contrast), dva = clean(r.domestic_vs_abroad);
   if (outlets.length < 2) return null;
   return { outlets, unread, clash, dva, at: typeof r.at === 'number' ? r.at : null };

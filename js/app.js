@@ -3546,13 +3546,22 @@ function hxRead2(p) {
   const rd = e.read;
   const cleanH = (t) => String(t || '').replace(/\s+/g, ' ').trim();
   const headOf = (name) => { const x = arr(p.heads).find((y) => y.outlet === name); return x ? cleanH(trMode() === 'ja' && x.title_ja ? x.title_ja : x.title) : ''; };
+  // the article of each row: the item the read was made from (item id), else the outlet's item of the event, else its headline's link. Every row opens its own article, read or not.
+  const whole = heroWhole(p) || e, sd = sidesOf(whole), all = [...arr(sd.jp), ...arr(sd.intl), ...arr(sd.gov)];
+  const linkOf = (id, name) => {
+    const it = (id && all.find((x) => x.id === id)) || all.find((x) => outletOf(x) === name && safeUrl(x.link));
+    const l = it ? safeUrl(it.link) : null;
+    if (l) return l;
+    const hd = arr(p.heads).find((y) => y.outlet === name && y.link);
+    return hd ? hd.link : null;
+  };
   if (rd && rd.outlets.length) {
     const sideOfName = (n) => (arr(p.heads).find((y) => y.outlet === n) || {}).side || '';
-    const rows = rd.outlets.map((o) => ({ ...o, side: o.side || sideOfName(o.outlet), head: headOf(o.outlet) }));
-    const un = arr(rd.unread).map((u) => ({ outlet: u.outlet, side: u.side || sideOfName(u.outlet), body: false, why: u.why, focus: headOf(u.outlet), facts: [], words: [], absent: [], head: '' }));
+    const rows = rd.outlets.map((o) => ({ ...o, side: o.side || sideOfName(o.outlet), head: headOf(o.outlet), link: linkOf(o.item, o.outlet) }));
+    const un = arr(rd.unread).map((u) => ({ outlet: u.outlet, side: u.side || sideOfName(u.outlet), body: false, why: u.why, focus: headOf(u.outlet), facts: [], words: [], absent: [], head: '', link: linkOf(u.item, u.outlet) }));
     return { rows: [...rows, ...un], clash: rd.clash, dva: rd.dva };
   }
-  const rows = arr(p.heads).filter((x) => x.outlet).slice(0, 4).map((x) => ({ outlet: x.outlet, side: x.side, body: false, focus: cleanH(trMode() === 'ja' && x.title_ja ? x.title_ja : x.title), words: [], absent: [], head: '' }));
+  const rows = arr(p.heads).filter((x) => x.outlet).slice(0, 4).map((x) => ({ outlet: x.outlet, side: x.side, body: false, focus: cleanH(trMode() === 'ja' && x.title_ja ? x.title_ja : x.title), words: [], absent: [], head: '', link: x.link || linkOf(x.id, x.outlet) }));
   if (!rows.length) return null;
   const d = e.brief && arr(e.brief.diffs)[0];
   return { rows, clash: d ? d.text : '' };

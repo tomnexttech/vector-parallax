@@ -45,6 +45,7 @@ except ImportError:                                   # run from inside parallax
 ROOT = Path(__file__).resolve().parent.parent
 SCHEMA = "parallax-read/1"
 CACHE_SCHEMA = "parallax-read-cache/1"
+POOL_EVENTS = 60               # events looked at to find READ_EVENTS that have two readable outlets
 READ_EVENTS = 10               # events compared per build = AI calls (one call per event)
 READ_CALL_LIMIT = 10           # calls on the main model per build (a retry counts)
 READ_FALLBACK_LIMIT = 10       # attempts on the fallback chain per build, counted apart
@@ -358,10 +359,13 @@ class Reader:
         """-> (url | None, reason, evidence). reason "" = may be read."""
         if withheld_mod.gone(it, self.rules):
             return None, "robots", "withheld list"
-        url = original_url(it.get("link"))
+        src = sources_mod.by_id(it.get("source_id")) or {}
+        link = it.get("link")
+        if isinstance(link, str) and link[:1] == "/" and src.get("url"):      # a path-only link from an older build
+            link = urllib.parse.urljoin(src["url"], link)
+        url = original_url(link)
         if not url:
             return None, "relay", "news.google.com"
-        src = sources_mod.by_id(it.get("source_id")) or {}
         if src.get("terms_status") == "no":
             return url, "terms", src.get("terms") or "terms of the outlet"
         ok, why, ev, _d = self.url_gate(url)
@@ -418,8 +422,10 @@ def members_digest(ids):
     return hashlib.sha256("\n".join(sorted(ids)).encode("utf-8")).hexdigest()
 
 
-def pick_events(latest, hero, n=READ_EVENTS):
-    """The first picks of hero.json (what the home shows), then the rest in the order of hero.candidates, up to n stories with two or more outlets."""
+def pick_events(latest, hero, n=READ_EVENTS, reader=None, pool=POOL_EVENTS):
+    """The first picks of hero.json (what the home shows), then the rest in the order of hero.candidates, then the other events with the most outlets.
+    Without a reader: the first n with two or more outlets. With a reader: the first n whose outlets include two or more that may be read
+    (robots.txt and terms allow; no page is fetched here), looking at the first `pool` events; the events that cannot be compared fill the rest, so the page still shows why they were not read."""
     stories = {s.get("sid"): s for s in latest.get("stories") or [] if isinstance(s, dict)}
     out, seen = [], set()
     for p in (hero or {}).get("picks") or []:
@@ -427,7 +433,7 @@ def pick_events(latest, hero, n=READ_EVENTS):
         if sid in stories and sid not in seen:
             out.append(stories[sid])
             seen.add(sid)
-    if len(out) < n:
+    if len(out) < pool:
         try:
             from parallax import hero as hero_mod
             for _t, s, _m, _c in hero_mod.candidates(latest, None):
@@ -436,7 +442,27 @@ def pick_events(latest, hero, n=READ_EVENTS):
                     seen.add(s["sid"])
         except Exception:
             pass
-    return [s for s in out if (s.get("n_outlets") or 0) >= 2][:n]
+    if reader is not None and len(out) < pool:
+        rest = sorted([s for sid, s in stories.items() if sid not in seen], key=lambda s: -(s.get("n_outlets") or 0))
+        out += rest[:pool - len(out)]
+    out = [s for s in out if (s.get("n_outlets") or 0) >= 2]
+    if reader is None:
+        return out[:n]
+    items = latest.get("items") or {}
+    good, rest = [], []
+    for s in out[:pool]:
+        members = [items[i] for i in s.get("member_ids", []) if i in items]
+        ok = 0
+        for it in one_per_outlet(members):
+            try:
+                if not reader.gate(it)[1]:
+                    ok += 1
+            except Exception:
+                pass
+        (good if ok >= 2 else rest).append(s)
+        if len(good) >= n:
+            break
+    return (good + rest)[:n]
 
 
 def one_per_outlet(members):
@@ -707,7 +733,7 @@ def run_read(latest, hero, cache, prompt, provider, reader, now):
     if provider is None:
         run["status"] = "nokey"
         return run
-    todo = [s for s in pick_events(latest, hero) if "read" not in s]
+    todo = [s for s in pick_events(latest, hero, reader=reader) if "read" not in s]
     run["events"] = len(todo)
     for s in todo:
         r = compare_event(s, items, reader, provider, prompt, now, run)

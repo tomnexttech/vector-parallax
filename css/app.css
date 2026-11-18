@@ -6403,4 +6403,10 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud) .ailine .al-go { background: var(--ui-press); box-shadow: inset 0 0 0 1px var(--ui-face-edge); }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud) .mail-pre { background: var(--gx-fill-2); box-shadow: inset 0 0 0 1px var(--ui-face-edge); }
 /* ==== v78:end ==== */
+/* ==== v81 ==== every outlet row of the card opens its own article */
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud) .hr-ol { display: inline-flex; flex-direction: column; gap: 2px; align-items: flex-start; min-height: 32px; color: inherit; text-decoration: none; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud) .hr-ol:hover b { text-decoration: underline; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud) .hr-ol:focus-visible { outline: 2px solid var(--ink-2); outline-offset: 2px; border-radius: 4px; }
+:root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud) .hr-ot { font-size: var(--fs-1); font-weight: 400; color: var(--ink-3); }
+/* ==== v81:end ==== */
 /* ==== v70:end ==== */

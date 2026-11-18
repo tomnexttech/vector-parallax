@@ -112,6 +112,20 @@ SOURCES = [
     _S("un-news", "UN News", "https://news.un.org/feed/subscribe/en/news/all/rss.xml", "国際", "en", "政府一次", "UN News", "intl"),
     _S("fed", "Federal Reserve", "https://www.federalreserve.gov/feeds/press_all.xml", "経済", "en", "政府一次", "Federal Reserve", "intl"),
     _S("ecb", "ECB", "https://www.ecb.europa.eu/rss/press.html", "経済", "en", "政府一次", "ECB", "intl"),
+    # added 2026-11-18 (v81): outlets with their own RSS whose robots.txt does not refuse Google-Extended, so the article body can be read (CONTRACT 27)
+    _S("euronews", "Euronews", "https://www.euronews.com/rss", "国際", "en", "海外公共", "Euronews", "intl"),
+    _S("skynews", "Sky News", "https://feeds.skynews.com/feeds/rss/home.xml", "国際", "en", "海外主流", "Sky News", "intl"),
+    _S("cbs-world", "CBS News World", "https://www.cbsnews.com/latest/rss/world", "国際", "en", "海外主流", "CBS News", "intl"),
+    _S("koreaherald", "The Korea Herald", "https://www.koreaherald.com/rss/kh_World", "国際", "en", "海外主流", "The Korea Herald", "intl"),
+    _S("taipeitimes", "Taipei Times", "https://www.taipeitimes.com/xml/index.rss", "国際", "en", "海外主流", "Taipei Times", "intl"),
+    _S("cna", "CNA", "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml", "国際", "en", "海外公共", "CNA", "intl"),
+    _S("moscowtimes", "The Moscow Times", "https://www.themoscowtimes.com/rss/news", "国際", "en", "海外主流", "The Moscow Times", "intl"),
+    _S("kyivindependent", "The Kyiv Independent", "https://kyivindependent.com/news-archive/rss", "国際", "en", "海外主流", "The Kyiv Independent", "intl"),
+    _S("newsweek", "Newsweek", "https://www.newsweek.com/rss", "国際", "en", "海外主流", "Newsweek", "intl"),
+    _S("fox-world", "Fox News World", "https://moxie.foxnews.com/google-publisher/world.xml", "国際", "en", "海外主流", "Fox News", "intl"),
+    _S("fox-politics", "Fox News Politics", "https://moxie.foxnews.com/google-publisher/politics.xml", "国内政治", "en", "海外主流", "Fox News", "intl"),
+    _S("irishtimes", "The Irish Times", "https://www.irishtimes.com/arc/outboundfeeds/rss/category/world/", "国際", "en", "海外主流", "The Irish Times", "intl"),
+    _S("latimes", "Los Angeles Times", "https://www.latimes.com/world-nation/rss2.0.xml", "国際", "en", "海外主流", "Los Angeles Times", "intl"),
     # ---------------------------------------------------------------- breadth added 2026-11-04 night (CONTRACT 19)
     _S("party-ldp", "自由民主党 ニュース", "http://rss.jimin.jp/f1887/index.rdf", "国内政治", "ja", "政党機関紙", "自由民主党", "jp"),
     _S("party-cdp", "立憲民主党 ニュース", "https://cdp-japan.jp/news/feed", "国内政治", "ja", "政党機関紙", "立憲民主党", "jp"),
@@ -252,6 +266,19 @@ TERMS = {
     "un-news": ("unknown", "https://www.un.org/en/about-us/copyright"),
     "fed": ("ok", "https://www.federalreserve.gov/disclaimer.htm"),
     "ecb": ("ok", "https://www.ecb.europa.eu/services/using-our-site/disclaimer/html/index.en.html"),
+    "euronews": ("unknown", ""),
+    "skynews": ("unknown", ""),
+    "cbs-world": ("unknown", ""),
+    "koreaherald": ("unknown", ""),
+    "taipeitimes": ("unknown", ""),
+    "cna": ("unknown", ""),
+    "moscowtimes": ("unknown", ""),
+    "kyivindependent": ("unknown", ""),
+    "newsweek": ("unknown", ""),
+    "fox-world": ("unknown", ""),
+    "fox-politics": ("unknown", ""),
+    "irishtimes": ("unknown", ""),
+    "latimes": ("unknown", ""),
     # sources added 2026-11-04 night: their terms pages were not read (unknown). rights_mode quote shows the headline as a quotation with outlet, time and link.
     "party-ldp": ("unknown", ""),
     "party-cdp": ("unknown", ""),
@@ -509,12 +536,19 @@ def make_desc(raw, title="", outlet=""):
     return _cut(t)
 
 
+def _abs_link(link, src):
+    """A feed that gives a path only ("/j/press/news/x.html", the Ministry of Defense) is made absolute against the feed address; the reader and the page need a full address."""
+    if link and not link.lower().startswith(("http://", "https://")) and link[:1] in "/.":
+        return urllib.parse.urljoin(src.get("url") or "", link)
+    return link
+
+
 def _finish(it, src):
     """feeds の item を公開できる形へ。見出しは書き換えない。summary と image は落とす。
     desc = 配信自身の説明の先頭（make_desc）。載せない物は欄ごと無い。Google News 経由（_finish_gn）と政府の頁（fetch_primary_sources）には付けない。"""
     out = {
         "title": _s(it.get("title")).strip(),
-        "link": _s(it.get("link")).strip(),
+        "link": _abs_link(_s(it.get("link")).strip(), src),
         "outlet": src["outlet"],
         "source_id": src["id"],
         "type": src["type"],
