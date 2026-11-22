@@ -196,7 +196,7 @@ test('the return to the home: the board keeps its place, the home opens at its t
 
 test('the page: one gothic and Inter for figures (no Mincho, no Plex, no Barlow), the worker keeps js/front.js, the home holds its three parts', () => {
   const html = read('index.html');
-  assert.match(html, /family=Noto\+Sans\+JP:wght@400;500;700&amp;family=Inter:wght@500;600;700&amp;display=swap/);
+  assert.match(html, /family=Noto\+Sans\+JP:wght@400;500;700&amp;family=Inter:wght@300;500;600;700&amp;display=swap/);
   assert.doesNotMatch(html, /Shippori|IBM\+Plex|Barlow/);
   assert.doesNotMatch(html, /Zen\+Kaku/);
   assert.match(html, /<section class="front" id="front"[^>]*><\/section>\s*<section class="hlist" id="hlist"[^>]*><\/section>\s*<!-- hero:begin -->/);
@@ -248,4 +248,14 @@ test('偏り度: the scale is a key under the list, the stories one side carried
   made.length = 0;
   renderGap(root, { h, tab: 'bias', bias: [], apart: { jp: 0, intl: 0 }, gen: 1000, now: 1000, clock: () => '9:40' });
   assert.ok(!made.some((e) => /fr-apart/.test(e.attrs.class || '')), 'nothing left out, nothing said');
+});
+
+test('the three strengths of a count in the fields table: the larger side is hi (a tie is hi on both), the smaller is mid from 40% of it, dim below', async () => {
+  const { tierOf } = await import('../../js/front.js');
+  assert.equal(tierOf(36, 12), ' hi');
+  assert.equal(tierOf(12, 36), '');
+  assert.equal(tierOf(14, 30), ' mid');
+  assert.equal(tierOf(5, 5), ' hi');
+  assert.equal(tierOf(0, 0), ' hi');
+  assert.equal(tierOf(0, 9), '');
 });

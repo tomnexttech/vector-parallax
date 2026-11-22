@@ -81,6 +81,12 @@ export function gapByEvent(es, { sidesOf, titleOf = (e) => str(e && e.key), max 
   return { rows, jp: rows.reduce((a, r) => a + r.jp, 0), intl: rows.reduce((a, r) => a + r.intl, 0) };
 }
 
+/** the three weights of a count in the table of the fields (Cantina's table of three levels): the larger side of the row is bold (hi); the smaller one is
+ *  mid when it is at least 40% of the larger one, and dim when it is less. A tie is hi on both sides. Only the two counts decide it. */
+export function tierOf(n, other) {
+  if (n >= other) return ' hi';
+  return other > 0 && n / other >= 0.4 ? ' mid' : '';
+}
 export function jpShare(gap) {
   const t = gap ? gap.jp + gap.intl : 0;
   return t ? Math.round((gap.jp / t) * 100) : null;
@@ -243,7 +249,7 @@ export function renderGap(root, o) {
       g.rows.map((r) => h('div', { class: 'fr-gr', data: { lean: r.d < 0 ? 'jp' : r.d > 0 ? 'intl' : 'even' } },
         r.key ? h('button', { type: 'button', class: 'fr-gl ev', title: cleanTitle(r.field), on: { click: () => o.pick(r.key) } }, cleanTitle(r.field)) : typeof o.onField === 'function' && !o.field ? h('button', { type: 'button', class: 'fr-gl fld', title: `${r.field}の話を見る`, on: { click: () => o.onField(r.field) } }, r.field) : h('span', { class: 'fr-gl', text: r.field }),
         h('span', { class: 'fr-gb', 'aria-hidden': 'true' }, h('i', { data: { side: r.d < 0 ? 'jp' : 'intl' }, style: `--w:${(Math.abs(r.d) * 50).toFixed(1)}%` })),
-        h('span', { class: 'fr-gn num' + (r.jp >= r.intl ? ' hi' : ''), text: String(r.jp) }), h('span', { class: 'fr-gn num' + (r.intl >= r.jp ? ' hi' : ''), text: String(r.intl) }))))
+        h('span', { class: 'fr-gn num' + tierOf(r.jp, r.intl), text: String(r.jp) }), h('span', { class: 'fr-gn num' + tierOf(r.intl, r.jp), text: String(r.intl) }))))
       : h('p', { class: 'fr-empty', text: '日本と海外を比べられる話は今ありません。' });
     den = g.rows.length ? `${o.field ? `上位 ${g.rows.length} 話の記事` : '分野が付いた話の記事'} ${(g.jp + g.intl).toLocaleString('ja-JP')} 件` : '';
     // the share over all the rows: one bar of the two sides under the table

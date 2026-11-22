@@ -395,7 +395,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
             h('p', { class: 'hr-facts' }, SIDES3.map((k) => h('span', { class: 'hr-fc' + (p.sides[k].outlets ? '' : ' zero'), data: { side: k } }, h('span', { class: 'k', text: SIDE_JA[k] }), h('b', { class: 'num', text: p.sides[k].outlets }), h('span', { class: 'u', text: '社' }))),
               first ? h('span', { class: 'hr-first' }, h('span', { class: 'k', text: '初報' }), h('time', { class: 'num', text: short(first) })) : null,
               isNum(score) ? h('button', { type: 'button', class: 'hr-bias', title: '偏り度 0〜100・押すと内訳', 'aria-label': `偏り度 ${score}、内訳を見る`, on: { click: () => call('biasDetail', p) } }, h('span', { class: 'k', text: HEAD['front.bias'] }), h('b', { class: 'num', text: score })) : null),
-            sh.total ? h('div', { class: 'hr-share', role: 'img', 'aria-label': `このニュースの社の割合 ${lab}` }, h('span', { class: 'hr-sb', 'aria-hidden': 'true' }, SIDES3.map(seg)), h('span', { class: 'hr-sl num' }, h('span', { class: 'k', text: 'このニュース' }), lab)) : null)),
+            sh.total ? h('div', { class: 'hr-share', role: 'img', 'aria-label': `このニュースの社の割合 ${lab}` }, h('span', { class: 'hr-sb', 'aria-hidden': 'true' }, SIDES3.map(seg)), h('span', { class: 'hr-sl num' }, h('span', { class: 'k', text: 'このニュース' }), SIDES3.filter((k) => sh[k]).map((k) => h('span', { class: 'hr-pc', data: { side: k } }, h('span', { class: 'k2', text: SIDE_JA[k] }), h('b', { text: String(sh.pct[k]) }), h('u', { text: '%' }))))) : null)),
         body(p),
         // one main button (詳細); 読み上げ beside it as the second; the next news is the pager's (1 / 5), the arrow keys or a swipe
         h('div', { class: 'hr-acts' },
