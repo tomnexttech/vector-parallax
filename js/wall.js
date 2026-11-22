@@ -64,7 +64,7 @@ export function createWall({ h, lk, dossier, lineIcon, headNode, measureOf, phot
   }
   const act = (e) => ({ home: () => onOpen(e.key), type: () => onOpen(e.key), all: () => onOpen(e.key), word: onWord, absent: () => onOpen(e.key) });
   const figures = (e, m) => h('div', { class: 'figs' }, dossier.biasTile(biasOf(e)), dossier.homeTile(m, act(e)), dossier.typeTile(m, act(e), typeWho(e)), dossier.timeTile(m, lanes(e), new6hOf(e)), dossier.divergeTile(m, act(e)), dossier.overlapTile(m, act(e)));
-  const biasChip = (e) => { const b = biasOf(e); return b && b.ok ? lk(dossier.biasMini(b), () => onOpen(e.key), 'バイアス度の内訳を見る', 'bi-chip') : null; };
+  const biasChip = (e) => { const b = biasOf(e); return b && b.ok ? lk(dossier.biasMini(b), () => onOpen(e.key), '偏り度の内訳を見る', 'bi-chip') : null; };
   function related(e, max) {
     const rel = relatedOf(e).slice(0, max);
     return rel.length ? h('div', { class: 'mn-rel' }, h('span', { class: 'k', text: '関連' }), h('ul', null, rel.map((x) => h('li', null, lk(x.text, () => onPress(x.key), 'この出来事を開く'))))) : null;

@@ -135,7 +135,7 @@ export function notesOf(t) {
   if (t.tone.nNeg >= 3 && Math.abs(dn) >= 4) out.push({ v: Math.abs(dn) / 4,
     text: `見出しの否定の語（批判・懸念 など）は 100 本あたり ${t.tone.negPer.toFixed(1)} 回で、平均（${t.tone.baseNeg.toFixed(1)} 回）より${dn > 0 ? '多い' : '少ない'}。` });
   if (t.bias.n >= 5 && isNum(t.bias.base) && Math.abs(t.bias.med - t.bias.base) >= 10) out.push({ v: Math.abs(t.bias.med - t.bias.base) / 10,
-    text: `載せた話のバイアス度は中央値 ${r0(t.bias.med)} で、${s}の媒体の話全体（${r0(t.bias.base)}）より${t.bias.med > t.bias.base ? '高い' : '低い'}。` });
+    text: `載せた話の偏り度は中央値 ${r0(t.bias.med)} で、${s}の媒体の話全体（${r0(t.bias.base)}）より${t.bias.med > t.bias.base ? '高い' : '低い'}。` });
   if (t.words.length >= 2) out.push({ v: 0.9, text: `ほかの${s}の媒体より目立って多い語は「${t.words.slice(0, 3).map((x) => x.w).join('」「')}」。` });
   return out.sort((a, b) => b.v - a.v).slice(0, 3).map((x) => x.text);
 }
@@ -165,8 +165,8 @@ export function traitsBlock(t, o) {
   out.push(o.sec(o.head('outlet.note')), basis, ...[].concat(
     t.few ? h('p', { class: 'tr-few', text: `記事が ${t.me.reports} 件で、傾向を言うには少ないため、数だけを出します。` })
       : t.notes.length ? h('ul', { class: 'tr-notes' }, t.notes.map((x) => h('li', { text: x })))
-        : [h('p', { class: 'tr-few', text: `考察に入れた項（${t.fieldGate ? '' : '分野・'}独自率・同報社数・否定の語・バイアス度）に、基準を超える平均との差はありません。` }),
-          h('p', { class: 'tr-few tr-th num', text: `基準: ${t.fieldGate ? '' : '分野 12 ポイント・'}独自率 10 ポイント・同報社数 1.5 倍かつ 1 社・否定の語 100 本あたり 4 回・バイアス度 10。${t.fieldGate ? '' : `棒の分野のうち、平均 ${FIELD_BASE_MIN}% 未満の分野と 3 件未満の分野は数えません。`}` })]));
+        : [h('p', { class: 'tr-few', text: `考察に入れた項（${t.fieldGate ? '' : '分野・'}独自率・同報社数・否定の語・偏り度）に、基準を超える平均との差はありません。` }),
+          h('p', { class: 'tr-few tr-th num', text: `基準: ${t.fieldGate ? '' : '分野 12 ポイント・'}独自率 10 ポイント・同報社数 1.5 倍かつ 1 社・否定の語 100 本あたり 4 回・偏り度 10。${t.fieldGate ? '' : `棒の分野のうち、平均 ${FIELD_BASE_MIN}% 未満の分野と 3 件未満の分野は数えません。`}` })]));
   // the field mix: a bar that swings from the side's mean
   const rows = t.fields.filter((r) => r.base != null).slice(0, 9);
   if (rows.length && !t.few) {

@@ -1,4 +1,4 @@
-/* bias — バイアス度: how lopsided the coverage of one event is, 0 to 100, from what can be counted on this page. No DOM.
+/* bias — 偏り度: how lopsided the coverage of one event is, 0 to 100, from what can be counted on this page. No DOM.
  * It measures how the event was covered, not whether anything in it is true: a high value does not mean the content is wrong.
  * No outlet carries a hand-made label of left or right, and no term comes without a measured source. A term that cannot be measured
  * is left out and the rest are averaged, with equal weight; with too few reports no number is given at all.

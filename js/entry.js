@@ -198,7 +198,7 @@ export function renderEntry(root, o) {
     h('span', { class: 'en-bigbar' }, ratio({ jp: Array(so.jp), intl: Array(so.intl), gov: Array(so.gov) })),
     h('ul', { class: 'en-lg' }, SIDES.map(([k, , short]) => h('li', { class: so[k] ? null : 'zero', data: { side: k } },
       lineIcon(k), h('span', { class: 'kl', text: short }), h('b', { class: 'num', text: so[k] }), h('span', { class: 'u', text: '社' }), h('span', { class: 'pc num', text: pct(so[k]) })))),
-    b && b.ok && o.dossier && o.detail ? h('button', { type: 'button', class: 'en-bias', title: 'バイアス度の内訳を見る', on: { click: () => o.detail(sel.key, { bias: true }) } }, o.dossier.biasMini(b), lineIcon('right')) : null));
+    b && b.ok && o.dossier && o.detail ? h('button', { type: 'button', class: 'en-bias', title: '偏り度の内訳を見る', on: { click: () => o.detail(sel.key, { bias: true }) } }, o.dossier.biasMini(b), lineIcon('right')) : null));
   const firsts = SIDES.filter(([k]) => m.firstOf && m.firstOf[k]);
   const lag = isNum(m.lag) ? Math.abs(m.lag) : null;
   const area = o.dossier && o.dossier.areaSvg ? o.dossier.areaSvg(m) : null;

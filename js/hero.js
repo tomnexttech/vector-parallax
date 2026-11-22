@@ -394,7 +394,7 @@ export function createHero({ h, root, fmt = {}, on = {} }) {
             h('h2', { class: 'hr-t', id: 'hr-t', lang: lead.lang === 'en' ? 'en' : null }, lead.tr ? h('span', { class: 'xl-m', title: `原文: ${lead.tr}`, text: '訳' }) : null, lead.text),
             h('p', { class: 'hr-facts' }, SIDES3.map((k) => h('span', { class: 'hr-fc' + (p.sides[k].outlets ? '' : ' zero'), data: { side: k } }, h('span', { class: 'k', text: SIDE_JA[k] }), h('b', { class: 'num', text: p.sides[k].outlets }), h('span', { class: 'u', text: '社' }))),
               first ? h('span', { class: 'hr-first' }, h('span', { class: 'k', text: '初報' }), h('time', { class: 'num', text: short(first) })) : null,
-              isNum(score) ? h('span', { class: 'hr-bias', title: '偏り度 0〜100' }, h('span', { class: 'k', text: HEAD['front.bias'] }), h('b', { class: 'num', text: score })) : null),
+              isNum(score) ? h('button', { type: 'button', class: 'hr-bias', title: '偏り度 0〜100・押すと内訳', 'aria-label': `偏り度 ${score}、内訳を見る`, on: { click: () => call('biasDetail', p) } }, h('span', { class: 'k', text: HEAD['front.bias'] }), h('b', { class: 'num', text: score })) : null),
             sh.total ? h('div', { class: 'hr-share', role: 'img', 'aria-label': `このニュースの社の割合 ${lab}` }, h('span', { class: 'hr-sb', 'aria-hidden': 'true' }, SIDES3.map(seg)), h('span', { class: 'hr-sl num' }, h('span', { class: 'k', text: 'このニュース' }), lab)) : null)),
         body(p),
         // one main button (詳細); 読み上げ beside it as the second; the next news is the pager's (1 / 5), the arrow keys or a swipe

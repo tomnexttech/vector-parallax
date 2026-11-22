@@ -21,7 +21,7 @@ export const NARROW = 600;
 const GAP = 12, EDGE = 16, PAD = 6;
 
 export const STEPS = [
-  { id: 'ways', at: ['#front .fr-tabs', '#front'], title: '四つの入口',
+  { id: 'ways', at: ['#front .fr-tabs', '#front'], title: '四つの枠',
     text: '国内と海外の比、日本だけの話、海外だけの話、偏り度の四つです。偏り度は 0〜100 で、片側だけの話は順位に入りません。' },
   { id: 'list', at: ['#hlist'], title: 'ニュースの一覧',
     text: '押すと、真ん中がそのニュースに替わります。線は、国内と海外の社数の比です。' },

@@ -161,12 +161,17 @@ export function divergeRows(m, limit = 6) {
   return [...rows.values()].sort((a, b) => (b.jp + b.intl) - (a.jp + a.intl) || (Math.min(b.jp, b.intl) - Math.min(a.jp, a.intl))).slice(0, limit);
 }
 /** which outlet used which word: the words most outlets share first; null with fewer than two outlets or two words */
+/** words that name one thing in two languages (data/aliases.json: words): one column of the table of words by outlet, not two (set once by the page) */
+let MX_GROUPS = [];
+export function setMatrixGroups(g) { MX_GROUPS = (Array.isArray(g) ? g : []).filter((x) => Array.isArray(x) && x.length >= 2).map((x) => x.map((w) => str(w)).filter(Boolean)); }
+const mxKey = (w) => str(w).normalize('NFKC').toLowerCase().replace(/['’]s$/, '');
+const mxJa = (f) => /[぀-ヿ一-鿿]/.test(f);
 export function wordMatrix(m, { maxOutlets = 10, maxWords = 8 } = {}) {
   const items = [...m.jp, ...m.gov, ...m.intl];
   const names = [...new Set(items.map(outletOf).filter(Boolean))];
   if (names.length < 2) return null;
   const by = new Map(names.map((n) => [n, new Map()]));
-  for (const it of items) { const b = by.get(outletOf(it)); if (b) for (const w of wordsOfTitle(it.title, names)) b.set(w.name, w.shown); }
+  for (const it of items) { const b = by.get(outletOf(it)); if (b) for (const w of wordsOfTitle(it.title, names)) { const k = mxKey(w.name), g = MX_GROUPS.find((x) => x.some((y) => mxKey(y) === k || mxKey(y) === mxKey(w.shown))); if (g) b.set('g:' + mxKey(g[0]), g.find(mxJa) || g[0]); else b.set(w.name, w.shown); } }
   const count = new Map(), shown = new Map();
   for (const b of by.values()) for (const [n, s] of b) { count.set(n, (count.get(n) || 0) + 1); shown.set(n, s); }
   const top = [...count.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, maxWords).map(([n]) => n);
@@ -260,22 +265,22 @@ export function createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
   }
 
   /** in a row or on a small card: the name, a thin bar on the 0 to 100 scale, the number */
-  const biasMini = (b) => h('span', { class: 'bi-mini' }, h('small', { text: 'バイアス度' }), h('span', { class: 'bi-mb' }, h('i', { style: `width:${b.score}%` })), h('b', { class: 'num', text: b.score }));
+  const biasMini = (b) => h('span', { class: 'bi-mini' }, h('small', { text: '偏り度' }), h('span', { class: 'bi-mb' }, h('i', { style: `width:${b.score}%` })), h('b', { class: 'num', text: b.score }));
 
-  /** バイアス度: the gauge, and a press opens every term with its formula; with too few reports no number at all */
+  /** 偏り度: the gauge, and a press opens every term with its formula; with too few reports no number at all */
   function biasTile(b, { open = false, onToggle = null } = {}) {
-    if (!b || !b.ok) return h('section', { class: 'dcard t-bias none' }, h('header', { class: 'tl-h' }, h('h3', { text: 'バイアス度' })), h('i', { class: 'tl-u' }), h('p', { class: 'tl-none', text: (b && b.reason) || '記事が少なく測れません' }));
+    if (!b || !b.ok) return h('section', { class: 'dcard t-bias none' }, h('header', { class: 'tl-h' }, h('h3', { text: '偏り度' })), h('i', { class: 'tl-u' }), h('p', { class: 'tl-none', text: (b && b.reason) || '記事が少なく測れません' }));
     const box = h('section', { class: `dcard t-bias${open ? ' open' : ''}` });
     const more = () => h('div', { class: 'bi-more' },
       h('ul', { class: 'bi-terms' }, b.terms.map((t) => h('li', null,
         h('span', { class: 'bi-n' }, t.ai ? h('span', { class: 'aimk', text: 'AI' }) : null, t.ja), h('span', { class: 'bi-b' }, h('i', { style: `width:${t.value}%` })), h('b', { class: 'num', text: t.value }), h('small', { class: 'bi-f', text: t.formula })))),
       b.skipped.length ? h('p', { class: 'bi-s', text: `外した項：${b.skipped.map((t) => `${t.ja}（${t.why}）`).join('、')}` }) : null,
-      h('p', { class: 'bi-eq', text: `バイアス度 = ${b.formula}` }),
+      h('p', { class: 'bi-eq', text: `偏り度 = ${b.formula}` }),
       h('p', { class: 'bi-note', text: '報じ方の偏りを測った数です。内容の真偽は示しません。' }));
     const paint = (isOpen) => {
       box.classList.toggle('open', isOpen);
-      box.replaceChildren(h('header', { class: 'tl-h' }, h('h3', { text: 'バイアス度' }), h('small', { text: '0〜100' })), h('i', { class: 'tl-u' }),
-        h('button', { type: 'button', class: 'bi-btn', 'aria-expanded': String(isOpen), title: '内訳を開く', on: { click: (ev) => { ev.stopPropagation(); if (onToggle) onToggle(!isOpen); paint(!isOpen); } } }, halfGauge(b.score, { label: 'バイアス度' }), h('span', { class: 'bi-o', text: isOpen ? '内訳を閉じる' : '内訳を開く' })),
+      box.replaceChildren(h('header', { class: 'tl-h' }, h('h3', { text: '偏り度' }), h('small', { text: '0〜100' })), h('i', { class: 'tl-u' }),
+        h('button', { type: 'button', class: 'bi-btn', 'aria-expanded': String(isOpen), title: '内訳を開く', on: { click: (ev) => { ev.stopPropagation(); if (onToggle) onToggle(!isOpen); paint(!isOpen); } } }, halfGauge(b.score, { label: '偏り度' }), h('span', { class: 'bi-o', text: isOpen ? '内訳を閉じる' : '内訳を開く' })),
         isOpen ? more() : null);
     };
     paint(open);

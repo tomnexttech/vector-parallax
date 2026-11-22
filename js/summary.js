@@ -84,6 +84,19 @@ export function readOf(story) {
   return { outlets, unread, clash, dva, at: typeof r.at === 'number' ? r.at : null };
 }
 
+/** the reason each outlet's body was not read (story.read.unread[].why_ja), by outlet name; kept even when fewer than two bodies were read, so a row that says "not read" can say why */
+export function unreadWhy(story) {
+  const r = isObj(story) ? story.read : null;
+  const out = {};
+  if (!isObj(r) || !Array.isArray(r.unread)) return out;
+  for (const u of r.unread) {
+    if (!isObj(u) || typeof u.outlet !== 'string' || typeof u.why_ja !== 'string') continue;
+    const o = u.outlet.replace(/\s+/g, ' ').trim(), w = u.why_ja.replace(/\s+/g, ' ').trim();
+    if (o && w && !out[o]) out[o] = w;
+  }
+  return out;
+}
+
 export function briefIndex(stories) {
   const out = new Map();
   for (const st of Array.isArray(stories) ? stories : []) {

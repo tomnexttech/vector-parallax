@@ -6448,4 +6448,11 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) .tl > li.gap { background: none; box-shadow: none; }
 :root:not(#u1):not(#u2):not(#u3):not(#u4):not(#u5):not(#u6):not(#u7):not(#u8):not(#u9):not(#ua):not(#ub):not(#uc):not(#ud):not(#ue) #sects-more { border-radius: 14px; }
 /* ==== v82:end ==== */
+/* v83: the bias index of the lead news is a button (opens the parts of it on the detailed screen) */
+:root #board button.hr-bias { appearance: none; background: none; border: 0; padding: 4px 6px; margin: -4px -6px; border-radius: 8px; font: inherit; color: inherit; cursor: pointer; text-align: left; }
+:root #board button.hr-bias:hover { background: color-mix(in srgb, var(--ink, #111) 7%, transparent); }
+:root #board button.hr-bias:focus-visible { outline: 2px solid var(--ink, #111); outline-offset: 2px; }
+
+/* v83: the glass panels of the detailed screen cut what is inside them at their own edge (a scrolled layer must not show in the gap below) */
+:root #board #p-case, :root #board .under > .pane { overflow: hidden; border-radius: var(--r-l); contain: paint; }
 /* ==== v70:end ==== */

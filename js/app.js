@@ -11,7 +11,7 @@
  * - The visitor's tasks stay in that browser (js/tasks.js). The voice key, if given, stays in memory for this visit. */
 
 import { SIX_H, DUE_S, STALE_S, keptView, noticeParts, isOld, defaultView, freshness, lateBy } from './snapshot.js';
-import { summaryOf, summaryIndex, memberKey, briefOf, briefIndex, judged, readOf } from './summary.js';
+import { summaryOf, summaryIndex, memberKey, briefOf, briefIndex, judged, readOf, unreadWhy } from './summary.js';
 import { setTrMode, trOf, trMark, trMode } from './trans.js';
 import { installScrollKeys } from './scrollkeys.js';
 import { PLACES, placeJa, placesOf, placesIn } from './places.js';
@@ -50,7 +50,7 @@ import { createSettingsPanel } from './settings_panel.js';
 import { initLandscape } from './landscape.js';
 import { initDial } from './dial.js';
 import { createTour, wantTour } from './tour.js';
-import { createDossier, measure, paperPick, drawShareCard, CARD_W, CARD_H } from './dossier.js';
+import { createDossier, measure, paperPick, setMatrixGroups, drawShareCard, CARD_W, CARD_H } from './dossier.js';
 import { createCoverage, coverageOf } from './coverage.js';
 import { biasOf as biasIndex, sourceBase } from './bias.js';
 import { newsView, createMapNews } from './mapnews.js';
@@ -305,8 +305,9 @@ function buildEntries() {
   if (state.view === 'rules') {
     // the algorithm view has no story of its own; the read of the story that holds a cluster is the cluster's read (its articles are the same ones)
     const readOfCid = new Map();
-    for (const st of ix.stories) { const rd = readOf(st); if (rd) for (const cid of arr(st.rule_cids)) if (!readOfCid.has(cid)) readOfCid.set(cid, rd); }
-    out = ix.rcs.map((c) => { const ids = arr(c.member_ids); const e = mk('rule', c, ids); e.read = readOfCid.get(c.cid) || null; const tb = ids.length >= 2 ? ix.twinBasis.get(e.mk) : null; e.basis = tb ? { ...tb, by: 'rule' } : null; return e; });
+    const whyOfCid = new Map();
+    for (const st of ix.stories) { const rd = readOf(st); const uw = unreadWhy(st); for (const cid of arr(st.rule_cids)) { if (rd && !readOfCid.has(cid)) readOfCid.set(cid, rd); if (!whyOfCid.has(cid)) whyOfCid.set(cid, uw); } }
+    out = ix.rcs.map((c) => { const ids = arr(c.member_ids); const e = mk('rule', c, ids); e.read = readOfCid.get(c.cid) || null; e.unreadWhy = whyOfCid.get(c.cid) || {}; const tb = ids.length >= 2 ? ix.twinBasis.get(e.mk) : null; e.basis = tb ? { ...tb, by: 'rule' } : null; return e; });
   } else {
     out = ix.stories.map((st) => {
       const ids = arr(st.member_ids);
@@ -318,6 +319,7 @@ function buildEntries() {
       e.summary = e.ai ? null : (summaryOf(st) || (state.live ? state.sumBy.get(e.mk) || null : null));
       e.brief = briefOf(st) || (state.live ? state.briefBy.get(e.mk) || null : null);
       e.read = readOf(st);
+      e.unreadWhy = unreadWhy(st);
       e.basis = isObj(st.basis) ? st.basis : null;
       // an AI line that praises or blames in a word no headline carries is left out (the page's side of the rule in data/prompt.json)
       const mat = e.members.flatMap((it) => [it.title, it.desc]).filter((x) => typeof x === 'string');
@@ -689,7 +691,7 @@ function row(e, opt = {}) {
       state.newKeys.has(e.mk) ? h('span', { class: 'newdot', title: '前回から新しい' }) : null,
       dossier.ratioBar(measureOf(e)),
       lk(`${e.n}社`, () => { select(e.key, true); goMembers(); }, 'この出来事の全報道を見る', 'rn'),
-      biasOf(e).ok ? lk(dossier.biasMini(biasOf(e)), () => { state.biasOpen = true; select(e.key, true); renderCase(); if (narrow() || $('board').dataset.wall === '1') openSheet('case'); }, 'バイアス度の内訳を見る', 'bi-chip') : null,
+      biasOf(e).ok ? lk(dossier.biasMini(biasOf(e)), () => { state.biasOpen = true; select(e.key, true); renderCase(); if (narrow() || $('board').dataset.wall === '1') openSheet('case'); }, '偏り度の内訳を見る', 'bi-chip') : null,
       h('span', { text: fmtAge(e.last) }),
       !opt.compact && e.topics.length ? h('span', { class: 'rk' }, e.topics.map((id, i) => [i ? '・' : '', lk(flagJa(id), () => setTopic(id), `${flagJa(id)} の出来事だけ見る`)])) : null,
       e.hits.length ? h('span', { class: 'rw', text: e.hits.join('・') }) : null),
@@ -719,7 +721,7 @@ const dossier = createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
 const coverage = createCoverage({ h, onOutlet: (name) => openOutlet(name) });
 /** 媒体の比べ（CONTRACT §21）: the card of an event, or null when the case has none (an old file, a failed read) — then the screen is as it was */
 const coverageCard = (e) => { const c = e && e.case ? coverageOf(e.case.coverage) : null; return c ? coverage.node(c, { total: Number.isInteger(e.n) ? e.n : null }) : null; };
-/** バイアス度 of an event (js/bias.js): held against the outlets this build collected; the AI's term only when the AI wrote its focus lines */
+/** 偏り度 of an event (js/bias.js): held against the outlets this build collected; the AI's term only when the AI wrote its focus lines */
 const biasOf = (e) => { if (e.bias) return e.bias; const a = new Map(e.ai ? arr(e.ai.angles).filter(isObj).map((x) => [x.item_id, str(x.focus_ja)]) : []); e.bias = biasIndex(measureOf(e), { base: sourceBase(arr(state.data && state.data.sources)), angles: a.size ? a : null }); return e.bias; };
 /** a pressed row opens in place: the whole headline, the description the outlet published (quoted), and the way to the article */
 function rowMore(e) {
@@ -838,7 +840,7 @@ function anomRows() {
   return rows;
 }
 /** the news of one side only (js/sections.js), on what the visitor's settings and search show */
-// a ministry's page counts on the home side here as in バイアス度 (js/bias.js), so a story of a ministry and outlets abroad is told from both sides, not one
+// a ministry's page counts on the home side here as in 偏り度 (js/bias.js), so a story of a ministry and outlets abroad is told from both sides, not one
 const homeSides = (e) => { const s = sidesOf(e); return { ...s, jp: [...s.jp, ...s.gov] }; };
 function sideGroups(byGenre) { return oneSideOf(state.es.filter((e) => !e.foldedInto && vis(e) && matchesQ(e) && (!byGenre || inGenre(e))), { sidesOf: homeSides, outletOf }); }
 function renderAnom() {
@@ -1556,7 +1558,7 @@ function pickEntry(k, fresh) {
   const top = s ? s.getBoundingClientRect().top : 0;
   if (s && (top < 0 || top > window.innerHeight * 0.4)) s.scrollIntoView({ block: 'start', behavior: how });
 }
-// the same news on the detailed screen: the board with this news chosen (and the parts of バイアス度 open when asked)
+// the same news on the detailed screen: the board with this news chosen (and the parts of 偏り度 open when asked)
 function entryDetail(k, opt = {}) {
   if (opt.bias) state.biasOpen = true;
   setHome('board'); select(k, true); renderCase();
@@ -1600,7 +1602,7 @@ function frontData() {
   const bias = scored.slice(0, 8).map((x) => ({ key: x.e.key, title: entryTitleOf(x.e).text, score: Math.round(x.b.score) }));
   const n = (s) => (one.find((g) => g.side === s) || { events: [] }).events.length;
   const share = jpShare(all);
-  // each tab says what its number is: the share over every field (not the card's one news), the count of each side's own news, the highest バイアス度 of 100
+  // each tab says what its number is: the share over every field (not the card's one news), the count of each side's own news, the highest 偏り度 of 100
   const articles = all.jp + all.intl;
   const apart = { jp: n('jp'), intl: n('intl') };
   return { gap, one, bias, apart, scored: scored.length, articles, counts: { gap: share == null ? '' : [{ k: '国内', v: `${share}%`, side: 'jp' }, { k: '海外', v: `${100 - share}%`, side: 'intl' }],
@@ -3446,6 +3448,13 @@ function hxCompare(p) {
   $('entry').scrollTop = 0;
 }
 
+function hxBiasDetail(p) {
+  const e = heroWhole(p);
+  if (!e) { toast('読込中です'); return; }
+  hxLayerClose();
+  entryDetail(e.key, { bias: true });
+}
+
 // ---- the orb and the voice
 function hxPaintSpeak() {
   const b = HX.speakBtn; if (!b) return;
@@ -3561,7 +3570,8 @@ function hxRead2(p) {
     const un = arr(rd.unread).map((u) => ({ outlet: u.outlet, side: u.side || sideOfName(u.outlet), body: false, why: u.why, focus: headOf(u.outlet), facts: [], words: [], absent: [], head: '', link: linkOf(u.item, u.outlet) }));
     return { rows: [...rows, ...un], clash: rd.clash, dva: rd.dva };
   }
-  const rows = arr(p.heads).filter((x) => x.outlet).slice(0, 4).map((x) => ({ outlet: x.outlet, side: x.side, body: false, focus: cleanH(trMode() === 'ja' && x.title_ja ? x.title_ja : x.title), words: [], absent: [], head: '', link: x.link || linkOf(x.id, x.outlet) }));
+  const why = e.unreadWhy || {};
+  const rows = arr(p.heads).filter((x) => x.outlet).slice(0, 4).map((x) => ({ outlet: x.outlet, side: x.side, body: false, why: why[x.outlet] || '', focus: cleanH(trMode() === 'ja' && x.title_ja ? x.title_ja : x.title), words: [], absent: [], head: '', link: x.link || linkOf(x.id, x.outlet) }));
   if (!rows.length) return null;
   const d = e.brief && arr(e.brief.diffs)[0];
   return { rows, clash: d ? d.text : '' };
@@ -3713,7 +3723,7 @@ function heroWire() {
   HX.guide = createGuide({ win: window, voiceFor, onState: (st) => { if (HX.orb) HX.orb.setState(st === 'speaking' ? 'speaking' : 'idle'); hxPaintSpeak(); },
     onCaption: (t) => { if (HX.cap) HX.cap.textContent = t; }, onBoundary: () => { if (HX.orb) HX.orb.pulse(); } });
   HX.hero = createHero({ h, root: cardBox, fmt: { clock: fmtClock, short: fmtShort }, on: {
-    open: hxOpen, why: hxWhy, compare: hxCompare, orbSlot: hxOrbBox, oneSideNote: ONE_SIDE_NOTE,
+    open: hxOpen, why: hxWhy, compare: hxCompare, biasDetail: hxBiasDetail, orbSlot: hxOrbBox, oneSideNote: ONE_SIDE_NOTE,
     photo: (p) => { const e = state.es ? heroEntry(p) : null; const ph = e ? entryPhoto(e) : null; return ph && ph.kind !== 'video' ? ph : null; },
     // v64: the card says what the news holds. The brief is the story's own (AI, marked); the bias index only where both sides carry it (a story of one side is outside the order)
     brief: (p) => { const e = state.es ? heroEntry(p) : null; const b = e && e.brief ? e.brief : null; if (!b) return null; const d = arr(b.diffs)[0]; const rows = b.rows.filter((r) => r.key === 'what_ja' || r.key === 'views_ja' || r.key === 'background_ja'); if (d) rows.push({ key: 'diff', label: '各社の中身', text: d.text, by: d.by.map(outletOf) }); return { rows, at: b.madeAt }; },
@@ -4020,7 +4030,8 @@ async function appLoad() {
   const d = dataDir();
   const [al, re, im, rl, he] = await Promise.all(['aliases.json', 'reaction.json', 'impact.json', 'relations.json', 'hero.json'].map((f) => getJson(d + f)));
   appS.groups = aliasGroups(al);
-  setWordGroups([...appS.groups, ...aliasGroups({ groups: isObj(al) ? al.words : [] })]);   // the words of one row of the compare figure: the groups and the table's own `words`
+  setWordGroups([...appS.groups, ...aliasGroups({ groups: isObj(al) ? al.words : [] })]);
+  setMatrixGroups(aliasGroups({ groups: isObj(al) ? al.words : [] }));   // the words of one row of the compare figure: the groups and the table's own `words`
   appS.reaction = isObj(re) && re.schema === 'parallax-reaction/1' ? re : null;
   appS.impact = isObj(im) && im.schema === 'parallax-impact/1' ? im : null;
   appS.graph = graphOf(rl);

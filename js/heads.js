@@ -73,7 +73,7 @@ export const HEADS = {
   'outlet.agree': ['他社一致', 'Shared with others'],
   'outlet.words': ['特徴語', 'Distinctive words'],
   'outlet.tone': ['反応語', 'Reaction words'],
-  'outlet.bias': ['バイアス度分布', 'Bias index spread'],
+  'outlet.bias': ['偏り度分布', 'Bias index spread'],
   'outlet.ext': ['外部評価', 'Outside ratings'],
   'outlet.list': ['掲載ニュース', 'News carried'],
   'outlet.multi': ['複数社報道', 'Stories of 2+ outlets'],
