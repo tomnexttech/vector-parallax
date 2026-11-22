@@ -4,8 +4,8 @@ import { SECTIONS, NEWS_TABS, parseHash, hashOf, paperOf, nextSeen, shareUrl, ru
 import { sides } from '../../js/entry.js';
 import { norm, scoreOf, rank } from '../../js/palette.js';
 
-test('the eight screens, home first', () => {
-  assert.deepEqual(SECTIONS.map((x) => x.ja), ['ホーム', 'ニュース', '地図', '市場', '政治', '災害', '映像', '保存']);
+test('the screens, home first; the entrance and the stock page follow the eight (v90)', () => {
+  assert.deepEqual(SECTIONS.map((x) => x.ja), ['ホーム', 'ニュース', '地図', '市場', '政治', '災害', '映像', '保存', '入口', '株の確率']);
 });
 
 test('a hash opens a screen; the older hashes keep their own meaning', () => {

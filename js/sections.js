@@ -1,6 +1,6 @@
 /* sections — the app's whole screens and what they need that is not drawing. No DOM.
  *
- *   SECTIONS                                the eight screens, in the order of the bar
+ *   SECTIONS                                the screens, in the order of the bar (the first eight are Alt 1〜8; 入口 and 株の確率 follow)
  *   NEWS_TABS                               the ways of reading the news inside ニュース
  *   parseHash(hash) -> { sect, tab } | null null: the hash is not a screen (#ai, #rules, #p-case keep their own meaning)
  *   hashOf(sect, tab) -> '#news/paper'
@@ -19,6 +19,7 @@
 export const SECTIONS = [
   { id: 'home', ja: 'ホーム' }, { id: 'news', ja: 'ニュース' }, { id: 'map', ja: '地図' }, { id: 'market', ja: '市場' },
   { id: 'politics', ja: '政治' }, { id: 'disaster', ja: '災害' }, { id: 'video', ja: '映像' }, { id: 'saved', ja: '保存' },
+  { id: 'portal', ja: '入口' }, { id: 'stocks', ja: '株の確率' },   // after the eight: Alt 1〜8 keep their meaning
 ];
 export const NEWS_TABS = [['now', 'ニュース一覧'], ['rank', '注目度ランキング'], ['paper', '紙面'], ['diff', '前回以降'], ['anom', '独自報道'], ['hours', '時間別'], ['src', '媒体一覧']];
 const SECT_IDS = new Set(SECTIONS.map((x) => x.id));

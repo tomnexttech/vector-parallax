@@ -50,6 +50,9 @@ import { createSettingsPanel } from './settings_panel.js';
 import { initLandscape } from './landscape.js';
 import { initDial } from './dial.js';
 import { createTour, wantTour } from './tour.js';
+import { VIEWS, viewOfSect, pageOf as viewPageOf, cardsOf, landing, rememberView } from './portal.js';
+import { entrance, viewBand } from './portal_ui.js';
+import { createStocks } from './stocks_ui.js';
 import { createDossier, measure, paperPick, setMatrixGroups, drawShareCard, CARD_W, CARD_H } from './dossier.js';
 import { createCoverage, coverageOf } from './coverage.js';
 import { createVerdict, verdictOf } from './verdict.js';
@@ -1742,6 +1745,7 @@ function paintScreen() {
   const hm = document.querySelector('#sects a[data-s="home"]');
   if (hm) { if (onHome && now === 'home') hm.setAttribute('aria-current', 'page'); else hm.removeAttribute('aria-current'); }
   placeHomeBar();
+  paintViews();
 }
 // the home's bar holds seven things (the name, the three screens, the time of the data, 検索, the look, 設定, その他); the sections, the
 // switch of AI and rules and the buttons of mail, own AI, the guide, English and the data go behind その他 (docs/design-1115b.md §5)
@@ -2596,7 +2600,7 @@ async function loadHaz() {
   renderHaz(); renderMap(false); renderFlash();
   if (cur()) renderCase();
   if (state.sheet === 'haz') renderSheet();
-  if (state.sect === 'disaster') renderSect();
+  if (state.sect === 'disaster' || state.sect === 'portal') renderSect();
 }
 async function loadSide() {
   const [m, p, hs, cr] = await Promise.all([getJson(dataDir() + 'markets.json'), getJson(dataDir() + 'politics.json'), getJson(dataDir() + 'history.json'), getJson(dataDir() + 'critical.json')]);
@@ -2607,7 +2611,7 @@ async function loadSide() {
   renderMkt(); renderPol();
   if (cur()) renderCase();
   if (state.sheet === 'mkt' || state.sheet === 'pol') renderSheet();
-  if (state.sect === 'market' || state.sect === 'politics') renderSect();
+  if (state.sect === 'market' || state.sect === 'politics' || state.sect === 'portal') renderSect();
 }
 
 // ---------------------------------------------------------------- sheets: a pane opened toward the viewer — one big number, the facts, then everything
@@ -3055,11 +3059,12 @@ function renderLocal() {
 
 // ---------------------------------------------------------------- the screens: the board's panes opened whole; the address says which (js/sections.js)
 const PAGE_SHEET = { market: 'mkt', politics: 'pol', disaster: 'haz' };
-const SECOND = new Set(['market', 'politics', 'disaster', 'video']);
-const isPage = (id) => id === 'news' || id === 'saved' || !!PAGE_SHEET[id] || (id === 'map' && state.set.panes.off.includes('map')) || (id === 'video' && state.set.panes.off.includes('tv'));
+const SECOND = new Set(['market', 'politics', 'disaster', 'video', 'stocks']);
+const isPage = (id) => id === 'news' || id === 'saved' || id === 'portal' || id === 'stocks' || !!PAGE_SHEET[id] || (id === 'map' && state.set.panes.off.includes('map')) || (id === 'video' && state.set.panes.off.includes('tv'));
 const stacked = () => window.matchMedia('(max-width: 1100px)').matches;
 function renderSectNav() {
   paintScreen();
+  paintViews();
   // ホーム is chosen on the home screen only (paintScreen); 詳しく見る and 比べる are in the bar's three screens
   for (const a of document.querySelectorAll('#sects a[data-s]')) { if (a.dataset.s === state.sect && (a.dataset.s !== 'home' || screenNow() === 'home')) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); }
   const sec = SECOND.has(state.sect);
@@ -3092,6 +3097,8 @@ function applySect(prev) {
   renderSectNav();
   renderSect();
   window.scrollTo(0, 0);
+  // the first visit's tour waits for the home when the entrance came first
+  if (sc === 'home' && state.data && !state.tourAsked) { state.tourAsked = true; if (wantTour(store, location.search) && !HX.demo && !document.documentElement.hasAttribute('data-show')) requestAnimationFrame(() => openTour()); }
   if (state.map && state.data && !isPage(sc)) requestAnimationFrame(() => { state.map.resize(); renderMap(false); renderMapNews(); applyView(); window.scrollTo(0, 0); });
 }
 function paintNewsCase() {
@@ -3136,6 +3143,31 @@ function pageOff(k) {
   const ja = SECTIONS.find((x) => x.id === k).ja;
   return { bare: true, body: [h('p', { class: 'empty big' }, `設定で「${ja}」を隠しています。`, h('button', { type: 'button', class: 'tbb', on: { click: () => openSettings('panes') } }, '設定を開く'))] };
 }
+// ---------------------------------------------------------------- the entrance and the views (js/portal.js, js/portal_ui.js): one site, several ways of looking
+const portalFacts = () => ({ events: state.es.filter((e) => !e.foldedInto && vis(e)).length, quakes: state.haz && Array.isArray(state.haz.quakes) ? state.haz.quakes.length : null,
+  series: state.mkt && Array.isArray(state.mkt.series) ? state.mkt.series.filter((x) => isObj(x) && x.ok).length : null });
+let stocksOne = null;
+const stockItems = () => state.es.filter((e) => !e.foldedInto && vis(e) && isNum(e.first)).map((e) => ({ ts: e.first, title: e.heading.text, hay: `${e.heading.text} ${e.members.map((it) => str(it.title)).join(' ')}`, n: e.n, key: e.key }));
+const stocksUi = () => (stocksOne = stocksOne || createStocks({ h, s, items: stockItems, again: () => { if (state.sect === 'stocks') renderSect(); } }));
+/** open a page of a view: a screen of the news view, or a section */
+function openPage(p) {
+  if (!p) return;
+  if (p.screen && $('sc-' + p.screen)) { if (state.sect !== 'home') setSect('home'); $('sc-' + p.screen).click(); return; }
+  setSect(p.sect || 'home');
+}
+let bandOne = null;
+function paintViews() {
+  if (!bandOne) return;
+  const v = viewOfSect(state.sect);
+  bandOne.paint(v, viewPageOf(state.sect, screenNow()));
+  document.documentElement.dataset.view = v || '';
+  if (v && v !== 'portal') rememberView(store, v);
+}
+function mountViews() {
+  bandOne = viewBand({ h, views: VIEWS, onView: (v) => openPage(v.pages[0]), onPage: openPage });
+  $('tb').after(bandOne.el);
+  paintViews();
+}
 function renderSect() {
   const k = state.sect;
   if (k === 'saved') { renderTasks(); renderWatch(); renderSavedHits(); renderReads(); return; }
@@ -3146,7 +3178,7 @@ function renderSect() {
   const keep = box.scrollTop;
   let r;
   try {
-    if (k === 'news') { const t = state.newsTab; r = t === 'rank' ? newsRank() : t === 'paper' ? newsPaper() : t === 'diff' ? newsDiff() : t === 'now' ? newsNow() : SHEET_BODY[t](); } else if (PAGE_SHEET[k]) r = SHEET_BODY[PAGE_SHEET[k]](); else r = pageOff(k);
+    if (k === 'news') { const t = state.newsTab; r = t === 'rank' ? newsRank() : t === 'paper' ? newsPaper() : t === 'diff' ? newsDiff() : t === 'now' ? newsNow() : SHEET_BODY[t](); } else if (k === 'portal') r = { bare: true, body: entrance({ h, s, cards: cardsOf(portalFacts()), open: openPage }) }; else if (k === 'stocks') r = stocksUi().page(); else if (PAGE_SHEET[k]) r = SHEET_BODY[PAGE_SHEET[k]](); else r = pageOff(k);
   } catch (err) { r = { bare: true, body: [h('p', { class: 'empty', text: `表示できませんでした: ${err && err.message ? err.message : String(err)}` })] }; }
   const title = SECTIONS.find((x) => x.id === k).ja;
   const tabs = k === 'news' ? h('div', { class: 'sc-tabs', role: 'group', 'aria-label': 'ニュースの並べ方' }, NEWS_TABS.map(([id, ja]) => h('a', { href: hashOf('news', id), class: 'sc-tab', 'aria-current': id === state.newsTab ? 'page' : null }, ja,
@@ -4173,6 +4205,8 @@ async function main() {
   state.sect = 'home'; state.newsTab = 'now';
   const h0 = parseHash(location.hash);
   if (h0) { state.sect = h0.sect; if (h0.tab) state.newsTab = h0.tab; }
+  if (landing({ hash: location.hash, search: location.search, storage: store, demo: !!HX.demo }) === 'portal') state.sect = 'portal';   // a new visitor starts at the entrance
+  mountViews();
   document.documentElement.dataset.sect = state.sect;
   document.documentElement.dataset.page = isPage(state.sect) ? '1' : '0';
   $('sect').hidden = !isPage(state.sect) || state.sect === 'saved';
@@ -4204,7 +4238,7 @@ async function main() {
   for (const id of SCREENS) $('sc-' + id).addEventListener('click', () => toScreen(id));
   $('home-detail').addEventListener('click', () => toScreen('board'));
   const nameHome = $('app-home');
-  nameHome.addEventListener('click', () => toScreen('home', () => { setSect('home'); window.scrollTo(0, 0); }));
+  nameHome.addEventListener('click', () => { setSect('portal'); window.scrollTo(0, 0); });   // the name goes to the entrance
   nameHome.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); nameHome.click(); } });
   for (const a of document.querySelectorAll('#sects a[data-s="home"]')) a.addEventListener('click', () => { if (screenNow() !== 'home') toScreen('home'); });
   window.addEventListener('popstate', (ev) => {
