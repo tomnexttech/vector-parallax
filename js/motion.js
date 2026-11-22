@@ -6,16 +6,18 @@
  *
  *   calm()                          -> bool  motion is off
  *   rise(els, { res, step, cap, dy, delay })   the leader first, each next one `step` ms later (the whole within `cap` ms); an element fades up from dy px
- *   swap(root, pick, render, dir)   what is on screen leaves and the new comes in together (420 ms, slow at both ends, 16 px); dir 1 | -1 | 0 (0: fade only)
+ *   swap(root, pick, render, dir)   what is on screen leaves and the new comes in together (7 frames, 233 ms, slow at both ends, 16 px); dir 1 | -1 | 0 (0: fade only)
  *   grow(els, { origin, res, step, cap, delay })   bars that stretch from their start (scaleX) in a flock, 90 ms apart
- *   count(el, to, { ms })           a number that steps up in tenths of a second (10 Hz, constant speed, never rolling smoothly)
+ *   count(el, to, { ms })           a number that reads out one step a frame (24 per second, 16 frames), quick at first and settling on the last digits, never rolling smoothly
  *   pop(el), dip(els, keep)         the chosen control settles; the others step back and return
  *   glow(el)                        the one cell whose value changed lights once (900 ms)
  *   viewSwap(fn, dir)               a change of screen as a view transition (the old and the new move together); fn runs at once when it cannot
  */
 export const OUT = 'cubic-bezier(.16, 1, .3, 1)';
 export const IO = 'cubic-bezier(.45, 0, .2, 1)';
-export const RES = 220, STEP = 90, SWAP = 420;
+// speeds are frames of the reel at 30 fps (2026-11-22, v87): a move in place 5 frames, a screen 7 frames, the next one 1.5 frames after the leader
+export const FRAME = 1000 / 30;
+export const RES = 167, STEP = 62, SWAP = 233;
 
 export function calm() {
   try {
@@ -79,7 +81,7 @@ export function swap(root, pick, render, dir = 1) {
   });
 }
 
-export function count(el, to, { ms = 900, delay = 0 } = {}) {
+export function count(el, to, { ms = 672, delay = 0 } = {}) {
   if (!el || calm() || !Number.isFinite(to)) return false;
   const m = /^(\D*)(\d[\d,]*)(\D*)$/.exec(String(el.textContent || '').trim());
   if (!m) return false;
@@ -88,7 +90,7 @@ export function count(el, to, { ms = 900, delay = 0 } = {}) {
   const w = el.getBoundingClientRect ? el.getBoundingClientRect().width : 0;
   const keep = { d: el.style.display, w: el.style.minWidth, a: el.style.textAlign };
   if (w > 0) { el.style.display = 'inline-block'; el.style.minWidth = `${w}px`; el.style.textAlign = 'right'; }
-  const tick = 100, n = Math.max(2, Math.round(ms / tick));
+  const tick = 1000 / 24, n = Math.max(2, Math.round(ms / tick));   // one step a frame of a 24 fps reel
   let k = 0;
   el.textContent = `${pre}0${suf}`;
   const fin = () => { el.textContent = `${pre}${end}${suf}`; el.style.display = keep.d; el.style.minWidth = keep.w; el.style.textAlign = keep.a; };
@@ -96,7 +98,7 @@ export function count(el, to, { ms = 900, delay = 0 } = {}) {
     const t = setInterval(() => {
       k += 1;
       if (k >= n || !el.isConnected) { clearInterval(t); fin(); return; }
-      el.textContent = `${pre}${Math.round(end * k / n)}${suf}`;
+      el.textContent = `${pre}${Math.round(end * (1 - (1 - k / n) ** 2))}${suf}`;   // ease-out: the large steps come first, the last digits settle
     }, tick);
   }, delay);
   return true;

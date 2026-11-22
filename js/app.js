@@ -1651,7 +1651,7 @@ function frontMove(fr, gp, prev, press) {
     grow(bars, { origin: sideOrigin, delay: 300, step: 45, cap: 760 });
     grow(bm, { delay: 300, step: 45, cap: 760 });
     if (totBar) grow([totBar], { delay: 560, res: 400 });
-    for (const el of [...fr.querySelectorAll('.fr-v .num'), ...gp.querySelectorAll('.fr-gn, .fr-tl b.num')]) countMo(el, numOf(el), { delay: 300, ms: 800 });
+    for (const el of [...fr.querySelectorAll('.fr-v .num'), ...gp.querySelectorAll('.fr-gn, .fr-tl b.num')]) countMo(el, numOf(el), { delay: 300 });
     return;
   }
   if (press) {

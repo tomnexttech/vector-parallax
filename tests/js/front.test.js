@@ -259,3 +259,21 @@ test('the three strengths of a count in the fields table: the larger side is hi 
   assert.equal(tierOf(0, 0), ' hi');
   assert.equal(tierOf(0, 9), '');
 });
+
+test('v87: speeds are frames of the reel (5 / 7 / 1.5), a number reads out one step a frame, the lattice is behind the card content and its children are not repositioned, motion is still when calm', () => {
+  const mo = read('js/motion.js');
+  assert.match(mo, /RES = 167, STEP = 62, SWAP = 233/);
+  assert.match(mo, /tick = 1000 \/ 24/);
+  const css = read('css/app.css');
+  assert.doesNotMatch(css, /#board \.hr-card > \* \{ position: relative/);
+  assert.match(css, /#board \.hr-card::before \{[^}]*z-index: -1/);
+  assert.match(css, /:root\[data-calm\] #board \.hr-card :is\(\.hr-fc, \.hr-rd\), :root\[data-calm\] #board \.hr-card::before \{ animation: none !important; \}/);
+  assert.match(css, /#board \.hr-card \{ position: relative; isolation: isolate; \}/);
+  assert.match(css, /cn-open \.167s/);
+});
+
+test('v87: the light theme says its chip and lattice again with the weight of the dark ones (they lost to sixteen :not(#id)), and the lattice is almost gone on a phone', () => {
+  const css = read('css/app.css');
+  assert.match(css, /:root\[data-theme="light"\]:not\(#k0\)(:not\(#k[0-9a-f]\)){15} #board \.hl-r\[aria-current="true"\] \.rm \.num \{ background: var\(--ink\); color: #fff;/);
+  assert.match(css, /@media \(max-width: 640px\) \{\s*:root(:not\(#k[0-9a-f]\)){16} #board \.hr-card::before \{ opacity: \.06; \}/);
+});

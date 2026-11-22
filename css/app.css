@@ -6482,8 +6482,8 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hl-r[aria-current="true"] .rm .num { background: var(--ink); color: #0b0b0e; box-shadow: none; }
 :root[data-theme="light"]:not(#k0) #board .hl-r[aria-current="true"] .rm .num { color: #fff; }
 /* 3. a share is cut into 40 cells; its two ends are thin, large numbers (the % is the small one) */
-:root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board :is(.hr-sb, .fr-tb) { gap: 0; height: 12px; border-radius: 0; background: none; -webkit-mask: repeating-linear-gradient(90deg, #000 0 calc(2.5% - 2px), transparent 0 2.5%); mask: repeating-linear-gradient(90deg, #000 0 calc(2.5% - 2px), transparent 0 2.5%); }
-:root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board :is(.hr-sb, .fr-tb) i { border-radius: 0; }
+:root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board :is(.hr-sb, .fr-tb) { gap: 0; height: 12px; border-radius: 999px; background: none; -webkit-mask: repeating-linear-gradient(90deg, #000 0 calc(2.5% - 2px), transparent 0 2.5%); mask: repeating-linear-gradient(90deg, #000 0 calc(2.5% - 2px), transparent 0 2.5%); }
+:root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board :is(.hr-sb, .fr-tb) i { border-radius: 0; background: linear-gradient(180deg, rgba(255, 255, 255, .26), rgba(255, 255, 255, 0) 62%), var(--sd); }
 :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-sl { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-sl .k { order: 2; margin: 0; font-size: 12px; font-weight: 500; letter-spacing: .04em; color: var(--ink-3); }
 :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-pc { display: inline-flex; align-items: baseline; gap: 0; --sd: var(--sd-jp); color: var(--ink-3); }
@@ -6500,9 +6500,10 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .fr-gn.mid { font-weight: 500; color: color-mix(in srgb, var(--ink) 78%, transparent); }
 :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .fr-gn.hi { font-weight: 700; color: var(--ink-hi, var(--ink)); }
 /* 5. a faint cross lattice is the ground of the news in focus; it is the last layer to come in */
-:root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit; opacity: .16; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Cpath d='M18 14.5v7M14.5 18h7' stroke='white' stroke-width='1' fill='none'/%3E%3C/svg%3E") 0 0 / 36px 36px; -webkit-mask: linear-gradient(180deg, #000, transparent 85%); mask: linear-gradient(180deg, #000, transparent 85%); animation: cn-tex .45s linear .5s both; }
+:root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit; opacity: .16; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Cpath d='M18 14.5v7M14.5 18h7' stroke='white' stroke-width='1' fill='none'/%3E%3C/svg%3E") 0 0 / 36px 36px; -webkit-mask: linear-gradient(180deg, #000, transparent 85%); mask: linear-gradient(180deg, #000, transparent 85%); animation: cn-tex .45s linear .5s both; }
 :root[data-theme="light"]:not(#k0) #board .hr-card::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Cpath d='M18 14.5v7M14.5 18h7' stroke='black' stroke-width='1' fill='none'/%3E%3C/svg%3E"); opacity: .12; }
-:root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card > * { position: relative; z-index: 1; }
+/* the card is its own stacking context with a position, so the lattice (z-index -1) is under its content and over its glass; its children are left as they are */
+:root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card { position: relative; isolation: isolate; }
 /* 6. rows come in one after another, 1.5 frames (62 ms) apart, nine frames at most; a value is not slid in, it is there */
 :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card :is(.hr-fc, .hr-rd) { animation: cn-in .14s var(--ease) both; }
 :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card .hr-fc:nth-child(2), :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card .hr-rd:nth-child(2) { animation-delay: 62ms; }
@@ -6511,3 +6512,29 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card .hr-fc:nth-child(5), :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card .hr-rd:nth-child(5) { animation-delay: 250ms; }
 :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card .hr-rd:nth-child(n+6) { animation-delay: 312ms; }
 /* ==== v86:end ==== */
+
+/* the v86 entrances and the lattice's fade are motion too: still when motion is calm */
+:root[data-calm] #board .hr-card :is(.hr-fc, .hr-rd), :root[data-calm] #board .hr-card::before { animation: none !important; }
+
+/* ==== v87 (2026-11-22): the same patterns, kept inside the glass. What the reel teaches is order, speed and focus, not a look: the panes, the blur, the colours and the
+ * layout stay as they were. Speeds are frames of the reel at 30 fps (1 frame = 33 ms): a window comes in place in 5 frames (167 ms), a screen changes in 7 (233 ms),
+ * the rows after the leader follow 1.5 frames apart (62 ms), a number reads out one step a frame. Nothing here runs when motion is calm (data-calm / reduced motion). ==== */
+/* the light theme's two answers to v86 never won: the v86 rules for the dark ground carry sixteen :not(#id) and out-weigh a light rule with one, so in light the current row's chip was dark ink on dark ink and the lattice was white on white. They are said again here with the same weight. */
+:root[data-theme="light"]:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hl-r[aria-current="true"] .rm .num { background: var(--ink); color: #fff; box-shadow: none; }
+:root[data-theme="light"]:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36'%3E%3Cpath d='M18 14.5v7M14.5 18h7' stroke='black' stroke-width='1' fill='none'/%3E%3C/svg%3E"); opacity: .12; }
+/* on a phone the lattice runs through the words (36 px apart at 2x): it is almost gone there */
+@media (max-width: 640px) {
+  :root:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card::before { opacity: .06; }
+  :root[data-theme="light"]:not(#k0):not(#k1):not(#k2):not(#k3):not(#k4):not(#k5):not(#k6):not(#k7):not(#k8):not(#k9):not(#ka):not(#kb):not(#kc):not(#kd):not(#ke):not(#kf) #board .hr-card::before { opacity: .05; }
+}
+@keyframes cn-open { from { opacity: 0; } }
+@media (prefers-reduced-motion: no-preference) {
+  /* a window (the search) comes where it will stay, no growing, in 5 frames, and the dim behind it comes with it; the sheet's own dim keeps its .26 s */
+  :root:not([data-calm]) .cmd-layer:not([hidden]) { animation: cn-open .167s linear 1 both; }
+  :root:not([data-calm])[data-vt]::view-transition-group(mo-scr) { animation-duration: .233s; }
+  :root:not([data-calm])[data-vt="fore"]::view-transition-old(mo-scr) { animation-duration: .233s; }
+  :root:not([data-calm])[data-vt="fore"]::view-transition-new(mo-scr) { animation-duration: .233s; }
+  :root:not([data-calm])[data-vt="back"]::view-transition-old(mo-scr) { animation-duration: .233s; }
+  :root:not([data-calm])[data-vt="back"]::view-transition-new(mo-scr) { animation-duration: .233s; }
+}
+/* ==== v87:end ==== */
