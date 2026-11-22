@@ -52,6 +52,7 @@ import { initDial } from './dial.js';
 import { createTour, wantTour } from './tour.js';
 import { createDossier, measure, paperPick, setMatrixGroups, drawShareCard, CARD_W, CARD_H } from './dossier.js';
 import { createCoverage, coverageOf } from './coverage.js';
+import { createVerdict, verdictOf } from './verdict.js';
 import { biasOf as biasIndex, sourceBase } from './bias.js';
 import { newsView, createMapNews } from './mapnews.js';
 import { createWall, wallOn, pageOf, pageHolding, perOf } from './wall.js';
@@ -721,6 +722,9 @@ const dossier = createDossier({ h, s, extLink, safeUrl, fmtClock, fmtSpan, lineI
 const coverage = createCoverage({ h, onOutlet: (name) => openOutlet(name) });
 /** 媒体の比べ（CONTRACT §21）: the card of an event, or null when the case has none (an old file, a failed read) — then the screen is as it was */
 const coverageCard = (e) => { const c = e && e.case ? coverageOf(e.case.coverage) : null; return c ? coverage.node(c, { total: Number.isInteger(e.n) ? e.n : null }) : null; };
+const verdict = createVerdict({ h });
+/** 比べた結論 (v88, js/verdict.js): the media table and the bias index read down to one card; null when there is no table or only one side (then the screen is as it was) */
+const verdictCard = (e) => { const c = e && e.case ? coverageOf(e.case.coverage) : null; return c ? verdict.node(verdictOf(c, biasOf(e))) : null; };
 /** 偏り度 of an event (js/bias.js): held against the outlets this build collected; the AI's term only when the AI wrote its focus lines */
 const biasOf = (e) => { if (e.bias) return e.bias; const a = new Map(e.ai ? arr(e.ai.angles).filter(isObj).map((x) => [x.item_id, str(x.focus_ja)]) : []); e.bias = biasIndex(measureOf(e), { base: sourceBase(arr(state.data && state.data.sources)), angles: a.size ? a : null }); return e.bias; };
 /** a pressed row opens in place: the whole headline, the description the outlet published (quoted), and the way to the article */
@@ -1342,7 +1346,7 @@ function caseNode(e) {
   const node = h('div', { class: 'case-in' },
     h('div', { class: 'dos' + (photo ? ' has-photo' : '') },
       h('header', { class: 'ch dcard t-place' }, place, head, tools), photo, nav,
-      stH('pt', '要点'), point, reps, covNode, status, fill, figs,
+      stH('pt', '要点'), point, reps, verdictCard(e), covNode, status, fill, figs,
       stH('tl', '経過', tl.length), tlCard,
       stH('sd', '各側見出し'), dossier.sides(m, angles, act),
       stH('src', '出典一覧', src.length), srcCard),
@@ -1534,7 +1538,7 @@ function renderEntryView() {
   state.entryOrder = evs.map((e) => e.key);
   renderEntry($('entry'), { h, events: evs, sel: state.entrySel, pick: pickEntry, gen: state.data.generated_at,
     fmt: { clock: fmtClock, short: fmtShort, span: fmtSpan }, aiTag: tagAI, aiBy: [str(run.provider), str(run.model)], aiAt: run.at, safeUrl, absent: absentOf, full: () => { setHome('board'); setUi('full'); },
-    detail: entryDetail, ownBox, coverage: coverageCard, briefBox: (e) => briefBox(e, tagAI), measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
+    detail: entryDetail, ownBox, coverage: coverageCard, verdict: verdictCard, briefBox: (e) => briefBox(e, tagAI), measure: measureOf, bias: biasOf, dossier, photo: entryPhoto, videos: videosOfEvent, outlet: openOutlet, shareImage: (k) => shareImage(state.byKey.get(k)), speak: (e) => speakBtn(e),
     oneSide: sideGroups(true), oneSideTitle: ONE_SIDE_TITLE, oneSideNote: ONE_SIDE_NOTE, more: entryMore, openOutlet,
     local: state.set.local.place ? { name: placeName(state.set.local.place), events: localList().slice(0, 5) } : null });
   const hd = $('entry').querySelector('.en-head');

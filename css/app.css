@@ -6538,3 +6538,60 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
   :root:not([data-calm])[data-vt="back"]::view-transition-new(mo-scr) { animation-duration: .233s; }
 }
 /* ==== v87:end ==== */
+
+/* ==== v88 (2026-11-22): 比べた結論 (js/verdict.js). One quiet card: two counts and the bias index at the top, what both sides carry, where they split with how firm each split is, and the limits.
+ * No new colour: the three sides' marks, the ink steps and the glass the screen already has. One number per figure; the big one is thin. Nothing moves. ==== */
+.vd { display: grid; gap: 16px; padding: 18px 20px 16px; border-radius: var(--r-l, 14px); background: color-mix(in srgb, var(--pane, #1c1c1e) 62%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent), inset 0 1px 0 rgba(255, 255, 255, .08); color: var(--ink); text-align: left; min-width: 0; }
+.vd::before { content: none; }
+.vd .vd-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0; font: 800 16px/1.3 var(--f-display); color: var(--ink-hi, var(--ink)); }
+.vd .vd-note { font: 400 12px/1.4 var(--f-text); color: var(--h-ink3, var(--ink-3)); }
+.vd .vd-lead { margin: 0; font: 500 15px/1.6 var(--f-text); color: var(--ink); }
+.vd .vd-top { display: grid; grid-template-columns: auto auto minmax(0, 1fr); align-items: stretch; gap: 8px 12px; }
+.vd .vd-t { display: grid; align-content: center; gap: 2px; min-width: 92px; padding: 10px 16px; border-radius: 12px; background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.vd .vd-t b { font: 300 34px/1 var(--f-num); letter-spacing: -.02em; color: var(--ink-hi, var(--ink)); }
+.vd .vd-t span { font: 500 12px/1.3 var(--f-text); color: var(--ink-2); }
+.vd .vd-bias { display: grid; align-content: center; gap: 4px 12px; grid-template-columns: auto minmax(0, 1fr); padding: 10px 16px; border-radius: 12px; background: color-mix(in srgb, var(--ink) 6%, transparent); min-width: 0; }
+.vd .vd-bk { grid-column: 1 / -1; font: 500 12px/1.3 var(--f-text); color: var(--ink-2); }
+.vd .vd-bn { font: 300 34px/1 var(--f-num); letter-spacing: -.02em; color: var(--ink-hi, var(--ink)); }
+.vd .vd-bar { align-self: center; max-width: 480px; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 14%, transparent); position: relative; overflow: hidden; }
+.vd .vd-bar::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--p); border-radius: inherit; background: var(--ink-2); }
+.vd .vd-bs { grid-column: 1 / -1; font: 400 12px/1.4 var(--f-text); color: var(--h-ink3, var(--ink-3)); }
+.vd .vd-bias.off .vd-bn { color: var(--h-ink3, var(--ink-3)); }
+.vd .vd-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 20px; }
+.vd .vd-c { display: grid; align-content: start; gap: 8px; min-width: 0; }
+.vd .vd-ch { margin: 0; font: 700 13px/1.4 var(--f-display); color: var(--ink-2); }
+.vd .vd-ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.vd .vd-a { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.vd .vd-an { font: 500 14px/1.45 var(--f-text); overflow-wrap: anywhere; min-width: 0; }
+.vd .vd-fr { white-space: nowrap; font: 400 12px/1 var(--f-num); color: var(--h-ink3, var(--ink-3)); }
+.vd .vd-fr b { font: 500 15px/1 var(--f-num); color: var(--ink); }
+.vd .vd-s { display: grid; gap: 6px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.vd .vd-sh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.vd .vd-sn { font: 600 14px/1.45 var(--f-text); overflow-wrap: anywhere; min-width: 0; }
+.vd .vd-l { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; padding: 1px 8px 1px 6px; border-radius: 999px; font: 500 12px/1.6 var(--f-text); color: var(--ink-2); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 22%, transparent); }
+.vd .vd-l i { width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink-2); }
+.vd .vd-l.mid i { background: linear-gradient(90deg, var(--ink-2) 50%, transparent 50%); }
+.vd .vd-l.strong { color: var(--ink-hi, var(--ink)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 55%, transparent); }
+.vd .vd-l.strong i { background: var(--ink-hi, var(--ink)); box-shadow: none; }
+.vd .vd-sw { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.vd .vd-sd { display: inline-flex; align-items: baseline; gap: 6px; }
+.vd .vd-sd i { align-self: center; width: 8px; height: 8px; border-radius: 2px; background: var(--sd); }
+.vd .vd-sk { font: 500 13px/1.4 var(--f-text); color: var(--ink-2); }
+.vd .vd-st { margin: 0; font: 400 13px/1.55 var(--f-text); color: var(--ink-2); overflow-wrap: anywhere; }
+.vd .vd-none, .vd .vd-more { margin: 0; font: 400 13px/1.5 var(--f-text); color: var(--h-ink3, var(--ink-3)); }
+.vd .vd-lim { font: 400 13px/1.55 var(--f-text); color: var(--ink-2); }
+.vd .vd-lim summary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; color: var(--ink-2); font-weight: 500; list-style: none; }
+.vd .vd-lim summary::-webkit-details-marker { display: none; }
+.vd .vd-lim summary::before { content: "+"; width: 16px; text-align: center; font: 400 16px/1 var(--f-num); color: var(--ink-2); }
+.vd .vd-lim[open] summary::before { content: "−"; }
+.vd .vd-lim summary:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 6px; }
+.vd .vd-lc { padding: 0 6px; border-radius: 4px; font: 600 11px/1.45 var(--f-num); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 30%, transparent); }
+.vd .vd-lu { display: grid; gap: 4px; margin: 0 0 4px; padding-left: 18px; }
+@media (max-width: 760.98px) {
+  .vd { padding: 16px; gap: 14px; }
+  .vd .vd-top { grid-template-columns: 1fr 1fr; }
+  .vd .vd-bias { grid-column: 1 / -1; }
+  .vd .vd-cols { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+}
+@media (prefers-contrast: more) { .vd { background: var(--pane); } }
+/* ==== v88:end ==== */

@@ -288,6 +288,7 @@ export function renderEntry(root, o) {
   // each scene is one screen on a wide display (css: the stage block); elsewhere a scene draws no box of its own
   const scene = (k, ...kids) => h('div', { class: 'en-scene', data: { scene: k } }, ...kids);
   const cov = o.coverage ? o.coverage(sel) : null;
+  const vd = o.verdict ? o.verdict(sel) : null;   // v88: 比べた結論, right under the title
   // the newspapers side by side (js/front.js): the rows in the same order in each side's column, read across
   const paperEl = renderPaper({ h, paper: paperOf(m), clock: fmt.clock, when: fmt.short, span: fmt.span, outlet: outletOf, safeUrl: o.safeUrl, icon: (k) => lineIcon(k), openOutlet: o.openOutlet || null });
   root.replaceChildren(scene('pick', head, pick), locEl,
@@ -295,6 +296,7 @@ export function renderEntry(root, o) {
       scene('story', h('div', { class: 'en-top' + (headFig ? '' : ' nop') },
         h('div', { class: 'en-tx' }, badge(f), titleEl(t, 'en-st', 'h2'), h('p', { class: 'en-tot', text: `${nOut}社・${m.n} 件${isNum(o.gen) ? `・${fmt.clock(o.gen)} の値` : ''}` }), ais, o.speak ? o.speak(sel) : null),
         headFig)),
+      vd ? scene('verdict', vd) : null,
       // the newspapers side by side come right under the title: the screen is named for them (比べる); the media table after them
       paperEl ? scene('paper', h('h3', { class: 'en-sub' }, '紙面比較'), paperEl, h('div', { class: 'en-figs one' }, share))
         : scene('figs', h('h3', { class: 'en-sub' }, '伝え方'), h('div', { class: 'en-figs' }, share, time, words)),

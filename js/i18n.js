@@ -137,6 +137,8 @@ export const EN = {
   この端末に保存しました: 'Saved on this device', アドレスの形を確かめてください: 'Check the address', アドレスを消しました: 'Address deleted',
   ホーム画面に追加: 'Add to Home Screen', '「ホーム画面に追加」を選ぶ': 'Choose "Add to Home Screen"',
   // app:end
+  // v88: 比べた結論 (js/verdict.js)
+  '規則で数えた結果': 'Counted by rule', '一致している点': 'Where they agree', '割れている点': 'Where they split', '数え方と限界': 'How it is counted, and its limits', '一致': 'Agree', '割れ': 'Split', '根拠 強め': 'Evidence: stronger', '根拠 中': 'Evidence: middling', '根拠 弱め': 'Evidence: weak',
 };
 
 // the headings come first from their one table (js/heads.js); the rest of the page's words from EN

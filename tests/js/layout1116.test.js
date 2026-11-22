@@ -26,8 +26,8 @@ const SCALE = [10, 11, 12, 13, 14, 16, 19, 22, 28, 34, 44, 60];
 
 test('the v64 block is followed only by the v70 block, which ends the stylesheet, and names the scale', () => {
   assert.ok(A > 0 && B > A);
-  // v70 (11-17) comes after it: the tiles' ground (docs: the --ui-* tokens), and v85 (11-22, one rule for the compare screen at 1280x720) is the last thing in the stylesheet now
-  assert.ok(css.slice(B).trim().startsWith('/* ==== v64:end ==== */') && css.trim().endsWith('/* ==== v87:end ==== */') && css.indexOf('/* ==== v70:end ==== */') > B);
+  // v70 (11-17) comes after it: the tiles' ground (docs: the --ui-* tokens), and v88 (11-22, 比べた結論) is the last thing in the stylesheet now
+  assert.ok(css.slice(B).trim().startsWith('/* ==== v64:end ==== */') && css.trim().endsWith('/* ==== v88:end ==== */') && css.indexOf('/* ==== v70:end ==== */') > B);
   assert.match(css, /--fs-0: 10px; --fs-1: 11px; --fs-2: 12px; --fs-3: 13px; --fs-4: 14px; --fs-5: 16px; --fs-6: 19px; --fs-7: 22px; --fs-8: 34px; --fs-9: 44px; --fs-10: 60px;/);
   assert.match(v64, /:root \{ --fs-7h: 28px;/);
 });
