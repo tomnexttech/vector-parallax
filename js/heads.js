@@ -30,6 +30,7 @@ export const HEADS = {
   'cmp.figs': ['伝え方', 'How it was told'],
   'cmp.heads': ['各社見出し', 'Each outlet'],
   'cmp.local': ['地元', 'Local'],
+  'cmp.verdict': ['比べた結論', 'Comparison summary'],
   'fig.share': ['件数比', 'Share of reports'],
   'fig.outlets': ['社数比', 'Share of outlets'],
   'fig.first': ['初報時刻', 'First reports'],
