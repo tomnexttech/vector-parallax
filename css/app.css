@@ -6462,3 +6462,6 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
   :root[data-screen="board"][data-home="board"]:not(#z1):not(#z2):not(#z3):not(#z4):not(#z5):not(#z6):not(#z7):not(#z8) .board:not([data-floor="map"]):not([data-wall="1"]) { overflow-y: hidden !important; }
 }
 /* ==== v70:end ==== */
+/* ==== v85: a scene that is a fixed height (the compare screen's picks) keeps its genre row whole; at 1280x720 the row was squeezed to 8px ==== */
+:root:not(#_s) .en-scene > .genres { flex: none; }
+/* ==== v85:end ==== */
