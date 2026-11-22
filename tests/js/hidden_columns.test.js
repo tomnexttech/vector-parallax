@@ -13,6 +13,14 @@ test('the home-only column (.c1: sources, hours, fields) is not drawn on the det
   assert.ok(rules.length >= 1, 'a rule hides .c1 on the detailed screen');
   assert.match(rules[rules.length - 1], /display:\s*none\s*!important/);
   assert.match(rules[rules.length - 1], /:not\(\[data-wall="1"\]\)/);          // the same scope as the layout rule it overrides
+  const at = css.lastIndexOf('@media', css.indexOf('[data-home="board"]:not(#z1)'));
+  assert.match(css.slice(at, at + 40), /min-width:\s*1101px/);                  // only where the layout rule that gives .c1 its second row lives
+});
+
+test('the board does not scroll by itself on the wide detailed screen (the left-over row gap and padding made 24px of it)', () => {
+  const rule = css.split('}').filter((r) => /\[data-home="board"\]:not\(#z1\)/.test(r) && !/> \.c1/.test(r) && /overflow-y/.test(r));
+  assert.equal(rule.length, 1);
+  assert.match(rule[0], /overflow-y:\s*hidden\s*!important/);
 });
 
 test('the layout rule that places .c1 in a second grid row is still the only place that gives it a row, and the hiding rule is later in the file', () => {
