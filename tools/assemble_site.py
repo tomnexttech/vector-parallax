@@ -25,7 +25,7 @@ from parallax import site  # noqa: E402
 PAGE_FILES = ("index.html", "sw.js", "manifest.webmanifest", ".nojekyll")
 PAGE_DIRS = ("css", "js", "assets")
 DATA_FILES = ("latest.json", "stats.json", "board.json", "politics.json", "critical.json", "hazards.json", "markets.json",   # generated
-              "relations.json", "reaction.json", "impact.json", "hero.json",                                                  # generated (CONTRACT 24-26)
+              "relations.json", "reaction.json", "impact.json", "hero.json", "social.json",                                                  # generated (CONTRACT 24-26)
               "aliases.json", "lifewords.json",                                                                               # tracked rules of 24 and 25.2
               "prompt.json", "labels.json", "watchwords.json", "places.json", "traps.json", "scenes.json",
               "ratings.json")                                                                                                 # tracked: outside ratings with source and day (js/app.js fetches it; coverage.json is not read by the page)

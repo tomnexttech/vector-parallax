@@ -35,12 +35,12 @@ test('a photo that is not in yet is tinted by its field, not black', () => {
 });
 
 test('the service worker is v66 (the 11-17 home pass)', () => {
-  assert.match(read('sw.js'), /const CACHE = 'parallax-v88';/);
+  assert.match(read('sw.js'), /const CACHE = 'parallax-v89';/);
 });
 
 test('the service worker is v66: a server error (5xx) is answered with the copy kept on the device when there is one', () => {
   const sw = read('sw.js');
-  assert.match(sw, /const CACHE = 'parallax-v88';/);
+  assert.match(sw, /const CACHE = 'parallax-v89';/);
   assert.match(sw, /res\.status >= 500\) return caches\.match\(req/);
 });
 

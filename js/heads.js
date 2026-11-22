@@ -104,6 +104,16 @@ export const HEADS = {
   'own.title': ['マイ AI', 'My AI'],
   'src.title': ['媒体一覧', 'Outlets'],
   'absent.unknown': ['判定不能', 'Undecided'],
+  // the trend of a place under the map (js/trendui.js, js/mapnews.js; 11-22)
+  'trend.place': ['地点別動向', 'Place trend'],
+  'trend.top': ['話題上位', 'Top stories'],
+  'trend.up': ['増加中', 'Rising'],
+  'trend.fields': ['分野別', 'By field'],
+  'trend.outlets': ['媒体別', 'By outlet'],
+  'trend.days': ['日別件数', 'By day'],
+  'trend.social': ['SNS 動向', 'Social media'],
+  'trend.words': ['上昇語', 'Rising words'],
+  'trend.tone': ['肯定否定', 'Positive and negative'],
 };
 
 /** the exceptions: 媒体の特徴 is the sheet's name Sir used (11-15); ホーム画面に追加 is the name of Safari's own menu item, quoted as the

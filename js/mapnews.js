@@ -9,6 +9,7 @@
  *   createMapNews({ ... })                          -> { render(box, view) }
  * Photos come through photoOf (the simple view's photo of an event) and are shown whole. */
 import { placeJa, placesIn } from './places.js';
+import { HEAD } from './heads.js';
 
 const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
 const str = (v) => (typeof v === 'string' ? v : '');
@@ -41,12 +42,12 @@ export function newsAt(events, pick, { km = 500, nearby = null, limit = 60 } = {
 export function newsView({ events, pri, cur, picked, scope, leadKey, km = 500, nearby = null }) {
   const pick = picked || (cur && cur.geo ? { place: cur.geo.name, lat: cur.geo.lat, lon: cur.geo.lon, country: !!cur.geo.country } : null);
   const near = newsAt(events, pick, { km, nearby });
-  const s = scope === 'pri' || !near.length ? 'pri' : 'near';
+  const s = scope === 'trend' ? 'trend' : scope === 'pri' || !near.length ? 'pri' : 'near';
   const list = s === 'near' ? near : pri || [];
   const lead = s !== 'near' ? cur || null : near.find((e) => e.key === leadKey) || (!picked && near.includes(cur) ? cur : near[0]);
   return { scope: s, pick, near, pri: pri || [], list, lead };
 }
-export const headOf = (v) => (v.scope === 'near' && v.pick ? `${v.pick.place || '選んだ地点'} のニュース` : '注目のニュース');
+export const headOf = (v) => (v.scope === 'trend' ? HEAD['trend.place'] : v.scope === 'near' && v.pick ? `${v.pick.place || '選んだ地点'} のニュース` : '注目のニュース');
 
 export function createMapNews({ h, lk, headNode, ratioOf, photoOf, fmtAge, fmtClock, genreShort, onSelect, onGenre, onScope, onDetails, describe, relatedOf, videoOf }) {
   function tile(e, sel) {
@@ -73,11 +74,13 @@ export function createMapNews({ h, lk, headNode, ratioOf, photoOf, fmtAge, fmtCl
       rel.length ? h('div', { class: 'mn-rel' }, h('span', { class: 'k', text: '関連' }), h('ul', null, rel.map((x) => h('li', null, lk(x.text, () => onSelect(x.key), 'この出来事を開く'))))) : null,
       h('button', { type: 'button', class: 'mn-go', on: { click: () => onDetails(e.key) } }, '詳しく見る'));
   }
-  function render(box, v) {
+  function render(box, v, trendNode = null) {
     const head = h('header', { class: 'ph' }, h('h2', { text: headOf(v) }),
       h('span', { class: 'mn-seg', role: 'group', 'aria-label': '下の段に出すニュース' },
         h('button', { type: 'button', 'aria-pressed': String(v.scope === 'near'), disabled: v.near.length ? null : true, on: { click: () => onScope('near') } }, 'この地点', h('span', { class: 'n', text: v.near.length })),
-        h('button', { type: 'button', 'aria-pressed': String(v.scope === 'pri'), on: { click: () => onScope('pri') } }, '注目', h('span', { class: 'n', text: v.pri.length }))));
+        h('button', { type: 'button', 'aria-pressed': String(v.scope === 'pri'), on: { click: () => onScope('pri') } }, '注目', h('span', { class: 'n', text: v.pri.length })),
+        trendNode ? h('button', { type: 'button', 'aria-pressed': String(v.scope === 'trend'), on: { click: () => onScope('trend') } }, '傾向') : null));
+    if (v.scope === 'trend' && trendNode) { box.replaceChildren(head, h('div', { class: 'mn-tr' }, trendNode)); return; }
     const list = v.list, e = v.lead;
     box.replaceChildren(head, h('div', { class: 'mn-b' }, e ? aside(e) : null,
       list.length ? h('ul', { class: 'mn-tiles' }, list.map((x) => tile(x, !!e && x.key === e.key))) : h('p', { class: 'empty', text: '0 件（地図の印を押すと、その地点のニュースを出す）' })));

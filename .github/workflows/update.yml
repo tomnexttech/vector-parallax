@@ -54,6 +54,7 @@ jobs:
             data/title_cache.json
             data/og_robots.json
             data/read_cache.json
+            data/social.json
           key: parallax-data-${{ github.run_id }}
           restore-keys: |
             parallax-data-
@@ -86,6 +87,14 @@ jobs:
         continue-on-error: true
         timeout-minutes: 14
         run: python -m parallax.extras --only relations,impact,reaction,hero
+
+      # What is said about each place on Bluesky (docs/trend-sources.md): the public search, no key, asked here and never from the visitor's browser. Counts, rising words and a
+      # word-count tone only (no post text is kept). A place or the whole file that cannot be read keeps the previous file; the page shows the time of its own values.
+      - name: Social data (Bluesky public search)
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 14
+        run: python -m parallax.extras --only social
 
       # CONTRACT 27: reads the article bodies of the top events and writes story.read into data/latest.json (how each outlet wrote it, checked against the body).
       # One line: a source that has said no to machine reading (robots.txt, its own terms, noai, the withheld list) is not read, the evidence is kept in read.unread; every other source is read.

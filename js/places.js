@@ -82,6 +82,7 @@ export function placesIn(text) {
       t = re ? t.replace(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), ' ') : t.split(n).join(' ');
     }
   }
+  t = t.replace(/東京都/g, '東京');   // 東京都 holds 京都, which is not Kyoto (11-22)
   for (const p of PREFS) {
     // a prefecture name counts with its suffix or on its own (東京 / 東京都 / 群馬県)
     if (t.includes(p) && !out.includes(p)) out.push(p);

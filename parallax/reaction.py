@@ -53,7 +53,7 @@ NOT_USED = [
      "url": "https://news.yahoo.co.jp/robots.txt"},
     {"name": "X", "why": "公式の料金の頁で、投稿の読み取りは 1 件ごとに費用がかかり、無料の読み取りの枠は書かれていない。費用 0 円で毎日動かす形と合わない。",
      "url": "https://docs.x.com/x-api/getting-started/pricing"},
-    {"name": "Bluesky の検索", "why": "公開の口の検索（app.bsky.feed.searchPosts）が認証を求める（2026-11-11 に 403）。今回は使わない。",
+    {"name": "Bluesky の検索", "why": "反応（関心の量）の値には使わない。投稿の検索は「場所のトレンド」用に parallax/social.py が api.bsky.app から別のファイル data/social.json として取る（public.api.bsky.app の口は 2026-11-11 に 403）。",
      "url": "https://docs.bsky.app/docs/api/app-bsky-feed-search-posts"},
 ]
 

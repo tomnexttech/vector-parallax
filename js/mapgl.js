@@ -345,6 +345,14 @@ export function createMapGL(canvas, opts, ml) {
     reset() { held = false; if (scene) goto(targetFor(scene, ...size()), true); },
     zoom(k) { if (!loaded) return false; held = true; map.zoomTo(map.getZoom() + Math.log2(k), { duration: reduce() ? 0 : 260 }); return true; },
     pin(on) { pinned = !!on; },
+    /** the place chosen in the trend comes to the middle: 7 frames of the reel (233 ms, js/motion.js SWAP), at once where motion is reduced (11-22) */
+    flyTo(lat, lon, z) {
+      if (!loaded || !finite(lat, lon)) return false;
+      held = true;
+      const o = { center: [lon, lat], zoom: clampZ(z) };
+      if (reduce()) map.jumpTo(o); else map.easeTo({ ...o, duration: 233, easing: (t) => 1 - Math.pow(1 - t, 4), essential: false });
+      return true;
+    },
     jump(lat, lon, s) { held = true; map.jumpTo({ center: [lon, lat], zoom: clampZ(Math.log2((s * 360) / TILE)) }); },
     view() {
       if (!loaded) return null;

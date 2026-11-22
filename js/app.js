@@ -55,6 +55,8 @@ import { createCoverage, coverageOf } from './coverage.js';
 import { createVerdict, verdictOf } from './verdict.js';
 import { biasOf as biasIndex, sourceBase } from './bias.js';
 import { newsView, createMapNews } from './mapnews.js';
+import { trendOf, focusOf, scopeOf, prefOf, dailyOf, busiestPlaces, socialOf } from './trend.js';
+import { createTrendView } from './trendui.js';
 import { createWall, wallOn, pageOf, pageHolding, perOf } from './wall.js';
 import { breakingOf, breakingText, keepOff, rankBy, localOf, placeName, searchOf, outletsOf, SPANS, SEARCH_SIDES, SORTS, QF0 } from './newsdesk.js';
 import { SECTIONS, NEWS_TABS, parseHash, hashOf, paperOf, nextSeen, shareUrl, ruleJa, oneSideOf, ONE_SIDE_TITLE, ONE_SIDE_NOTE } from './sections.js';
@@ -767,7 +769,7 @@ function searchFor(w) {
   if (t !== state.q) state.qf = { ...state.qf, outlet: '' };
   state.q = t;
   pause();
-  if (state.floor && state.floor.mode() === 'map' && !state.mapPick) state.mapScope = 'pri';
+  if (state.floor && state.floor.mode() === 'map' && !state.mapPick && state.mapScope !== 'trend') state.mapScope = 'pri';
   renderPri(); renderAnom(); renderFields();
   const p = $('p-pri');
   if (p && (narrow() || !p.offsetParent)) p.scrollIntoView({ block: 'start' });
@@ -1498,7 +1500,38 @@ function renderMapNews() {
     videoOf: (e) => { const v = videosOf(videosOfEvent(e), STATIONS, 1)[0]; if (!v) return null; const st = STATIONS.find((x) => x.id === v.station); return { v, name: st ? st.name : '', src: embedSrc(playOfVideo(v), { auto: state.set.tv.auto, sound: false }) }; },
   });
   const view = newsView({ events: state.es.filter(matchesQ), pri: shownPri().filter((x) => !x.hid), cur: cur(), picked: state.mapPick, scope: state.mapScope, leadKey: state.mapLead, km: RADIUS_KM, nearby });
-  mapNews.render(box, view);
+  mapNews.render(box, view, view.scope === 'trend' ? trendNode() : true);
+}
+
+// ---------------------------------------------------------------- a place's trend (js/trend.js, js/trendui.js): the topics, the rising ones, the fields, the outlets
+let trendView = null;
+/** a place pressed on the map as a scope: a prefecture, a country or town by its name, else a point and a radius */
+const trendScopeOfPick = (p) => {
+  if (!p) return null;
+  const pf = prefOf(p.place);
+  if (pf) return { kind: 'pref', name: pf };
+  if (p.country) return { kind: 'text', name: p.place };
+  return isNum(p.lat) ? { kind: 'point', name: p.place, lat: p.lat, lon: p.lon, km: 60 } : scopeOf(p.place);
+};
+/** the chosen place comes to the middle of the map (the shown range and a press on the map do not move it) */
+function trendFly(scope) {
+  const m = state.map, f = focusOf(state.es.filter((e) => vis(e) && !e.foldedInto), scope);
+  if (!m || !f) return;
+  if (typeof m.flyTo === 'function') m.flyTo(f.lat, f.lon, f.z); else if (typeof m.jump === 'function') m.jump(f.lat, f.lon, (2 ** f.z * 512) / 360);
+}
+function trendNode() {
+  trendView = trendView || createTrendView({ h, headNode, genreShort, fmtAge,
+    onScope: (text) => { const sc = scopeOf(text); state.trendFocus = true; state.trendScope = sc; state.trendText = sc ? text : ''; trendFly(sc); renderMapNews(); },
+    onBox: () => { const v = state.map && state.map.view && state.map.view(); if (!v) return; state.trendScope = { kind: 'box', west: v.west, east: v.east, south: v.south, north: v.north }; state.trendText = ''; renderMapNews(); },
+    onOpen: (k) => { state.mapLead = k; select(k, true); if (state.sect === 'map') openSheet('case'); else $('p-case').scrollIntoView({ block: 'start' }); } });
+  const events = state.es.filter((e) => vis(e) && !e.foldedInto);
+  const scope = state.trendScope || trendScopeOfPick(state.mapPick);
+  if (state.social === undefined) { state.social = null; getJson(dataDir() + 'social.json').then((j) => { state.social = j || null; if (state.mapScope === 'trend') renderMapNews(); }); }
+  appLoadArchive();   // app:hook (the seven days of js/search.js)
+  const model = trendOf(events, scope, { now: state.data.generated_at, windowH: isNum(state.data.window_h) ? state.data.window_h : 36 });
+  return trendView.render(model, { places: busiestPlaces(events, 6), daily: appS.archive && appS.archive.ok ? dailyOf(appS.archive.days, scope) : [],   // app:hook
+     hasBox: !!(state.map && state.map.view && state.map.view()), text: state.trendText || '', refocus: !!state.trendFocus && !(state.trendFocus = false),
+    social: socialOf(state.social, scope), now: Date.now() / 1000, fmtShort });
 }
 
 // ---------------------------------------------------------------- the simple view (js/entry.js): six cards, three columns
@@ -3849,6 +3882,7 @@ async function appLoadArchive() {
   const idx = await getJson(dataDir() + 'archive/index.json');
   const days = await Promise.all(archiveDays(idx).map((d) => getJson(`${dataDir()}archive/${d}.json`)));
   appS.archive = { ok: !!idx, days: days.filter(isObj) };
+  if (state.mapScope === 'trend') renderMapNews();
   if (state.q) renderPri();
 }
 /** seven days: the past days' news that match, under the result, each to its own page */
@@ -4252,12 +4286,13 @@ async function main() {
   window.addEventListener('parallax:map-select', (ev) => {
     const d = isObj(ev.detail) ? ev.detail : {};
     state.mapPick = str(d.place) || isNum(d.lat) ? { place: str(d.place), lat: d.lat, lon: d.lon, country: !!d.country } : null;
-    state.mapScope = 'near';
+    state.mapScope = state.mapScope === 'trend' ? 'trend' : 'near';
+    state.trendScope = null; state.trendText = '';   // a press on the map is the place of the trend too
     state.mapLead = null;
     renderMapNews();
   });
   // the card on the map was closed: no place any more, the section goes back to the priority list
-  window.addEventListener('parallax:map-clear', () => { state.mapPick = null; state.mapLead = null; state.mapScope = 'pri'; renderMapNews(); });
+  window.addEventListener('parallax:map-clear', () => { state.mapPick = null; state.mapLead = null; if (state.mapScope !== 'trend') state.mapScope = 'pri'; renderMapNews(); });
   // what stands on the map: the card of a place, the theme's colouring, the 3D floor (js/mapui.js)
   state.mapUi = createMapUi({ map: state.map, floor: state.floor, theater: $('theater'), genres: [...FIELDS, OTHER_FIELD], genre: () => state.genre, setGenre,
     events: () => state.es.filter((e) => vis(e) && !e.foldedInto),

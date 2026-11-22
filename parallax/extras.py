@@ -89,6 +89,17 @@ def run_derived(out, only, now):
         derived("hero", lambda: hero.compute(latest, board, rel, rea, now), out / "hero.json")
 
 
+def run_social(out, now):
+    """what is said about each place on Bluesky (parallax/social.py, docs/trend-sources.md): asked here, in the build, never from the visitor's browser"""
+    from parallax import social
+    places, lex = _read(ROOT / "data" / "social_places.json"), _read(ROOT / "data" / "sentiment_ja.json")
+    if not places or not lex:
+        print("social: places or lexicon missing (previous file kept)", file=sys.stderr)
+        return
+    derived("social", lambda: (lambda d: d if d["ok"] else None)(social.compute(_read(out / "latest.json") or {}, places, lex, now,
+            log=lambda m: print("social " + m, file=sys.stderr))), out / "social.json")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="python -m parallax.extras")
     ap.add_argument("--out-dir", default=str(ROOT / "data"))
@@ -114,6 +125,8 @@ def main(argv=None):
                      [s["id"] for s in d["series"] if not s["ok"]], secs))
     if only & {"relations", "impact", "reaction", "hero"}:
         run_derived(out, only, now)
+    if "social" in only:
+        run_social(out, now)
     return 0
 
 

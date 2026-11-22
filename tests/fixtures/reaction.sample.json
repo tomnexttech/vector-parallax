@@ -257,7 +257,7 @@
   },
   {
    "name": "Bluesky の検索",
-   "why": "公開の口の検索（app.bsky.feed.searchPosts）が認証を求める（2026-11-11 に 403）。今回は使わない。",
+   "why": "反応（関心の量）の値には使わない。投稿の検索は「場所のトレンド」用に parallax/social.py が api.bsky.app から別のファイル data/social.json として取る（public.api.bsky.app の口は 2026-11-11 に 403）。",
    "url": "https://docs.bsky.app/docs/api/app-bsky-feed-search-posts"
   }
  ],
