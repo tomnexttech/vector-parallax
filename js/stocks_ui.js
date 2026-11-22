@@ -15,6 +15,9 @@ import { parseCsv, sampleBars, edgeOf, signalsOf, newsMoves, age, wilson, LIMITS
 const pct = (v, d = 1) => (Number.isFinite(v) ? `${v > 0 ? '+' : ''}${v.toFixed(d)}%` : '—');
 const share = (v) => (Number.isFinite(v) ? `${(v * 100).toFixed(0)}%` : '—');
 const md = (d) => { const m = /^\d{4}-(\d{2})-(\d{2})/.exec(d || ''); return m ? `${Number(m[1])}/${Number(m[2])}` : '—'; };
+/** the sample's own made-up headlines: a made-up price is never tied to a real headline */
+const SAMPLE_ITEMS = [['2026-10-06', '見本の出来事 A'], ['2026-10-21', '見本の出来事 B'], ['2026-11-04', '見本の出来事 C'], ['2026-11-13', '見本の出来事 D']]
+  .map(([d, title], i) => ({ ts: Date.parse(d + 'T03:00:00Z') / 1000, title, n: 0, key: `sample${i}` }));
 const GRADE = { above: '基準より上', below: '基準より下', same: '基準と区別できない', few: '数が足りない' };
 
 export function createStocks({ h, s, items, again }) {
@@ -81,13 +84,14 @@ export function createStocks({ h, s, items, again }) {
     const go = () => { st.words = input.value; again(); const el = document.getElementById('sk-w'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } };
     input.id = 'sk-w';
     input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); go(); } });
-    const r = newsMoves(bars, items(), st.words.split(/[\s、,]+/));
-    const body = [h('div', { class: 'sk-wrap' }, input, h('button', { type: 'button', class: 'tbb', on: { click: go } }, '結ぶ'))];
-    if (!st.words.trim()) body.push(h('p', { class: 'sk-sub', text: '言葉を入れると、その言葉を見出しに含むニュースが出た日の、終値の動きを数えます。' }));
+    const r = newsMoves(bars, st.sample ? SAMPLE_ITEMS : items(), st.sample ? ['見本'] : st.words.split(/[\s、,]+/));
+    const body = st.sample ? [h('p', { class: 'sk-sub', text: '見本の値は、実在のニュースと結びません。ここに出る見出しも架空です。手元の CSV を読み込むと、本物の見出しと結びます。' })]
+      : [h('div', { class: 'sk-wrap' }, input, h('button', { type: 'button', class: 'tbb', on: { click: go } }, '結ぶ'))];
+    if (!st.sample && !st.words.trim()) body.push(h('p', { class: 'sk-sub', text: '言葉を入れると、その言葉を見出しに含むニュースが出た日の、終値の動きを数えます。' }));
     else if (!r.n) body.push(h('p', { class: 'empty', text: `「${st.words.trim()}」を含むニュースは、読み込んだ期間にありません。` }));
     else {
       body.push(h('p', { class: 'sk-sub num', text: `${r.n} 件のうち、その日の終値が前日より上がったのは ${r.up}、下がったのは ${r.down}、ほぼ変わらずが ${r.flat}。` }));
-      body.push(h('ul', { class: 'sk-nl' }, r.rows.slice(0, 8).map((x) => h('li', null, h('span', { class: 'sk-nt', text: x.title }), h('span', { class: 'sk-nm num' }, h('span', { text: `${md(x.day)}・${x.n}社` }), move(x.d1), x.d5 == null ? null : h('span', { class: 'sk-5' }, '4 日後 ', move(x.d5)))))));
+      body.push(h('ul', { class: 'sk-nl' }, r.rows.slice(0, 8).map((x) => h('li', null, h('span', { class: 'sk-nt' }, st.sample ? h('span', { class: 'sk-tag', text: '架空' }) : null, st.sample ? ' ' : null, x.title), h('span', { class: 'sk-nm num' }, h('span', { text: st.sample ? md(x.day) : `${md(x.day)}・${x.n}社` }), move(x.d1), x.d5 == null ? null : h('span', { class: 'sk-5' }, '4 日後 ', move(x.d5)))))));
     }
     body.push(h('p', { class: 'sk-sub', text: 'ニュースの日の動きを数えただけで、原因とは言えません。同じ日の別の出来事や市場全体の動きと区別できません。' }));
     return body;

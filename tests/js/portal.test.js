@@ -89,3 +89,13 @@ test('the page: the band and the entrance are wired, the stock page holds no pri
   assert.doesNotMatch(ui, /fetch\(|XMLHttpRequest|localStorage|sendBeacon/, 'the visitor\'s file stays in the page');
   assert.doesNotMatch(ui + readFileSync('js/stocks.js', 'utf8'), /買い時|買うべき|売るべき|おすすめ/);
 });
+
+test('the sample never ties a made-up price to a real headline: its own made-up rows, each tagged 架空; a loaded file ties to the real ones', () => {
+  const ui = readFileSync('js/stocks_ui.js', 'utf8');
+  assert.match(ui, /newsMoves\(bars, st\.sample \? SAMPLE_ITEMS : items\(\)/);
+  assert.match(ui, /st\.sample \? h\('span', \{ class: 'sk-tag', text: '架空' \}\)/);
+  const m = /const SAMPLE_ITEMS = ([\s\S]*?)\.map\(/.exec(ui)[1];
+  assert.ok(/見本の出来事/.test(m) && !/トランプ|プーチン|日銀/.test(m));
+  const b = sampleBars(7, 2500), items = [...m.matchAll(/'(\d{4}-\d\d-\d\d)', '([^']+)'/g)].map((x, i) => ({ ts: Date.parse(x[1] + 'T03:00:00Z') / 1000, title: x[2], n: 0, key: `s${i}` }));
+  assert.equal(newsMoves(b, items, ['見本']).n, 4, 'the made-up rows land on the sample bars');
+});
