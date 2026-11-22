@@ -6455,4 +6455,7 @@ body:not(#_g) { font-family: var(--f-text); font-feature-settings: "palt" 1; }
 
 /* v83: the glass panels of the detailed screen cut what is inside them at their own edge (a scrolled layer must not show in the gap below) */
 :root #board #p-case, :root #board .under > .pane { overflow: hidden; border-radius: var(--r-l); contain: paint; }
+/* v84: the source/hours/field columns (.c1) belong to the home screen; on the detailed screen they were laid out in a second grid row of height 0, below the fold,
+   so the board scrolled up and down over a hidden window of charts. They are not drawn there at all, and the board no longer scrolls. */
+:root[data-screen="board"][data-home="board"]:not(#z1):not(#z2):not(#z3):not(#z4):not(#z5):not(#z6):not(#z7):not(#z8) .board:not([data-floor="map"]):not([data-wall="1"]) > .c1 { display: none !important; }
 /* ==== v70:end ==== */
